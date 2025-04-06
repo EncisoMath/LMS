@@ -1,172 +1,144 @@
-import { db } from "./firebase.js";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// app.js
 
-const studentsCollection = collection(db, "students");
-const tableBody = document.querySelector("#studentsTable tbody");
-const form = document.getElementById("studentForm");
-const csvInput = document.getElementById("csvInput");
-const importBtn = document.getElementById("importBtn");
+// Datos de prueba
+let students = [];
 
-// Mostrar / Ocultar modales
-function toggleModal(id, show = true) {
-  document.getElementById(id).classList.toggle("show", show);
-}
+// Elementos DOM
+const registerModal = document.getElementById("registerModal");
+const importModal = document.getElementById("importModal");
+const nameInput = document.getElementById("nameInput");
+const lastnameInput = document.getElementById("lastnameInput");
+const gradeInput = document.getElementById("gradeInput");
+const studentForm = document.getElementById("studentForm");
+const studentList = document.createElement("ul");
+studentList.classList.add("student-list");
+document.querySelector(".table-container").innerHTML = ""; // Limpiamos la tabla
+document.querySelector(".table-container").appendChild(studentList);
 
-document.getElementById("openRegisterModal").addEventListener("click", () => toggleModal("registerModal", true));
-document.getElementById("openImportModal").addEventListener("click", () => toggleModal("importModal", true));
-
-// Generar ID aleatorio
-function generarID() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
-}
-
-// Cargar estudiantes
-async function loadStudents() {
-  tableBody.innerHTML = "";
-
-  const snapshot = await getDocs(studentsCollection);
-  const data = [];
-
-  snapshot.forEach(docSnap => {
-    const student = docSnap.data();
-    data.push({ ...student, firebaseId: docSnap.id });
-  });
-
-  // Agrupar por grado
-  const grouped = {};
-  data.forEach(student => {
-    if (!grouped[student.grade]) grouped[student.grade] = [];
-    grouped[student.grade].push(student);
-  });
-
-  const grades = Object.keys(grouped).sort();
-
-  grades.forEach(grade => {
-    const students = grouped[grade].sort((a, b) => {
-      const lastA = a.lastname.toLowerCase();
-      const lastB = b.lastname.toLowerCase();
-      if (lastA === lastB) return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-      return lastA.localeCompare(lastB);
-    });
-
-    const headerRow = document.createElement("tr");
-    headerRow.innerHTML = `<td colspan="5" style="background:#dbeafe; font-weight:bold;">Grado ${grade}</td>`;
-    tableBody.appendChild(headerRow);
-
-    students.forEach(s => {
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td>${s.id}</td>
-        <td><input type="text" value="${s.name}" class="name-input" disabled /></td>
-        <td><input type="text" value="${s.lastname}" class="lastname-input" disabled /></td>
-        <td><input type="text" value="${s.grade}" class="grade-input" disabled /></td>
-        <td>
-          <button class="edit-btn" data-id="${s.firebaseId}">✏️</button>
-          <button class="save-btn" data-id="${s.firebaseId}" style="display:none;">💾</button>
-          <button class="delete-btn" data-id="${s.firebaseId}">🗑️</button>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    });
-  });
-
-  addEventListeners();
-}
-
-// Agregar eventos a botones
-function addEventListeners() {
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (confirm("¿Estás seguro de eliminar este estudiante?")) {
-        await deleteDoc(doc(db, "students", btn.dataset.id));
-        loadStudents();
-      }
-    });
-  });
-
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const row = btn.closest("tr");
-      row.querySelectorAll("input").forEach(input => input.disabled = false);
-      row.querySelector(".save-btn").style.display = "inline-block";
-      btn.style.display = "none";
-    });
-  });
-
-  document.querySelectorAll(".save-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const row = btn.closest("tr");
-      const name = row.querySelector(".name-input").value.trim();
-      const lastname = row.querySelector(".lastname-input").value.trim();
-      const grade = row.querySelector(".grade-input").value.trim();
-
-      if (!name || !lastname || !grade) {
-        alert("Todos los campos son obligatorios.");
-        return;
-      }
-
-      await updateDoc(doc(db, "students", btn.dataset.id), {
-        name, lastname, grade
-      });
-
-      alert("Estudiante actualizado correctamente.");
-      loadStudents();
-    });
-  });
-}
-
-// Registrar estudiante nuevo
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-
-  const name = document.getElementById("nameInput").value.trim();
-  const lastname = document.getElementById("lastnameInput").value.trim();
-  const grade = document.getElementById("gradeInput").value.trim();
-  const id = generarID();
-
-  if (!name || !lastname || !grade) {
-    alert("Todos los campos son obligatorios.");
-    return;
+// Mostrar / ocultar modales
+function toggleModal(id, show) {
+  const modal = document.getElementById(id);
+  if (show) {
+    modal.classList.add("show");
+  } else {
+    modal.classList.remove("show");
   }
+}
 
-  await addDoc(studentsCollection, { id, name, lastname, grade });
+// Abrir modales desde botones flotantes
+document.getElementById("openRegisterModal").addEventListener("click", () => {
+  toggleModal("registerModal", true);
+});
 
-  form.reset();
-  toggleModal("registerModal", false);
-  loadStudents();
+document.getElementById("openImportModal").addEventListener("click", () => {
+  toggleModal("importModal", true);
+});
+
+// Registrar nuevo estudiante
+studentForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = nameInput.value.trim();
+  const lastname = lastnameInput.value.trim();
+  const grade = gradeInput.value.trim();
+
+  if (name && lastname && grade) {
+    students.push({ name, lastname, grade });
+    renderStudents();
+    studentForm.reset();
+    toggleModal("registerModal", false);
+  }
 });
 
 // Importar CSV
-importBtn.addEventListener("click", () => {
-  const file = csvInput.files[0];
-  if (!file) {
-    alert("Selecciona un archivo CSV primero.");
-    return;
-  }
+document.getElementById("importBtn").addEventListener("click", () => {
+  const fileInput = document.getElementById("csvInput");
+  const file = fileInput.files[0];
+  if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = async function (e) {
+  reader.onload = function (e) {
     const lines = e.target.result.split("\n");
-    for (let line of lines) {
-      const [id, name, lastname, grade] = line.trim().split(",");
-
-      if (id && name && lastname && grade) {
-        await addDoc(studentsCollection, { id, name, lastname, grade });
+    for (let i = 1; i < lines.length; i++) {
+      const [name, lastname, grade] = lines[i].split(",");
+      if (name && lastname && grade) {
+        students.push({ name: name.trim(), lastname: lastname.trim(), grade: grade.trim() });
       }
     }
-    alert("Importación completada.");
+    renderStudents();
     toggleModal("importModal", false);
-    loadStudents();
   };
   reader.readAsText(file);
 });
 
-loadStudents();
+// Mostrar lista de estudiantes
+function renderStudents() {
+  studentList.innerHTML = "";
+
+  students.forEach((student, index) => {
+    const li = document.createElement("li");
+    li.className = "student-item";
+    li.innerHTML = `
+      <span>${student.name} ${student.lastname}</span>
+      <div class="student-actions">
+        <button class="edit-btn" onclick="editStudent(${index})"><i class="fas fa-edit"></i></button>
+        <button class="delete-btn" onclick="deleteStudent(${index})"><i class="fas fa-trash"></i></button>
+      </div>
+    `;
+
+    li.addEventListener("click", function () {
+      // Cerrar otros activos
+      document.querySelectorAll(".student-item").forEach(item => item.classList.remove("active"));
+      this.classList.toggle("active");
+    });
+
+    studentList.appendChild(li);
+  });
+}
+
+// Editar estudiante
+window.editStudent = function (index) {
+  const student = students[index];
+  nameInput.value = student.name;
+  lastnameInput.value = student.lastname;
+  gradeInput.value = student.grade;
+
+  toggleModal("registerModal", true);
+
+  // Reemplazar evento de guardar
+  studentForm.onsubmit = function (e) {
+    e.preventDefault();
+    students[index] = {
+      name: nameInput.value.trim(),
+      lastname: lastnameInput.value.trim(),
+      grade: gradeInput.value.trim(),
+    };
+    renderStudents();
+    studentForm.reset();
+    studentForm.onsubmit = defaultSubmit;
+    toggleModal("registerModal", false);
+  };
+};
+
+// Eliminar estudiante
+window.deleteStudent = function (index) {
+  if (confirm("¿Seguro que deseas eliminar este estudiante?")) {
+    students.splice(index, 1);
+    renderStudents();
+  }
+};
+
+// Restaurar evento original del formulario
+function defaultSubmit(e) {
+  e.preventDefault();
+  const name = nameInput.value.trim();
+  const lastname = lastnameInput.value.trim();
+  const grade = gradeInput.value.trim();
+
+  if (name && lastname && grade) {
+    students.push({ name, lastname, grade });
+    renderStudents();
+    studentForm.reset();
+    toggleModal("registerModal", false);
+  }
+}
+studentForm.onsubmit = defaultSubmit;
