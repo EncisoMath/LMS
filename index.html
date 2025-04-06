@@ -2,27 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mi LMS Personal</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>LMS Enciso</title>
 </head>
 <body>
-  <h1>📘 Mi LMS Personal</h1>
+  <h1>Agregar estudiantdfsfsfse</h1>
+  <input id="nameInput" type="text" placeholder="Nombre del asfafaestudiante" />
+  <input id="gradeInput" type="text" placeholder="Grado" />
+  <button id="saveBtn">Guardar</button>
 
-  <section>
-    <h2>➕ Añadir estudiante</h2>
-    <form id="student-form">
-      <input type="text" id="name" placeholder="Nombre del estudiante" required>
-      <input type="text" id="grade" placeholder="Grado" required>
-      <button type="submit">Agregar</button>
-    </form>
-  </section>
+  <!-- Firebase - Compat versions -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-  <section>
-    <h2>👩‍🏫 Lista de estudiantes</h2>
-    <div id="students-list"></div>
-  </section>
-
+  <!-- Tu script -->
   <script src="app.js"></script>
 </body>
 </html>
