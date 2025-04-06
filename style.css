@@ -1,126 +1,78 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Segoe UI", sans-serif;
-}
-
 body {
-  display: flex;
-  flex-direction: column;
-  background-color: #f5f7fa;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background: #f0f2f5;
   color: #333;
 }
 
-header {
-  background-color: #fff;
-  padding: 1rem;
+.container {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  height: 100vh;
 }
 
-#toggleSidebar {
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-#sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
+.sidebar {
   width: 220px;
-  height: 100%;
   background-color: #2c3e50;
-  padding-top: 60px;
   color: white;
-  transition: transform 0.3s ease-in-out;
-  transform: translateX(-100%);
+  padding: 20px;
 }
 
-#sidebar ul {
+.sidebar h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
   list-style: none;
+  padding: 0;
 }
 
-#sidebar li {
-  padding: 15px;
+.sidebar li {
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
 }
 
-#sidebar a {
-  color: white;
-  text-decoration: none;
+.sidebar li:hover,
+.sidebar li.active {
+  background-color: #34495e;
 }
 
-#sidebar.visible {
-  transform: translateX(0);
+.main-content {
+  flex: 1;
+  padding: 30px;
+  background: #ecf0f1;
 }
 
-main {
-  padding: 1rem;
-  margin-left: 0;
+input {
+  margin: 5px;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 200px;
 }
 
-.grades-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.grade-card {
-  background-color: #fff;
-  border-radius: 8px;
-  width: 280px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.grade-card h2 {
-  margin-bottom: 0.5rem;
-}
-
-.student {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0.25rem 0;
-  padding: 0.5rem;
-  background-color: #f0f4f8;
-  border-radius: 6px;
-}
-
-.student input {
-  border: none;
-  background: none;
-  width: 60px;
-}
-
-.student input[readonly] {
-  color: #555;
-}
-
-button.edit-btn {
-  background-color: #2980b9;
+button {
+  padding: 10px 15px;
+  background: #27ae60;
   color: white;
   border: none;
-  padding: 5px 10px;
   border-radius: 4px;
   cursor: pointer;
-  margin-left: 5px;
 }
 
-@media screen and (max-width: 600px) {
-  .grade-card {
-    width: 100%;
-  }
+button:hover {
+  background: #219150;
+}
 
-  #sidebar {
-    width: 70%;
-  }
+#students-list {
+  margin-top: 20px;
+}
+
+.student-card {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 5px;
 }

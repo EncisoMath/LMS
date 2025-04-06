@@ -1,82 +1,51 @@
-document.getElementById("toggleSidebar").addEventListener("click", () => {
-  document.getElementById("sidebar").classList.toggle("visible");
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyC5-6jxxqj0kqjejlGFViA9GsbRZAebMu0",
+  authDomain: "lmsenciso.firebaseapp.com",
+  databaseURL: "https://lmsenciso-default-rtdb.firebaseio.com",
+  projectId: "lmsenciso",
+  storageBucket: "lmsenciso.appspot.com",
+  messagingSenderId: "831119379631",
+  appId: "1:831119379631:web:9dea9bf8b679e1f896985a",
+  measurementId: "G-BGKGV7QPPG"
+};
 
-const gradesContainer = document.getElementById("gradesContainer");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const studentsRef = db.collection("students");
 
-// Datos simulados
-const estudiantes = [
-  { id: "1234", apellido: "Gómez", nombre: "Ana", grado: "10A" },
-  { id: "5678", apellido: "Martínez", nombre: "Carlos", grado: "10A" },
-  { id: "9101", apellido: "Zapata", nombre: "Laura", grado: "9B" },
-  { id: "1112", apellido: "Acosta", nombre: "Luis", grado: "10A" },
-  { id: "1314", apellido: "Benítez", nombre: "Valeria", grado: "9B" },
-  { id: "1516", apellido: "Díaz", nombre: "Julián", grado: "8C" }
-];
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const name = document.getElementById("nameInput").value.trim();
+  const grade = document.getElementById("gradeInput").value.trim();
 
-// Agrupar por grado
-const gradosMap = {};
-estudiantes.forEach(est => {
-  if (!gradosMap[est.grado]) {
-    gradosMap[est.grado] = [];
+  if (!name || !grade) {
+    alert("Por favor, completa ambos campos.");
+    return;
   }
-  gradosMap[est.grado].push(est);
+
+  try {
+    await studentsRef.add({ name, grade });
+    document.getElementById("nameInput").value = "";
+    document.getElementById("gradeInput").value = "";
+    loadStudents(); // recargar lista
+  } catch (error) {
+    console.error("Error al guardar:", error);
+    alert("Error al guardar el estudiante.");
+  }
 });
 
-// Ordenar estudiantes por apellido y nombre
-for (const grado in gradosMap) {
-  gradosMap[grado].sort((a, b) => {
-    const nombreA = `${a.apellido} ${a.nombre}`.toLowerCase();
-    const nombreB = `${b.apellido} ${b.nombre}`.toLowerCase();
-    return nombreA.localeCompare(nombreB);
+async function loadStudents() {
+  const listDiv = document.getElementById("students-list");
+  listDiv.innerHTML = "";
+  const snapshot = await studentsRef.get();
+
+  snapshot.forEach(doc => {
+    const student = doc.data();
+    const div = document.createElement("div");
+    div.className = "student-card";
+    div.textContent = `📘 ${student.name} - ${student.grade}`;
+    listDiv.appendChild(div);
   });
 }
 
-// Renderizar grados
-for (const grado in gradosMap) {
-  const card = document.createElement("div");
-  card.className = "grade-card";
-
-  const title = document.createElement("h2");
-  title.textContent = `Grado ${grado}`;
-  card.appendChild(title);
-
-  gradosMap[grado].forEach(est => {
-    const row = document.createElement("div");
-    row.className = "student";
-
-    const id = createField(est.id);
-    const ape = createField(est.apellido);
-    const nom = createField(est.nombre);
-    const gra = createField(est.grado);
-
-    const btn = document.createElement("button");
-    btn.textContent = "Editar";
-    btn.className = "edit-btn";
-
-    btn.addEventListener("click", () => {
-      [id, ape, nom, gra].forEach(input => {
-        input.readOnly = !input.readOnly;
-        if (!input.readOnly) input.focus();
-      });
-    });
-
-    row.appendChild(id);
-    row.appendChild(ape);
-    row.appendChild(nom);
-    row.appendChild(gra);
-    row.appendChild(btn);
-
-    card.appendChild(row);
-  });
-
-  gradesContainer.appendChild(card);
-}
-
-// Crear campo de texto solo lectura
-function createField(value) {
-  const input = document.createElement("input");
-  input.value = value;
-  input.readOnly = true;
-  return input;
-}
+// Cargar estudiantes al abrir la página
+loadStudents();
