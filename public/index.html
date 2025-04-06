@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi LMS Personal</title>
+</head>
+<body>
+  <h1>Agregar Estudiantes</h1>
+
+  <form id="student-form">
+    <label>Nombre del estudiante:</label><br>
+    <input type="text" id="name" required><br><br>
+
+    <label>Grado:</label><br>
+    <input type="text" id="grade" required><br><br>
+
+    <button type="submit">Agregar</button>
+  </form>
+
+  <p id="response"></p>
+
+  <script>
+    const form = document.getElementById('student-form');
+    const responseMsg = document.getElementById('response');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const grade = document.getElementById('grade').value;
+
+      try {
+        const res = await fetch('http://localhost:4000/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, grade })
+        });
+
+        const data = await res.json();
+        responseMsg.innerText = `✅ Estudiante agregado con ID: ${data.id}`;
+        form.reset();
+      } catch (error) {
+        responseMsg.innerText = `❌ Error al agregar estudiante`;
+      }
+    });
+  </script>
+</body>
+</html>

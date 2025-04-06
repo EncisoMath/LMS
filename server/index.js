@@ -23,6 +23,13 @@ app.get('/', (req, res) => {
   res.send('¡Bienvenido a tu LMS personal!');
 });
 
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../public')));
+
+
+
+
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

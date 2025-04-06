@@ -31,3 +31,24 @@ db.serialize(() => {
   // Tareas
   db.run(`
     CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      grade TEXT NOT NULL,
+      description TEXT
+    )
+  `);
+
+  // Calificaciones
+  db.run(`
+    CREATE TABLE IF NOT EXISTS grades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER,
+      task_id INTEGER,
+      score REAL,
+      FOREIGN KEY(student_id) REFERENCES students(id),
+      FOREIGN KEY(task_id) REFERENCES tasks(id)
+    )
+  `);
+});
+
+module.exports = db;
