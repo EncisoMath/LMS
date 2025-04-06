@@ -2,43 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gestión de Estudiantes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Estudiantes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="main-content">
-    <!-- MODALES -->
-    <div class="modal" id="modalForm">
-      <div class="modal-content">
-        <span class="close" data-close="modalForm">&times;</span>
-        <h2>Registrar Estudiante</h2>
-        <form id="studentForm">
-          <input id="nameInput" type="text" placeholder="Nombre" required />
-          <input id="lastnameInput" type="text" placeholder="Apellido" required />
-          <input id="gradeInput" type="text" placeholder="Grado" required />
-          <button type="submit">Guardar</button>
-        </form>
-      </div>
-    </div>
+  <h1>Estudiantes</h1>
 
-    <div class="modal" id="modalCSV">
-      <div class="modal-content">
-        <span class="close" data-close="modalCSV">&times;</span>
-        <h2>Importar desde CSV</h2>
-        <input type="file" id="csvInput" accept=".csv" />
-        <button id="importBtn">Importar</button>
-      </div>
-    </div>
-
-    <!-- Botones flotantes -->
-    <div class="floating-buttons">
-      <button id="openFormBtn">➕ Registro de Estudiantes</button>
-      <button id="openCSVBtn">📁 Importar desde CSV</button>
-    </div>
-
-    <!-- Tabla de estudiantes -->
-    <h2>Lista de Estudiantes</h2>
+  <div class="table-container">
     <table id="studentsTable">
       <thead>
         <tr>
@@ -51,8 +23,39 @@
       </thead>
       <tbody></tbody>
     </table>
-  </main>
+  </div>
 
+  <!-- Botones flotantes -->
+  <div class="fab">
+    <button id="openRegisterModal">➕</button>
+    <button id="openImportModal">📁</button>
+  </div>
+
+  <!-- Modal Registro -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <h2>Registrar estudiante</h2>
+      <form id="studentForm">
+        <input type="text" id="nameInput" placeholder="Nombre" required />
+        <input type="text" id="lastnameInput" placeholder="Apellido" required />
+        <input type="text" id="gradeInput" placeholder="Grado" required />
+        <button type="submit">Registrar</button>
+        <button type="button" class="close" onclick="toggleModal('registerModal', false)">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Importar -->
+  <div id="importModal" class="modal">
+    <div class="modal-content">
+      <h2>Importar desde CSV</h2>
+      <input type="file" id="csvInput" accept=".csv" />
+      <button id="importBtn">Importar</button>
+      <button type="button" class="close" onclick="toggleModal('importModal', false)">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Script principal -->
   <script type="module" src="app.js"></script>
 </body>
 </html>

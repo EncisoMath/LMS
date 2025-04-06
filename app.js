@@ -9,72 +9,86 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const studentsCollection = collection(db, "students");
-const form = document.getElementById("studentForm");
 const tableBody = document.querySelector("#studentsTable tbody");
+const form = document.getElementById("studentForm");
 const csvInput = document.getElementById("csvInput");
 const importBtn = document.getElementById("importBtn");
 
+// Mostrar / Ocultar modales
+function toggleModal(id, show = true) {
+  document.getElementById(id).classList.toggle("show", show);
+}
+
+document.getElementById("openRegisterModal").addEventListener("click", () => toggleModal("registerModal", true));
+document.getElementById("openImportModal").addEventListener("click", () => toggleModal("importModal", true));
+
+// Generar ID aleatorio
 function generarID() {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
+// Cargar estudiantes
 async function loadStudents() {
   tableBody.innerHTML = "";
+
   const snapshot = await getDocs(studentsCollection);
-  const students = [];
+  const data = [];
 
   snapshot.forEach(docSnap => {
-    students.push({ id: docSnap.id, ...docSnap.data() });
+    const student = docSnap.data();
+    data.push({ ...student, firebaseId: docSnap.id });
   });
 
-  // Agrupar por grado y ordenar
+  // Agrupar por grado
   const grouped = {};
-  students.forEach(s => {
-    if (!grouped[s.grade]) grouped[s.grade] = [];
-    grouped[s.grade].push(s);
+  data.forEach(student => {
+    if (!grouped[student.grade]) grouped[student.grade] = [];
+    grouped[student.grade].push(student);
   });
 
-  for (const grade in grouped) {
-    const gradeRow = document.createElement("tr");
-    gradeRow.innerHTML = `<td colspan="5" style="background:#ddd; font-weight:bold; cursor:pointer;">${grade}</td>`;
-    gradeRow.classList.add("grade-header");
-    tableBody.appendChild(gradeRow);
+  const grades = Object.keys(grouped).sort();
 
-    grouped[grade]
-      .sort((a, b) => a.lastname.localeCompare(b.lastname) || a.name.localeCompare(b.name))
-      .forEach(data => {
-        const tr = document.createElement("tr");
-        tr.classList.add("student-row");
+  grades.forEach(grade => {
+    const students = grouped[grade].sort((a, b) => {
+      const lastA = a.lastname.toLowerCase();
+      const lastB = b.lastname.toLowerCase();
+      if (lastA === lastB) return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+      return lastA.localeCompare(lastB);
+    });
 
-        tr.innerHTML = `
-          <td>${data.id}</td>
-          <td><input type="text" value="${data.name}" class="name-input" disabled /></td>
-          <td><input type="text" value="${data.lastname}" class="lastname-input" disabled /></td>
-          <td><input type="text" value="${data.grade}" class="grade-input" disabled /></td>
-          <td>
-            <button class="edit-btn" data-id="${data.id}">✏️</button>
-            <button class="save-btn" data-id="${data.id}" style="display:none;">💾</button>
-            <button class="delete-btn" data-id="${data.id}">🗑️</button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
-      });
-  }
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `<td colspan="5" style="background:#dbeafe; font-weight:bold;">Grado ${grade}</td>`;
+    tableBody.appendChild(headerRow);
 
-  document.querySelectorAll(".grade-header").forEach(header => {
-    header.addEventListener("click", () => {
-      let next = header.nextElementSibling;
-      while (next && next.classList.contains("student-row")) {
-        next.style.display = next.style.display === "none" ? "table-row" : "none";
-        next = next.nextElementSibling;
-      }
+    students.forEach(s => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${s.id}</td>
+        <td><input type="text" value="${s.name}" class="name-input" disabled /></td>
+        <td><input type="text" value="${s.lastname}" class="lastname-input" disabled /></td>
+        <td><input type="text" value="${s.grade}" class="grade-input" disabled /></td>
+        <td>
+          <button class="edit-btn" data-id="${s.firebaseId}">✏️</button>
+          <button class="save-btn" data-id="${s.firebaseId}" style="display:none;">💾</button>
+          <button class="delete-btn" data-id="${s.firebaseId}">🗑️</button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
     });
   });
 
+  addEventListeners();
+}
+
+// Agregar eventos a botones
+function addEventListeners() {
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      await deleteDoc(doc(db, "students", btn.dataset.id));
-      loadStudents();
+      if (confirm("¿Estás seguro de eliminar este estudiante?")) {
+        await deleteDoc(doc(db, "students", btn.dataset.id));
+        loadStudents();
+      }
     });
   });
 
@@ -94,20 +108,25 @@ async function loadStudents() {
       const lastname = row.querySelector(".lastname-input").value.trim();
       const grade = row.querySelector(".grade-input").value.trim();
 
+      if (!name || !lastname || !grade) {
+        alert("Todos los campos son obligatorios.");
+        return;
+      }
+
       await updateDoc(doc(db, "students", btn.dataset.id), {
-        name,
-        lastname,
-        grade
+        name, lastname, grade
       });
 
-      alert("Estudiante actualizado");
+      alert("Estudiante actualizado correctamente.");
       loadStudents();
     });
   });
 }
 
+// Registrar estudiante nuevo
 form.addEventListener("submit", async e => {
   e.preventDefault();
+
   const name = document.getElementById("nameInput").value.trim();
   const lastname = document.getElementById("lastnameInput").value.trim();
   const grade = document.getElementById("gradeInput").value.trim();
@@ -118,18 +137,14 @@ form.addEventListener("submit", async e => {
     return;
   }
 
-  await addDoc(studentsCollection, {
-    id,
-    name,
-    lastname,
-    grade
-  });
+  await addDoc(studentsCollection, { id, name, lastname, grade });
 
   form.reset();
-  document.getElementById("modalForm").style.display = "none";
+  toggleModal("registerModal", false);
   loadStudents();
 });
 
+// Importar CSV
 importBtn.addEventListener("click", () => {
   const file = csvInput.files[0];
   if (!file) {
@@ -144,44 +159,14 @@ importBtn.addEventListener("click", () => {
       const [id, name, lastname, grade] = line.trim().split(",");
 
       if (id && name && lastname && grade) {
-        await addDoc(studentsCollection, {
-          id,
-          name,
-          lastname,
-          grade
-        });
+        await addDoc(studentsCollection, { id, name, lastname, grade });
       }
     }
     alert("Importación completada.");
-    document.getElementById("modalCSV").style.display = "none";
+    toggleModal("importModal", false);
     loadStudents();
   };
   reader.readAsText(file);
-});
-
-// MODALES
-const modalForm = document.getElementById("modalForm");
-const modalCSV = document.getElementById("modalCSV");
-
-document.getElementById("openFormBtn").addEventListener("click", () => {
-  modalForm.style.display = "block";
-});
-
-document.getElementById("openCSVBtn").addEventListener("click", () => {
-  modalCSV.style.display = "block";
-});
-
-document.querySelectorAll(".close").forEach(span => {
-  span.addEventListener("click", () => {
-    const id = span.getAttribute("data-close");
-    document.getElementById(id).style.display = "none";
-  });
-});
-
-window.addEventListener("click", e => {
-  if (e.target.classList.contains("modal")) {
-    e.target.style.display = "none";
-  }
 });
 
 loadStudents();
