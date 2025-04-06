@@ -1,148 +1,82 @@
-import { db } from "./firebase.js";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  query,
-  orderBy
-} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-// Menú responsivo
-document.getElementById('menu-toggle').addEventListener('click', () => {
-  document.querySelector('aside').classList.toggle('active');
+document.getElementById("toggleSidebar").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("visible");
 });
 
-// Mostrar sección de estudiantes
-window.mostrarEstudiantes = async () => {
-  document.getElementById("seccion-estudiantes").style.display = "block";
-  await cargarEstudiantes();
-};
+const gradesContainer = document.getElementById("gradesContainer");
 
-document.getElementById("studentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const id = document.getElementById("idInput").value.trim();
-  const apellido = document.getElementById("apellidoInput").value.trim();
-  const nombre = document.getElementById("nombreInput").value.trim();
-  const grado = document.getElementById("gradoInput").value.trim();
+// Datos simulados
+const estudiantes = [
+  { id: "1234", apellido: "Gómez", nombre: "Ana", grado: "10A" },
+  { id: "5678", apellido: "Martínez", nombre: "Carlos", grado: "10A" },
+  { id: "9101", apellido: "Zapata", nombre: "Laura", grado: "9B" },
+  { id: "1112", apellido: "Acosta", nombre: "Luis", grado: "10A" },
+  { id: "1314", apellido: "Benítez", nombre: "Valeria", grado: "9B" },
+  { id: "1516", apellido: "Díaz", nombre: "Julián", grado: "8C" }
+];
 
-  if (!id || !apellido || !nombre || !grado) {
-    alert("Completa todos los campos.");
-    return;
+// Agrupar por grado
+const gradosMap = {};
+estudiantes.forEach(est => {
+  if (!gradosMap[est.grado]) {
+    gradosMap[est.grado] = [];
   }
-
-  try {
-    await addDoc(collection(db, "students"), { id, apellido, nombre, grado });
-    alert("Estudiante guardado.");
-    document.getElementById("studentForm").reset();
-    cargarEstudiantes();
-  } catch (e) {
-    console.error("Error al guardar:", e);
-  }
+  gradosMap[est.grado].push(est);
 });
 
-async function cargarEstudiantes() {
-  const snapshot = await getDocs(query(collection(db, "students")));
-  const estudiantes = snapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-  const grados = {};
-
-  estudiantes.forEach(est => {
-    if (!grados[est.grado]) grados[est.grado] = [];
-    grados[est.grado].push(est);
+// Ordenar estudiantes por apellido y nombre
+for (const grado in gradosMap) {
+  gradosMap[grado].sort((a, b) => {
+    const nombreA = `${a.apellido} ${a.nombre}`.toLowerCase();
+    const nombreB = `${b.apellido} ${b.nombre}`.toLowerCase();
+    return nombreA.localeCompare(nombreB);
   });
-
-  // Ordenar estudiantes dentro de cada grado
-  Object.keys(grados).forEach(grado => {
-    grados[grado].sort((a, b) => {
-      const nombreA = `${a.apellido} ${a.nombre}`.toLowerCase();
-      const nombreB = `${b.apellido} ${b.nombre}`.toLowerCase();
-      return nombreA.localeCompare(nombreB);
-    });
-  });
-
-  const container = document.getElementById("gradosContainer");
-  container.innerHTML = "";
-
-  for (const grado in grados) {
-    const grupo = document.createElement("div");
-    grupo.className = "grade-group";
-
-    const titulo = document.createElement("h3");
-    titulo.textContent = grado;
-    grupo.appendChild(titulo);
-
-    grados[grado].forEach(est => {
-      const item = document.createElement("div");
-      item.className = "student-item";
-
-      item.innerHTML = `
-        <input value="${est.id}" disabled />
-        <input value="${est.apellido}" disabled />
-        <input value="${est.nombre}" disabled />
-        <input value="${est.grado}" disabled />
-        <button class="editar">Editar</button>
-        <button class="eliminar">Eliminar</button>
-      `;
-
-      const inputs = item.querySelectorAll("input");
-
-      item.querySelector(".editar").addEventListener("click", async () => {
-        const isDisabled = inputs[0].disabled;
-        inputs.forEach(input => input.disabled = !isDisabled);
-        if (isDisabled) {
-          item.querySelector(".editar").textContent = "Guardar";
-        } else {
-          const [idEl, apEl, nomEl, grEl] = inputs;
-          await updateDoc(doc(db, "students", est.docId), {
-            id: idEl.value.trim(),
-            apellido: apEl.value.trim(),
-            nombre: nomEl.value.trim(),
-            grado: grEl.value.trim()
-          });
-          alert("Estudiante actualizado.");
-          cargarEstudiantes();
-        }
-      });
-
-      item.querySelector(".eliminar").addEventListener("click", async () => {
-        if (confirm("¿Eliminar este estudiante?")) {
-          await deleteDoc(doc(db, "students", est.docId));
-          cargarEstudiantes();
-        }
-      });
-
-      grupo.appendChild(item);
-    });
-
-    container.appendChild(grupo);
-  }
 }
 
-// Importar CSV
-window.importarCSV = () => {
-  const fileInput = document.getElementById("csvFile");
-  const file = fileInput.files[0];
+// Renderizar grados
+for (const grado in gradosMap) {
+  const card = document.createElement("div");
+  card.className = "grade-card";
 
-  if (!file) return alert("Selecciona un archivo CSV");
+  const title = document.createElement("h2");
+  title.textContent = `Grado ${grado}`;
+  card.appendChild(title);
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const lines = e.target.result.split("\n").map(line => line.trim()).filter(l => l);
-    for (let line of lines) {
-      const [id, nombre, apellido, grado] = line.split(",");
-      if (id && nombre && apellido && grado) {
-        await addDoc(collection(db, "students"), {
-          id: id.trim(),
-          nombre: nombre.trim(),
-          apellido: apellido.trim(),
-          grado: grado.trim()
-        });
-      }
-    }
-    alert("Importación completa.");
-    cargarEstudiantes();
-  };
-  reader.readAsText(file);
-};
+  gradosMap[grado].forEach(est => {
+    const row = document.createElement("div");
+    row.className = "student";
+
+    const id = createField(est.id);
+    const ape = createField(est.apellido);
+    const nom = createField(est.nombre);
+    const gra = createField(est.grado);
+
+    const btn = document.createElement("button");
+    btn.textContent = "Editar";
+    btn.className = "edit-btn";
+
+    btn.addEventListener("click", () => {
+      [id, ape, nom, gra].forEach(input => {
+        input.readOnly = !input.readOnly;
+        if (!input.readOnly) input.focus();
+      });
+    });
+
+    row.appendChild(id);
+    row.appendChild(ape);
+    row.appendChild(nom);
+    row.appendChild(gra);
+    row.appendChild(btn);
+
+    card.appendChild(row);
+  });
+
+  gradesContainer.appendChild(card);
+}
+
+// Crear campo de texto solo lectura
+function createField(value) {
+  const input = document.createElement("input");
+  input.value = value;
+  input.readOnly = true;
+  return input;
+}

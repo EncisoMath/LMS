@@ -2,48 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LMS Enciso</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Estudiantes</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Botón para abrir el menú -->
-  <button id="menu-toggle" class="menu-btn">☰ Menú</button>
+  <header>
+    <button id="toggleSidebar">☰ Menu</button>
+    <h1>Gestión de Estudiantes</h1>
+  </header>
 
-  <!-- Sidebar -->
-  <aside>
-    <nav>
-      <ul>
-        <li onclick="mostrarEstudiantes()">Estudiantes</li>
-        <!-- Puedes agregar más opciones aquí -->
-      </ul>
-    </nav>
+  <aside id="sidebar" class="hidden">
+    <ul>
+      <li><a href="#">Estudiantes</a></li>
+    </ul>
   </aside>
 
-  <!-- Contenedor principal -->
-  <main id="main-content">
-    <section id="seccion-estudiantes" style="display: none;">
-      <h2>Gestión de Estudiantes</h2>
-
-      <!-- Importar CSV -->
-      <input type="file" id="csvFile" accept=".csv" />
-      <button onclick="importarCSV()">Importar CSV</button>
-
-      <!-- Formulario -->
-      <form id="studentForm">
-        <input type="text" id="idInput" placeholder="ID (4 números)" maxlength="4" required />
-        <input type="text" id="apellidoInput" placeholder="Apellido" required />
-        <input type="text" id="nombreInput" placeholder="Nombre" required />
-        <input type="text" id="gradoInput" placeholder="Grado" required />
-        <button type="submit">Guardar</button>
-      </form>
-
-      <!-- Lista de grados -->
-      <div id="gradosContainer"></div>
+  <main>
+    <section id="gradesContainer" class="grades-grid">
+      <!-- JS insertará aquí los grados y estudiantes -->
     </section>
   </main>
 
-  <script type="module" src="firebase.js"></script>
-  <script type="module" src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
