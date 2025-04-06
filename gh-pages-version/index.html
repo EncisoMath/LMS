@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi LMS Personal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>📘 Mi LMS Personal</h1>
+
+  <section>
+    <h2>➕ Añadir estudiante</h2>
+    <form id="student-form">
+      <input type="text" id="name" placeholder="Nombre del estudiante" required>
+      <input type="text" id="grade" placeholder="Grado" required>
+      <button type="submit">Agregar</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>👩‍🏫 Lista de estudiantes</h2>
+    <div id="students-list"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
