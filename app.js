@@ -1,51 +1,117 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyC5-6jxxqj0kqjejlGFViA9GsbRZAebMu0",
-  authDomain: "lmsenciso.firebaseapp.com",
-  databaseURL: "https://lmsenciso-default-rtdb.firebaseio.com",
-  projectId: "lmsenciso",
-  storageBucket: "lmsenciso.appspot.com",
-  messagingSenderId: "831119379631",
-  appId: "1:831119379631:web:9dea9bf8b679e1f896985a",
-  measurementId: "G-BGKGV7QPPG"
-};
+import { db } from "./firebase.js";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const studentsRef = db.collection("students");
+const studentsCollection = collection(db, "students");
+const form = document.getElementById("studentForm");
+const tableBody = document.querySelector("#studentsTable tbody");
+const csvInput = document.getElementById("csvInput");
+const importBtn = document.getElementById("importBtn");
 
-document.getElementById("saveBtn").addEventListener("click", async () => {
-  const name = document.getElementById("nameInput").value.trim();
-  const grade = document.getElementById("gradeInput").value.trim();
-
-  if (!name || !grade) {
-    alert("Por favor, completa ambos campos.");
-    return;
-  }
-
-  try {
-    await studentsRef.add({ name, grade });
-    document.getElementById("nameInput").value = "";
-    document.getElementById("gradeInput").value = "";
-    loadStudents(); // recargar lista
-  } catch (error) {
-    console.error("Error al guardar:", error);
-    alert("Error al guardar el estudiante.");
-  }
-});
+function generarID() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
 
 async function loadStudents() {
-  const listDiv = document.getElementById("students-list");
-  listDiv.innerHTML = "";
-  const snapshot = await studentsRef.get();
+  tableBody.innerHTML = "";
+  const snapshot = await getDocs(studentsCollection);
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    const tr = document.createElement("tr");
 
-  snapshot.forEach(doc => {
-    const student = doc.data();
-    const div = document.createElement("div");
-    div.className = "student-card";
-    div.textContent = `📘 ${student.name} - ${student.grade}`;
-    listDiv.appendChild(div);
+    tr.innerHTML = `
+      <td>${data.id}</td>
+      <td><input type="text" value="${data.name}" class="name-input" /></td>
+      <td><input type="text" value="${data.lastname}" class="lastname-input" /></td>
+      <td><input type="text" value="${data.grade}" class="grade-input" /></td>
+      <td>
+        <button class="save-btn" data-id="${docSnap.id}">💾</button>
+        <button class="delete-btn" data-id="${docSnap.id}">🗑️</button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      await deleteDoc(doc(db, "students", btn.dataset.id));
+      loadStudents();
+    });
+  });
+
+  document.querySelectorAll(".save-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest("tr");
+      const name = row.querySelector(".name-input").value.trim();
+      const lastname = row.querySelector(".lastname-input").value.trim();
+      const grade = row.querySelector(".grade-input").value.trim();
+
+      await updateDoc(doc(db, "students", btn.dataset.id), {
+        name,
+        lastname,
+        grade
+      });
+      alert("Estudiante actualizado");
+      loadStudents();
+    });
   });
 }
 
-// Cargar estudiantes al abrir la página
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = document.getElementById("nameInput").value.trim();
+  const lastname = document.getElementById("lastnameInput").value.trim();
+  const grade = document.getElementById("gradeInput").value.trim();
+  const id = generarID();
+
+  if (!name || !lastname || !grade) {
+    alert("Todos los campos son obligatorios.");
+    return;
+  }
+
+  await addDoc(studentsCollection, {
+    id,
+    name,
+    lastname,
+    grade
+  });
+
+  form.reset();
+  loadStudents();
+});
+
+importBtn.addEventListener("click", () => {
+  const file = csvInput.files[0];
+  if (!file) {
+    alert("Selecciona un archivo CSV primero.");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async function (e) {
+    const lines = e.target.result.split("\n");
+    for (let line of lines) {
+      const [id, name, lastname, grade] = line.trim().split(",");
+
+      if (id && name && lastname && grade) {
+        await addDoc(studentsCollection, {
+          id,
+          name,
+          lastname,
+          grade
+        });
+      }
+    }
+    alert("Importación completada.");
+    loadStudents();
+  };
+  reader.readAsText(file);
+});
+
 loadStudents();

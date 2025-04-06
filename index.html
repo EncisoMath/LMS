@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LMS Enciso</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,26 +10,39 @@
     <aside class="sidebar">
       <h2>LMS Enciso</h2>
       <ul>
-        <li class="active">Estudiantes</li>
+        <li><a href="#">Estudiantes</a></li>
       </ul>
     </aside>
-
     <main class="main-content">
-      <h1>Agregar estudiante</h1>
-      <input id="nameInput" type="text" placeholder="Nombre del estudiante" />
-      <input id="gradeInput" type="text" placeholder="Grado" />
-      <button id="saveBtn">Guardar</button>
+      <h1>Registro de Estudiantes</h1>
+      <form id="studentForm">
+        <input id="nameInput" type="text" placeholder="Nombre" required />
+        <input id="lastnameInput" type="text" placeholder="Apellido" required />
+        <input id="gradeInput" type="text" placeholder="Grado" required />
+        <button type="submit">Guardar</button>
+      </form>
 
-      <div id="students-list">
-        <!-- Estudiantes se mostrarán aquí -->
-      </div>
+      <h2>Importar desde CSV</h2>
+      <input type="file" id="csvInput" accept=".csv" />
+      <button id="importBtn">Importar</button>
+
+      <h2>Lista de Estudiantes</h2>
+      <table id="studentsTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Grado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </main>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  
-  <script src="app.js"></script>
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
