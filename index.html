@@ -2,45 +2,46 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>LMS Enciso</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <aside class="sidebar">
-      <h2>LMS Enciso</h2>
+  <!-- Botón para abrir el menú -->
+  <button id="menu-toggle" class="menu-btn">☰ Menú</button>
+
+  <!-- Sidebar -->
+  <aside>
+    <nav>
       <ul>
-        <li><a href="#">Estudiantes</a></li>
+        <li onclick="mostrarEstudiantes()">Estudiantes</li>
+        <!-- Puedes agregar más opciones aquí -->
       </ul>
-    </aside>
-    <main class="main-content">
-      <h1>Registro de Estudiantes</h1>
+    </nav>
+  </aside>
+
+  <!-- Contenedor principal -->
+  <main id="main-content">
+    <section id="seccion-estudiantes" style="display: none;">
+      <h2>Gestión de Estudiantes</h2>
+
+      <!-- Importar CSV -->
+      <input type="file" id="csvFile" accept=".csv" />
+      <button onclick="importarCSV()">Importar CSV</button>
+
+      <!-- Formulario -->
       <form id="studentForm">
-        <input id="nameInput" type="text" placeholder="Nombre" required />
-        <input id="lastnameInput" type="text" placeholder="Apellido" required />
-        <input id="gradeInput" type="text" placeholder="Grado" required />
+        <input type="text" id="idInput" placeholder="ID (4 números)" maxlength="4" required />
+        <input type="text" id="apellidoInput" placeholder="Apellido" required />
+        <input type="text" id="nombreInput" placeholder="Nombre" required />
+        <input type="text" id="gradoInput" placeholder="Grado" required />
         <button type="submit">Guardar</button>
       </form>
 
-      <h2>Importar desde CSV</h2>
-      <input type="file" id="csvInput" accept=".csv" />
-      <button id="importBtn">Importar</button>
-
-      <h2>Lista de Estudiantes</h2>
-      <table id="studentsTable">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Grado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </main>
-  </div>
+      <!-- Lista de grados -->
+      <div id="gradosContainer"></div>
+    </section>
+  </main>
 
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
