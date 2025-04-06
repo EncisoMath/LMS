@@ -21,21 +21,65 @@ function generarID() {
 async function loadStudents() {
   tableBody.innerHTML = "";
   const snapshot = await getDocs(studentsCollection);
+  const grouped = {};
+
   snapshot.forEach(docSnap => {
     const data = docSnap.data();
-    const tr = document.createElement("tr");
+    const grade = data.grade.trim();
 
-    tr.innerHTML = `
-      <td>${data.id}</td>
-      <td><input type="text" value="${data.name}" class="name-input" /></td>
-      <td><input type="text" value="${data.lastname}" class="lastname-input" /></td>
-      <td><input type="text" value="${data.grade}" class="grade-input" /></td>
-      <td>
-        <button class="save-btn" data-id="${docSnap.id}">💾</button>
-        <button class="delete-btn" data-id="${docSnap.id}">🗑️</button>
+    if (!grouped[grade]) {
+      grouped[grade] = [];
+    }
+
+    grouped[grade].push({
+      id: docSnap.id,
+      ...data
+    });
+  });
+
+  const grades = Object.keys(grouped).sort();
+
+  grades.forEach(grade => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td colspan="5" style="text-align:left; background:#ecf0f1; font-weight:bold; cursor:pointer;">
+        📁 ${grade}
       </td>
     `;
-    tableBody.appendChild(tr);
+    tableBody.appendChild(row);
+
+    grouped[grade]
+      .sort((a, b) => {
+        const lastComp = a.lastname.localeCompare(b.lastname);
+        return lastComp !== 0 ? lastComp : a.name.localeCompare(b.name);
+      })
+      .forEach(data => {
+        const tr = document.createElement("tr");
+        tr.classList.add("student-row");
+        tr.style.display = "none";
+
+        tr.innerHTML = `
+          <td>${data.id}</td>
+          <td><input type="text" value="${data.name}" class="name-input" disabled /></td>
+          <td><input type="text" value="${data.lastname}" class="lastname-input" disabled /></td>
+          <td><input type="text" value="${data.grade}" class="grade-input" disabled /></td>
+          <td>
+            <button class="edit-btn">✏️</button>
+            <button class="save-btn" data-id="${data.idFirebase || data.id}">💾</button>
+            <button class="delete-btn" data-id="${data.idFirebase || data.id}">🗑️</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+        tr.dataset.docid = data.id;
+      });
+
+    row.addEventListener("click", () => {
+      let current = row.nextElementSibling;
+      while (current && current.classList.contains("student-row")) {
+        current.style.display = current.style.display === "none" ? "table-row" : "none";
+        current = current.nextElementSibling;
+      }
+    });
   });
 
   document.querySelectorAll(".delete-btn").forEach(btn => {
@@ -51,14 +95,24 @@ async function loadStudents() {
       const name = row.querySelector(".name-input").value.trim();
       const lastname = row.querySelector(".lastname-input").value.trim();
       const grade = row.querySelector(".grade-input").value.trim();
+      const id = row.dataset.docid;
 
-      await updateDoc(doc(db, "students", btn.dataset.id), {
+      await updateDoc(doc(db, "students", id), {
         name,
         lastname,
         grade
       });
       alert("Estudiante actualizado");
       loadStudents();
+    });
+  });
+
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest("tr");
+      row.querySelector(".name-input").disabled = false;
+      row.querySelector(".lastname-input").disabled = false;
+      row.querySelector(".grade-input").disabled = false;
     });
   });
 }
