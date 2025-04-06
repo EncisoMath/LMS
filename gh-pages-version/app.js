@@ -1,37 +1,47 @@
-const form = document.getElementById('student-form');
-const studentsList = document.getElementById('students-list');
+import { db } from './firebase.js';
+import {
+  collection,
+  addDoc,
+  getDocs
+} from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
 
-function getStudents() {
-  return JSON.parse(localStorage.getItem('students')) || [];
+// Referencias al DOM
+const form = document.getElementById('studentForm');
+const studentList = document.getElementById('studentList');
+
+// Función para agregar estudiante
+async function agregarEstudiante(nombre, grado) {
+  try {
+    await addDoc(collection(db, 'estudiantes'), {
+      nombre,
+      grado
+    });
+    mostrarEstudiantes(); // refrescar lista
+    form.reset();
+  } catch (e) {
+    console.error('Error al agregar estudiante:', e);
+  }
 }
 
-function saveStudents(students) {
-  localStorage.setItem('students', JSON.stringify(students));
-}
-
-function renderStudents() {
-  const students = getStudents();
-  studentsList.innerHTML = '';
-  students.forEach((s, index) => {
-    const div = document.createElement('div');
-    div.className = 'student-card';
-    div.innerHTML = `<strong>${s.name}</strong> - Grado: ${s.grade}`;
-    studentsList.appendChild(div);
+// Función para mostrar estudiantes
+async function mostrarEstudiantes() {
+  studentList.innerHTML = ''; // limpiar lista
+  const querySnapshot = await getDocs(collection(db, 'estudiantes'));
+  querySnapshot.forEach((doc) => {
+    const est = doc.data();
+    const li = document.createElement('li');
+    li.textContent = `${est.nombre} - Grado: ${est.grado}`;
+    studentList.appendChild(li);
   });
 }
 
+// Escuchar envío del formulario
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const grade = document.getElementById('grade').value.trim();
-  if (!name || !grade) return;
-
-  const students = getStudents();
-  students.push({ name, grade });
-  saveStudents(students);
-  form.reset();
-  renderStudents();
+  const nombre = form.nombre.value;
+  const grado = form.grado.value;
+  agregarEstudiante(nombre, grado);
 });
 
-// Cargar estudiantes al iniciar
-renderStudents();
+// Mostrar al cargar
+mostrarEstudiantes();
