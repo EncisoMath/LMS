@@ -2,47 +2,57 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>LMS Enciso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestión de Estudiantes</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <aside class="sidebar">
-      <h2>LMS Enciso</h2>
-      <ul>
-        <li><a href="#">Estudiantes</a></li>
-      </ul>
-    </aside>
-    <main class="main-content">
-      <h1>Registro de Estudiantes</h1>
-      <form id="studentForm">
-        <input id="nameInput" type="text" placeholder="Nombre" required />
-        <input id="lastnameInput" type="text" placeholder="Apellido" required />
-        <input id="gradeInput" type="text" placeholder="Grado" required />
-        <button type="submit">Guardar</button>
-      </form>
+  <main class="main-content">
+    <!-- MODALES -->
+    <div class="modal" id="modalForm">
+      <div class="modal-content">
+        <span class="close" data-close="modalForm">&times;</span>
+        <h2>Registrar Estudiante</h2>
+        <form id="studentForm">
+          <input id="nameInput" type="text" placeholder="Nombre" required />
+          <input id="lastnameInput" type="text" placeholder="Apellido" required />
+          <input id="gradeInput" type="text" placeholder="Grado" required />
+          <button type="submit">Guardar</button>
+        </form>
+      </div>
+    </div>
 
-      <h2>Importar desde CSV</h2>
-      <input type="file" id="csvInput" accept=".csv" />
-      <button id="importBtn">Importar</button>
+    <div class="modal" id="modalCSV">
+      <div class="modal-content">
+        <span class="close" data-close="modalCSV">&times;</span>
+        <h2>Importar desde CSV</h2>
+        <input type="file" id="csvInput" accept=".csv" />
+        <button id="importBtn">Importar</button>
+      </div>
+    </div>
 
-      <h2>Lista de Estudiantes</h2>
-      <table id="studentsTable">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Grado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </main>
-  </div>
+    <!-- Botones flotantes -->
+    <div class="floating-buttons">
+      <button id="openFormBtn">➕ Registro de Estudiantes</button>
+      <button id="openCSVBtn">📁 Importar desde CSV</button>
+    </div>
 
-  <script type="module" src="firebase.js"></script>
+    <!-- Tabla de estudiantes -->
+    <h2>Lista de Estudiantes</h2>
+    <table id="studentsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Grado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>

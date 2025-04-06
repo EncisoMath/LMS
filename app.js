@@ -21,42 +21,30 @@ function generarID() {
 async function loadStudents() {
   tableBody.innerHTML = "";
   const snapshot = await getDocs(studentsCollection);
-  const grouped = {};
+  const students = [];
 
   snapshot.forEach(docSnap => {
-    const data = docSnap.data();
-    const grade = data.grade.trim();
-
-    if (!grouped[grade]) {
-      grouped[grade] = [];
-    }
-
-    grouped[grade].push({
-      id: docSnap.id,
-      ...data
-    });
+    students.push({ id: docSnap.id, ...docSnap.data() });
   });
 
-  const grades = Object.keys(grouped).sort();
+  // Agrupar por grado y ordenar
+  const grouped = {};
+  students.forEach(s => {
+    if (!grouped[s.grade]) grouped[s.grade] = [];
+    grouped[s.grade].push(s);
+  });
 
-  grades.forEach(grade => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td colspan="5" style="text-align:left; background:#ecf0f1; font-weight:bold; cursor:pointer;">
-        📁 ${grade}
-      </td>
-    `;
-    tableBody.appendChild(row);
+  for (const grade in grouped) {
+    const gradeRow = document.createElement("tr");
+    gradeRow.innerHTML = `<td colspan="5" style="background:#ddd; font-weight:bold; cursor:pointer;">${grade}</td>`;
+    gradeRow.classList.add("grade-header");
+    tableBody.appendChild(gradeRow);
 
     grouped[grade]
-      .sort((a, b) => {
-        const lastComp = a.lastname.localeCompare(b.lastname);
-        return lastComp !== 0 ? lastComp : a.name.localeCompare(b.name);
-      })
+      .sort((a, b) => a.lastname.localeCompare(b.lastname) || a.name.localeCompare(b.name))
       .forEach(data => {
         const tr = document.createElement("tr");
         tr.classList.add("student-row");
-        tr.style.display = "none";
 
         tr.innerHTML = `
           <td>${data.id}</td>
@@ -64,20 +52,21 @@ async function loadStudents() {
           <td><input type="text" value="${data.lastname}" class="lastname-input" disabled /></td>
           <td><input type="text" value="${data.grade}" class="grade-input" disabled /></td>
           <td>
-            <button class="edit-btn">✏️</button>
-            <button class="save-btn" data-id="${data.idFirebase || data.id}">💾</button>
-            <button class="delete-btn" data-id="${data.idFirebase || data.id}">🗑️</button>
+            <button class="edit-btn" data-id="${data.id}">✏️</button>
+            <button class="save-btn" data-id="${data.id}" style="display:none;">💾</button>
+            <button class="delete-btn" data-id="${data.id}">🗑️</button>
           </td>
         `;
         tableBody.appendChild(tr);
-        tr.dataset.docid = data.id;
       });
+  }
 
-    row.addEventListener("click", () => {
-      let current = row.nextElementSibling;
-      while (current && current.classList.contains("student-row")) {
-        current.style.display = current.style.display === "none" ? "table-row" : "none";
-        current = current.nextElementSibling;
+  document.querySelectorAll(".grade-header").forEach(header => {
+    header.addEventListener("click", () => {
+      let next = header.nextElementSibling;
+      while (next && next.classList.contains("student-row")) {
+        next.style.display = next.style.display === "none" ? "table-row" : "none";
+        next = next.nextElementSibling;
       }
     });
   });
@@ -89,30 +78,30 @@ async function loadStudents() {
     });
   });
 
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest("tr");
+      row.querySelectorAll("input").forEach(input => input.disabled = false);
+      row.querySelector(".save-btn").style.display = "inline-block";
+      btn.style.display = "none";
+    });
+  });
+
   document.querySelectorAll(".save-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const row = btn.closest("tr");
       const name = row.querySelector(".name-input").value.trim();
       const lastname = row.querySelector(".lastname-input").value.trim();
       const grade = row.querySelector(".grade-input").value.trim();
-      const id = row.dataset.docid;
 
-      await updateDoc(doc(db, "students", id), {
+      await updateDoc(doc(db, "students", btn.dataset.id), {
         name,
         lastname,
         grade
       });
+
       alert("Estudiante actualizado");
       loadStudents();
-    });
-  });
-
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const row = btn.closest("tr");
-      row.querySelector(".name-input").disabled = false;
-      row.querySelector(".lastname-input").disabled = false;
-      row.querySelector(".grade-input").disabled = false;
     });
   });
 }
@@ -137,6 +126,7 @@ form.addEventListener("submit", async e => {
   });
 
   form.reset();
+  document.getElementById("modalForm").style.display = "none";
   loadStudents();
 });
 
@@ -163,9 +153,35 @@ importBtn.addEventListener("click", () => {
       }
     }
     alert("Importación completada.");
+    document.getElementById("modalCSV").style.display = "none";
     loadStudents();
   };
   reader.readAsText(file);
+});
+
+// MODALES
+const modalForm = document.getElementById("modalForm");
+const modalCSV = document.getElementById("modalCSV");
+
+document.getElementById("openFormBtn").addEventListener("click", () => {
+  modalForm.style.display = "block";
+});
+
+document.getElementById("openCSVBtn").addEventListener("click", () => {
+  modalCSV.style.display = "block";
+});
+
+document.querySelectorAll(".close").forEach(span => {
+  span.addEventListener("click", () => {
+    const id = span.getAttribute("data-close");
+    document.getElementById(id).style.display = "none";
+  });
+});
+
+window.addEventListener("click", e => {
+  if (e.target.classList.contains("modal")) {
+    e.target.style.display = "none";
+  }
 });
 
 loadStudents();
