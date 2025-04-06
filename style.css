@@ -1,35 +1,78 @@
 body {
-    font-family: sans-serif;
-    margin: 20px;
-    background: #f5f5f5;
-    color: #333;
-  }
-  h1 {
-    color: #2c3e50;
-  }
-  form input {
-    margin: 5px;
-    padding: 5px;
-  }
-  button {
-    padding: 6px 12px;
-    background: #2ecc71;
-    border: none;
-    color: white;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  button:hover {
-    background: #27ae60;
-  }
-  #students-list {
-    margin-top: 20px;
-  }
-  .student-card {
-    background: white;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin: 6px 0;
-    border-radius: 5px;
-  }
-  
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background: #f0f2f5;
+  color: #333;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #2c3e50;
+  color: white;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.sidebar li:hover,
+.sidebar li.active {
+  background-color: #34495e;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  background: #ecf0f1;
+}
+
+input {
+  margin: 5px;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 200px;
+}
+
+button {
+  padding: 10px 15px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #219150;
+}
+
+#students-list {
+  margin-top: 20px;
+}
+
+.student-card {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 5px;
+}
