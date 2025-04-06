@@ -3,45 +3,48 @@ import {
   collection,
   addDoc,
   getDocs
-} from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js';
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// Referencias al DOM
-const form = document.getElementById('studentForm');
-const studentList = document.getElementById('studentList');
+const form = document.getElementById('student-form');
+const studentsList = document.getElementById('students-list');
 
-// Función para agregar estudiante
-async function agregarEstudiante(nombre, grado) {
-  try {
-    await addDoc(collection(db, 'estudiantes'), {
-      nombre,
-      grado
-    });
-    mostrarEstudiantes(); // refrescar lista
-    form.reset();
-  } catch (e) {
-    console.error('Error al agregar estudiante:', e);
-  }
+async function getStudents() {
+  const querySnapshot = await getDocs(collection(db, "estudiantes"));
+  const students = [];
+  querySnapshot.forEach((doc) => {
+    students.push(doc.data());
+  });
+  return students;
 }
 
-// Función para mostrar estudiantes
-async function mostrarEstudiantes() {
-  studentList.innerHTML = ''; // limpiar lista
-  const querySnapshot = await getDocs(collection(db, 'estudiantes'));
-  querySnapshot.forEach((doc) => {
-    const est = doc.data();
-    const li = document.createElement('li');
-    li.textContent = `${est.nombre} - Grado: ${est.grado}`;
-    studentList.appendChild(li);
+async function renderStudents() {
+  const students = await getStudents();
+  studentsList.innerHTML = '';
+  students.forEach((s) => {
+    const div = document.createElement('div');
+    div.className = 'student-card';
+    div.innerHTML = `<strong>${s.name}</strong> - Grado: ${s.grade}`;
+    studentsList.appendChild(div);
   });
 }
 
-// Escuchar envío del formulario
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const nombre = form.nombre.value;
-  const grado = form.grado.value;
-  agregarEstudiante(nombre, grado);
+  const name = document.getElementById('name').value.trim();
+  const grade = document.getElementById('grade').value.trim();
+  if (!name || !grade) return;
+
+  try {
+    await addDoc(collection(db, "estudiantes"), {
+      name,
+      grade
+    });
+    form.reset();
+    renderStudents();
+  } catch (error) {
+    console.error("Error al guardar estudiante:", error);
+  }
 });
 
-// Mostrar al cargar
-mostrarEstudiantes();
+// Cargar estudiantes al iniciar
+renderStudents();
