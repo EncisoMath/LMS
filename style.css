@@ -1,23 +1,22 @@
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-}
-
-.container {
+  font-family: 'Segoe UI', sans-serif;
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
+  width: 220px;
   background-color: #2c3e50;
   color: white;
-  padding: 20px;
-  width: 200px;
+  padding: 1rem;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
 .sidebar h2 {
-  margin-top: 0;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .sidebar ul {
@@ -25,44 +24,149 @@ body {
   padding: 0;
 }
 
-.sidebar ul li {
-  margin: 15px 0;
+.sidebar li {
+  margin: 1rem 0;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-.sidebar ul li a {
-  color: white;
-  text-decoration: none;
+.sidebar li:hover {
+  color: #1abc9c;
 }
 
-.main-content {
-  flex: 1;
-  padding: 30px;
+.main {
+  flex-grow: 1;
+  padding: 1.5rem;
   overflow-y: auto;
+  background-color: #f4f6f8;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
 }
 
 form {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-input, button {
-  padding: 10px;
-  font-size: 1em;
+form input,
+form button {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+form button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: #2980b9;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: center;
+th,
+td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
-button {
+tr:last-child td {
+  border-bottom: none;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.5rem;
+}
+
+button.save-btn,
+button.delete-btn {
+  padding: 0.4rem 0.6rem;
+  margin-right: 0.3rem;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
+}
+
+button.save-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+button.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.import-section {
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    box-shadow: none;
+    padding: 0.5rem;
+  }
+
+  .sidebar h2 {
+    display: none;
+  }
+
+  .sidebar ul {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+    margin: 0;
+  }
+
+  .sidebar li {
+    margin: 0;
+  }
+
+  .main {
+    padding: 1rem;
+  }
+
+  form {
+    flex-direction: column;
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: 0.5rem;
+  }
 }
