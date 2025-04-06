@@ -1,4 +1,3 @@
-// app.js
 import { db } from "./firebase.js";
 import {
   collection,
@@ -6,7 +5,7 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// Agregar estudiante
+// Guardar estudiante
 document.getElementById("saveBtn").addEventListener("click", async () => {
   const name = document.getElementById("nameInput").value.trim();
   const grade = document.getElementById("gradeInput").value.trim();
@@ -17,33 +16,33 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   }
 
   try {
-    await addDoc(collection(db, "students"), {
-      name,
-      grade
-    });
+    await addDoc(collection(db, "students"), { name, grade });
     alert("Estudiante guardado exitosamente.");
     document.getElementById("nameInput").value = "";
     document.getElementById("gradeInput").value = "";
-    loadStudents(); // recargar la lista después de guardar
+    loadStudents(); // recarga la lista
   } catch (e) {
     console.error("Error al guardar:", e);
     alert("Hubo un error al guardar.");
   }
 });
 
-// Mostrar lista de estudiantes
+// Cargar estudiantes existentes
 async function loadStudents() {
-  const studentsCol = collection(db, "students");
-  const studentSnapshot = await getDocs(studentsCol);
-  const listContainer = document.getElementById("studentList");
-  listContainer.innerHTML = ""; // limpiar lista
+  const list = document.getElementById("studentList");
+  list.innerHTML = "";
 
-  studentSnapshot.forEach((doc) => {
-    const student = doc.data();
-    const item = document.createElement("li");
-    item.textContent = `${student.name} - Grado: ${student.grade}`;
-    listContainer.appendChild(item);
-  });
+  try {
+    const querySnapshot = await getDocs(collection(db, "students"));
+    querySnapshot.forEach((doc) => {
+      const student = doc.data();
+      const li = document.createElement("li");
+      li.textContent = `${student.name} - Grado: ${student.grade}`;
+      list.appendChild(li);
+    });
+  } catch (e) {
+    console.error("Error al cargar estudiantes:", e);
+  }
 }
 
-loadStudents(); // cargar estudiantes al iniciar
+loadStudents();
