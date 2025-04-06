@@ -63,7 +63,11 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+button:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .save-btn {
@@ -98,14 +102,16 @@ button {
 .fab button {
   background-color: #2563eb;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   padding: 1rem;
   border-radius: 50%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .fab button:hover {
   background-color: #1d4ed8;
+  transform: scale(1.1);
 }
 
 /* Modales */
@@ -118,40 +124,18 @@ button {
   align-items: center;
   justify-content: center;
   z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal.show {
+  display: flex;
+  opacity: 1;
 }
 
 .modal-content {
   background-color: white;
   padding: 2rem;
   border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-}
-
-.modal-content h2 {
-  margin-top: 0;
-}
-
-.modal-content input {
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
-.modal-content button {
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-.modal.show {
-  display: flex;
-}
-
-.modal .close {
-  background-color: #ef4444;
-  color: white;
-  margin-top: 0.5rem;
-}
-
-.modal .close:hover {
-  background-color: #dc2626;
-}
+ 
+::contentReference[oaicite:6]{index=6}
