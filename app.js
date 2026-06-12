@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.2.0';
+  const APP_VERSION = '0.3.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -53,7 +53,7 @@
         if (user) {
           state.user = user;
           mount(renderLoadingHTML(randomPhrase()));
-          window.setTimeout(() => renderTeacherHome(), 700);
+          window.setTimeout(() => renderTeacherHome(), 900);
           return;
         }
       }
@@ -80,7 +80,7 @@
       $app.classList.remove('is-leaving');
       $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
-      window.setTimeout(() => $app.classList.remove('is-entering'), 340);
+      window.setTimeout(() => $app.classList.remove('is-entering'), 620);
       firstPaint = false;
     };
 
@@ -91,7 +91,7 @@
     }
 
     $app.classList.add('is-leaving');
-    transitionTimer = window.setTimeout(paint, 165);
+    transitionTimer = window.setTimeout(paint, 285);
   }
 
   function renderLogin() {
@@ -147,7 +147,7 @@
         window.setTimeout(() => {
           if (user.role === 'teacher') renderTeacherHome();
           else renderStudentPlaceholder();
-        }, 850);
+        }, 950);
       });
     });
   }
@@ -340,6 +340,7 @@
     const students = getStudentsForAssignment(assignment);
     const attendance = getAttendance(assignment.id, state.attendanceDate);
     const $content = document.getElementById('tabContent');
+    $content.classList.remove('tab-enter');
     $content.innerHTML = `
       <div class="date-card">
         <div><strong>Asistencia diaria</strong><br><span class="card-sub">${readableDate(state.attendanceDate)}</span></div>
@@ -353,6 +354,9 @@
         ${students.map((student) => studentCardHTML(student, attendance[student.id])).join('') || `<div class="empty">Aún no hay estudiantes en este curso.</div>`}
       </div>
     `;
+
+    void $content.offsetWidth;
+    $content.classList.add('tab-enter');
 
     document.getElementById('attendanceDate').addEventListener('change', (event) => {
       state.attendanceDate = event.target.value || todayISO();
@@ -398,6 +402,7 @@
     const periods = [1, 2, 3, 4];
     const filtered = classes.filter((item) => Number(item.period) === Number(state.period));
     const $content = document.getElementById('tabContent');
+    $content.classList.remove('tab-enter');
     $content.innerHTML = `
       <div class="period-tabs">
         ${periods.map((period) => `<button class="period-btn ${Number(state.period) === period ? 'active' : ''}" data-period="${period}">${period}°</button>`).join('')}
@@ -413,6 +418,9 @@
         ${filtered.map(classCardHTML).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`}
       </div>
     `;
+
+    void $content.offsetWidth;
+    $content.classList.add('tab-enter');
 
     document.querySelectorAll('[data-period]').forEach((button) => {
       button.addEventListener('click', () => {
@@ -500,9 +508,9 @@
           </div>
         </div>
         <div class="attendance-buttons">
+          ${attendanceButtonHTML(student.id, 'present', status)}
           ${attendanceButtonHTML(student.id, 'absent', status)}
           ${attendanceButtonHTML(student.id, 'excused', status)}
-          ${attendanceButtonHTML(student.id, 'present', status)}
         </div>
       </article>
     `;
@@ -510,7 +518,7 @@
 
   function attendanceButtonHTML(studentId, status, current) {
     const info = statusMap[status];
-    return `<button class="att-btn ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}">${info.emoji}</button>`;
+    return `<button class="att-btn ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
   }
 
   function classCardHTML(item) {
@@ -551,18 +559,22 @@
   function animatedShapes() {
     return `
       <div class="math-bg" aria-hidden="true">
-        <span class="shape circle" style="--w:76px;--h:76px;left:7%;top:8%;--c:#0a84ff;--dx:36px;--dy:-44px;--r1:40deg;--dur:8s;--delay:-1s"></span>
-        <span class="shape triangle" style="--w:70px;--h:64px;left:73%;top:10%;--c:#facc15;--dx:-28px;--dy:42px;--r1:-38deg;--dur:9s;--delay:-2s"></span>
-        <span class="shape square outline" style="--w:56px;--h:56px;left:83%;top:68%;--c:#fb7185;--dx:-34px;--dy:-28px;--r1:75deg;--dur:7.5s;--delay:-3s"></span>
-        <span class="shape rect" style="--w:112px;--h:46px;left:8%;top:78%;--c:#22c55e;--dx:34px;--dy:-36px;--r1:28deg;--dur:10s;--delay:-4s"></span>
-        <span class="shape circle outline" style="--w:42px;--h:42px;left:48%;top:18%;--c:#8b5cf6;--dx:24px;--dy:54px;--dur:8.5s;--delay:-5s"></span>
-        <span class="shape triangle" style="--w:44px;--h:42px;left:18%;top:55%;--c:#38bdf8;--dx:48px;--dy:-22px;--r1:90deg;--dur:9.5s;--delay:-6s"></span>
-        <span class="shape square" style="--w:30px;--h:30px;left:58%;top:78%;--c:#f472b6;--dx:-44px;--dy:22px;--r1:160deg;--dur:7s;--delay:-2.5s"></span>
-        <span class="shape rect outline" style="--w:88px;--h:36px;left:61%;top:34%;--c:#22d3ee;--dx:32px;--dy:-34px;--r1:-45deg;--dur:11s;--delay:-7s"></span>
-        <span class="shape circle" style="--w:22px;--h:22px;left:30%;top:28%;--c:#fb923c;--dx:52px;--dy:18px;--dur:6.5s;--delay:-1.8s"></span>
-        <span class="shape square" style="--w:24px;--h:24px;left:89%;top:42%;--c:#ef4444;--dx:-42px;--dy:38px;--r1:100deg;--dur:8.2s;--delay:-3.7s"></span>
-        <span class="shape circle outline" style="--w:34px;--h:34px;left:4%;top:39%;--c:#06b6d4;--dx:38px;--dy:40px;--dur:9.3s;--delay:-4.4s"></span>
-        <span class="shape triangle outline" style="--w:58px;--h:58px;left:39%;top:62%;--c:#a855f7;--dx:-28px;--dy:-48px;--r1:-95deg;--dur:12s;--delay:-5.1s"></span>
+        <span class="shape circle" style="--w:84px;--h:84px;left:6%;top:8%;--c:#0a84ff;--o:.78;--dx:96px;--dy:180px;--r1:140deg;--dur:7.2s;--delay:-1s"></span>
+        <span class="shape triangle" style="--w:76px;--h:70px;left:76%;top:7%;--c:#ffd60a;--o:.82;--dx:-120px;--dy:190px;--r1:-160deg;--dur:8.4s;--delay:-2.4s"></span>
+        <span class="shape square outline" style="--w:60px;--h:60px;left:82%;top:68%;--c:#ff4d9d;--o:.8;--dx:-132px;--dy:-220px;--r1:220deg;--dur:7.8s;--delay:-3s"></span>
+        <span class="shape rect" style="--w:126px;--h:44px;left:7%;top:80%;--c:#34c759;--o:.68;--dx:120px;--dy:-260px;--r1:86deg;--dur:9.5s;--delay:-4.3s"></span>
+        <span class="shape circle outline" style="--w:48px;--h:48px;left:47%;top:18%;--c:#8b5cf6;--o:.78;--dx:80px;--dy:250px;--r1:180deg;--dur:7.3s;--delay:-5s"></span>
+        <span class="shape triangle" style="--w:50px;--h:48px;left:18%;top:55%;--c:#33c7ff;--o:.85;--dx:155px;--dy:-140px;--r1:260deg;--dur:8.6s;--delay:-6s"></span>
+        <span class="shape square" style="--w:32px;--h:32px;left:58%;top:78%;--c:#ff4d9d;--o:.82;--dx:-145px;--dy:-165px;--r1:260deg;--dur:6.8s;--delay:-2.5s"></span>
+        <span class="shape rect outline" style="--w:96px;--h:36px;left:61%;top:35%;--c:#22d3ee;--o:.75;--dx:105px;--dy:-155px;--r1:-135deg;--dur:10.4s;--delay:-7s"></span>
+        <span class="shape circle" style="--w:24px;--h:24px;left:30%;top:28%;--c:#ff9f1c;--o:.9;--dx:170px;--dy:95px;--r1:90deg;--dur:6.2s;--delay:-1.8s"></span>
+        <span class="shape square" style="--w:26px;--h:26px;left:89%;top:42%;--c:#ff3b30;--o:.85;--dx:-150px;--dy:155px;--r1:190deg;--dur:7.6s;--delay:-3.7s"></span>
+        <span class="shape circle outline" style="--w:36px;--h:36px;left:4%;top:39%;--c:#06b6d4;--o:.8;--dx:126px;--dy:130px;--r1:120deg;--dur:8.7s;--delay:-4.4s"></span>
+        <span class="shape triangle outline" style="--w:62px;--h:62px;left:39%;top:62%;--c:#a855f7;--o:.76;--dx:-118px;--dy:-178px;--r1:-210deg;--dur:10.8s;--delay:-5.1s"></span>
+        <span class="shape rect" style="--w:82px;--h:28px;left:37%;top:8%;--c:#00f5d4;--o:.72;--dx:140px;--dy:250px;--r1:160deg;--dur:9.2s;--delay:-2.2s"></span>
+        <span class="shape square outline" style="--w:44px;--h:44px;left:16%;top:20%;--c:#ffbe0b;--o:.7;--dx:200px;--dy:215px;--r1:300deg;--dur:8.1s;--delay:-6.4s"></span>
+        <span class="shape circle" style="--w:58px;--h:58px;left:70%;top:78%;--c:#7c3aed;--o:.62;--dx:-175px;--dy:-230px;--r1:-120deg;--dur:10.2s;--delay:-8s"></span>
+        <span class="shape triangle" style="--w:38px;--h:36px;left:51%;top:47%;--c:#fb7185;--o:.82;--dx:-100px;--dy:170px;--r1:210deg;--dur:7s;--delay:-4.8s"></span>
       </div>
     `;
   }

@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-no-cache-v0.2.0';
+const SW_VERSION = 'encisomath-no-cache-v0.3.0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -17,11 +17,21 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     try {
-      const request = new Request(event.request, { cache: 'no-store' });
-      return await fetch(request);
+      const request = new Request(event.request, { cache: 'reload' });
+      const response = await fetch(request);
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          ...Object.fromEntries(response.headers.entries()),
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
     } catch (error) {
       if (event.request.mode === 'navigate') {
-        return new Response(`<!doctype html><meta charset="utf-8"><title>Sin conexión</title><body style="font-family:system-ui;padding:24px"><h1>EncisoMath</h1><p>No hay conexión. Esta PWA está configurada para no cachear, así los cambios publicados se reflejan sin reinstalar.</p></body>`, {
+        return new Response(`<!doctype html><meta charset="utf-8"><title>Sin conexión</title><body style="font-family:system-ui;padding:24px;background:#02050a;color:#fff"><h1>EncisoMath</h1><p>No hay conexión. Esta PWA está configurada para no cachear, así los cambios publicados se reflejan sin reinstalar.</p></body>`, {
           headers: { 'Content-Type': 'text/html; charset=utf-8' }
         });
       }
