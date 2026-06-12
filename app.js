@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.1.0';
+  const APP_VERSION = '0.2.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -22,6 +22,9 @@
     filters: { grade: 'all', area: 'all', course: 'all' }
   };
 
+  let firstPaint = true;
+  let transitionTimer = null;
+
   const phrases = [
     'Cargando... acomodando los signos para que no se peleen.',
     'Factorizando la paciencia del profe.',
@@ -41,7 +44,7 @@
 
   async function boot() {
     registerServiceWorker();
-    renderLoading('Preparando EncisoMath...');
+    mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
       state.data = await loadAllData();
       const session = readJSON('encisomath:session');
@@ -49,7 +52,7 @@
         const user = findUser(session.userId);
         if (user) {
           state.user = user;
-          renderLoading(randomPhrase());
+          mount(renderLoadingHTML(randomPhrase()));
           window.setTimeout(() => renderTeacherHome(), 700);
           return;
         }
@@ -57,7 +60,7 @@
       renderLogin();
     } catch (error) {
       console.error(error);
-      $app.innerHTML = `<main class="screen mobile-pad"><h1>No se pudo cargar EncisoMath</h1><p class="card-sub">Revisa que los archivos JSON existan en la carpeta <strong>data</strong>.</p><button class="primary-btn" onclick="location.reload()">Reintentar</button></main>`;
+      mount(`<main class="screen mobile-pad"><h1>No se pudo cargar EncisoMath</h1><p class="card-sub">Revisa que los archivos JSON existan en la carpeta <strong>data</strong>.</p><button class="primary-btn" onclick="location.reload()">Reintentar</button></main>`);
     }
   }
 
@@ -71,9 +74,29 @@
     return Object.fromEntries(entries);
   }
 
+  function mount(markup, afterRender = null, options = {}) {
+    const paint = () => {
+      $app.innerHTML = markup;
+      $app.classList.remove('is-leaving');
+      $app.classList.add('is-entering');
+      if (typeof afterRender === 'function') afterRender();
+      window.setTimeout(() => $app.classList.remove('is-entering'), 340);
+      firstPaint = false;
+    };
+
+    window.clearTimeout(transitionTimer);
+    if (firstPaint || options.instant) {
+      paint();
+      return;
+    }
+
+    $app.classList.add('is-leaving');
+    transitionTimer = window.setTimeout(paint, 165);
+  }
+
   function renderLogin() {
     const last = readJSON('encisomath:lastUser');
-    $app.innerHTML = `
+    const markup = `
       <main class="login-screen">
         ${animatedShapes()}
         <section class="login-card">
@@ -96,39 +119,41 @@
               <span>Último usuario:</span>
               <button type="button" class="mini-btn" id="lastUserBtn">${last ? `${escapeHTML(last.name)} · ${escapeHTML(last.id)}` : 'Sin registro'}</button>
             </div>
-            <p class="login-hint">Demo inicial: docente <strong>0720</strong>. Luego se cambian los usuarios en <strong>data/users.json</strong>.</p>
+            <p class="login-hint">Demo inicial: docente <strong>0720</strong>. Luego se cambian usuarios en <strong>data/users.json</strong>.</p>
           </form>
         </section>
       </main>
     `;
 
-    document.getElementById('lastUserBtn').addEventListener('click', () => {
-      if (last?.id) document.getElementById('userId').value = last.id;
-    });
+    mount(markup, () => {
+      document.getElementById('lastUserBtn').addEventListener('click', () => {
+        if (last?.id) document.getElementById('userId').value = last.id;
+      });
 
-    document.getElementById('loginForm').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const id = normalizeID(document.getElementById('userId').value);
-      const remember = document.getElementById('remember').checked;
-      const user = findUser(id);
-      if (!user) {
-        toast('Usuario no encontrado. Prueba con 0720 o edita data/users.json.');
-        return;
-      }
-      localStorage.setItem('encisomath:lastUser', JSON.stringify({ id: user.id, name: user.fullName }));
-      if (remember) localStorage.setItem('encisomath:session', JSON.stringify({ userId: user.id, remember: true, at: Date.now() }));
-      else localStorage.removeItem('encisomath:session');
-      state.user = user;
-      renderLoading(randomPhrase());
-      window.setTimeout(() => {
-        if (user.role === 'teacher') renderTeacherHome();
-        else renderStudentPlaceholder();
-      }, 850);
+      document.getElementById('loginForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const id = normalizeID(document.getElementById('userId').value);
+        const remember = document.getElementById('remember').checked;
+        const user = findUser(id);
+        if (!user) {
+          toast('Usuario no encontrado. Prueba con 0720 o edita data/users.json.');
+          return;
+        }
+        localStorage.setItem('encisomath:lastUser', JSON.stringify({ id: user.id, name: user.fullName }));
+        if (remember) localStorage.setItem('encisomath:session', JSON.stringify({ userId: user.id, remember: true, at: Date.now() }));
+        else localStorage.removeItem('encisomath:session');
+        state.user = user;
+        mount(renderLoadingHTML(randomPhrase()));
+        window.setTimeout(() => {
+          if (user.role === 'teacher') renderTeacherHome();
+          else renderStudentPlaceholder();
+        }, 850);
+      });
     });
   }
 
-  function renderLoading(text = randomPhrase()) {
-    $app.innerHTML = `
+  function renderLoadingHTML(text = randomPhrase()) {
+    return `
       <main class="loading-screen">
         ${animatedShapes()}
         <section class="loader-card">
@@ -154,13 +179,14 @@
     const areas = unique(assignments.map((item) => item.area)).sort();
     const courses = unique(assignments.map((item) => item.course)).sort();
 
-    $app.innerHTML = `
+    const markup = `
       <main class="screen">
         <div class="cover"></div>
         <section class="profile-row">
           <img class="avatar" src="${escapeAttr(teacher.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
           <div class="welcome">
-            <h2>Bienvenido, ${escapeHTML(teacher.fullName)}</h2>
+            <div class="welcome-kicker">Bienvenido</div>
+            <h2>${escapeHTML(teacher.fullName)}</h2>
             <p>${assignments.length} cargas asignadas · Docente</p>
           </div>
         </section>
@@ -184,18 +210,30 @@
       </main>
     `;
 
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
-    document.getElementById('manageProfileBtn').addEventListener('click', () => toast('Perfil local listo. En una siguiente fase se conectan edición y respaldo.'));
-    bindFilter('gradeFilter', 'grade', renderTeacherHome);
-    bindFilter('areaFilter', 'area', renderTeacherHome);
-    bindFilter('courseFilter', 'course', renderTeacherHome);
-    document.querySelectorAll('[data-assignment-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const assignment = assignments.find((item) => item.id === button.dataset.assignmentId);
-        if (!assignment) return;
-        state.assignment = assignment;
-        renderSubjectDetail('students');
+    mount(markup, () => {
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
+      document.getElementById('manageProfileBtn').addEventListener('click', () => toast('Perfil local listo. En una siguiente fase conectamos edición completa.'));
+      bindFilter('gradeFilter', 'grade', renderTeacherHome);
+      bindFilter('areaFilter', 'area', renderTeacherHome);
+      bindFilter('courseFilter', 'course', renderTeacherHome);
+
+      document.querySelectorAll('[data-open-assignment]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const assignment = assignments.find((item) => item.id === button.dataset.openAssignment);
+          if (!assignment) return;
+          state.assignment = assignment;
+          renderSubjectDetail('students');
+        });
+      });
+
+      document.querySelectorAll('[data-manage-assignment]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const assignment = assignments.find((item) => item.id === button.dataset.manageAssignment);
+          if (!assignment) return;
+          state.assignment = assignment;
+          renderSubjectManager('home');
+        });
       });
     });
   }
@@ -203,10 +241,10 @@
   function renderSubjectDetail(tab = 'students') {
     const assignment = state.assignment;
     if (!assignment) return renderTeacherHome();
-    const coverOverride = localStorage.getItem(`encisomath:cover:${assignment.id}`);
-    const coverStyle = coverOverride ? `style="background-image: linear-gradient(rgba(6,47,79,.18), rgba(6,47,79,.28)), url('${coverOverride}'); background-size: cover; background-position: center;"` : '';
+    const coverStyle = coverBackgroundStyle(assignment);
+    const iconSrc = getAssignmentIcon(assignment);
 
-    $app.innerHTML = `
+    const markup = `
       <main class="screen">
         <header class="topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
@@ -217,14 +255,13 @@
         <div class="cover" ${coverStyle}></div>
         <section class="subject-hero">
           <article class="subject-panel">
-            <img class="subject-icon" src="${escapeAttr(assignment.icon || './assets/subject-statistics.svg')}" alt="Icono de asignatura" />
+            <img class="subject-icon" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />
             <div>
               <div class="subject-line1">${escapeHTML(assignment.subject)}</div>
               <div class="subject-line2">Grado ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)} · ${escapeHTML(assignment.sede)} · ${getStudentsForAssignment(assignment).length} estudiantes · ${escapeHTML(assignment.area)}</div>
-              <label class="mini-btn" style="display:inline-flex;margin-top:10px;align-items:center;gap:6px;">
-                🎨 Personalizar portada
-                <input id="coverInput" type="file" accept="image/*" hidden />
-              </label>
+              <div class="subject-actions">
+                <button class="mini-btn" id="visualManagerBtn">🎨 Gestor visual</button>
+              </div>
             </div>
           </article>
         </section>
@@ -236,14 +273,66 @@
       </main>
     `;
 
-    document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
-    document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
-    document.getElementById('studentsTab').addEventListener('click', () => renderSubjectDetail('students'));
-    document.getElementById('classesTab').addEventListener('click', () => renderSubjectDetail('classes'));
-    document.getElementById('coverInput').addEventListener('change', saveCoverOverride);
+    mount(markup, () => {
+      document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
+      document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
+      document.getElementById('studentsTab').addEventListener('click', () => renderSubjectDetail('students'));
+      document.getElementById('classesTab').addEventListener('click', () => renderSubjectDetail('classes'));
+      document.getElementById('visualManagerBtn').addEventListener('click', () => renderSubjectManager('subject'));
+      if (tab === 'students') renderStudentsTab();
+      else renderClassesTab();
+    });
+  }
 
-    if (tab === 'students') renderStudentsTab();
-    else renderClassesTab();
+  function renderSubjectManager(backTarget = 'subject') {
+    const assignment = state.assignment;
+    if (!assignment) return renderTeacherHome();
+    const iconSrc = getAssignmentIcon(assignment);
+    const coverStyle = coverBackgroundStyle(assignment);
+    const back = backTarget === 'home' ? renderTeacherHome : () => renderSubjectDetail('students');
+
+    const markup = `
+      <main class="screen">
+        <header class="topbar">
+          <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
+          <h1>Gestor visual</h1>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
+        </header>
+        <section class="section">
+          <h1 class="section-title">${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</h1>
+          <div class="manager-grid">
+            <article class="manager-card">
+              <h2>Portada de la asignatura</h2>
+              <p>Esta imagen aparece arriba en la vista de la asignatura y como franja en la cuadrícula.</p>
+              <div class="manager-preview-cover" ${coverStyle}></div>
+              <div class="manager-actions" style="margin-top:12px">
+                <label class="primary-btn">Cambiar portada<input id="coverInput" type="file" accept="image/*" hidden /></label>
+                <button class="danger-btn" id="resetCoverBtn">Restablecer</button>
+              </div>
+            </article>
+            <article class="manager-card">
+              <h2>Icono de la asignatura</h2>
+              <p>Úsalo para diferenciar rápido cada carga académica.</p>
+              <img class="manager-preview-icon" src="${escapeAttr(iconSrc)}" alt="Icono actual" />
+              <div class="manager-actions">
+                <label class="primary-btn">Cambiar icono<input id="iconInput" type="file" accept="image/*,.svg" hidden /></label>
+                <button class="danger-btn" id="resetIconBtn">Restablecer</button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    `;
+
+    mount(markup, () => {
+      document.getElementById('backBtn').addEventListener('click', back);
+      document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
+      document.getElementById('coverInput').addEventListener('change', (event) => saveImageOverride(event, 'cover', backTarget));
+      document.getElementById('iconInput').addEventListener('change', (event) => saveImageOverride(event, 'icon', backTarget));
+      document.getElementById('resetCoverBtn').addEventListener('click', () => resetAssignmentVisual('cover', backTarget));
+      document.getElementById('resetIconBtn').addEventListener('click', () => resetAssignmentVisual('icon', backTarget));
+    });
   }
 
   function renderStudentsTab() {
@@ -344,7 +433,7 @@
   function renderLesson(lesson) {
     const assignment = state.assignment;
     const src = `${lesson.contentUrl}?v=${Date.now()}&assignment=${encodeURIComponent(assignment.id)}`;
-    $app.innerHTML = `
+    const markup = `
       <main class="screen class-screen">
         <header class="topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
@@ -362,25 +451,39 @@
         <iframe class="lesson-frame" src="${escapeAttr(src)}" title="${escapeAttr(lesson.title)}"></iframe>
       </main>
     `;
-    document.getElementById('backBtn').addEventListener('click', () => renderSubjectDetail('classes'));
-    document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
+    mount(markup, () => {
+      document.getElementById('backBtn').addEventListener('click', () => renderSubjectDetail('classes'));
+      document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
+    });
   }
 
   function renderStudentPlaceholder() {
-    $app.innerHTML = `<main class="screen mobile-pad"><h1>Vista estudiante</h1><p>La primera fase está centrada en docentes. La vista estudiante se conecta después con las clases y actividades.</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`;
-    document.getElementById('logoutBtn').addEventListener('click', logout);
+    mount(`<main class="screen mobile-pad"><h1>Vista estudiante</h1><p>La primera fase está centrada en docentes. La vista estudiante se conecta después con las clases y actividades.</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`, () => {
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+    });
   }
 
   function assignmentCardHTML(item) {
+    const iconSrc = getAssignmentIcon(item);
+    const coverStyle = coverBackgroundStyle(item);
     return `
-      <button class="assignment-card" data-assignment-id="${escapeAttr(item.id)}">
-        <img class="subject-icon" src="${escapeAttr(item.icon || './assets/subject-statistics.svg')}" alt="" />
-        <div>
-          <div class="kicker">${escapeHTML(item.area)}</div>
-          <div class="card-title">${escapeHTML(item.subject)}</div>
-          <div class="card-sub">${escapeHTML(item.grade)}-${escapeHTML(item.course)} · ${escapeHTML(item.sede)}</div>
-        </div>
-      </button>
+      <article class="assignment-card">
+        <button class="assignment-manage" data-manage-assignment="${escapeAttr(item.id)}" aria-label="Gestionar ${escapeAttr(item.subject)} ${escapeAttr(item.grade)}-${escapeAttr(item.course)}">⚙️</button>
+        <button class="assignment-open" data-open-assignment="${escapeAttr(item.id)}">
+          <div class="assignment-cover-mini" ${coverStyle}></div>
+          <div class="assignment-body">
+            <div class="assignment-head">
+              <img class="subject-icon" src="${escapeAttr(iconSrc)}" alt="" />
+              <div>
+                <div class="kicker">${escapeHTML(item.area)}</div>
+                <div class="card-title">${escapeHTML(item.subject)}</div>
+                <div class="card-sub">${escapeHTML(item.grade)}-${escapeHTML(item.course)} · ${escapeHTML(item.sede)}</div>
+              </div>
+            </div>
+            <span class="badge">${getStudentsForAssignment(item).length} estudiantes</span>
+          </div>
+        </button>
+      </article>
     `;
   }
 
@@ -448,12 +551,18 @@
   function animatedShapes() {
     return `
       <div class="math-bg" aria-hidden="true">
-        <span class="shape circle" style="width:72px;height:72px;left:8%;top:9%;animation-delay:-1s"></span>
-        <span class="shape triangle" style="left:72%;top:12%;animation-delay:-2s"></span>
-        <span class="shape square" style="width:54px;height:54px;left:82%;top:68%;animation-delay:-3s"></span>
-        <span class="shape rect" style="width:94px;height:46px;left:9%;top:78%;animation-delay:-4s"></span>
-        <span class="shape circle" style="width:42px;height:42px;left:48%;top:18%;animation-delay:-5s"></span>
-        <span class="shape triangle" style="left:18%;top:55%;animation-delay:-6s;transform:scale(.6)"></span>
+        <span class="shape circle" style="--w:76px;--h:76px;left:7%;top:8%;--c:#0a84ff;--dx:36px;--dy:-44px;--r1:40deg;--dur:8s;--delay:-1s"></span>
+        <span class="shape triangle" style="--w:70px;--h:64px;left:73%;top:10%;--c:#facc15;--dx:-28px;--dy:42px;--r1:-38deg;--dur:9s;--delay:-2s"></span>
+        <span class="shape square outline" style="--w:56px;--h:56px;left:83%;top:68%;--c:#fb7185;--dx:-34px;--dy:-28px;--r1:75deg;--dur:7.5s;--delay:-3s"></span>
+        <span class="shape rect" style="--w:112px;--h:46px;left:8%;top:78%;--c:#22c55e;--dx:34px;--dy:-36px;--r1:28deg;--dur:10s;--delay:-4s"></span>
+        <span class="shape circle outline" style="--w:42px;--h:42px;left:48%;top:18%;--c:#8b5cf6;--dx:24px;--dy:54px;--dur:8.5s;--delay:-5s"></span>
+        <span class="shape triangle" style="--w:44px;--h:42px;left:18%;top:55%;--c:#38bdf8;--dx:48px;--dy:-22px;--r1:90deg;--dur:9.5s;--delay:-6s"></span>
+        <span class="shape square" style="--w:30px;--h:30px;left:58%;top:78%;--c:#f472b6;--dx:-44px;--dy:22px;--r1:160deg;--dur:7s;--delay:-2.5s"></span>
+        <span class="shape rect outline" style="--w:88px;--h:36px;left:61%;top:34%;--c:#22d3ee;--dx:32px;--dy:-34px;--r1:-45deg;--dur:11s;--delay:-7s"></span>
+        <span class="shape circle" style="--w:22px;--h:22px;left:30%;top:28%;--c:#fb923c;--dx:52px;--dy:18px;--dur:6.5s;--delay:-1.8s"></span>
+        <span class="shape square" style="--w:24px;--h:24px;left:89%;top:42%;--c:#ef4444;--dx:-42px;--dy:38px;--r1:100deg;--dur:8.2s;--delay:-3.7s"></span>
+        <span class="shape circle outline" style="--w:34px;--h:34px;left:4%;top:39%;--c:#06b6d4;--dx:38px;--dy:40px;--dur:9.3s;--delay:-4.4s"></span>
+        <span class="shape triangle outline" style="--w:58px;--h:58px;left:39%;top:62%;--c:#a855f7;--dx:-28px;--dy:-48px;--r1:-95deg;--dur:12s;--delay:-5.1s"></span>
       </div>
     `;
   }
@@ -478,20 +587,52 @@
     localStorage.setItem(`encisomath:attendance:${assignmentId}:${date}`, JSON.stringify(attendance));
   }
 
-  function saveCoverOverride(event) {
+  function getAssignmentIcon(assignment) {
+    return localStorage.getItem(`encisomath:assignmentIcon:${assignment.id}`) || assignment.icon || './assets/subject-statistics.svg';
+  }
+
+  function getAssignmentCover(assignment) {
+    return localStorage.getItem(`encisomath:assignmentCover:${assignment.id}`) || localStorage.getItem(`encisomath:cover:${assignment.id}`) || '';
+  }
+
+  function coverBackgroundStyle(assignment) {
+    const cover = getAssignmentCover(assignment);
+    if (!cover) return '';
+    return `style="background-image: linear-gradient(rgba(6,37,63,.16), rgba(6,37,63,.24)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center;"`;
+  }
+
+  function saveImageOverride(event, type, backTarget) {
     const file = event.target.files?.[0];
     if (!file || !state.assignment) return;
+    if (file.size > 900000) {
+      toast('La imagen pesa mucho. Prueba una imagen menor a 900 KB.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        localStorage.setItem(`encisomath:cover:${state.assignment.id}`, reader.result);
-        toast('Portada personalizada guardada en este dispositivo.');
-        renderSubjectDetail('students');
+        const key = type === 'cover' ? `encisomath:assignmentCover:${state.assignment.id}` : `encisomath:assignmentIcon:${state.assignment.id}`;
+        localStorage.setItem(key, reader.result);
+        toast(type === 'cover' ? 'Portada guardada en este dispositivo.' : 'Icono guardado en este dispositivo.');
+        renderSubjectManager(backTarget);
       } catch (error) {
-        toast('La imagen es muy pesada para guardarla localmente. Prueba una más liviana.');
+        toast('No se pudo guardar. Usa una imagen más liviana.');
       }
     };
     reader.readAsDataURL(file);
+  }
+
+  function resetAssignmentVisual(type, backTarget) {
+    if (!state.assignment) return;
+    if (type === 'cover') {
+      localStorage.removeItem(`encisomath:assignmentCover:${state.assignment.id}`);
+      localStorage.removeItem(`encisomath:cover:${state.assignment.id}`);
+      toast('Portada restablecida.');
+    } else {
+      localStorage.removeItem(`encisomath:assignmentIcon:${state.assignment.id}`);
+      toast('Icono restablecido.');
+    }
+    renderSubjectManager(backTarget);
   }
 
   function setClassViewMode(mode) {

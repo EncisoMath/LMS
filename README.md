@@ -1,8 +1,24 @@
 # EncisoMath PWA - AVA/LMS en GitHub Pages
 
-Versión inicial: `0.1.0`
+Versión: `0.2.0`
 
-Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una PWA móvil instalable publicada con GitHub Pages.
+Esta versión corrige la primera base visual y mantiene la arquitectura simple para GitHub Pages: HTML5, CSS3, JavaScript puro y JSON.
+
+## Cambios de la versión 0.2.0
+
+- Transiciones entre pantallas con fade, blur suave y entrada animada.
+- Login más pulido, con tarjeta tipo glass, figuras geométricas más coloridas y movimiento real.
+- Fuente ajustada a una familia tipo San Francisco: `-apple-system`, `SF Pro`, `Ubuntu`, `Segoe UI`, `Roboto`.
+- Menos uso de negrilla: botones, títulos y textos quedaron con pesos más limpios.
+- Portadas rectangulares, sin bordes curvos.
+- Bienvenida separada: `Bienvenido` pequeño y el nombre del usuario más destacado.
+- Vista web mejorada con contenedor amplio, más columnas y tarjetas adaptativas.
+- Gestor visual por asignatura:
+  - cambiar portada;
+  - cambiar icono;
+  - restablecer portada;
+  - restablecer icono.
+- Las tarjetas de asignatura ahora muestran una franja de portada, icono, cantidad de estudiantes y botón de gestión.
 
 ## Qué incluye
 
@@ -12,7 +28,7 @@ Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una 
 - Vista docente inicial.
 - Portada tipo red social, foto de perfil y tarjetas de asignaturas.
 - Filtros por grado, área y curso.
-- Vista de asignatura con portada personalizable localmente.
+- Vista de asignatura con gestor visual local.
 - Pestaña de estudiantes con asistencia diaria: asistió, no asistió y excusa.
 - Nuevo estudiante agregado desde la asignatura actual.
 - Pestaña de clases por periodos, vista cuadrícula/lista.
@@ -70,7 +86,7 @@ encisomath-pwa/
 GitHub Pages permite leer archivos JSON, pero no permite escribirlos desde la app de forma segura. Esta versión usa:
 
 - JSON del repositorio como datos base.
-- `localStorage` del dispositivo para sesión, asistencia, estudiantes añadidos y portada personalizada.
+- `localStorage` del dispositivo para sesión, asistencia, estudiantes añadidos, portada personalizada e icono personalizado.
 
 Para guardar asistencia y cambios en la nube sin riesgo, hace falta una segunda fase con una de estas opciones:
 
@@ -110,8 +126,9 @@ classes/medidas-de-tendencia-central.html
 
 ## Próximas fases recomendadas
 
-1. Completar vista estudiante.
-2. Añadir exportación/importación de asistencia.
+1. Rediseñar con una identidad gráfica final de EncisoMath.
+2. Completar vista estudiante.
 3. Crear panel de administración de JSON.
-4. Conectar persistencia real en la nube.
-5. Diseñar una plantilla estándar para clases generadas con ChatGPT.
+4. Añadir exportación/importación de asistencia.
+5. Conectar persistencia real en la nube.
+6. Diseñar una plantilla estándar para clases generadas con ChatGPT.
