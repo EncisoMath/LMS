@@ -2,7 +2,7 @@
   "name": "EncisoMath AVA",
   "short_name": "EncisoMath",
   "description": "AVA/LMS móvil para clases, asistencia y contenidos interactivos.",
-  "start_url": "./index.html?v=0.24.33",
+  "start_url": "./index.html?v=0.24.34",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

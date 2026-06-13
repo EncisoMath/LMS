@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.33';
+  const APP_VERSION = '0.24.34';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1516,15 +1516,18 @@
     const initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : Math.round((min + max) / 2);
     const tolerance = Number.isFinite(Number(question.tolerance)) ? Number(question.tolerance) : 0;
     const unit = escapeHTML(question.unit || '');
-    const sliderTicks = Array.from({ length: 5 }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
+    const rawUnits = step > 0 ? Math.round(Math.abs((max - min) / step)) : Math.round(Math.abs(max - min));
+    const tickCount = Math.max(2, Math.min(80, rawUnits || 2));
+    const sliderTicks = Array.from({ length: tickCount }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
     return `
-      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}">
+      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}" data-slider-tick-count="${tickCount}">
         <div class="quiz-slider-visual-stage">
           <div class="quiz-slider-widget" aria-label="Respuesta numérica tipo slider">
-            <div class="quiz-slider-bubble">
-              <span data-slider-value>${initial}</span>${unit ? `<small>${unit}</small>` : ''}
+            <div class="quiz-slider-bubble" data-slider-bubble>
+              <span data-slider-value>${initial}</span>
             </div>
-            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}<span class="slider-correct-marker" data-slider-correct-marker aria-hidden="true"></span></div>
+            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}<span class="slider-correct-marker" data-slider-correct-marker aria-hidden="true" hidden></span></div>
+            <div class="slider-correct-bubble" data-slider-correct-bubble hidden><span>${correct}</span></div>
             <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
           </div>
         </div>
@@ -2502,16 +2505,21 @@
       const valueLabel = board.querySelector('[data-slider-value]');
       const validate = board.querySelector('[data-slider-validate]');
       const correctMarker = board.querySelector('[data-slider-correct-marker]');
+      const correctBubble = board.querySelector('[data-slider-correct-bubble]');
       const update = () => {
         if (!slider) return;
         if (valueLabel) valueLabel.textContent = slider.value;
         const min = Number(slider.min || 0);
         const max = Number(slider.max || 100);
         const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(1, max - min)) * 100));
+        const bubblePct = Math.max(0, Math.min(100, pct));
         slider.style.setProperty('--slider-progress', `${pct}%`);
         board.style.setProperty('--slider-progress', `${pct}%`);
-        const tickIndex = Math.max(0, Math.min(4, Math.round((pct / 100) * 4)));
-        board.querySelectorAll('[data-slider-tick]').forEach((tick, index) => {
+        board.style.setProperty('--slider-bubble-x', `${bubblePct}%`);
+        const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
+        const tickMax = Math.max(1, ticks.length - 1);
+        const tickIndex = Math.max(0, Math.min(tickMax, Math.round((pct / 100) * tickMax)));
+        ticks.forEach((tick, index) => {
           tick.classList.toggle('active', index === tickIndex);
           tick.classList.toggle('before-active', index < tickIndex);
           tick.classList.toggle('after-active', index > tickIndex);
@@ -2535,7 +2543,12 @@
         const sliderMax = Number(slider.max || 100);
         const correctPct = Math.max(0, Math.min(100, ((correctValue - sliderMin) / Math.max(1, sliderMax - sliderMin)) * 100));
         board.style.setProperty('--slider-correct-progress', `${correctPct}%`);
-        if (correctMarker) correctMarker.hidden = false;
+        if (correctMarker) correctMarker.hidden = ok;
+        if (correctBubble) {
+          correctBubble.hidden = ok;
+          const correctBubbleText = correctBubble.querySelector('span');
+          if (correctBubbleText) correctBubbleText.textContent = Number.isInteger(correctValue) ? String(correctValue) : String(correctValue);
+        }
         recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
         const stage = board.closest('.quiz-stage');
         const feedback = stage?.querySelector('[data-quiz-feedback]');
@@ -3269,7 +3282,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.33', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.34', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

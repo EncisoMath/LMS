@@ -419,7 +419,7 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - Se extendió la banda hacia abajo para que durante el rebote no se vea hueco inferior.
 - La frase secundaria quedó con peso normal, sin negrita.
 
-### v0.24.33
+### v0.24.34
 
 Ajuste del tipo de pregunta `slider` en Quizzes sobre `v0.24.32`.
 
@@ -428,4 +428,15 @@ Ajuste del tipo de pregunta `slider` en Quizzes sobre `v0.24.32`.
 - Si la respuesta es incorrecta, la barrita seleccionada cambia a rojo y la posición correcta aparece en ese mismo slider como una marca/barrita verde.
 - Si la respuesta es correcta, el mismo componente cambia a verde y mantiene el feedback inferior estable de Quizzes.
 - Se conservaron interacción táctil móvil, validación numérica, tolerancia, unidad y avance automático.
-- Versión/cache busting actualizados a `0.24.33`.
+- Versión/cache busting actualizados a `0.24.34`.
+
+## v0.24.34
+
+Ajustes al tipo de pregunta `slider` en Quizzes:
+
+- El globo azul muestra únicamente el número seleccionado, sin palabras ni unidad dentro.
+- La cantidad de barras/bullets se calcula según las unidades entre `min` y `max` usando `step` como referencia. Por ejemplo, de 0 a 20 con paso 1 se muestran 20 barras.
+- El globo de respuesta se desplaza horizontalmente y queda sobre el valor que el usuario está seleccionando.
+- Si la respuesta es incorrecta, no aparece otro slider: en el mismo componente se marca la selección del estudiante en rojo y se muestra la respuesta correcta en verde debajo, con una pestaña apuntando hacia arriba.
+- Si la respuesta es correcta, el mismo slider cambia a verde.
+- Versión/cache busting actualizados a `0.24.34`.
