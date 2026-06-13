@@ -15,6 +15,7 @@ Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una 
 - Vista de asignatura con portada personalizable localmente.
 - Pestaña de estudiantes con asistencia diaria: asistió, no asistió y excusa.
 - Nuevo estudiante agregado desde la asignatura actual.
+- Pestaña ROCKSTARS con puntos de participación por periodo, emojis por rango y registro de eventos +1/-1.
 - Pestaña de clases por periodos, vista cuadrícula/lista.
 - Clase interactiva de ejemplo: gráficos de barras con calculadora visual en Canvas.
 - Datos semilla en archivos JSON.
@@ -42,7 +43,8 @@ encisomath-pwa/
 │   ├── users.json
 │   ├── assignments.json
 │   ├── students.json
-│   └── classes.json
+│   ├── classes.json
+│   └── rockstars.json
 ├── classes/
 │   └── graficos-de-barras.html
 └── assets/
@@ -208,3 +210,22 @@ classes/medidas-de-tendencia-central.html
 - Se retiro el panel temporal de calibracion del modal para dejar el warning limpio.
 - El warning ahora ignora valores anteriores guardados en `localStorage` para que el diseno fijo se mantenga igual en todos los navegadores.
 - Se mantuvo la malla roja animada y se actualizo cache busting a `0.24.10`.
+
+
+## v0.24.11 - ROCKSTARS
+
+- Se agregó una tercera pestaña dentro de cada asignatura: **ROCKSTARS**.
+- La pestaña muestra los estudiantes del curso/asignatura con buscador, sin botón de agregar estudiante.
+- Cada estudiante tiene puntos por periodo y botones `-1` / `+1` para restar o sumar participación.
+- La tarjeta conserva referencia visual de asistencia del día mediante un degradado lateral derecho.
+- La foto se reemplazó por un emoji según puntos acumulados del periodo:
+  - `15+`: 💎 diamante.
+  - `10+`: 🔥 fuego.
+  - `5+`: 😎 gafas de sol.
+  - `1 a 4`: 🚀 cohete.
+  - `0`: 🙂 carita feliz.
+  - `-1 a -5`: 😡 enojo.
+  - `menos de -5`: 💀 calavera.
+- El encabezado ROCKSTARS incluye cohete animado, fuego, chispas y texto neón cambiante.
+- Se creó `data/rockstars.json` como base de eventos con el ID del estudiante como llave; cada evento usa `assignmentId`, `period`, `date` y `delta`.
+- Los nuevos eventos creados desde la PWA se almacenan localmente en `localStorage` con clave `encisomath:rockstars:<assignmentId>`.

@@ -1,12 +1,13 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.10';
+  const APP_VERSION = '0.24.11';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
     students: './data/students.json',
-    classes: './data/classes.json'
+    classes: './data/classes.json',
+    rockstars: './data/rockstars.json'
   };
 
   const DEFAULT_PREFS = {
@@ -64,11 +65,12 @@
   const $toast = document.getElementById('toast');
 
   const state = {
-    data: { users: [], assignments: [], students: [], classes: [] },
+    data: { users: [], assignments: [], students: [], classes: [], rockstars: [] },
     user: null,
     assignment: null,
     period: 1,
     classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
+    rockstarPeriod: Number(localStorage.getItem('encisomath:rockstarPeriod') || 1),
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
@@ -359,6 +361,7 @@
         <div class="tab-row sticky-tabs">
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
+          <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 ROCKSTARS</button>
         </div>
         <section id="tabContent" class="section tab-section"></section>
         ${bottomNav('profe')}
@@ -370,8 +373,10 @@
       document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
       document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
+      document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
       if (tab === 'students') renderStudentsTab({ animate: true });
+      else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
       else renderClassesTab({ animate: true });
     });
   }
@@ -379,7 +384,9 @@
   function setSubjectTab(tab) {
     document.getElementById('studentsTab')?.classList.toggle('active', tab === 'students');
     document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
+    document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
     if (tab === 'students') renderStudentsTab({ animate: true });
+    else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else renderClassesTab({ animate: true });
   }
 
@@ -845,6 +852,152 @@
     renderStudentsTab({ animate: false });
   }
 
+  function renderRockstarsTab(options = {}) {
+    const assignment = state.assignment;
+    const $content = document.getElementById('tabContent');
+    if (!assignment || !$content) return;
+
+    $content.innerHTML = `
+      <section class="rockstar-hero" aria-label="Rockstars de participación">
+        <div class="rockstar-rocket-stage" aria-hidden="true">
+          <div class="rocket-wrap">
+            <div class="rocket-emoji">🚀</div>
+            <span class="flame flame-a"></span>
+            <span class="flame flame-b"></span>
+            <span class="flame flame-c"></span>
+            <span class="spark spark-a"></span>
+            <span class="spark spark-b"></span>
+            <span class="spark spark-c"></span>
+          </div>
+        </div>
+        <div class="rockstar-title-block">
+          <div class="rockstar-title-neon">ROCKSTARS</div>
+          <p>Participación · Periodo ${state.rockstarPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
+        </div>
+      </section>
+      <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
+        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
+      </div>
+      <div class="student-tools rockstar-tools">
+        <div class="search-wrap">
+          <span aria-hidden="true">🔎</span>
+          <input class="input search-input" id="rockstarSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
+        </div>
+      </div>
+      <div id="rockstarList" class="student-list rockstar-list">
+        ${rockstarListHTML()}
+      </div>
+    `;
+
+    bindRockstarTabEvents();
+    if (options.animate) pulseElement($content, 'tab-enter');
+  }
+
+  function rockstarListHTML() {
+    const assignment = state.assignment;
+    if (!assignment) return '';
+    const attendance = getAttendance(assignment.id, todayISO());
+    const query = normalizeSearch(state.studentSearch || '');
+    const students = getStudentsForAssignment(assignment).filter((student) => {
+      if (!query) return true;
+      return normalizeSearch(`${student.fullName} ${student.id} ${student.username || ''}`).includes(query);
+    });
+    return students.map((student) => {
+      const points = getRockstarPoints(assignment.id, student.id, state.rockstarPeriod);
+      return rockstarCardHTML(student, points, attendance[student.id]);
+    }).join('') || `<div class="empty">${query ? 'No hay rockstars con ese filtro.' : 'Aún no hay estudiantes en este curso.'}</div>`;
+  }
+
+  function bindRockstarTabEvents() {
+    document.querySelectorAll('[data-rockstar-period]').forEach((button) => {
+      button.addEventListener('click', () => setRockstarPeriod(Number(button.dataset.rockstarPeriod)));
+    });
+
+    document.getElementById('rockstarSearch')?.addEventListener('input', (event) => {
+      state.studentSearch = event.target.value;
+      refreshRockstarList();
+    });
+
+    bindRockstarActionButtons();
+  }
+
+  function setRockstarPeriod(period) {
+    if (![1, 2, 3, 4].includes(Number(period))) return;
+    if (Number(state.rockstarPeriod) === Number(period)) return;
+    const previous = document.querySelector(`[data-rockstar-period="${state.rockstarPeriod}"]`);
+    const next = document.querySelector(`[data-rockstar-period="${period}"]`);
+    previous?.classList.remove('active');
+    next?.classList.add('active');
+    pulseElement(previous, 'period-shift');
+    pulseElement(next, 'period-shift');
+    state.rockstarPeriod = Number(period);
+    localStorage.setItem('encisomath:rockstarPeriod', String(state.rockstarPeriod));
+    const titleBlock = document.querySelector('.rockstar-title-block p');
+    if (titleBlock && state.assignment) {
+      titleBlock.textContent = `Participación · Periodo ${state.rockstarPeriod} · ${state.assignment.subject} ${state.assignment.grade}-${state.assignment.course}`;
+      pulseElement(titleBlock, 'text-pop');
+    }
+    refreshRockstarList(true);
+  }
+
+  function refreshRockstarList(animate = false) {
+    const list = document.getElementById('rockstarList');
+    if (!list) return;
+    list.innerHTML = rockstarListHTML();
+    bindRockstarActionButtons();
+    if (animate) pulseElement(list, 'class-grid-update');
+  }
+
+  function bindRockstarActionButtons() {
+    document.querySelectorAll('[data-rockstar-delta]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const studentId = button.dataset.rockstarStudent;
+        const delta = Number(button.dataset.rockstarDelta);
+        addRockstarDelta(studentId, delta);
+      });
+    });
+  }
+
+  function addRockstarDelta(studentId, delta) {
+    const assignment = state.assignment;
+    if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return;
+    const events = getLocalRockstarEvents(assignment.id);
+    events.push({
+      id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      assignmentId: assignment.id,
+      studentId,
+      period: Number(state.rockstarPeriod),
+      date: todayISO(),
+      delta: Number(delta)
+    });
+    saveLocalRockstarEvents(assignment.id, events);
+    updateRockstarCard(studentId);
+    toast(delta > 0 ? '+1 punto Rockstar' : '-1 punto Rockstar');
+  }
+
+  function updateRockstarCard(studentId) {
+    const assignment = state.assignment;
+    const card = document.querySelector(`[data-rockstar-card="${escapeSelector(studentId)}"]`);
+    if (!assignment || !card) return;
+    const points = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
+    const tier = getRockstarTier(points);
+    const badge = card.querySelector('[data-rockstar-badge]');
+    const score = card.querySelector('[data-rockstar-score]');
+    const meta = card.querySelector('[data-rockstar-meta]');
+    if (badge) {
+      badge.textContent = tier.emoji;
+      badge.className = `rockstar-avatar ${tier.className}`;
+      pulseElement(badge, 'text-pop');
+    }
+    if (score) {
+      score.textContent = String(points);
+      score.className = `rockstar-score ${tier.className}`;
+      pulseElement(score, 'text-pop');
+    }
+    if (meta) meta.textContent = `Periodo ${state.rockstarPeriod} · ${tier.label}`;
+    pulseElement(card, points >= 0 ? 'flash-present' : 'flash-absent');
+  }
+
   function renderClassesTab(options = {}) {
     const $content = document.getElementById('tabContent');
     if (!$content) return;
@@ -977,6 +1130,45 @@
         </button>
       </article>
     `;
+  }
+
+  function rockstarCardHTML(student, points, status) {
+    const statusInfo = statusMap[status] || null;
+    const tier = getRockstarTier(points);
+    const attendanceClass = statusInfo ? `status-${status}` : 'status-unmarked';
+    const attendanceLabel = statusInfo ? `${statusInfo.emoji} ${statusInfo.label}` : 'Sin marcar hoy';
+    return `
+      <article class="student-card rockstar-card ${attendanceClass}" data-rockstar-card="${escapeAttr(student.id)}">
+        <div class="student-main rockstar-main">
+          <div class="rockstar-avatar ${tier.className}" data-rockstar-badge>${tier.emoji}</div>
+          <div class="student-info rockstar-info">
+            <div class="student-name">${escapeHTML(student.fullName)}</div>
+            <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
+            <div class="student-meta">📅 Asistencia hoy: ${attendanceLabel}</div>
+            <div class="student-meta" data-rockstar-meta>Periodo ${state.rockstarPeriod} · ${tier.label}</div>
+          </div>
+        </div>
+        <div class="rockstar-score-box" aria-label="Puntos del estudiante">
+          <span class="rockstar-score ${tier.className}" data-rockstar-score>${points}</span>
+          <span class="rockstar-score-label">pts</span>
+        </div>
+        <div class="rockstar-buttons">
+          <button class="rock-btn rock-minus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="-1" title="Quitar un punto">−1</button>
+          <button class="rock-btn rock-plus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="1" title="Dar un punto">+1</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function getRockstarTier(points) {
+    const value = Number(points) || 0;
+    if (value >= 15) return { emoji: '💎', label: 'Diamante', className: 'tier-diamond' };
+    if (value >= 10) return { emoji: '🔥', label: 'Fuego', className: 'tier-fire' };
+    if (value >= 5) return { emoji: '😎', label: 'Súper cool', className: 'tier-cool' };
+    if (value >= 1) return { emoji: '🚀', label: 'Despegando', className: 'tier-rocket' };
+    if (value === 0) return { emoji: '🙂', label: 'Listo para participar', className: 'tier-neutral' };
+    if (value >= -5) return { emoji: '😡', label: 'En deuda', className: 'tier-angry' };
+    return { emoji: '💀', label: 'Zona crítica', className: 'tier-skull' };
   }
 
   function studentCardHTML(student, status) {
@@ -1119,6 +1311,54 @@
   function saveAttendance(assignmentId, date, attendance) {
     localStorage.setItem(`encisomath:attendance:${assignmentId}:${date}`, JSON.stringify(attendance));
   }
+
+  function getBaseRockstarEvents() {
+    const source = state.data.rockstars;
+    if (Array.isArray(source)) return normalizeRockstarEvents(source);
+    if (Array.isArray(source?.events)) return normalizeRockstarEvents(source.events);
+    if (source?.students && typeof source.students === 'object') {
+      const fromStudents = [];
+      Object.entries(source.students).forEach(([studentId, entries]) => {
+        if (!Array.isArray(entries)) return;
+        entries.forEach((entry) => fromStudents.push({ ...entry, studentId: entry.studentId || studentId }));
+      });
+      return normalizeRockstarEvents(fromStudents);
+    }
+    return [];
+  }
+
+  function normalizeRockstarEvents(events) {
+    return events.map((entry) => ({
+      id: entry.id || `base-${entry.assignmentId || 'assignment'}-${entry.studentId || 'student'}-${entry.date || 'date'}-${entry.delta || 0}`,
+      assignmentId: entry.assignmentId || entry.assignment || '',
+      studentId: entry.studentId || entry.student || entry.idStudent || '',
+      period: Number(entry.period || entry.periodo || 1),
+      date: entry.date || entry.fecha || todayISO(),
+      delta: Number(entry.delta ?? entry.points ?? entry.puntos ?? 0)
+    })).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && [-1, 1].includes(entry.delta));
+  }
+
+  function getLocalRockstarEvents(assignmentId) {
+    return normalizeRockstarEvents(readJSON(`encisomath:rockstars:${assignmentId}`) || []);
+  }
+
+  function saveLocalRockstarEvents(assignmentId, events) {
+    localStorage.setItem(`encisomath:rockstars:${assignmentId}`, JSON.stringify(normalizeRockstarEvents(events)));
+  }
+
+  function getRockstarEvents(assignmentId) {
+    return [
+      ...getBaseRockstarEvents().filter((entry) => entry.assignmentId === assignmentId),
+      ...getLocalRockstarEvents(assignmentId)
+    ];
+  }
+
+  function getRockstarPoints(assignmentId, studentId, period) {
+    return getRockstarEvents(assignmentId)
+      .filter((entry) => entry.studentId === studentId && Number(entry.period) === Number(period))
+      .reduce((total, entry) => total + Number(entry.delta || 0), 0);
+  }
+
 
   function getAssignmentIcon(assignment) {
     return localStorage.getItem(`encisomath:assignmentIcon:${assignment.id}`) || assignment.icon || './assets/subject-statistics.svg';
@@ -1395,7 +1635,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.10', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.11', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

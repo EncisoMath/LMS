@@ -1,0 +1,5 @@
+{
+  "version": "1.0",
+  "description": "Registro base de puntos Rockstar por participacion. La llave principal es el id del estudiante. Cada evento guarda assignmentId, period, date y delta (+1 o -1).",
+  "students": {}
+}
