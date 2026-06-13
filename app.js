@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.25';
+  const APP_VERSION = '0.24.26';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -52,6 +52,16 @@
   const SUBJECT_INFO_TUNE_FIELDS = [
     { key: 'x', label: 'Mover info horizontal', min: -90, max: 90, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
+  ];
+
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune';
+  const QUIZ_FEEDBACK_TUNE_DEFAULTS = { curve: 28, spread: 6, height: 118, lift: 16, bounce: 8 };
+  const QUIZ_FEEDBACK_TUNE_FIELDS = [
+    { key: 'curve', label: 'Curva superior', min: 8, max: 70, step: 1, unit: 'px' },
+    { key: 'spread', label: 'Ancho de curva', min: 0, max: 18, step: 1, unit: 'vw' },
+    { key: 'height', label: 'Alto de banda', min: 92, max: 170, step: 1, unit: 'px' },
+    { key: 'lift', label: 'Subir contenido', min: 0, max: 42, step: 1, unit: 'px' },
+    { key: 'bounce', label: 'Rebote entrada', min: 0, max: 22, step: 1, unit: 'px' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -122,6 +132,7 @@
 
   async function boot() {
     applyPreferences();
+    applyQuizFeedbackTune();
     registerServiceWorker();
     mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
@@ -1236,6 +1247,7 @@
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
       </div>
+      ${quizFeedbackTunePanelHTML()}
       <div class="quiz-library" id="quizLibrary">
         ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
@@ -1355,15 +1367,13 @@
 
   function quizMultipleChoiceHTML(question) {
     const colors = ['red', 'blue', 'yellow', 'green'];
-    const shapes = ['▲', '◆', '●', '■'];
     const options = Array.isArray(question.options) ? question.options : [];
     return `
       <div class="kahoot-grid kahoot-grid-2x2" role="list">
         ${options.slice(0, 4).map((option, index) => `
           <button class="kahoot-option kahoot-${colors[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
             <span class="kahoot-result-badge" aria-hidden="true"></span>
-            <span class="kahoot-shape">${shapes[index]}</span>
-            <span>${escapeHTML(option.text || '')}</span>
+            <span class="kahoot-answer-text">${escapeHTML(option.text || '')}</span>
           </button>
         `).join('')}
       </div>
@@ -1376,14 +1386,12 @@
       { id: 'false', text: 'Falso', correct: false }
     ];
     const palette = ['blue', 'red'];
-    const shapes = ['◆', '▲'];
     return `
       <div class="kahoot-grid kahoot-grid-two" role="list">
         ${options.slice(0, 2).map((option, index) => `
           <button class="kahoot-option kahoot-${palette[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
             <span class="kahoot-result-badge" aria-hidden="true"></span>
-            <span class="kahoot-shape">${shapes[index]}</span>
-            <span>${escapeHTML(option.text || '')}</span>
+            <span class="kahoot-answer-text">${escapeHTML(option.text || '')}</span>
           </button>
         `).join('')}
       </div>
@@ -1471,7 +1479,92 @@
     return timer;
   }
 
+
+  function quizFeedbackTunePanelHTML() {
+    const tune = getQuizFeedbackTune();
+    const rows = QUIZ_FEEDBACK_TUNE_FIELDS.map((field) => {
+      const value = tune[field.key];
+      return `
+        <label class="quiz-feedback-tune-row">
+          <span class="quiz-feedback-tune-head"><strong>${field.label}</strong><output data-quiz-feedback-tune-value="${field.key}">${value}${field.unit}</output></span>
+          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${field.key}" />
+        </label>
+      `;
+    }).join('');
+    return `
+      <section class="quiz-feedback-tune-panel" aria-label="Ajuste temporal de la banda de feedback">
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz</div>
+        <div class="quiz-feedback-tune-help">Pásame estos valores cuando la curva y el rebote queden bien.</div>
+        ${rows}
+        <button class="btn ghost small quiz-feedback-tune-reset" type="button" id="quizFeedbackTuneReset">Restablecer banda</button>
+      </section>
+    `;
+  }
+
+  function bindQuizFeedbackTunePanel() {
+    applyQuizFeedbackTune();
+    document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.quizFeedbackTune;
+        const value = Number(input.value);
+        const tune = getQuizFeedbackTune();
+        tune[key] = value;
+        saveQuizFeedbackTune(tune);
+        updateQuizFeedbackTuneOutput(key, value);
+        applyQuizFeedbackTune(tune);
+      });
+    });
+    document.getElementById('quizFeedbackTuneReset')?.addEventListener('click', () => {
+      saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+      document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
+        const key = input.dataset.quizFeedbackTune;
+        input.value = QUIZ_FEEDBACK_TUNE_DEFAULTS[key];
+        updateQuizFeedbackTuneOutput(key, QUIZ_FEEDBACK_TUNE_DEFAULTS[key]);
+      });
+      applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+    });
+  }
+
+  function getQuizFeedbackTune() {
+    return readQuizFeedbackTune();
+  }
+
+  function readQuizFeedbackTune() {
+    const saved = readJSON(QUIZ_FEEDBACK_TUNE_KEY) || {};
+    const tune = { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
+    QUIZ_FEEDBACK_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(saved[field.key]);
+      tune[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : tune[field.key];
+    });
+    return tune;
+  }
+
+  function saveQuizFeedbackTune(tune) {
+    const normalized = {};
+    QUIZ_FEEDBACK_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_FEEDBACK_TUNE_DEFAULTS[field.key];
+    });
+    localStorage.setItem(QUIZ_FEEDBACK_TUNE_KEY, JSON.stringify(normalized));
+  }
+
+  function updateQuizFeedbackTuneOutput(key, value) {
+    const field = QUIZ_FEEDBACK_TUNE_FIELDS.find((item) => item.key === key);
+    const output = document.querySelector(`[data-quiz-feedback-tune-value="${escapeSelector(key)}"]`);
+    if (output && field) output.textContent = `${value}${field.unit}`;
+  }
+
+  function applyQuizFeedbackTune(tune = getQuizFeedbackTune()) {
+    const root = document.documentElement;
+    root.style.setProperty('--quiz-feedback-curve', `${Number(tune.curve) || QUIZ_FEEDBACK_TUNE_DEFAULTS.curve}px`);
+    root.style.setProperty('--quiz-feedback-spread', `${Number(tune.spread) || 0}vw`);
+    root.style.setProperty('--quiz-feedback-height', `${Number(tune.height) || QUIZ_FEEDBACK_TUNE_DEFAULTS.height}px`);
+    root.style.setProperty('--quiz-feedback-lift', `${Number(tune.lift) || 0}px`);
+    root.style.setProperty('--quiz-feedback-bounce', `${Number(tune.bounce) || 0}px`);
+  }
+
   function bindQuizTabEvents() {
+    bindQuizFeedbackTunePanel();
     document.querySelectorAll('[data-quiz-period]').forEach((button) => {
       button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
     });
@@ -1583,7 +1676,7 @@
       const feedback = stage.querySelector('[data-quiz-feedback]');
       if (feedback) {
         feedback.hidden = false;
-        feedback.innerHTML = quizAnswerFeedbackHTML(selectedCorrect);
+        feedback.innerHTML = quizAnswerFeedbackHTML(selectedCorrect, '', question);
         feedback.className = `quiz-answer-feedback ${selectedCorrect ? 'is-correct' : 'is-wrong'}`;
         stage.classList.add('quiz-feedback-visible');
       }
@@ -1613,24 +1706,35 @@
     });
   }
 
-  function quizAnswerFeedbackHTML(correct, neutralText = '') {
+  function quizAnswerFeedbackHTML(correct, neutralText = '', question = null) {
     const correctPhrases = [
       'Esa neurona vino con turbo.',
       'Respuesta nivel crack. Siga brillando.',
-      'Bien jugado. Punto para la mente matemática.'
+      'Bien jugado. Punto para la mente matemática.',
+      'Así se responde, sin despeinarse.',
+      'Modo leyenda activado.'
     ];
     const wrongPhrases = [
       'Sacúdete el polvo. La grandeza espera.',
       'Casi, pero la opción correcta se escondió bien.',
-      'Error con estilo. Respira y vamos por la siguiente.'
+      'Error con estilo. Respira y vamos por la siguiente.',
+      'La respuesta se fue por la tangente.',
+      'Ups, el cálculo pidió revisión.'
     ];
     if (neutralText) {
       return `<div class="quiz-feedback-card is-neutral"><span>✍️</span><strong>Respuesta enviada</strong><p>${escapeHTML(neutralText)}</p></div>`;
     }
+    const session = getQuizSession();
+    const correctCount = session.answers.filter((answer) => answer.correct === true).length;
+    const wrongCount = session.answers.filter((answer) => answer.correct === false).length;
+    const correctEmoji = correctCount >= 5 ? '😎' : ['🫡', '😃', '😏', '🤩'][Math.max(0, correctCount - 1)] || '🫡';
+    let wrongEmoji = wrongCount >= 5 ? '☠️' : ['😬', '😕', '😨', '🥶'][Math.max(0, wrongCount - 1)] || '😬';
+    if (question?.type === 'true_false' && correct === false) wrongEmoji = '😒';
     const phrase = correct
-      ? correctPhrases[state.quizQuestionIndex % correctPhrases.length]
-      : wrongPhrases[state.quizQuestionIndex % wrongPhrases.length];
-    return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${correct ? '✅' : '❌'}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
+      ? correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length]
+      : wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length];
+    const emoji = correct ? correctEmoji : wrongEmoji;
+    return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${emoji}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
   }
 
   function recordQuizAnswer(question, correct, extra = {}) {
@@ -1667,11 +1771,13 @@
     const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
     session.locked = true;
     form.querySelectorAll('textarea, button').forEach((item) => { item.disabled = true; });
-    const feedback = form.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
+    const stage = form.closest('.quiz-stage');
+    const feedback = stage?.querySelector('[data-quiz-feedback]');
     if (feedback) {
       feedback.hidden = false;
-      feedback.innerHTML = quizAnswerFeedbackHTML(false, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.');
+      feedback.innerHTML = quizAnswerFeedbackHTML(null, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', question);
       feedback.className = 'quiz-answer-feedback is-neutral';
+      stage?.classList.add('quiz-feedback-visible');
     }
     recordQuizAnswer(question, null, { text: value });
     pulseElement(form, 'text-pop');
@@ -2060,6 +2166,8 @@
         });
         scheduleQuizTimer(() => {
           const allCorrect = correct === total;
+          const currentQuestion = getCurrentQuizQuestion();
+          recordQuizAnswer(currentQuestion, allCorrect, { correctPairs: correct, totalPairs: total });
           const feedback = board.querySelector('[data-match-feedback]');
           if (feedback) {
             feedback.hidden = false;
@@ -2072,11 +2180,10 @@
           const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
           if (stageFeedback) {
             stageFeedback.hidden = false;
-            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect);
+            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect, '', currentQuestion);
             stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
             stage?.classList.add('quiz-feedback-visible');
           }
-          recordQuizAnswer(getCurrentQuizQuestion(), allCorrect, { correctPairs: correct, totalPairs: total });
           scheduleQuizAdvance();
         }, (333 * total) + 420);
       });
@@ -2801,7 +2908,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.25', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.26', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -368,3 +368,14 @@ Ajustes de pulido en Quizzes:
 - Se eliminó el rebote hacia arriba de la banda para evitar que aparezca fondo negro debajo durante la animación.
 - Al aparecer la banda inferior, el contenido del quiz se desplaza ligeramente hacia arriba para no quedar tapado.
 - Versión/cache busting actualizados a `0.24.25`.
+
+
+## v0.24.26
+
+- Se agregó un panel temporal en Quizzes para ajustar la banda inferior de feedback: curva superior, ancho de curva, alto, desplazamiento del contenido y rebote.
+- Se cambiaron los emojis de feedback según acumulado de respuestas correctas/equivocaciones; en Verdadero/Falso, la equivocación usa 😒.
+- Se reforzó el reveal de ABCD y Verdadero/Falso con la misma lógica visual de drag and drop: pop para correcta y sacudida para incorrecta.
+- Se corrigió el corte de los badges circulares ✓/× en las esquinas de opciones.
+- La banda inferior recuperó rebote configurable y ahora desplaza también la pregunta abierta.
+- En Verdadero/Falso los botones son más altos y quedan más abajo.
+- Se quitaron las figuras geométricas de opciones ABCD y Verdadero/Falso.
