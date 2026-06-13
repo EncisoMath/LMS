@@ -7438,7 +7438,7 @@ body.quiz-fullscreen-active {
 }
 
 .quiz-stage-fullscreen.quiz-feedback-visible {
-  padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 58px) !important;
+  padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 42px) !important;
 }
 .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
 .quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
@@ -7510,19 +7510,19 @@ body.quiz-fullscreen-active {
   .quiz-stage-fullscreen .quiz-feedback-card { padding-left: 18px !important; padding-right: 18px !important; }
 }
 
-/* v0.24.27 - valores finales banda quiz y corrección de rebote inferior */
+/* v0.24.28 - banda quiz más compacta manteniendo curva y rebote */
 :root {
   --quiz-feedback-curve: 12px;
   --quiz-feedback-spread: 18vw;
-  --quiz-feedback-height: 170px;
-  --quiz-feedback-lift: 19px;
-  --quiz-feedback-bounce: 20px;
+  --quiz-feedback-height: 122px;
+  --quiz-feedback-lift: 14px;
+  --quiz-feedback-bounce: 18px;
 }
 .quiz-feedback-tune-panel {
   display: none !important;
 }
 .quiz-stage-fullscreen.quiz-feedback-visible {
-  padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 58px) !important;
+  padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 42px) !important;
 }
 .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
 .quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
@@ -7542,7 +7542,7 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen .quiz-feedback-card {
   min-height: calc(var(--quiz-feedback-height) + var(--quiz-feedback-bounce)) !important;
   margin-top: var(--quiz-feedback-curve) !important;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom) + var(--quiz-feedback-bounce)) !important;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom) + var(--quiz-feedback-bounce)) !important;
 }
 .quiz-stage-fullscreen .quiz-feedback-card::before {
   left: calc(-1 * var(--quiz-feedback-spread)) !important;
@@ -7554,6 +7554,19 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen .quiz-feedback-card p {
   font-weight: 500 !important;
   letter-spacing: 0 !important;
+}
+
+/* v0.24.28 - ajuste de respiración vertical de la banda inferior */
+.quiz-stage-fullscreen .quiz-feedback-card strong {
+  font-size: clamp(1.18rem, 5.4vw, 1.95rem) !important;
+  line-height: 1.02 !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card p {
+  font-size: clamp(.9rem, 4vw, 1.25rem) !important;
+  line-height: 1.16 !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card > span {
+  font-size: clamp(2rem, 9.8vw, 3.35rem) !important;
 }
 @keyframes quizFeedbackSheetBounceV27 {
   0% { opacity: 0; transform: translateY(105%); }

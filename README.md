@@ -390,3 +390,11 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - El texto secundario/frase cómica de la banda quedó sin negrita fuerte, con peso normal.
 - Se ignoran valores anteriores guardados en `localStorage` para mantener el diseño fijo en cualquier navegador.
 - Versión/cache busting actualizados a `0.24.27`.
+
+
+## v0.24.28
+
+- Se compactó la banda inferior de feedback en Quizzes para que no quede tan alta cuando muestra poco texto.
+- Se mantuvo la curva superior y el rebote, pero se redujo la altura, el desplazamiento del contenido y el tamaño visual del icono/texto para mejorar proporción.
+- Se conserva la extensión inferior suficiente para que durante el rebote no aparezca hueco bajo la banda.
+- Versiones y cache busting actualizados a `0.24.28`.
