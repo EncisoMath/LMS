@@ -122,6 +122,14 @@ classes/medidas-de-tendencia-central.html
 - Los botones activos de asistencia ahora usan color fijo por estado: verde para Asistió, rojo para No asistió y amarillo para Excusa, independientemente del color del tema.
 
 
-## v0.16
+## v0.17
 
 - Ajuste del modal de eliminación: signos de exclamación más juntos y fondo rojo con patrón de alerta más marcado.
+
+## v0.17
+
+- Se agrego la clase interactiva **Diagrama de cajas y bigotes**.
+- Se agrego herramienta para ingresar datos y generar el grafico de caja y bigotes.
+- Se agrego la clase **Medidas de dispersion** con calculo paso a paso.
+- La herramienta muestra rango, desviacion media, varianza, desviacion estandar y coeficiente de variacion.
+- Se registraron las nuevas clases en `data/classes.json` para Estadistica, periodo 2.

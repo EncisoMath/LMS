@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medidas de dispersion</title>
+  <style>
+    :root{--bg:#000;--panel:#07111b;--ink:#eef7ff;--muted:#9fb2c7;--line:rgba(255,255,255,.13);--blue:#1b96bf;--green:#58cc02;--yellow:#f59e0b;--red:#ef4444;--radius:6px}*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0%,rgba(27,150,191,.20),transparent 24%),linear-gradient(180deg,#02060b 0%,#000 100%);padding:16px 16px 42px}.lesson{max-width:960px;margin:0 auto;display:grid;gap:14px}.hero,.card{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018)),var(--panel);box-shadow:0 18px 42px rgba(0,0,0,.28)}.hero{padding:18px;position:relative;overflow:hidden}.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(27,150,191,.14),transparent 42%,rgba(88,204,2,.10));pointer-events:none}.hero>*{position:relative}.kicker{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#83e5ff;font-weight:900}.hero h1{margin:6px 0 8px;font-size:clamp(1.75rem,9vw,3.2rem);line-height:.96;letter-spacing:-.06em}.hero p,.mini{color:var(--muted);font-weight:630;line-height:1.45}.card{padding:16px}.card h2{margin:0 0 10px;font-size:1.16rem;letter-spacing:-.035em}.grid{display:grid;gap:12px}.two{grid-template-columns:1fr}@media(min-width:820px){.two{grid-template-columns:330px 1fr}}textarea{width:100%;min-height:116px;resize:vertical;border:1px solid var(--line);border-radius:var(--radius);background:#09131e;color:#fff;padding:12px;font:inherit}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:var(--radius);padding:11px 13px;background:linear-gradient(135deg,#2ba5ff,#0d76d8);color:#fff;font-weight:900}.btn.secondary{background:#10273a;color:#9ce6ff;border:1px solid rgba(27,150,191,.25)}.btn.danger{background:#2a0e15;color:#ff9ba6;border:1px solid rgba(239,68,68,.25)}.result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.result{border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.04);padding:10px}.result small{display:block;color:var(--muted);font-weight:750}.result strong{font-size:1.12rem}.steps{display:grid;gap:10px}.step{border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.035);padding:12px}.step-title{display:flex;gap:8px;align-items:center;font-weight:900;margin-bottom:6px}.badge{width:28px;height:28px;display:grid;place-items:center;border-radius:var(--radius);background:linear-gradient(135deg,var(--blue),#0d76d8)}.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#050b13;border:1px solid rgba(255,255,255,.10);border-radius:var(--radius);padding:10px;overflow:auto;color:#dff7ff}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:right}th:first-child,td:first-child{text-align:left}th{color:#9ce6ff;background:rgba(27,150,191,.09)}.error{color:#ff9ba6;font-weight:800}.dotplot{height:120px;border:1px solid rgba(27,150,191,.24);border-radius:var(--radius);background:linear-gradient(180deg,#07111b,#03070c);position:relative;overflow:hidden}.dot{position:absolute;width:13px;height:13px;border-radius:50%;background:#2ba5ff;box-shadow:0 0 18px rgba(43,165,255,.45);top:54px;transform:translate(-50%,-50%)}.mean{position:absolute;top:20px;bottom:12px;width:3px;background:#ffd166;box-shadow:0 0 16px rgba(255,209,102,.50)}.mean-label{position:absolute;top:8px;transform:translateX(-50%);font-size:.78rem;color:#ffd166;font-weight:900}
+  </style>
+</head>
+<body>
+  <main class="lesson">
+    <section class="hero">
+      <div class="kicker">Estadistica interactiva</div>
+      <h1>Medidas de dispersion</h1>
+      <p>Calcula y entiende, paso a paso, que tan separados estan los datos respecto a su centro.</p>
+    </section>
+
+    <section class="card grid two">
+      <div class="grid">
+        <div>
+          <h2>Ingresa tus datos</h2>
+          <p class="mini">Puedes separar los numeros con comas, espacios o saltos de linea.</p>
+          <textarea id="dataInput">10, 12, 13, 15, 18, 21, 24</textarea>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="calcBtn">Calcular medidas</button>
+          <button class="btn secondary" id="demoBtn">Datos demo</button>
+          <button class="btn danger" id="clearBtn">Limpiar</button>
+        </div>
+        <div class="dotplot" id="dotplot"></div>
+      </div>
+      <div class="grid">
+        <div id="summary" class="result-grid"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Paso a paso de la herramienta</h2>
+      <div id="steps" class="steps"></div>
+    </section>
+  </main>
+
+  <script>
+    const input=document.getElementById('dataInput');const summary=document.getElementById('summary');const steps=document.getElementById('steps');const plot=document.getElementById('dotplot');
+    function parseData(){return input.value.split(/[\s,;]+/).map(v=>Number(v.trim())).filter(v=>Number.isFinite(v));}
+    function fmt(v){return Number.isInteger(v)?String(v):v.toFixed(2)}
+    function calc(){
+      const data=parseData();
+      if(data.length<2){summary.innerHTML='<div class="error">Escribe minimo 2 datos.</div>';steps.innerHTML='';plot.innerHTML='';return;}
+      const sorted=[...data].sort((a,b)=>a-b);const n=data.length;const min=sorted[0];const max=sorted[n-1];const range=max-min;const sum=data.reduce((a,b)=>a+b,0);const mean=sum/n;const dev=data.map(x=>x-mean);const absDev=dev.map(x=>Math.abs(x));const sq=dev.map(x=>x*x);const sumAbs=absDev.reduce((a,b)=>a+b,0);const sumSq=sq.reduce((a,b)=>a+b,0);const mad=sumAbs/n;const variancePop=sumSq/n;const varianceSample=n>1?sumSq/(n-1):NaN;const sdPop=Math.sqrt(variancePop);const sdSample=Math.sqrt(varianceSample);const cv=mean!==0?sdPop/Math.abs(mean)*100:NaN;
+      summary.innerHTML=[['n',n],['Minimo',fmt(min)],['Maximo',fmt(max)],['Rango',fmt(range)],['Media',fmt(mean)],['Desviacion media',fmt(mad)],['Varianza poblacional',fmt(variancePop)],['Desv. estandar poblacional',fmt(sdPop)],['Varianza muestral',fmt(varianceSample)],['Desv. estandar muestral',fmt(sdSample)],['Coef. variacion',Number.isFinite(cv)?fmt(cv)+' %':'No aplica']].map(([a,b])=>`<div class="result"><small>${a}</small><strong>${b}</strong></div>`).join('');
+      drawPlot(data,mean,min,max);
+      steps.innerHTML=`
+        <article class="step"><div class="step-title"><span class="badge">1</span>Ordenar y contar</div><div class="formula">Datos ordenados = ${sorted.join(', ')}<br>n = ${n}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">2</span>Calcular la media</div><div class="formula">Media = suma / n = ${fmt(sum)} / ${n} = ${fmt(mean)}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">3</span>Calcular desviaciones</div>${deviationTable(data,dev,absDev,sq)}</article>
+        <article class="step"><div class="step-title"><span class="badge">4</span>Rango</div><div class="formula">Rango = maximo - minimo = ${fmt(max)} - ${fmt(min)} = ${fmt(range)}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">5</span>Desviacion media</div><div class="formula">Suma |x - media| = ${fmt(sumAbs)}<br>Desviacion media = ${fmt(sumAbs)} / ${n} = ${fmt(mad)}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">6</span>Varianza y desviacion estandar poblacional</div><div class="formula">Suma (x - media)^2 = ${fmt(sumSq)}<br>Varianza poblacional = ${fmt(sumSq)} / ${n} = ${fmt(variancePop)}<br>Desviacion estandar poblacional = raiz(${fmt(variancePop)}) = ${fmt(sdPop)}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">7</span>Version muestral</div><div class="formula">Varianza muestral = ${fmt(sumSq)} / (${n} - 1) = ${fmt(varianceSample)}<br>Desviacion estandar muestral = raiz(${fmt(varianceSample)}) = ${fmt(sdSample)}</div></article>
+        <article class="step"><div class="step-title"><span class="badge">8</span>Coeficiente de variacion</div><div class="formula">CV = desviacion estandar / |media| x 100 = ${Number.isFinite(cv)?fmt(cv)+' %':'No aplica porque la media es 0'}</div></article>`;
+    }
+    function deviationTable(data,dev,absDev,sq){return `<div class="table-wrap"><table><thead><tr><th>Dato x</th><th>x - media</th><th>|x - media|</th><th>(x - media)^2</th></tr></thead><tbody>${data.map((x,i)=>`<tr><td>${fmt(x)}</td><td>${fmt(dev[i])}</td><td>${fmt(absDev[i])}</td><td>${fmt(sq[i])}</td></tr>`).join('')}</tbody></table></div>`;}
+    function drawPlot(data,mean,min,max){plot.innerHTML='';const span=max-min||1;data.forEach(x=>{const d=document.createElement('span');d.className='dot';d.style.left=(8+(x-min)/span*84)+'%';d.title=String(x);plot.appendChild(d)});const m=document.createElement('span');m.className='mean';m.style.left=(8+(mean-min)/span*84)+'%';plot.appendChild(m);const label=document.createElement('span');label.className='mean-label';label.style.left=m.style.left;label.textContent='media';plot.appendChild(label);}
+    document.getElementById('calcBtn').addEventListener('click',calc);document.getElementById('demoBtn').addEventListener('click',()=>{input.value='4, 6, 7, 8, 10, 13, 17, 21';calc();});document.getElementById('clearBtn').addEventListener('click',()=>{input.value='';summary.innerHTML='';steps.innerHTML='';plot.innerHTML='';});calc();
+  </script>
+</body>
+</html>
