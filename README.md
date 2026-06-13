@@ -171,12 +171,18 @@ classes/medidas-de-tendencia-central.html
 - Se actualizó cache busting a `styles.css?v=0.24.5`, `app.js?v=0.24.5`, `sw.js?v=0.24.5` y manifest `index.html?v=0.24.5`.
 
 
-## v0.24.6
+## v0.24.7
 
 - Se corrigio definitivamente la animacion del warning de eliminacion. La causa era que reglas heredadas con `transform: ... !important` y `background-position: ... !important` bloqueaban los keyframes, por eso los signos y la malla quedaban estaticos.
 - Los signos de exclamacion ahora se animan mediante contenedores `warning-bounce` con keyframes propios, evitando que los `transform !important` heredados congelen la animacion.
 - Se agrego un fallback para que, si el navegador conserva temporalmente el HTML anterior, los signos directos tambien puedan animarse mediante `translate`, `scale` y `rotate`.
 - La malla roja del warning conserva la estructura visual de la cabecera de clases y ahora desplaza `background-position` sin declararlo como `!important`, de modo que el movimiento suave si se ejecuta.
-- Se actualizo cache busting a `0.24.6`.
+- Se actualizo cache busting a `0.24.7`.
 
 - Se agrego un refuerzo por JavaScript con Web Animations API al abrir el modal para arrancar la malla y los signos aunque alguna regla CSS cacheada o heredada intente dejarlos quietos.
+
+
+### v0.24.7
+- Ajuste visual del warning de eliminación: los signos de exclamación quedaron más pegados entre sí.
+- Se reemplazó el rebote/squash por una animación de zoom in / zoom out más limpia.
+- Se mantuvo la malla roja animada del encabezado del warning.

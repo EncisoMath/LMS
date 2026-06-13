@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.6';
+  const APP_VERSION = '0.24.7';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -669,30 +669,28 @@
 
     if (markA) {
       markA.animate([
-        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg)', offset: 0 },
-        { transform: 'translate3d(3px,-17px,0) scaleX(.90) scaleY(1.10) rotate(-5deg)', offset: .24 },
-        { transform: 'translate3d(4px,7px,0) scaleX(1.16) scaleY(.84) rotate(-8deg)', offset: .48 },
-        { transform: 'translate3d(2px,-5px,0) scaleX(.98) scaleY(1.04) rotate(-6deg)', offset: .62 },
-        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg)', offset: 1 }
+        { transform: 'translate3d(0,0,0) scale(.92) rotate(-8deg)', offset: 0 },
+        { transform: 'translate3d(0,0,0) scale(1.14) rotate(-8deg)', offset: .46 },
+        { transform: 'translate3d(0,0,0) scale(1.04) rotate(-8deg)', offset: .62 },
+        { transform: 'translate3d(0,0,0) scale(.92) rotate(-8deg)', offset: 1 }
       ], {
-        duration: 1120,
+        duration: 920,
         iterations: Infinity,
-        easing: 'cubic-bezier(.18,.9,.22,1)'
+        easing: 'cubic-bezier(.34,1.56,.64,1)'
       });
     }
 
     if (markB) {
       markB.animate([
-        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg)', offset: 0 },
-        { transform: 'translate3d(-3px,-19px,0) scaleX(.90) scaleY(1.10) rotate(7deg)', offset: .22 },
-        { transform: 'translate3d(-4px,8px,0) scaleX(1.14) scaleY(.84) rotate(4deg)', offset: .46 },
-        { transform: 'translate3d(-2px,-4px,0) scaleX(.98) scaleY(1.03) rotate(6deg)', offset: .60 },
-        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg)', offset: 1 }
+        { transform: 'translate3d(0,0,0) scale(.94) rotate(6deg)', offset: 0 },
+        { transform: 'translate3d(0,0,0) scale(1.16) rotate(6deg)', offset: .44 },
+        { transform: 'translate3d(0,0,0) scale(1.05) rotate(6deg)', offset: .60 },
+        { transform: 'translate3d(0,0,0) scale(.94) rotate(6deg)', offset: 1 }
       ], {
-        duration: 1120,
+        duration: 920,
         iterations: Infinity,
-        delay: 100,
-        easing: 'cubic-bezier(.18,.9,.22,1)'
+        delay: 80,
+        easing: 'cubic-bezier(.34,1.56,.64,1)'
       });
     }
   }
@@ -1268,7 +1266,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.6', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.7', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
