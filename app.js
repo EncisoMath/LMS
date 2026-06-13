@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.5';
+  const APP_VERSION = '0.24.6';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -624,8 +624,8 @@
         <div class="danger-head">
           <span class="danger-red-mesh" aria-hidden="true"></span>
           <div class="warning-icon warning-duo" aria-hidden="true">
-            <img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" />
-            <img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" />
+            <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
+            <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
           </div>
           <div>
             <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>
@@ -646,7 +646,55 @@
       </div>
     `, () => {
       document.getElementById('confirmDeleteStudent').addEventListener('click', () => deleteStudent(student));
+      startDeleteWarningMotion();
     });
+  }
+
+  function startDeleteWarningMotion() {
+    const mesh = document.querySelector('.danger-red-mesh');
+    const markA = document.querySelector('.warning-bounce-a');
+    const markB = document.querySelector('.warning-bounce-b');
+    if (!Element.prototype.animate) return;
+
+    if (mesh) {
+      mesh.animate([
+        { backgroundPosition: '0 0, 0 0' },
+        { backgroundPosition: '48px 48px, 48px 48px' }
+      ], {
+        duration: 14000,
+        iterations: Infinity,
+        easing: 'linear'
+      });
+    }
+
+    if (markA) {
+      markA.animate([
+        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg)', offset: 0 },
+        { transform: 'translate3d(3px,-17px,0) scaleX(.90) scaleY(1.10) rotate(-5deg)', offset: .24 },
+        { transform: 'translate3d(4px,7px,0) scaleX(1.16) scaleY(.84) rotate(-8deg)', offset: .48 },
+        { transform: 'translate3d(2px,-5px,0) scaleX(.98) scaleY(1.04) rotate(-6deg)', offset: .62 },
+        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg)', offset: 1 }
+      ], {
+        duration: 1120,
+        iterations: Infinity,
+        easing: 'cubic-bezier(.18,.9,.22,1)'
+      });
+    }
+
+    if (markB) {
+      markB.animate([
+        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg)', offset: 0 },
+        { transform: 'translate3d(-3px,-19px,0) scaleX(.90) scaleY(1.10) rotate(7deg)', offset: .22 },
+        { transform: 'translate3d(-4px,8px,0) scaleX(1.14) scaleY(.84) rotate(4deg)', offset: .46 },
+        { transform: 'translate3d(-2px,-4px,0) scaleX(.98) scaleY(1.03) rotate(6deg)', offset: .60 },
+        { transform: 'translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg)', offset: 1 }
+      ], {
+        duration: 1120,
+        iterations: Infinity,
+        delay: 100,
+        easing: 'cubic-bezier(.18,.9,.22,1)'
+      });
+    }
   }
 
   function deleteStudent(student) {
@@ -1220,7 +1268,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.5', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.6', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -3399,7 +3399,7 @@ html[data-bg-mode="black"] .login-screen {
     linear-gradient(rgba(255, 210, 216, .26) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 128, 140, .20) 1px, transparent 1px) !important;
   background-size: 24px 24px !important;
-  background-position: 0 0, 0 0 !important;
+  background-position: 0 0, 0 0;
   transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
   transform-origin: center !important;
   will-change: background-position !important;
@@ -3503,3 +3503,139 @@ html[data-bg-mode="black"] .login-screen {
     top: 3px !important;
   }
 }
+
+/* v0.24.6 - arreglo definitivo warning: animacion visible sin quedar bloqueada por transform !important heredado */
+.danger-head {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+}
+
+.danger-head .danger-red-mesh {
+  display: block !important;
+  position: absolute !important;
+  inset: -18px !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  opacity: .56 !important;
+  background-image:
+    linear-gradient(rgba(255, 210, 216, .26) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 128, 140, .20) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 0;
+  transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
+  transform-origin: center !important;
+  filter: none !important;
+  will-change: background-position !important;
+  animation: warningLessonGridDrift246 14s linear infinite !important;
+  animation-play-state: running !important;
+}
+
+@keyframes warningLessonGridDrift246 {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 48px 48px, 48px 48px; }
+}
+
+.danger-head .warning-icon.warning-duo {
+  position: relative !important;
+  overflow: visible !important;
+  width: 98px !important;
+  height: 118px !important;
+  justify-self: center !important;
+  align-self: center !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.danger-head .warning-icon.warning-duo > .warning-bounce {
+  position: absolute !important;
+  display: block !important;
+  width: 70px !important;
+  height: auto !important;
+  transform-origin: 50% 92% !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+}
+
+.danger-head .warning-icon.warning-duo > .warning-bounce-a {
+  left: 8px !important;
+  top: 30px !important;
+  z-index: 1 !important;
+  animation: warningJumpCloseWrapA246 1.12s cubic-bezier(.18,.9,.22,1) infinite !important;
+  animation-play-state: running !important;
+}
+
+.danger-head .warning-icon.warning-duo > .warning-bounce-b {
+  left: 38px !important;
+  top: 3px !important;
+  z-index: 2 !important;
+  animation: warningJumpCloseWrapB246 1.12s cubic-bezier(.18,.9,.22,1) infinite .1s !important;
+  animation-play-state: running !important;
+}
+
+.danger-head .warning-icon.warning-duo > .warning-bounce > .warning-mark {
+  position: relative !important;
+  display: block !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  object-fit: contain !important;
+  animation: none !important;
+  transform: none !important;
+  filter:
+    drop-shadow(0 9px 10px rgba(0,0,0,.34))
+    drop-shadow(0 0 12px rgba(255,255,255,.12)) !important;
+}
+
+@keyframes warningJumpCloseWrapA246 {
+  0%,100% { transform: translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg); }
+  24% { transform: translate3d(3px,-17px,0) scaleX(.90) scaleY(1.10) rotate(-5deg); }
+  48% { transform: translate3d(4px,7px,0) scaleX(1.16) scaleY(.84) rotate(-8deg); }
+  62% { transform: translate3d(2px,-5px,0) scaleX(.98) scaleY(1.04) rotate(-6deg); }
+}
+
+@keyframes warningJumpCloseWrapB246 {
+  0%,100% { transform: translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg); }
+  22% { transform: translate3d(-3px,-19px,0) scaleX(.90) scaleY(1.10) rotate(7deg); }
+  46% { transform: translate3d(-4px,8px,0) scaleX(1.14) scaleY(.84) rotate(4deg); }
+  60% { transform: translate3d(-2px,-4px,0) scaleX(.98) scaleY(1.03) rotate(6deg); }
+}
+
+/* Fallback: si el navegador conserva el HTML anterior en cache, los IMG directos tambien se mueven con propiedades independientes. */
+.danger-head .warning-icon.warning-duo > .warning-mark-a {
+  animation: warningDirectA246 1.12s cubic-bezier(.18,.9,.22,1) infinite !important;
+  will-change: translate, scale, rotate !important;
+}
+
+.danger-head .warning-icon.warning-duo > .warning-mark-b {
+  animation: warningDirectB246 1.12s cubic-bezier(.18,.9,.22,1) infinite .1s !important;
+  will-change: translate, scale, rotate !important;
+}
+
+@keyframes warningDirectA246 {
+  0%,100% { translate: 0 0; scale: .99 1.01; rotate: -8deg; }
+  24% { translate: 3px -17px; scale: .90 1.10; rotate: -5deg; }
+  48% { translate: 4px 7px; scale: 1.16 .84; rotate: -8deg; }
+  62% { translate: 2px -5px; scale: .98 1.04; rotate: -6deg; }
+}
+
+@keyframes warningDirectB246 {
+  0%,100% { translate: 0 0; scale: .99 1.01; rotate: 5deg; }
+  22% { translate: -3px -19px; scale: .90 1.10; rotate: 7deg; }
+  46% { translate: -4px 8px; scale: 1.14 .84; rotate: 4deg; }
+  60% { translate: -2px -4px; scale: .98 1.03; rotate: 6deg; }
+}
+
+@media (max-width: 520px) {
+  .danger-head .warning-icon.warning-duo {
+    width: 88px !important;
+    height: 108px !important;
+  }
+  .danger-head .warning-icon.warning-duo > .warning-bounce { width: 64px !important; }
+  .danger-head .warning-icon.warning-duo > .warning-bounce-a { left: 4px !important; top: 29px !important; }
+  .danger-head .warning-icon.warning-duo > .warning-bounce-b { left: 32px !important; top: 3px !important; }
+}
+
