@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.67';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.67: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.68';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.68: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1444,16 +1444,40 @@
       image_x: 0, image_y: 30, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
       answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
+    },
+    match: {
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 18,
+      image_x: 0, image_y: 10, image_w: 100, image_h: 200,
+      textB_x: 0, textB_y: 20, textB_w: 100, textB_h: 80,
+      answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
+    },
+    fill_text: {
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 16,
+      image_x: 0, image_y: 0, image_w: 100, image_h: 180,
+      textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 80,
+      answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
+    },
+    slider: {
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 18,
+      image_x: 0, image_y: 0, image_w: 100, image_h: 200,
+      textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 100,
+      answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
     }
   };
+
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.68';
 
   function getQuizLayoutTuneDefaults(type = 'default') {
     return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
   }
 
+  function quizLayoutTuneKey(type = 'default') {
+    return `encisomath:quizLayoutTune:${QUIZ_LAYOUT_TUNE_STORAGE_VERSION}:${type || 'default'}`;
+  }
+
   function getQuizLayoutTune(type = 'default') {
     try {
-      const saved = JSON.parse(localStorage.getItem(`encisomath:quizLayoutTune:${type}`) || '{}');
+      const saved = JSON.parse(localStorage.getItem(quizLayoutTuneKey(type)) || '{}');
       return normalizeQuizLayoutTune(saved, type);
     } catch (_) {
       return normalizeQuizLayoutTune({}, type);
@@ -1478,7 +1502,7 @@
 
   function saveQuizLayoutTune(type, tune) {
     const normalized = normalizeQuizLayoutTune(tune, type);
-    try { localStorage.setItem(`encisomath:quizLayoutTune:${type}`, JSON.stringify(normalized)); } catch (_) {}
+    try { localStorage.setItem(quizLayoutTuneKey(type), JSON.stringify(normalized)); } catch (_) {}
     return normalized;
   }
 
@@ -1541,7 +1565,7 @@
               <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
               <span>Mostrar imagen en vista previa</span>
             </label>
-            <small>Solo oculta/muestra la imagen para revisar como se ve el item.</small>
+            <small>Solo oculta/muestra la imagen para revisar cómo se ve el ítem.</small>
           </div>` : ''}
           <div class="quiz-layout-tune-scroll">
             ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
@@ -4003,7 +4027,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.67', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.68', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -11137,3 +11137,124 @@ body.quiz-fullscreen-active,
 .quiz-calibration-mode.quiz-type-open .quiz-tune-box::after {
   display: none !important;
 }
+
+
+/* v0.24.68 - Defaults finales Match/Fill/Slider, sin contornos verdes y adaptación a pantallas cortas */
+.quiz-calibration-mode.quiz-type-match .quiz-tune-box,
+.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box,
+.quiz-calibration-mode.quiz-type-slider .quiz-tune-box {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+.quiz-calibration-mode.quiz-type-match .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-slider .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-match .quiz-tune-box::after,
+.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box::after,
+.quiz-calibration-mode.quiz-type-slider .quiz-tune-box::after {
+  display: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  height: var(--quiz-tune-h, auto) !important;
+  min-height: var(--quiz-tune-h, min(18vh, 150px)) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box .quiz-image-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box .quiz-image-card {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card img,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box .quiz-image-card img,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box .quiz-image-card img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+/* La calibración enviada queda como base, pero se compacta suavemente en pantallas 9:16, 10:16 y móviles más bajos. */
+@media (max-height: 760px) {
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider {
+    --match-option-slot-h: 34px;
+    --fill-option-slot-h: 34px;
+    --fill-inline-slot-h: clamp(24px, calc(var(--quiz-fill-font, var(--quiz-text-font, var(--quiz-text-a-font, 18px))) * 1.18), 30px);
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-question-content,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-question-content,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-question-content {
+    gap: clamp(4px, .8vh, 8px) !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box {
+    height: min(var(--quiz-tune-h, 200px), 22dvh) !important;
+    min-height: min(var(--quiz-tune-h, 200px), 22dvh) !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
+    font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 18px)) * .92) !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-board,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options {
+    gap: 6px !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-actions,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-actions {
+    gap: 6px !important;
+  }
+}
+
+@media (max-height: 680px) {
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider {
+    --match-option-slot-h: 31px;
+    --fill-option-slot-h: 31px;
+    --fill-inline-slot-h: clamp(22px, calc(var(--quiz-fill-font, var(--quiz-text-font, var(--quiz-text-a-font, 18px))) * 1.08), 28px);
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box {
+    height: min(var(--quiz-tune-h, 200px), 18dvh) !important;
+    min-height: min(var(--quiz-tune-h, 200px), 18dvh) !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option {
+    font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 18px)) * .84) !important;
+    line-height: 1.06 !important;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source .match-card,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
+    min-height: 31px !important;
+    height: 31px !important;
+    max-height: 31px !important;
+  }
+}

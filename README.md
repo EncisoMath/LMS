@@ -727,3 +727,16 @@ unzip -t encisomath-pwa-v0.24.52.zip
   - Pregunta abierta: Texto A Y `30px`, imagen Y `30px`, imagen alto `200px`, Texto B Y `30px`, opciones Y `30px`, fuente base `18px`.
 - En esos tres tipos se ocultaron los contornos verdes de calibración, pero se mantiene la tuerca para seguir ajustando y navegar entre ítems.
 - Versiones/cache busting actualizadas a `0.24.67`.
+
+## v0.24.68
+
+- Se parte de `v0.24.67`.
+- Se fijaron los valores de calibración enviados para `Drag and drop`, `Completar texto` y `Slider`:
+  - Drag and drop: Texto A X `0px`, Y `0px`, ancho `100%`, alto `80px`, fuente `18px`; imagen X `0px`, Y `10px`, ancho `100%`, alto `200px`; Texto B X `0px`, Y `20px`, ancho `100%`, alto `80px`; opciones X `0px`, Y `30px`, ancho `100%`.
+  - Completar texto: Texto A X `0px`, Y `0px`, ancho `100%`, alto `80px`, fuente `16px`; imagen X `0px`, Y `0px`, ancho `100%`, alto `180px`; Texto B X `0px`, Y `0px`, ancho `100%`, alto `80px`; opciones X `0px`, Y `0px`, ancho `100%`.
+  - Slider: Texto A X `0px`, Y `0px`, ancho `100%`, alto `100px`, fuente `18px`; imagen X `0px`, Y `0px`, ancho `100%`, alto `200px`; Texto B X `0px`, Y `0px`, ancho `100%`, alto `100px`; opciones X `0px`, Y `0px`, ancho `100%`.
+- Se cambió la llave de `localStorage` del panel de layout a `encisomath:quizLayoutTune:v0.24.68:<tipo>` para que los nuevos defaults no queden pisados por calibraciones temporales anteriores.
+- Se ocultaron los contornos verdes de calibración en Drag and drop, Completar texto y Slider, manteniendo la tuerca activa.
+- Se añadieron reglas responsive para pantallas más cortas, compactando imagen, textos, tarjetas y espacios sin mover la estructura base del ítem.
+- Versiones/cache busting actualizados a `0.24.68`.
+
