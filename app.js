@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.8.0';
+  const APP_VERSION = '0.10.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -305,11 +305,12 @@
           <span class="spacer"></span>
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
-        <section class="subject-banner animated-cover" ${coverStyle}>
+        <section class="subject-banner animated-cover" ${coverStyle} data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
           ${coverMotionHTML('subject')}
-          <div class="subject-banner-shade"></div>
+          <div class="subject-banner-shade" aria-hidden="true"></div>
+          <button class="subject-menu-btn" id="subjectMenuBtn" aria-label="Gestor visual">•••</button>
           <div class="subject-banner-content">
-            <img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />
+            ${isSubjectIconVisible(assignment) ? `<img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />` : ''}
             <div class="subject-copy">
               <p class="subject-kicker">${escapeHTML(assignment.area)}</p>
               <h2>${escapeHTML(assignment.subject)}</h2>
@@ -318,7 +319,6 @@
                 <span>${escapeHTML(assignment.sede)}</span>
                 <span>${studentCount} estudiantes</span>
               </div>
-              <button class="mini-btn visual-btn" id="visualManagerBtn">🎨 Gestor visual</button>
             </div>
           </div>
         </section>
@@ -336,7 +336,7 @@
       document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
       document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
-      document.getElementById('visualManagerBtn').addEventListener('click', openVisualManagerModal);
+      document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
       if (tab === 'students') renderStudentsTab({ animate: true });
       else renderClassesTab({ animate: true });
     });
@@ -376,6 +376,10 @@
           <article class="manager-card">
             <h3>Icono de la asignatura</h3>
             <p>Úsalo para diferenciar rápido cada carga académica.</p>
+            <label class="toggle-row" for="showSubjectIconToggle">
+              <span>Mostrar icono en el banner</span>
+              <input id="showSubjectIconToggle" type="checkbox" ${isSubjectIconVisible(assignment) ? 'checked' : ''} />
+            </label>
             <img class="manager-preview-icon" src="${escapeAttr(iconSrc)}" alt="Icono actual" />
             <div class="manager-actions">
               <label class="primary-btn">Cambiar icono<input id="iconInput" type="file" accept="image/*,.svg" hidden /></label>
@@ -389,6 +393,7 @@
       document.getElementById('iconInput').addEventListener('change', (event) => saveImageOverride(event, 'icon'));
       document.getElementById('resetCoverBtn').addEventListener('click', () => resetAssignmentVisual('cover'));
       document.getElementById('resetIconBtn').addEventListener('click', () => resetAssignmentVisual('icon'));
+      document.getElementById('showSubjectIconToggle').addEventListener('change', (event) => toggleSubjectIconVisibility(event.target.checked));
     });
   }
 
@@ -782,7 +787,7 @@
 
   function attendanceButtonHTML(studentId, status, current) {
     const info = statusMap[status];
-    return `<button class="att-btn ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
+    return `<button class="att-btn att-${status} ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
   }
 
   function classCardHTML(item) {
@@ -883,6 +888,18 @@
     return localStorage.getItem(`encisomath:assignmentIcon:${assignment.id}`) || assignment.icon || './assets/subject-statistics.svg';
   }
 
+  function isSubjectIconVisible(assignment) {
+    return localStorage.getItem(`encisomath:assignmentIconVisible:${assignment.id}`) !== 'false';
+  }
+
+  function toggleSubjectIconVisibility(visible) {
+    if (!state.assignment) return;
+    localStorage.setItem(`encisomath:assignmentIconVisible:${state.assignment.id}`, visible ? 'true' : 'false');
+    closeModal();
+    toast(visible ? 'Icono visible en el banner.' : 'Icono oculto en el banner.');
+    renderSubjectDetail('students');
+  }
+
   function getAssignmentCover(assignment) {
     return localStorage.getItem(`encisomath:assignmentCover:${assignment.id}`) || localStorage.getItem(`encisomath:cover:${assignment.id}`) || '';
   }
@@ -890,7 +907,7 @@
   function coverBackgroundStyle(assignment) {
     const cover = getAssignmentCover(assignment);
     if (!cover) return '';
-    return `style="background-image: linear-gradient(rgba(4,16,28,.12), rgba(4,16,28,.28)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center; animation: none;"`;
+    return `style="background-image: linear-gradient(rgba(0,0,0,.03), rgba(0,0,0,.06)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center; animation: none;"`;
   }
 
   function saveImageOverride(event, type) {
