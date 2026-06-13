@@ -903,3 +903,274 @@ html[data-bg-mode="black"] .manager-preview-cover {
       #000000 50%,
       color-mix(in srgb, var(--maincolor) 36%, #000000) 100%);
 }
+
+/* v0.7 - scroll fijo, negro real y glows corregidos */
+html, body {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+body {
+  padding: 0 !important;
+}
+#app {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+.screen {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+.login-screen,
+.loading-screen {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+.topbar,
+.bottom-nav {
+  transform: translate3d(-50%, 0, 0);
+  will-change: transform;
+}
+
+@media (min-width: 720px) {
+  .screen {
+    height: calc(100dvh - 28px);
+    min-height: calc(100dvh - 28px);
+  }
+  .login-screen,
+  .loading-screen {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+
+html[data-bg-mode="black"],
+html[data-bg-mode="black"] body,
+html[data-bg-mode="black"] #app,
+html[data-bg-mode="black"] .app-shell {
+  background: #000 !important;
+}
+html[data-bg-mode="black"] body {
+  background-image: none !important;
+}
+html[data-bg-mode="black"] .screen,
+html[data-bg-mode="black"] .home-screen,
+html[data-bg-mode="black"] .subject-screen,
+html[data-bg-mode="black"] .class-screen,
+html[data-bg-mode="black"] .tab-section,
+html[data-bg-mode="black"] .section {
+  background: #000 !important;
+  background-image: none !important;
+}
+html[data-bg-mode="black"] .login-screen,
+html[data-bg-mode="black"] .loading-screen {
+  background: #000 !important;
+  background-image: none !important;
+}
+html[data-bg-mode="black"] .login-screen::before {
+  opacity: .28;
+}
+html[data-bg-mode="black"] .login-card,
+html[data-bg-mode="black"] .twitter-profile,
+html[data-bg-mode="black"] .profile-info,
+html[data-bg-mode="black"] .subject-panel,
+html[data-bg-mode="black"] .date-card,
+html[data-bg-mode="black"] .class-card,
+html[data-bg-mode="black"] .assignment-card,
+html[data-bg-mode="black"] .manager-card,
+html[data-bg-mode="black"] .modal-card {
+  background-color: rgba(0, 0, 0, .92) !important;
+}
+html[data-bg-mode="black"] .topbar,
+html[data-bg-mode="black"] .bottom-nav {
+  background: rgba(0, 0, 0, .98) !important;
+}
+html[data-bg-mode="black"] .cover-grid,
+html[data-bg-mode="black"] .login-screen::before {
+  background-image:
+    linear-gradient(rgba(255,255,255,.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.026) 1px, transparent 1px);
+}
+html[data-bg-mode="black"] .profile-cover,
+html[data-bg-mode="black"] .cover,
+html[data-bg-mode="black"] .assignment-cover-mini,
+html[data-bg-mode="black"] .manager-preview-cover {
+  background:
+    radial-gradient(circle at 12% 24%, color-mix(in srgb, var(--maincolor) 46%, transparent), transparent 26%),
+    radial-gradient(circle at 78% 12%, color-mix(in srgb, var(--maincolor) 22%, transparent), transparent 23%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--maincolor) 42%, #000 58%),
+      #000 52%,
+      color-mix(in srgb, var(--maincolor) 30%, #000 70%) 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.06), 0 0 36px color-mix(in srgb, var(--maincolor) 10%, transparent);
+}
+
+html[data-bg-mode="black"] .student-card {
+  background: rgba(0, 0, 0, .86) !important;
+  border-color: rgba(255, 255, 255, .14);
+  box-shadow: 0 12px 28px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.035);
+}
+html[data-bg-mode="black"] .student-card.present {
+  background: linear-gradient(135deg, rgba(88,204,2,.18), rgba(0,0,0,.92) 72%) !important;
+  border-color: rgba(88,204,2,.62);
+  box-shadow: 0 0 0 1px rgba(88,204,2,.16), 0 0 22px rgba(88,204,2,.13), 0 12px 28px rgba(0,0,0,.55);
+}
+html[data-bg-mode="black"] .student-card.absent {
+  background: linear-gradient(135deg, rgba(239,68,68,.19), rgba(0,0,0,.92) 72%) !important;
+  border-color: rgba(239,68,68,.62);
+  box-shadow: 0 0 0 1px rgba(239,68,68,.16), 0 0 22px rgba(239,68,68,.13), 0 12px 28px rgba(0,0,0,.55);
+}
+html[data-bg-mode="black"] .student-card.excused {
+  background: linear-gradient(135deg, rgba(245,158,11,.19), rgba(0,0,0,.92) 72%) !important;
+  border-color: rgba(245,158,11,.62);
+  box-shadow: 0 0 0 1px rgba(245,158,11,.16), 0 0 22px rgba(245,158,11,.13), 0 12px 28px rgba(0,0,0,.55);
+}
+html[data-bg-mode="black"] .att-btn,
+html[data-bg-mode="black"] .period-btn,
+html[data-bg-mode="black"] .tab-btn,
+html[data-bg-mode="black"] .mini-btn,
+html[data-bg-mode="black"] .select,
+html[data-bg-mode="black"] .input,
+html[data-bg-mode="black"] .student-delete,
+html[data-bg-mode="black"] .icon-btn {
+  background: rgba(255,255,255,.065) !important;
+  border-color: rgba(255,255,255,.14);
+}
+html[data-bg-mode="black"] .att-btn.active,
+html[data-bg-mode="black"] .period-btn.active,
+html[data-bg-mode="black"] .tab-btn.active,
+html[data-bg-mode="black"] .mini-btn.selected,
+html[data-bg-mode="black"] .nav-item.active {
+  background: linear-gradient(135deg, var(--maincolor), color-mix(in srgb, var(--maincolor) 64%, #fff)) !important;
+  border-color: var(--maincolor) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--maincolor) 34%, transparent), 0 0 26px color-mix(in srgb, var(--maincolor) 28%, transparent), 0 10px 22px rgba(0,0,0,.28) !important;
+}
+html[data-bg-mode="black"] .subject-chips span,
+html[data-bg-mode="black"] .delete-target {
+  background: rgba(255,255,255,.065) !important;
+}
+html[data-bg-mode="black"] .lesson-frame {
+  background: #000 !important;
+}
+
+/* Warning modal v0.7: más cómic, más compacto y loop perfecto */
+.danger-modal {
+  width: min(calc(100vw - 18px), 620px);
+}
+.danger-head {
+  min-height: 118px;
+  grid-template-columns: 64px minmax(0,1fr);
+  padding: 18px 56px 18px 18px;
+}
+.danger-close {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 4;
+}
+.danger-head::before {
+  inset: 0 auto 0 -96px;
+  width: calc(100% + 192px);
+  background-image: repeating-linear-gradient(112deg, rgba(255,255,255,.14) 0 13px, transparent 13px 31px);
+  background-size: 96px 96px;
+  animation: dangerStripesPerfect 900ms linear infinite;
+  opacity: .46;
+}
+.danger-head h2 {
+  font-family: "Arial Black", Impact, Haettenschweiler, "SF Pro Display", system-ui, sans-serif;
+  font-size: clamp(1.22rem, 4.8vw, 1.86rem);
+  line-height: .92;
+  letter-spacing: -.055em;
+  transform: skewX(-3deg);
+  text-shadow:
+    0 3px 0 rgba(0,0,0,.34),
+    2px 0 0 rgba(255,255,255,.08),
+    0 0 24px rgba(255,160,160,.24);
+}
+.danger-head h2 span {
+  color: #fff2f2;
+  text-decoration: none;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,.16));
+}
+.warning-icon {
+  width: 62px;
+  height: 62px;
+  background: linear-gradient(135deg, #ff6868 0%, #ff2e3e 46%, #ba101d 100%);
+  transform: rotate(-1deg);
+}
+.warning-icon::after {
+  content: "";
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: -8px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.34);
+  filter: blur(6px);
+  animation: bangShadow 980ms cubic-bezier(.2,.85,.25,1) infinite;
+}
+.bang-mark {
+  width: 26px;
+  height: 46px;
+  transform-origin: 50% 100%;
+  animation: pixarBangPro 980ms cubic-bezier(.2,.85,.25,1) infinite;
+  z-index: 2;
+}
+.bang-bar {
+  width: 11px;
+  height: 30px;
+  bottom: 14px;
+  border-radius: 8px 8px 10px 10px;
+}
+.bang-dot {
+  width: 11px;
+  height: 11px;
+  animation: dotImpactPro 980ms cubic-bezier(.2,.85,.25,1) infinite;
+}
+@keyframes dangerStripesPerfect {
+  from { transform: translate3d(0,0,0); }
+  to { transform: translate3d(48px,0,0); }
+}
+@keyframes pixarBangPro {
+  0%, 100% { transform: translateY(-5px) scaleX(.92) scaleY(1.1) rotate(-2deg); }
+  22% { transform: translateY(-18px) scaleX(.78) scaleY(1.25) rotate(2deg); }
+  46% { transform: translateY(6px) scaleX(1.34) scaleY(.58) rotate(-1deg); }
+  56% { transform: translateY(0) scaleX(.78) scaleY(1.34) rotate(1deg); }
+  72% { transform: translateY(-8px) scaleX(.96) scaleY(1.06) rotate(-1deg); }
+}
+@keyframes dotImpactPro {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  46% { transform: translateX(-50%) scale(1.55,.54); }
+  56% { transform: translateX(-50%) scale(.82,1.22); }
+  72% { transform: translateX(-50%) scale(1.05,.95); }
+}
+@keyframes bangShadow {
+  0%, 100% { opacity: .25; transform: scaleX(.62); }
+  22% { opacity: .12; transform: scaleX(.4); }
+  46% { opacity: .48; transform: scaleX(1.04); }
+  56% { opacity: .30; transform: scaleX(.74); }
+}
+@media (max-width: 430px) {
+  .danger-modal { width: min(calc(100vw - 8px), 410px); }
+  .danger-head {
+    min-height: 112px;
+    grid-template-columns: 58px minmax(0,1fr);
+    padding: 15px 52px 15px 14px;
+  }
+  .warning-icon { width: 56px; height: 56px; }
+  .danger-head h2 { font-size: clamp(1.05rem, 5.6vw, 1.38rem); }
+  .danger-head p { font-size: .8rem; line-height: 1.18; }
+}
+.class-screen .lesson-frame { background: #000 !important; }

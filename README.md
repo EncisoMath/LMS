@@ -1,8 +1,18 @@
 # EncisoMath PWA - AVA/LMS en GitHub Pages
 
-Versión inicial: `0.1.0`
+Versión actual: `0.7.0`
 
 Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una PWA móvil instalable publicada con GitHub Pages.
+
+
+## Cambios v0.7.0
+
+- Modo negro total corregido: fondo real `#000000` en pantalla, paneles, barras y transiciones.
+- Scroll interno de la app para que la barra superior y la navegación inferior no se desplacen con el contenido.
+- Login web sin franjas laterales por `padding` o `scrollbar-gutter`.
+- Clases interactivas en modo oscuro y con color principal sincronizado desde preferencias.
+- Modal de eliminación reajustado: proporción mejorada, tipografía más cómic, franjas diagonales en loop continuo y signo de advertencia con squash/stretch.
+- Colores y glows recuperados para tarjetas de asistencia, botones activos y periodos en modo negro total.
 
 ## Qué incluye
 
@@ -115,10 +125,3 @@ classes/medidas-de-tendencia-central.html
 3. Crear panel de administración de JSON.
 4. Conectar persistencia real en la nube.
 5. Diseñar una plantilla estándar para clases generadas con ChatGPT.
-
-
-## Cambios v0.6
-
-- Modo negro total corregido: se eliminan halos verdosos y fondos azul oscuro residuales.
-- Banners, barras, paneles, modales y login respetan mejor el fondo negro puro cuando se selecciona esa opción.
-- Se mantienen los banners con el color principal seleccionado, pero sobre base negra.

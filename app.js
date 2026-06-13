@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.6.0';
+  const APP_VERSION = '0.7.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -933,7 +933,7 @@
     root.style.setProperty('--app-bg', safeBackground);
     root.style.setProperty('--app-bg-2', blackMode ? '#000000' : '#071827');
     root.style.setProperty('--body-accent-glow', blackMode ? 'transparent' : 'color-mix(in srgb, var(--maincolor) 22%, transparent)');
-    root.style.setProperty('--body-secondary-glow', blackMode ? 'transparent' : 'rgba(88, 204, 2, .09)');
+    root.style.setProperty('--body-secondary-glow', blackMode ? 'transparent' : 'color-mix(in srgb, var(--maincolor) 10%, transparent)');
     root.style.setProperty('--screen-accent-glow', blackMode ? 'transparent' : 'color-mix(in srgb, var(--maincolor) 14%, transparent)');
     root.style.setProperty('--screen-top-mix', blackMode ? '#000000' : '#0f2334');
     root.style.setProperty('--bar-bg', blackMode ? 'rgba(0, 0, 0, .96)' : 'rgba(4, 16, 28, .92)');
@@ -945,6 +945,9 @@
     root.style.setProperty('--line', blackMode ? 'rgba(255, 255, 255, .13)' : 'rgba(160, 188, 214, .18)');
     root.style.setProperty('--subject-panel-bg', blackMode ? 'rgba(8, 8, 8, .92)' : 'rgba(8, 26, 42, .9)');
     root.style.setProperty('--modal-bg', blackMode ? 'rgba(6, 6, 6, .97)' : 'rgba(6, 18, 31, .96)');
+    root.style.setProperty('--green-soft', blackMode ? 'rgba(88, 204, 2, .18)' : 'rgba(88, 204, 2, .14)');
+    root.style.setProperty('--red-soft', blackMode ? 'rgba(239, 68, 68, .19)' : 'rgba(239, 68, 68, .15)');
+    root.style.setProperty('--yellow-soft', blackMode ? 'rgba(245, 158, 11, .19)' : 'rgba(245, 158, 11, .16)');
     root.style.setProperty('--banner-deep', blackMode ? '#000000' : '#06121e');
     root.style.setProperty('--banner-base', blackMode ? '#000000' : '#04101c');
     root.style.setProperty('--login-warm-glow', blackMode ? 'transparent' : 'rgba(255, 214, 10, .18)');
