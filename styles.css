@@ -5327,3 +5327,84 @@ html[data-bg-mode="black"] .student-card.rockstar-disabled,
   .rockstar-title-block { padding-right: 0 !important; }
   .rockstar-score-tune-panel { margin-top: 8px !important; }
 }
+
+/* v0.24.17 - Ajuste temporal info banner y respuesta inmediata Rockstars */
+.subject-info-tune-panel {
+  margin: 8px 12px 10px !important;
+  padding: 10px !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+.subject-info-tune-title {
+  color: #fff !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .03em !important;
+  font-size: .78rem !important;
+}
+.subject-info-tune-help {
+  color: var(--muted) !important;
+  font-size: .72rem !important;
+  margin: 2px 0 8px !important;
+}
+.subject-info-tune-row {
+  display: grid !important;
+  gap: 5px !important;
+  margin: 8px 0 !important;
+  padding: 8px !important;
+  border-radius: var(--radius) !important;
+  background: rgba(0,0,0,.30) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+.subject-info-tune-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  color: #fff !important;
+  font-size: .72rem !important;
+}
+.subject-info-tune-head output {
+  color: #fff !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.subject-info-tune-row input[type="range"] {
+  width: 100% !important;
+  accent-color: var(--accent) !important;
+}
+.subject-info-tune-reset {
+  width: 100% !important;
+  margin-top: 4px !important;
+}
+.subject-banner .subject-copy {
+  transform: translate3d(var(--subject-info-x, 0px), 0, 0) scale(var(--subject-info-scale, 1)) !important;
+  transform-origin: left center !important;
+  will-change: transform !important;
+}
+.rockstar-card .rock-btn,
+html[data-bg-mode="black"] .rockstar-card .rock-btn,
+button.rock-btn {
+  transition: transform .06s linear, box-shadow .06s linear, filter .06s linear, background .06s linear !important;
+  touch-action: manipulation !important;
+}
+.rockstar-card .rock-btn.rock-plus.rock-hit-plus,
+.rockstar-card .rock-btn.rock-plus:active {
+  background: linear-gradient(135deg, rgba(88,204,2,.96), rgba(88,204,2,.42)) !important;
+  background-color: #58cc02 !important;
+  border-color: rgba(88,204,2,1) !important;
+  box-shadow: 0 0 0 1px rgba(88,204,2,.30) inset, 0 0 26px rgba(88,204,2,.70), 0 8px 18px rgba(0,0,0,.30) !important;
+  transform: translateY(0) scale(.985) !important;
+  filter: saturate(1.15) brightness(1.08) !important;
+}
+.rockstar-card .rock-btn.rock-minus.rock-hit-minus,
+.rockstar-card .rock-btn.rock-minus:active {
+  background: linear-gradient(135deg, rgba(239,68,68,.96), rgba(239,68,68,.42)) !important;
+  background-color: #ef4444 !important;
+  border-color: rgba(239,68,68,1) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.30) inset, 0 0 26px rgba(239,68,68,.70), 0 8px 18px rgba(0,0,0,.30) !important;
+  transform: translateY(0) scale(.985) !important;
+  filter: saturate(1.15) brightness(1.08) !important;
+}

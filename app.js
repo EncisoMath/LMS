@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.16';
+  const APP_VERSION = '0.24.17';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -44,6 +44,13 @@
     { key: 'x', label: 'Mover puntos horizontal', min: -70, max: 70, step: 1, unit: 'px' },
     { key: 'y', label: 'Mover puntos vertical', min: -36, max: 36, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom puntos', min: 70, max: 145, step: 1, unit: '%' }
+  ];
+
+  const SUBJECT_INFO_TUNE_KEY = 'encisomath:subjectInfoTune';
+  const SUBJECT_INFO_TUNE_DEFAULTS = { x: 0, zoom: 100 };
+  const SUBJECT_INFO_TUNE_FIELDS = [
+    { key: 'x', label: 'Mover info horizontal', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -366,6 +373,7 @@
             </div>
           </div>
         </section>
+        ${subjectInfoTunePanelHTML()}
         <div class="tab-row sticky-tabs">
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
@@ -383,10 +391,86 @@
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
+      bindSubjectInfoTunePanel();
+      applySubjectInfoTune();
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
       else renderClassesTab({ animate: true });
     });
+  }
+
+  function subjectInfoTunePanelHTML() {
+    const tune = getSubjectInfoTune();
+    const rows = SUBJECT_INFO_TUNE_FIELDS.map((field) => {
+      const value = tune[field.key];
+      return `
+        <label class="subject-info-tune-row">
+          <span class="subject-info-tune-head"><strong>${field.label}</strong><output data-subject-info-tune-value="${field.key}">${value}${field.unit}</output></span>
+          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-subject-info-tune="${field.key}" />
+        </label>
+      `;
+    }).join('');
+    return `
+      <section class="subject-info-tune-panel" aria-label="Ajuste temporal de informacion del banner">
+        <div class="subject-info-tune-title">Ajuste temporal info banner</div>
+        <div class="subject-info-tune-help">Pásame estos valores cuando la informacion de la asignatura quede bien.</div>
+        ${rows}
+        <button class="btn ghost small subject-info-tune-reset" type="button" id="subjectInfoTuneReset">Restablecer info</button>
+      </section>
+    `;
+  }
+
+  function bindSubjectInfoTunePanel() {
+    document.querySelectorAll('[data-subject-info-tune]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.subjectInfoTune;
+        const value = Number(input.value);
+        const tune = getSubjectInfoTune();
+        tune[key] = value;
+        saveSubjectInfoTune(tune);
+        updateSubjectInfoTuneOutput(key, value);
+        applySubjectInfoTune(tune);
+      });
+    });
+    document.getElementById('subjectInfoTuneReset')?.addEventListener('click', () => {
+      saveSubjectInfoTune({ ...SUBJECT_INFO_TUNE_DEFAULTS });
+      document.querySelectorAll('[data-subject-info-tune]').forEach((input) => {
+        const key = input.dataset.subjectInfoTune;
+        input.value = SUBJECT_INFO_TUNE_DEFAULTS[key];
+        updateSubjectInfoTuneOutput(key, SUBJECT_INFO_TUNE_DEFAULTS[key]);
+      });
+      applySubjectInfoTune({ ...SUBJECT_INFO_TUNE_DEFAULTS });
+    });
+  }
+
+  function getSubjectInfoTune() {
+    const saved = readJSON(SUBJECT_INFO_TUNE_KEY) || {};
+    return SUBJECT_INFO_TUNE_FIELDS.reduce((tune, field) => {
+      const raw = Number(saved[field.key]);
+      const fallback = SUBJECT_INFO_TUNE_DEFAULTS[field.key];
+      const value = Number.isFinite(raw) ? raw : fallback;
+      tune[field.key] = Math.min(field.max, Math.max(field.min, value));
+      return tune;
+    }, {});
+  }
+
+  function saveSubjectInfoTune(tune) {
+    localStorage.setItem(SUBJECT_INFO_TUNE_KEY, JSON.stringify({
+      x: Number(tune.x) || 0,
+      zoom: Number(tune.zoom) || 100
+    }));
+  }
+
+  function updateSubjectInfoTuneOutput(key, value) {
+    const field = SUBJECT_INFO_TUNE_FIELDS.find((item) => item.key === key);
+    const output = document.querySelector(`[data-subject-info-tune-value="${escapeSelector(key)}"]`);
+    if (output && field) output.textContent = `${value}${field.unit}`;
+  }
+
+  function applySubjectInfoTune(tune = getSubjectInfoTune()) {
+    const root = document.documentElement;
+    root.style.setProperty('--subject-info-x', `${Number(tune.x) || 0}px`);
+    root.style.setProperty('--subject-info-scale', `${(Number(tune.zoom) || 100) / 100}`);
   }
 
   function setSubjectTab(tab) {
@@ -1050,43 +1134,28 @@
 
   function bindRockstarActionButtons() {
     document.querySelectorAll('[data-rockstar-delta]').forEach((button) => {
+      button.addEventListener('pointerdown', () => {
+        flashRockstarButton(button, Number(button.dataset.rockstarDelta), 150);
+      }, { passive: true });
       button.addEventListener('click', () => {
         const studentId = button.dataset.rockstarStudent;
         const delta = Number(button.dataset.rockstarDelta);
-        const changed = addRockstarDelta(studentId, delta);
-        if (changed) flashRockstarButton(button, delta);
+        addRockstarDelta(studentId, delta);
+        button.blur();
       });
     });
   }
 
-  function flashRockstarButton(button, delta) {
+  function flashRockstarButton(button, delta, duration = 150) {
     if (!button) return;
-    const positive = Number(delta) > 0;
-    const className = positive ? 'rock-hit-plus' : 'rock-hit-minus';
-    const bg = positive
-      ? 'linear-gradient(135deg, rgba(88,204,2,.82), rgba(88,204,2,.34))'
-      : 'linear-gradient(135deg, rgba(239,68,68,.82), rgba(239,68,68,.34))';
-    const border = positive ? 'rgba(88,204,2,.98)' : 'rgba(239,68,68,.98)';
-    const glow = positive
-      ? '0 0 0 1px rgba(88,204,2,.22) inset, 0 0 34px rgba(88,204,2,.74), 0 10px 22px rgba(0,0,0,.30)'
-      : '0 0 0 1px rgba(239,68,68,.22) inset, 0 0 34px rgba(239,68,68,.74), 0 10px 22px rgba(0,0,0,.30)';
+    const className = Number(delta) > 0 ? 'rock-hit-plus' : 'rock-hit-minus';
     button.classList.remove('rock-hit-plus', 'rock-hit-minus');
-    button.style.setProperty('background', bg, 'important');
-    button.style.setProperty('background-color', positive ? 'rgb(88,204,2)' : 'rgb(239,68,68)', 'important');
-    button.style.setProperty('border-color', border, 'important');
-    button.style.setProperty('box-shadow', glow, 'important');
-    button.style.setProperty('color', '#fff', 'important');
     void button.offsetWidth;
     button.classList.add(className);
-    button.blur();
-    window.setTimeout(() => {
+    window.clearTimeout(button._rockstarHitTimer);
+    button._rockstarHitTimer = window.setTimeout(() => {
       button.classList.remove(className);
-      button.style.removeProperty('background');
-      button.style.removeProperty('background-color');
-      button.style.removeProperty('border-color');
-      button.style.removeProperty('box-shadow');
-      button.style.removeProperty('color');
-    }, 620);
+    }, duration);
   }
 
   function addRockstarDelta(studentId, delta) {
@@ -1786,7 +1855,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.16', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.17', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
