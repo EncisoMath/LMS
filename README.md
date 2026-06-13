@@ -412,16 +412,9 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - Se añadió botón `Continuar` / `Ver resultados` en el panel porque el avance automático queda desactivado temporalmente.
 - Versión/cache busting actualizados a `0.24.29`.
 
-### v0.24.30
+### v0.24.32
 - Se fijaron los valores finales de calibración de la banda inferior de feedback de Quizzes: curva 12px, ancho 18vw, alto 122px, subir contenido 30px, rebote 22px, banda X 0px, banda Y 13px, zoom banda 110%, emoji X 25px, emoji Y -11px, zoom emoji 132%, título X 30px, título Y 0px, zoom título 138%, frase X 30px, frase Y -18px y zoom frase 83%.
 - Se retiró la calibración temporal y se reactivó el avance automático después del feedback.
 - Se mejoró la entrada de la banda con rebote más natural y zoom inicial, evitando que se quede pegada arriba.
 - Se extendió la banda hacia abajo para que durante el rebote no se vea hueco inferior.
 - La frase secundaria quedó con peso normal, sin negrita.
-
-
-## v0.24.31
-- Se agregaron dos nuevos tipos de pregunta en Quizzes: completar texto con arrastrar y slider numérico.
-- El tipo completar texto usa espacios grises dentro de una oración y opciones de colores arrastrables hasta 8 opciones.
-- El tipo slider permite responder con número, usa slider azul durante la selección, verde/rojo al validar y muestra un slider pequeño con la respuesta correcta cuando se falla.
-- Se mantiene la línea visual de Kahoot/EncisoMath, la banda inferior estable de feedback y el avance automático del quiz.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.31';
+  const APP_VERSION = '0.24.32';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1515,17 +1515,26 @@
     const correct = Number.isFinite(Number(question.correct)) ? Number(question.correct) : min;
     const initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : Math.round((min + max) / 2);
     const tolerance = Number.isFinite(Number(question.tolerance)) ? Number(question.tolerance) : 0;
+    const unit = escapeHTML(question.unit || '');
+    const sliderTicks = Array.from({ length: 5 }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
     return `
       <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}">
-        <div class="quiz-slider-value"><span data-slider-value>${initial}</span><small>${escapeHTML(question.unit || '')}</small></div>
-        <div class="quiz-slider-track-wrap">
-          <input class="quiz-number-slider" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" data-quiz-slider />
+        <div class="quiz-slider-phone-stage">
+          <div class="quiz-slider-phone" aria-label="Respuesta numérica tipo slider">
+            <div class="quiz-slider-phone-screen">
+              <div class="quiz-slider-bubble">
+                <span data-slider-value>${initial}</span>${unit ? `<small>${unit}</small>` : ''}
+              </div>
+              <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}</div>
+              <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
+            </div>
+          </div>
         </div>
-        <div class="quiz-slider-limits"><span>${min}</span><span>${max}</span></div>
+        <div class="quiz-slider-limits"><span>${min}${unit ? ` ${unit}` : ''}</span><span>${max}${unit ? ` ${unit}` : ''}</span></div>
         <div class="quiz-slider-correct" data-slider-correct-row hidden>
           <small>Respuesta correcta</small>
+          <div class="quiz-slider-correct-pill"><span>${correct}</span>${unit ? `<em>${unit}</em>` : ''}</div>
           <input class="quiz-number-slider quiz-number-slider-correct" type="range" min="${min}" max="${max}" step="${step}" value="${correct}" disabled />
-          <strong>${correct}${question.unit ? ` ${escapeHTML(question.unit)}` : ''}</strong>
         </div>
         <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
       </div>
@@ -2505,8 +2514,15 @@
         if (valueLabel) valueLabel.textContent = slider.value;
         const min = Number(slider.min || 0);
         const max = Number(slider.max || 100);
-        const pct = ((Number(slider.value) - min) / Math.max(1, max - min)) * 100;
+        const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(1, max - min)) * 100));
         slider.style.setProperty('--slider-progress', `${pct}%`);
+        board.style.setProperty('--slider-progress', `${pct}%`);
+        const tickIndex = Math.max(0, Math.min(4, Math.round((pct / 100) * 4)));
+        board.querySelectorAll('[data-slider-tick]').forEach((tick, index) => {
+          tick.classList.toggle('active', index === tickIndex);
+          tick.classList.toggle('before-active', index < tickIndex);
+          tick.classList.toggle('after-active', index > tickIndex);
+        });
       };
       slider?.addEventListener('input', update);
       update();
@@ -3263,7 +3279,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.31', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.32', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
