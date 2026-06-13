@@ -2727,3 +2727,38 @@ button {
     top: 3px !important;
   }
 }
+
+
+/* v0.21 warning icon tightening */
+.warning-icon.warning-duo {
+  width: 76px !important;
+  height: 108px !important;
+  transform: translateX(-2px) !important;
+}
+.warning-mark {
+  width: 62px !important;
+  transform-origin: center center !important;
+}
+.warning-mark-a {
+  left: 6px !important;
+  top: 28px !important;
+  transform: rotate(-2deg) !important;
+  z-index: 1 !important;
+}
+.warning-mark-b {
+  left: 24px !important;
+  right: auto !important;
+  top: 2px !important;
+  transform: rotate(1deg) !important;
+  z-index: 2 !important;
+}
+@media (max-width: 520px) {
+  .warning-icon.warning-duo {
+    width: 72px !important;
+    height: 102px !important;
+    transform: translateX(-3px) !important;
+  }
+  .warning-mark { width: 58px !important; }
+  .warning-mark-a { left: 5px !important; top: 27px !important; }
+  .warning-mark-b { left: 20px !important; top: 2px !important; }
+}
