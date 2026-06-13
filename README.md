@@ -270,3 +270,11 @@ Ajustes visuales adicionales en Rockstars:
 - Los botones `+1` y `-1` refuerzan su estado verde/rojo con estilos de alta prioridad y confirmación visual directa desde JavaScript, evitando que tomen el color del tema.
 - El total de puntos se agranda un poco más.
 - Se incrementa el resplandor exterior de las tarjetas para acercarlas al estilo de la pestaña Estudiantes.
+
+## v0.24.16
+
+- Se retiró la bola de disco del banner Rockstars.
+- Se agregaron luces tipo reflectores animados al banner.
+- El título `ROCKSTARS` conserva el movimiento leve de levitación.
+- Se agregó un panel temporal de calibración para la cantidad total de puntos con sliders de posición X, posición Y y zoom. Los valores se guardan en `localStorage` como `encisomath:rockstarScoreTune`.
+- Se actualizó cache busting a `0.24.16`.

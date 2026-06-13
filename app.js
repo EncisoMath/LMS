@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.15';
+  const APP_VERSION = '0.24.16';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -36,6 +36,14 @@
     { key: 'zoomMax', label: 'Zoom maximo', min: 100, max: 155, step: 1, unit: '%' },
     { key: 'textX', label: 'Mover texto horizontal', min: -36, max: 36, step: 1, unit: 'px' },
     { key: 'textY', label: 'Mover texto vertical', min: -30, max: 30, step: 1, unit: 'px' }
+  ];
+
+  const ROCKSTAR_SCORE_TUNE_KEY = 'encisomath:rockstarScoreTune';
+  const ROCKSTAR_SCORE_TUNE_DEFAULTS = { x: 0, y: 0, zoom: 100 };
+  const ROCKSTAR_SCORE_TUNE_FIELDS = [
+    { key: 'x', label: 'Mover puntos horizontal', min: -70, max: 70, step: 1, unit: 'px' },
+    { key: 'y', label: 'Mover puntos vertical', min: -36, max: 36, step: 1, unit: 'px' },
+    { key: 'zoom', label: 'Zoom puntos', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -859,6 +867,13 @@
 
     $content.innerHTML = `
       <section class="rockstar-hero" aria-label="Rockstars de participación">
+        <div class="rockstar-spotlights" aria-hidden="true">
+          <span class="rockstar-spotlight spotlight-left"></span>
+          <span class="rockstar-spotlight spotlight-right"></span>
+          <span class="rockstar-spotlight spotlight-center"></span>
+          <span class="rockstar-light-bulb bulb-left"></span>
+          <span class="rockstar-light-bulb bulb-right"></span>
+        </div>
         <div class="rockstar-rocket-stage" aria-hidden="true">
           <div class="rocket-wrap">
             <div class="rocket-emoji">🚀</div>
@@ -876,7 +891,6 @@
           </div>
         </div>
         <div class="rockstar-title-block">
-          <div class="rockstar-disco" aria-hidden="true"><span class="disco-ball-core"></span><span class="disco-spark disco-spark-a"></span><span class="disco-spark disco-spark-b"></span><span class="disco-spark disco-spark-c"></span></div>
           <div class="rockstar-title-neon" data-text="ROCKSTARS">ROCKSTARS</div>
           <p>Participación · Periodo ${state.rockstarPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
         </div>
@@ -884,6 +898,7 @@
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
       </div>
+      ${rockstarScoreTunePanelHTML()}
       <div class="student-tools rockstar-tools">
         <div class="search-wrap">
           <span aria-hidden="true">🔎</span>
@@ -924,7 +939,85 @@
       refreshRockstarList();
     });
 
+    bindRockstarScoreTunePanel();
+    applyRockstarScoreTune();
     bindRockstarActionButtons();
+  }
+
+  function rockstarScoreTunePanelHTML() {
+    const tune = getRockstarScoreTune();
+    const rows = ROCKSTAR_SCORE_TUNE_FIELDS.map((field) => {
+      const value = tune[field.key];
+      return `
+        <label class="rockstar-score-tune-row">
+          <span class="rockstar-score-tune-head"><strong>${field.label}</strong><output data-rockstar-score-tune-value="${field.key}">${value}${field.unit}</output></span>
+          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-rockstar-score-tune="${field.key}" />
+        </label>
+      `;
+    }).join('');
+    return `
+      <section class="rockstar-score-tune-panel" aria-label="Ajuste temporal del total de puntos">
+        <div class="rockstar-score-tune-title">Ajuste temporal de puntos</div>
+        <div class="rockstar-score-tune-help">Pásame estos valores cuando la posición quede bien.</div>
+        ${rows}
+        <button class="btn ghost small rockstar-score-tune-reset" type="button" id="rockstarScoreTuneReset">Restablecer puntos</button>
+      </section>
+    `;
+  }
+
+  function bindRockstarScoreTunePanel() {
+    document.querySelectorAll('[data-rockstar-score-tune]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.rockstarScoreTune;
+        const value = Number(input.value);
+        const tune = getRockstarScoreTune();
+        tune[key] = value;
+        saveRockstarScoreTune(tune);
+        updateRockstarScoreTuneOutput(key, value);
+        applyRockstarScoreTune(tune);
+      });
+    });
+    document.getElementById('rockstarScoreTuneReset')?.addEventListener('click', () => {
+      saveRockstarScoreTune({ ...ROCKSTAR_SCORE_TUNE_DEFAULTS });
+      document.querySelectorAll('[data-rockstar-score-tune]').forEach((input) => {
+        const key = input.dataset.rockstarScoreTune;
+        input.value = ROCKSTAR_SCORE_TUNE_DEFAULTS[key];
+        updateRockstarScoreTuneOutput(key, ROCKSTAR_SCORE_TUNE_DEFAULTS[key]);
+      });
+      applyRockstarScoreTune({ ...ROCKSTAR_SCORE_TUNE_DEFAULTS });
+    });
+  }
+
+  function getRockstarScoreTune() {
+    const saved = readJSON(ROCKSTAR_SCORE_TUNE_KEY) || {};
+    return ROCKSTAR_SCORE_TUNE_FIELDS.reduce((tune, field) => {
+      const raw = Number(saved[field.key]);
+      const fallback = ROCKSTAR_SCORE_TUNE_DEFAULTS[field.key];
+      const value = Number.isFinite(raw) ? raw : fallback;
+      tune[field.key] = Math.min(field.max, Math.max(field.min, value));
+      return tune;
+    }, {});
+  }
+
+  function saveRockstarScoreTune(tune) {
+    localStorage.setItem(ROCKSTAR_SCORE_TUNE_KEY, JSON.stringify({
+      x: Number(tune.x) || 0,
+      y: Number(tune.y) || 0,
+      zoom: Number(tune.zoom) || 100
+    }));
+  }
+
+  function updateRockstarScoreTuneOutput(key, value) {
+    const field = ROCKSTAR_SCORE_TUNE_FIELDS.find((item) => item.key === key);
+    const output = document.querySelector(`[data-rockstar-score-tune-value="${escapeSelector(key)}"]`);
+    if (output && field) output.textContent = `${value}${field.unit}`;
+  }
+
+  function applyRockstarScoreTune(tune = getRockstarScoreTune()) {
+    const root = document.documentElement;
+    root.style.setProperty('--rockstar-score-x', `${Number(tune.x) || 0}px`);
+    root.style.setProperty('--rockstar-score-y', `${Number(tune.y) || 0}px`);
+    root.style.setProperty('--rockstar-score-scale', `${(Number(tune.zoom) || 100) / 100}`);
   }
 
   function setRockstarPeriod(period) {
@@ -950,6 +1043,7 @@
     const list = document.getElementById('rockstarList');
     if (!list) return;
     list.innerHTML = rockstarListHTML();
+    applyRockstarScoreTune();
     bindRockstarActionButtons();
     if (animate) pulseElement(list, 'class-grid-update');
   }
@@ -1692,7 +1786,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.15', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.16', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
