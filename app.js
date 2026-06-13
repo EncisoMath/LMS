@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.55';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.55: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.56';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.56: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1340,6 +1340,7 @@
     const fullscreen = Boolean(options.fullscreen);
     const promptText = question.textA || question.prompt || '';
     const promptClass = quizPromptClass(promptText || '');
+    const textBClass = quizLengthClass(question.textB || '', 'quiz-text-b');
     const calibratable = ['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
@@ -1353,13 +1354,13 @@
         <div class="quiz-question-content">
           <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
           ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
-          ${question.textB ? `<p class="quiz-text-b quiz-tune-box" data-quiz-tune-target="textB">${escapeHTML(question.textB)}</p>` : ''}
+          ${question.textB ? `<p class="quiz-text-b ${textBClass} quiz-tune-box" data-quiz-tune-target="textB">${escapeHTML(question.textB)}</p>` : ''}
           <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
             ${quizQuestionBodyHTML(question)}
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
-        ${calibratable ? quizLayoutTunePanelHTML(question.type) : ''}
+        ${calibratable ? quizLayoutTunePanelHTML(question.type, questions.length, index) : ''}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -1369,12 +1370,22 @@
     `;
   }
 
+  function quizLengthModifier(text) {
+    const length = String(text || '').trim().length;
+    if (length > 190) return 'xs';
+    if (length > 130) return 'sm';
+    if (length > 85) return 'md';
+    return '';
+  }
+
+  function quizLengthClass(text, prefix) {
+    const modifier = quizLengthModifier(text);
+    return modifier ? `${prefix}-${modifier}` : '';
+  }
+
   function quizPromptClass(prompt) {
-    const length = String(prompt || '').trim().length;
-    if (length > 190) return 'quiz-prompt quiz-prompt-xs';
-    if (length > 130) return 'quiz-prompt quiz-prompt-sm';
-    if (length > 85) return 'quiz-prompt quiz-prompt-md';
-    return 'quiz-prompt';
+    const modifier = quizLengthModifier(prompt);
+    return `quiz-prompt${modifier ? ` quiz-prompt-${modifier}` : ''}`;
   }
 
 
@@ -1383,6 +1394,7 @@
     { key: 'textA_y', label: 'Texto A Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'textA_w', label: 'Texto A ancho', min: 70, max: 110, step: 1, unit: '%' },
     { key: 'textA_h', label: 'Texto A alto', min: 0, max: 180, step: 1, unit: 'px' },
+    { key: 'textA_font', label: 'Texto A fuente base', min: 12, max: 32, step: 1, unit: 'px' },
     { key: 'image_x', label: 'Imagen X', min: -80, max: 80, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'image_w', label: 'Imagen ancho', min: 70, max: 110, step: 1, unit: '%' },
@@ -1391,6 +1403,7 @@
     { key: 'textB_y', label: 'Texto B Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'textB_w', label: 'Texto B ancho', min: 70, max: 110, step: 1, unit: '%' },
     { key: 'textB_h', label: 'Texto B alto', min: 0, max: 180, step: 1, unit: 'px' },
+    { key: 'textB_font', label: 'Texto B fuente base', min: 10, max: 28, step: 1, unit: 'px' },
     { key: 'answers_x', label: 'Opciones X', min: -80, max: 80, step: 1, unit: 'px' },
     { key: 'answers_y', label: 'Opciones Y', min: -160, max: 160, step: 1, unit: 'px' },
     { key: 'answers_w', label: 'Opciones ancho', min: 70, max: 110, step: 1, unit: '%' },
@@ -1398,9 +1411,9 @@
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0,
+    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, textA_font: 20,
     image_x: 0, image_y: 0, image_w: 100, image_h: 0,
-    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0,
+    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0, textB_font: 17,
     answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
   };
 
@@ -1428,7 +1441,29 @@
     return normalized;
   }
 
-  function quizLayoutTunePanelHTML(type = 'default') {
+  function quizLayoutTuneNavHTML(totalQuestions = 0, currentIndex = 0) {
+    const total = Math.max(0, Number(totalQuestions) || 0);
+    if (!total) return '';
+    const buttons = Array.from({ length: total }, (_, index) => {
+      const active = index === Number(currentIndex) ? 'active' : '';
+      return `<button class="quiz-tune-jump-btn ${active}" type="button" data-quiz-jump="${index}">${index + 1}</button>`;
+    }).join('');
+    return `
+      <div class="quiz-layout-tune-nav" aria-label="Navegación rápida de preguntas">
+        <div class="quiz-layout-tune-nav-head">
+          <strong>Preguntas</strong>
+          <span>Salta a cualquier ítem, esté resuelto o no.</span>
+        </div>
+        <div class="quiz-layout-tune-nav-actions">
+          <button class="btn ghost small" type="button" data-quiz-prev>← Anterior</button>
+          <button class="btn ghost small" type="button" data-quiz-next>Siguiente →</button>
+        </div>
+        <div class="quiz-layout-tune-jumps">${buttons}</div>
+      </div>
+    `;
+  }
+
+  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0) {
     if (!['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(type)) return '';
     const tune = getQuizLayoutTune(type);
     return `
@@ -1441,6 +1476,7 @@
             </div>
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
+          ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
           <div class="quiz-layout-tune-scroll">
             ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
               <label class="quiz-layout-tune-row">
@@ -1529,6 +1565,8 @@
       box.style.setProperty('--quiz-tune-w', `${safe[`${prefix}_w`]}%`);
       if (Number(safe[`${prefix}_h`]) > 0) box.style.setProperty('--quiz-tune-h', `${safe[`${prefix}_h`]}px`);
       else box.style.removeProperty('--quiz-tune-h');
+      if (prefix === 'textA') box.style.setProperty('--quiz-text-a-font', `${safe.textA_font}px`);
+      if (prefix === 'textB') box.style.setProperty('--quiz-text-b-font', `${safe.textB_font}px`);
     };
     setBox('textA', 'textA');
     setBox('image', 'image');
@@ -2510,7 +2548,6 @@
         </div>
         <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
       </div>` : ''}
-      ${phase === 'question' ? quizFastNavHTML(questions.length) : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
       </div>
@@ -3892,7 +3929,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.55', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.56', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

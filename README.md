@@ -609,6 +609,17 @@ python3 -m json.tool data/*.json
 unzip -t encisomath-pwa-v0.24.52.zip
 ```
 
+## v0.24.56
+
+- Se parte de `v0.24.55`.
+- En el modal de la tuerca de Quizzes se agregaron los tamaños de fuente base de `Texto A` y `Texto B`:
+  - `Texto A fuente base`: 20px por defecto.
+  - `Texto B fuente base`: 17px por defecto.
+- La fuente sigue reduciéndose automáticamente según la longitud del texto: textos medianos, largos y muy largos aplican factores de reducción sobre ese tamaño base.
+- La navegación rápida de preguntas se movió dentro del cuadro emergente de la tuerca: botones `Anterior`, `Siguiente` y botones numerados para saltar a cualquier ítem aunque no esté resuelto.
+- Se retiró la navegación rápida externa para no ocupar espacio del layout del ítem.
+- Versiones/cache busting actualizados a `0.24.56`.
+
 ## v0.24.55
 
 - Se parte de `v0.24.54`.
