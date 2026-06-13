@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.12';
+  const APP_VERSION = '0.24.13';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1174,7 +1174,7 @@
           <div class="student-info rockstar-info">
             <div class="student-name">${escapeHTML(student.fullName)}</div>
             <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
-            <div class="student-meta">📅 Asistencia hoy: ${attendanceLabel}</div>
+            <div class="student-meta">📅 Asistencia: ${attendanceLabel}</div>
             <div class="student-meta" data-rockstar-meta>Periodo ${state.rockstarPeriod} · ${locked ? 'No disponible por asistencia' : tier.label}</div>
           </div>
         </div>
@@ -1662,7 +1662,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.12', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.13', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

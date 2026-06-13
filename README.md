@@ -241,3 +241,13 @@ Mejoras visuales de la pestaña Rockstars:
 - Las tarjetas Rockstar ahora tienen borde y glow neón según el color/rango del puntaje.
 - El número de puntos aparece más grande, sin recuadro, con `pts` proporcional.
 - Estudiantes con asistencia `No asistió` o `Excusa` aparecen desactivados, en gris, con emoji 😴 y sin botones `-1`/`+1`.
+
+## v0.24.13
+
+Ajustes visuales en Rockstars:
+
+- Los botones `+1` y `-1` adoptan la misma linea visual de los botones activos de asistencia: verde para `+1` y rojo para `-1`, con borde, outline y resplandor.
+- Las tarjetas Rockstar mantienen el estilo de las tarjetas de Estudiantes: fondo oscuro, borde coloreado y resplandor exterior segun el rango de puntaje.
+- Se elimina el exceso de capas neon internas para que el efecto quede mas parecido al estado visual de asistencia.
+- El texto `Asistencia hoy` cambia a `Asistencia`.
+- Se mantiene la proteccion para estudiantes con No asistio o Excusa: quedan bloqueados, grises y sin botones de puntos.
