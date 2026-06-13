@@ -716,3 +716,13 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se mantiene la reducción automática de fuente cuando el texto es largo, pero aplicada de forma pareja a ambos contenedores.
 - Versiones/cache busting actualizados a `0.24.65`.
 
+
+## v0.24.66
+
+- Se parte de `v0.24.65`.
+- En Quizzes tipo `fill_text` / completar texto drag and drop, los espacios vacíos inline se compactaron verticalmente para quedar más cercanos al alto real de una línea de texto.
+- Se redujo el margen vertical de los espacios `Arrastra aquí` para evitar saltos grandes entre líneas del texto a completar.
+- Se eliminó el padding/margen lateral extra del contenedor de respuesta para que el bloque use mejor el ancho disponible.
+- Las opciones colocadas dentro de los espacios mantienen la altura compacta del espacio receptor.
+- Versiones/cache busting actualizados a `0.24.66`.
+
