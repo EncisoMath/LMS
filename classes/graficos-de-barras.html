@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Gráficos de barras</title>
   <style>
     :root { --navy:#04101c; --navy-2:#071827; --blue:#1b96bf; --ink:#eef7ff; --muted:#9fb2c7; --line:rgba(255,255,255,.12); --soft:rgba(255,255,255,.04); --yellow:#ffcf33; --danger:#ff5263; --radius:6px; }
@@ -32,7 +32,16 @@
     .question{background:linear-gradient(135deg,rgba(255,207,51,.12),rgba(255,207,51,.06));border:1px solid rgba(255,207,51,.24);border-radius:var(--radius);padding:14px}
     .question strong{display:block;margin-bottom:4px;color:#ffe089}
     @media(min-width:720px){.builder-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}.row{grid-template-columns:1fr 110px}}
-  </style>
+  
+    html, body { width:100%; max-width:100%; overflow-x:hidden !important; touch-action:pan-y; overscroll-behavior-x:none; }
+    *, *::before, *::after { max-width:100%; }
+    .lesson, .card, .hero, .builder-grid, canvas { max-width:100%; }
+    input, textarea, select { font-size:16px; }
+
+    .table-wrap { overflow-x:hidden !important; }
+    table { min-width:0 !important; width:100% !important; table-layout:fixed; font-size:clamp(.68rem, 2.8vw, .9rem); }
+    th, td { padding:6px 4px !important; word-break:break-word; }
+</style>
 </head>
 <body>
   <main class="lesson">

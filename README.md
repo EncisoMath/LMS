@@ -127,12 +127,7 @@ classes/medidas-de-tendencia-central.html
 - Ajuste del modal de eliminación: signos de exclamación más juntos y fondo rojo con patrón de alerta más marcado.
 
 
-## v0.19
+## v0.18
 - Login optimizado: se quitaron las figuras geométricas animadas.
 - Se conservaron y reforzaron los glows/destellos de esquina con animación más liviana.
 - No se tocaron clases, home, asistencia ni warning.
-
-
-## v0.19
-- Modo negro total como fondo por defecto y único modo de fondo.
-- Eliminada la opción de fondo azul oscuro.

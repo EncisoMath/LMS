@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.19.0';
+  const APP_VERSION = '0.20.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1162,4 +1162,23 @@
   function escapeAttr(value) {
     return escapeHTML(value);
   }
+
+  function lockViewportZoom() {
+    const prevent = (event) => event.preventDefault();
+    document.addEventListener('gesturestart', prevent, { passive: false });
+    document.addEventListener('gesturechange', prevent, { passive: false });
+    document.addEventListener('gestureend', prevent, { passive: false });
+    window.addEventListener('wheel', (event) => {
+      if (event.ctrlKey) event.preventDefault();
+    }, { passive: false });
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (event) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 320) event.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+  }
+
+  lockViewportZoom();
+
 })();

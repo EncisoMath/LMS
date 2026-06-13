@@ -2554,3 +2554,176 @@ html[data-bg-mode="deep"] .subject-screen {
   background:
     linear-gradient(180deg, #000000 0%, #000000 100%) !important;
 }
+
+/* v0.20 - sin zoom, clases solo verticales, cabecera de clase con malla y warning reforzado */
+html,
+body,
+#app,
+.app-shell,
+.screen {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+}
+html,
+body {
+  touch-action: pan-y !important;
+}
+input,
+textarea,
+select,
+button {
+  touch-action: manipulation;
+}
+.class-screen {
+  overflow-x: hidden !important;
+  background: #000 !important;
+}
+.class-screen .lesson-frame {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  background: #000 !important;
+}
+.lesson-head {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--maincolor) 30%, rgba(255,255,255,.12)) !important;
+  background:
+    radial-gradient(circle at 12% 6%, color-mix(in srgb, var(--maincolor) 42%, transparent), transparent 30%),
+    radial-gradient(circle at 88% 92%, color-mix(in srgb, var(--maincolor) 24%, transparent), transparent 28%),
+    linear-gradient(135deg, #07111b 0%, #02060a 68%, #000 100%) !important;
+  box-shadow: 0 12px 38px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,255,255,.05) !important;
+}
+.lesson-head::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  z-index: -2;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--maincolor) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--maincolor) 12%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+  transform: rotate(-7deg) scale(1.18);
+  opacity: .55;
+  animation: lessonGridDrift 14s linear infinite;
+}
+.lesson-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.22), transparent 44%, rgba(0,0,0,.46)),
+    radial-gradient(circle at 74% 18%, color-mix(in srgb, var(--maincolor) 18%, transparent), transparent 24%);
+  pointer-events: none;
+}
+.lesson-head > * {
+  position: relative;
+  z-index: 1;
+}
+.lesson-head .class-emoji {
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--maincolor) 45%, transparent));
+}
+@keyframes lessonGridDrift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 48px 48px, 48px 48px; }
+}
+
+.modal-layer {
+  place-items: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+}
+.danger-modal {
+  width: min(94vw, 620px) !important;
+  margin: auto !important;
+  justify-self: center !important;
+  align-self: center !important;
+  border-color: #ff3342 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 51, 66, .22),
+    0 0 32px rgba(255, 51, 66, .46),
+    0 0 80px rgba(255, 51, 66, .24),
+    0 30px 100px rgba(0, 0, 0, .78) !important;
+}
+.danger-head {
+  grid-template-columns: 100px minmax(0, 1fr) 38px !important;
+  min-height: 148px !important;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(255,255,255,.22), transparent 19%),
+    radial-gradient(circle at 72% 18%, rgba(255,91,96,.42), transparent 26%),
+    radial-gradient(circle at 48% 118%, rgba(255,0,26,.32), transparent 38%),
+    linear-gradient(135deg, #ff3b45 0%, #c40d1b 44%, #62050e 76%, #230104 100%) !important;
+}
+.danger-head::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -96px !important;
+  opacity: .44 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='86' height='86' viewBox='0 0 86 86'%3E%3Cg transform='translate(43 43) rotate(45) translate(-43 -43)'%3E%3Ctext x='43' y='55' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-size='42' font-weight='900' fill='%23ffd7dd' fill-opacity='.72'%3E!%3C/text%3E%3C/g%3E%3Cg transform='translate(0 43) rotate(45) translate(0 -43)' opacity='.42'%3E%3Ctext x='0' y='55' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-size='34' font-weight='900' fill='%23ff7180'%3E!%3C/text%3E%3C/g%3E%3Cg transform='translate(86 43) rotate(45) translate(-86 -43)' opacity='.42'%3E%3Ctext x='86' y='55' text-anchor='middle' font-family='Arial Black,Arial,sans-serif' font-size='34' font-weight='900' fill='%23ff7180'%3E!%3C/text%3E%3C/g%3E%3C/svg%3E") !important;
+  background-size: 86px 86px !important;
+  background-repeat: repeat !important;
+  animation: warningBangFieldV20 5.2s linear infinite !important;
+  z-index: 0 !important;
+}
+.danger-head::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,.18), transparent 12%),
+    radial-gradient(circle at 68% 12%, rgba(255,255,255,.10), transparent 16%),
+    linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,.28) 58%, rgba(0,0,0,.52)) !important;
+}
+@keyframes warningBangFieldV20 {
+  from { transform: translate3d(0,0,0); }
+  to { transform: translate3d(86px,86px,0); }
+}
+.warning-icon.warning-duo {
+  width: 98px !important;
+  height: 118px !important;
+  justify-self: center !important;
+  align-self: center !important;
+}
+.warning-mark {
+  width: 70px !important;
+  max-width: none !important;
+}
+.warning-mark-a {
+  left: 8px !important;
+  top: 30px !important;
+  z-index: 1 !important;
+}
+.warning-mark-b {
+  left: 38px !important;
+  right: auto !important;
+  top: 3px !important;
+  z-index: 2 !important;
+}
+@media (max-width: 520px) {
+  .danger-head {
+    grid-template-columns: 88px minmax(0, 1fr) 34px !important;
+    min-height: 138px !important;
+    gap: 8px !important;
+  }
+  .warning-icon.warning-duo {
+    width: 88px !important;
+    height: 108px !important;
+  }
+  .warning-mark {
+    width: 64px !important;
+  }
+  .warning-mark-a {
+    left: 4px !important;
+    top: 29px !important;
+  }
+  .warning-mark-b {
+    left: 32px !important;
+    top: 3px !important;
+  }
+}
