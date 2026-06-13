@@ -449,3 +449,16 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Las barritas/bullets se redujeron de tamaño para mejorar proporción en móvil.
 - La marca de respuesta correcta en verde se alinea con el mismo sistema visual de bullets y se mantiene debajo del slider cuando hay error.
 - Versión/cache busting actualizados a `0.24.35`.
+
+### v0.24.36
+
+- Ajustes al tipo de pregunta `slider` en Quizzes:
+  - El rango visual se limita a un máximo de 10 pasos/unidades por intento.
+  - El mínimo y máximo del slider se aleatorizan alrededor de la respuesta correcta, respetando los límites definidos cuando existen.
+  - El globo azul y las barritas se compactaron para mejorar la proporción en móvil.
+  - El valor del slider queda forzado a valores válidos según `step`; no permite quedarse en intermedios como 8.5 cuando el paso es 1, ni en 0.15 cuando el paso es 0.1.
+  - La respuesta correcta ya no usa un marcador superpuesto; se colorea en verde la barrita real correspondiente y aparece la paleta correcta debajo.
+  - Se agregó un panel temporal de calibración para ajustar posición vertical y zoom de la paleta azul y de la paleta correcta.
+- Corrección visual en drag and drop y completar texto:
+  - Los badges circulares `✓` y `×` ya no deberían cortarse por las tarjetas ni por el contenedor del quiz.
+- Versión/cache busting actualizados a `0.24.36`.

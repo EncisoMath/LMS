@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.35';
+  const APP_VERSION = '0.24.36';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1508,31 +1508,134 @@
     `;
   }
 
+  function sliderDecimals(value) {
+    const text = String(value ?? '');
+    if (text.includes('e-')) return Math.max(0, Number(text.split('e-')[1]) || 0);
+    const point = text.split('.')[1] || '';
+    return point.length;
+  }
+
+  function formatSliderNumber(value, step = 1) {
+    const decimals = Math.min(6, Math.max(sliderDecimals(step), sliderDecimals(value)));
+    const fixed = Number(value).toFixed(decimals);
+    return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+  }
+
+  function snapSliderValue(value, min = 0, step = 1) {
+    const safeStep = Math.abs(Number(step)) || 1;
+    const safeMin = Number(min) || 0;
+    const raw = Number(value);
+    const snapped = safeMin + Math.round((raw - safeMin) / safeStep) * safeStep;
+    return Number(formatSliderNumber(snapped, safeStep));
+  }
+
+  function quizSliderRange(question) {
+    const step = Math.abs(Number(question.step)) || 1;
+    const correct = Number.isFinite(Number(question.correct)) ? Number(question.correct) : 0;
+    const originalMin = Number.isFinite(Number(question.min)) ? Number(question.min) : Math.floor(correct - (step * 5));
+    const originalMax = Number.isFinite(Number(question.max)) ? Number(question.max) : originalMin + (step * 10);
+    const maxSteps = Math.max(2, Math.min(10, Number(question.rangeSteps) || 10));
+    let min = originalMin;
+    let max = originalMax;
+    const originalSteps = Math.round(Math.abs((originalMax - originalMin) / step));
+    if (question.randomRange !== false || originalSteps > maxSteps) {
+      const span = maxSteps * step;
+      const rawLower = Number.isFinite(originalMin) ? originalMin : correct - span;
+      const rawUpper = Number.isFinite(originalMax) ? originalMax : correct + span;
+      let minStart = Math.max(rawLower, correct - span);
+      let maxStart = Math.min(correct, rawUpper - span);
+      if (maxStart < minStart) {
+        minStart = correct - span;
+        maxStart = correct;
+      }
+      const possibleStarts = Math.max(0, Math.round((maxStart - minStart) / step));
+      const leftSteps = Math.floor(Math.random() * (possibleStarts + 1));
+      min = snapSliderValue(minStart + (leftSteps * step), 0, step);
+      max = snapSliderValue(min + span, 0, step);
+    }
+    if (max <= min) max = snapSliderValue(min + (maxSteps * step), 0, step);
+    if (correct < min) {
+      min = snapSliderValue(correct, 0, step);
+      max = snapSliderValue(min + (maxSteps * step), 0, step);
+    }
+    if (correct > max) {
+      max = snapSliderValue(correct, 0, step);
+      min = snapSliderValue(max - (maxSteps * step), 0, step);
+    }
+    const rangeSteps = Math.max(2, Math.min(maxSteps, Math.round(Math.abs((max - min) / step)) || maxSteps));
+    let initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : snapSliderValue(min + (Math.floor(rangeSteps / 2) * step), min, step);
+    if (initial < min || initial > max) initial = snapSliderValue(min + (Math.floor(rangeSteps / 2) * step), min, step);
+    initial = snapSliderValue(initial, min, step);
+    return { min, max, step, correct: snapSliderValue(correct, min, step), initial, tickCount: Math.max(2, rangeSteps) };
+  }
+
+  function getQuizSliderTune() {
+    const defaults = { userY: 0, userZoom: 100, correctY: 0, correctZoom: 100 };
+    try {
+      const stored = JSON.parse(localStorage.getItem('encisomath:quizSliderTune') || '{}');
+      return {
+        userY: Number.isFinite(Number(stored.userY)) ? Number(stored.userY) : defaults.userY,
+        userZoom: Number.isFinite(Number(stored.userZoom)) ? Number(stored.userZoom) : defaults.userZoom,
+        correctY: Number.isFinite(Number(stored.correctY)) ? Number(stored.correctY) : defaults.correctY,
+        correctZoom: Number.isFinite(Number(stored.correctZoom)) ? Number(stored.correctZoom) : defaults.correctZoom
+      };
+    } catch (error) {
+      return defaults;
+    }
+  }
+
+  function quizSliderTunePanelHTML(last = false) {
+    const tune = getQuizSliderTune();
+    const rows = [
+      ['userY', 'Mover paleta azul Y', -40, 40, tune.userY, 'px'],
+      ['userZoom', 'Zoom paleta azul', 60, 150, tune.userZoom, '%'],
+      ['correctY', 'Mover paleta correcta Y', -40, 60, tune.correctY, 'px'],
+      ['correctZoom', 'Zoom paleta correcta', 60, 150, tune.correctZoom, '%']
+    ];
+    return `
+      <div class="quiz-slider-tune-panel" data-slider-tune-panel>
+        <strong>AJUSTE TEMPORAL SLIDER</strong>
+        <small>Pásame estos valores cuando las paletas queden bien.</small>
+        ${rows.map(([key, label, min, max, value, unit]) => `
+          <label class="tune-row slider-tune-row">
+            <span>${label} <b data-slider-tune-value="${key}">${value}${unit}</b></span>
+            <input type="range" min="${min}" max="${max}" step="1" value="${value}" data-slider-tune="${key}" data-unit="${unit}">
+          </label>
+        `).join('')}
+        <button class="primary-btn slider-tune-continue" type="button" data-slider-tune-continue hidden>${last ? 'Ver resultados' : 'Continuar'}</button>
+      </div>
+    `;
+  }
+
   function quizSliderHTML(question) {
-    const min = Number.isFinite(Number(question.min)) ? Number(question.min) : 0;
-    const max = Number.isFinite(Number(question.max)) ? Number(question.max) : 10;
-    const step = Number.isFinite(Number(question.step)) ? Number(question.step) : 1;
-    const correct = Number.isFinite(Number(question.correct)) ? Number(question.correct) : min;
-    const initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : Math.round((min + max) / 2);
+    const range = quizSliderRange(question);
+    const min = range.min;
+    const max = range.max;
+    const step = range.step;
+    const correct = range.correct;
+    const initial = range.initial;
     const tolerance = Number.isFinite(Number(question.tolerance)) ? Number(question.tolerance) : 0;
     const unit = escapeHTML(question.unit || '');
-    const rawUnits = step > 0 ? Math.round(Math.abs((max - min) / step)) : Math.round(Math.abs(max - min));
-    const tickCount = Math.max(2, Math.min(80, rawUnits || 2));
+    const tickCount = range.tickCount;
     const sliderTicks = Array.from({ length: tickCount }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
+    const quiz = getActiveQuiz();
+    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+    const last = state.quizQuestionIndex >= total - 1;
     return `
-      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}" data-slider-tick-count="${tickCount}">
+      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}" data-slider-tick-count="${tickCount}" data-slider-step="${step}">
         <div class="quiz-slider-visual-stage">
           <div class="quiz-slider-widget" aria-label="Respuesta numérica tipo slider">
             <div class="quiz-slider-bubble" data-slider-bubble>
-              <span data-slider-value>${initial}</span>
+              <span data-slider-value>${formatSliderNumber(initial, step)}</span>
             </div>
-            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}<span class="slider-correct-marker" data-slider-correct-marker aria-hidden="true" hidden></span></div>
-            <div class="slider-correct-bubble" data-slider-correct-bubble hidden><span>${correct}</span></div>
+            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}</div>
+            <div class="slider-correct-bubble" data-slider-correct-bubble hidden><span>${formatSliderNumber(correct, step)}</span></div>
             <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
           </div>
         </div>
-        <div class="quiz-slider-limits"><span>${min}${unit ? ` ${unit}` : ''}</span><span>${max}${unit ? ` ${unit}` : ''}</span></div>
+        <div class="quiz-slider-limits"><span>${formatSliderNumber(min, step)}${unit ? ` ${unit}` : ''}</span><span>${formatSliderNumber(max, step)}${unit ? ` ${unit}` : ''}</span></div>
         <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
+        ${quizSliderTunePanelHTML(last)}
       </div>
     `;
   }
@@ -2504,14 +2607,47 @@
       const slider = board.querySelector('[data-quiz-slider]');
       const valueLabel = board.querySelector('[data-slider-value]');
       const validate = board.querySelector('[data-slider-validate]');
-      const correctMarker = board.querySelector('[data-slider-correct-marker]');
       const correctBubble = board.querySelector('[data-slider-correct-bubble]');
+      const applyTune = () => {
+        const tune = getQuizSliderTune();
+        board.style.setProperty('--slider-user-y', `${tune.userY}px`);
+        board.style.setProperty('--slider-user-scale', `${tune.userZoom / 100}`);
+        board.style.setProperty('--slider-correct-y', `${tune.correctY}px`);
+        board.style.setProperty('--slider-correct-scale', `${tune.correctZoom / 100}`);
+        board.querySelectorAll('[data-slider-tune]').forEach((input) => {
+          if (tune[input.dataset.sliderTune] !== undefined && String(input.value) !== String(tune[input.dataset.sliderTune])) {
+            input.value = tune[input.dataset.sliderTune];
+          }
+        });
+        board.querySelectorAll('[data-slider-tune-value]').forEach((label) => {
+          const key = label.dataset.sliderTuneValue;
+          const input = board.querySelector(`[data-slider-tune="${escapeSelector(key)}"]`);
+          const unit = input?.dataset.unit || '';
+          if (tune[key] !== undefined) label.textContent = `${tune[key]}${unit}`;
+        });
+      };
+      const tuneInputs = Array.from(board.querySelectorAll('[data-slider-tune]'));
+      tuneInputs.forEach((input) => {
+        input.addEventListener('input', () => {
+          const current = getQuizSliderTune();
+          const next = { ...current, [input.dataset.sliderTune]: Number(input.value) };
+          localStorage.setItem('encisomath:quizSliderTune', JSON.stringify(next));
+          applyTune();
+        });
+      });
+      board.querySelector('[data-slider-tune-continue]')?.addEventListener('click', () => {
+        continueQuizAfterFeedback();
+      });
       const update = () => {
         if (!slider) return;
-        if (valueLabel) valueLabel.textContent = slider.value;
         const min = Number(slider.min || 0);
         const max = Number(slider.max || 100);
-        const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(1, max - min)) * 100));
+        const step = Math.abs(Number(slider.step || board.dataset.sliderStep || 1)) || 1;
+        const snapped = Math.max(min, Math.min(max, snapSliderValue(slider.value, min, step)));
+        const formatted = formatSliderNumber(snapped, step);
+        if (formatSliderNumber(slider.value, step) !== formatted) slider.value = formatted;
+        if (valueLabel) valueLabel.textContent = formatted;
+        const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(step, max - min)) * 100));
         const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
         const tickMax = Math.max(1, ticks.length - 1);
         const tickIndex = Math.max(0, Math.min(tickMax, Math.round((pct / 100) * tickMax)));
@@ -2529,12 +2665,15 @@
         });
       };
       slider?.addEventListener('input', update);
+      slider?.addEventListener('change', update);
+      applyTune();
       update();
       validate?.addEventListener('click', () => {
         const session = getQuizSession();
         const question = getCurrentQuizQuestion();
         if (!slider || !question || session.locked) return;
         session.locked = true;
+        update();
         slider.disabled = true;
         validate.disabled = true;
         const selected = Number(slider.value);
@@ -2551,11 +2690,11 @@
         const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : correctPct;
         board.style.setProperty('--slider-correct-progress', `${correctVisualPct}%`);
         board.dataset.sliderCorrectVisualIndex = String(correctTickIndex);
-        if (correctMarker) correctMarker.hidden = ok;
+        correctTicks.forEach((tick, index) => tick.classList.toggle('correct-answer', !ok && index === correctTickIndex));
         if (correctBubble) {
           correctBubble.hidden = ok;
           const correctBubbleText = correctBubble.querySelector('span');
-          if (correctBubbleText) correctBubbleText.textContent = Number.isInteger(correctValue) ? String(correctValue) : String(correctValue);
+          if (correctBubbleText) correctBubbleText.textContent = formatSliderNumber(correctValue, Math.abs(Number(slider.step || 1)) || 1);
         }
         recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
         const stage = board.closest('.quiz-stage');
@@ -2566,8 +2705,8 @@
           feedback.className = `quiz-answer-feedback ${ok ? 'is-correct' : 'is-wrong'}`;
           stage?.classList.add('quiz-feedback-visible');
         }
+        board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
         pulseElement(board, ok ? 'match-join-pop' : 'quiz-slider-wrong-pop');
-        scheduleQuizAdvance();
       });
     });
   }
@@ -3290,7 +3429,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.35', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.36', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
