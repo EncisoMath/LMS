@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.22';
+  const APP_VERSION = '0.24.23';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1451,6 +1451,7 @@
       locked: false,
       selectedAnswerId: '',
       feedback: null,
+      transitionFromIntro: false,
       startedAt: Date.now()
     };
     return state.quizSession;
@@ -1688,10 +1689,13 @@
     session.phase = 'intro';
     session.locked = false;
     renderQuizFullscreen(quiz);
-    scheduleQuizTimer(() => showQuizItemTransition(0), 2200);
+    scheduleQuizTimer(() => {
+      document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
+    }, 1680);
+    scheduleQuizTimer(() => showQuizItemTransition(0, { fromIntro: true }), 2200);
   }
 
-  function showQuizItemTransition(index = 0) {
+  function showQuizItemTransition(index = 0, options = {}) {
     const quiz = getActiveQuiz();
     if (!quiz) return;
     clearQuizTimers();
@@ -1699,12 +1703,14 @@
     const session = getQuizSession();
     session.phase = 'transition';
     session.locked = true;
+    session.transitionFromIntro = Boolean(options.fromIntro);
     renderQuizFullscreen(quiz);
     scheduleQuizTimer(() => {
       const current = getQuizSession();
       current.phase = 'question';
       current.locked = false;
       current.selectedAnswerId = '';
+      current.transitionFromIntro = false;
       renderQuizFullscreen(quiz);
     }, 1500);
   }
@@ -1733,7 +1739,7 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}`;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
@@ -1749,7 +1755,7 @@
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : 'Modo quiz · sin salida hasta finalizar'}</small>
         </div>
-        <span>${phase === 'results' ? 'FIN' : `${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}`}</span>
+        <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
       </div>` : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
@@ -1809,8 +1815,7 @@
     return `
       <section class="quiz-item-transition quiz-burst-scene" aria-live="polite">
         <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="quiz-transition-ribbon"><span>Ítem ${item}</span></div>
-        <div class="quiz-transition-count">${item}<small>/${total}</small></div>
+        <div class="quiz-transition-count"><em>Ítem</em><span>${item}<small>/${total}</small></span></div>
         <div class="quiz-transition-progress"><span></span></div>
       </section>
     `;
@@ -1869,7 +1874,10 @@
     resetQuizSession('intro');
     lockQuizHistory();
     renderQuizFullscreen(quiz);
-    scheduleQuizTimer(() => showQuizItemTransition(0), 2000);
+    scheduleQuizTimer(() => {
+      document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
+    }, 1550);
+    scheduleQuizTimer(() => showQuizItemTransition(0, { fromIntro: true }), 2000);
   }
 
   function lockQuizHistory() {
@@ -2780,7 +2788,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.22', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.23', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

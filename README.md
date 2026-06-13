@@ -334,3 +334,14 @@ Ajustes en Quizzes:
 - Al validar uniones, las tarjetas se opacan y se revelan una por una cada 0.333 segundos, con sacudida y marcado verde/rojo.
 - El modal de imagen del quiz ahora permite zoom con botones, doble toque/clic, rueda, arrastre y gesto de pellizco compatible con Pointer Events.
 - Versión/cache busting actualizados a `0.24.22`.
+
+## v0.24.23
+
+Ajustes en Quizzes:
+- En la transición entre ítems se eliminó la tarjeta horizontal `Ítem N`; ahora queda limpio el contador grande `Ítem` + `N/total`.
+- En la cabecera superior del quiz se agregó la palabra `Ítem` encima del contador `N/total`.
+- El banner superior de la ejecución del quiz ahora usa la malla animada suave de la línea visual del AVA.
+- La pantalla de transición entre la presentación del quiz y el Ítem 1 ahora hace salida suave con fade out antes de mostrar el primer ítem.
+- Las transiciones entre ítems usan los mismos glows y fondo negro/neón de la pantalla de título para evitar saltos visuales.
+- En drag and drop, la revelación correcto/incorrecto es más fuerte: cada tarjeta se revela una por una, se sacude y cambia completamente a verde o rojo, incluida la opción colocada, sin mezcla con el color original.
+- Versión/cache busting actualizados a `0.24.23`.
