@@ -9064,3 +9064,67 @@ body.quiz-fullscreen-active {
   .quiz-phone-range { top: 0 !important; height: 205px !important; }
   .quiz-slider-limits { margin-top: -14px !important; }
 }
+
+/* v0.24.37 - Slider alignment final, fixed palette tuning, desktop feedback emoji and badge overflow */
+.quiz-slider-tune-panel,
+.slider-tune-row,
+.slider-tune-continue {
+  display: none !important;
+  pointer-events: none !important;
+}
+.quiz-slider-bubble {
+  transform: translateX(-50%) translateY(var(--slider-user-y, 20px)) scale(var(--slider-user-scale, .61)) !important;
+  transform-origin: bottom center !important;
+}
+.slider-correct-bubble {
+  transform: translateX(-50%) translateY(var(--slider-correct-y, 13px)) scale(var(--slider-correct-scale, 1.18)) !important;
+  transform-origin: top center !important;
+}
+.quiz-slider-ticks span[data-slider-tick].correct-answer {
+  background: var(--slider-correct-color) !important;
+  box-shadow: 0 0 20px rgba(88,204,2,.76), inset 0 -1px 0 rgba(0,0,0,.16) !important;
+  opacity: 1 !important;
+}
+.quiz-slider-shell.slider-wrong .slider-correct-bubble:not([hidden]) {
+  display: flex !important;
+}
+.quiz-slider-shell.slider-wrong .slider-correct-bubble::before {
+  background: #58cc02 !important;
+}
+.quiz-fullscreen-layer,
+.quiz-fullscreen-content,
+.quiz-stage,
+.quiz-stage-fullscreen,
+.quiz-stage-head,
+.quiz-stage-body,
+.quiz-match-shell,
+.quiz-match-board,
+.quiz-match-column,
+.quiz-match-row,
+.match-drop,
+.match-card,
+.quiz-fill-shell,
+.quiz-fill-text,
+.fill-drop,
+.fill-slot,
+.fill-option {
+  overflow: visible !important;
+}
+.quiz-match-shell .match-drop.matched::after,
+.quiz-match-shell .match-drop.wrong::after,
+.quiz-fill-shell .fill-drop.matched::after,
+.quiz-fill-shell .fill-drop.wrong::after {
+  top: -18px !important;
+  right: -18px !important;
+  z-index: 999 !important;
+  clip-path: none !important;
+}
+@media (min-width: 720px) {
+  .quiz-stage-fullscreen .quiz-feedback-card {
+    transform-origin: bottom left !important;
+    padding-left: max(48px, 3vw) !important;
+  }
+  .quiz-stage-fullscreen .quiz-feedback-card > span {
+    margin-left: 10px !important;
+  }
+}

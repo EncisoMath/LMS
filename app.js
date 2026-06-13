@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.36';
+  const APP_VERSION = '0.24.37';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1570,41 +1570,11 @@
   }
 
   function getQuizSliderTune() {
-    const defaults = { userY: 0, userZoom: 100, correctY: 0, correctZoom: 100 };
-    try {
-      const stored = JSON.parse(localStorage.getItem('encisomath:quizSliderTune') || '{}');
-      return {
-        userY: Number.isFinite(Number(stored.userY)) ? Number(stored.userY) : defaults.userY,
-        userZoom: Number.isFinite(Number(stored.userZoom)) ? Number(stored.userZoom) : defaults.userZoom,
-        correctY: Number.isFinite(Number(stored.correctY)) ? Number(stored.correctY) : defaults.correctY,
-        correctZoom: Number.isFinite(Number(stored.correctZoom)) ? Number(stored.correctZoom) : defaults.correctZoom
-      };
-    } catch (error) {
-      return defaults;
-    }
+    return { userY: 20, userZoom: 61, correctY: 13, correctZoom: 118 };
   }
 
   function quizSliderTunePanelHTML(last = false) {
-    const tune = getQuizSliderTune();
-    const rows = [
-      ['userY', 'Mover paleta azul Y', -40, 40, tune.userY, 'px'],
-      ['userZoom', 'Zoom paleta azul', 60, 150, tune.userZoom, '%'],
-      ['correctY', 'Mover paleta correcta Y', -40, 60, tune.correctY, 'px'],
-      ['correctZoom', 'Zoom paleta correcta', 60, 150, tune.correctZoom, '%']
-    ];
-    return `
-      <div class="quiz-slider-tune-panel" data-slider-tune-panel>
-        <strong>AJUSTE TEMPORAL SLIDER</strong>
-        <small>Pásame estos valores cuando las paletas queden bien.</small>
-        ${rows.map(([key, label, min, max, value, unit]) => `
-          <label class="tune-row slider-tune-row">
-            <span>${label} <b data-slider-tune-value="${key}">${value}${unit}</b></span>
-            <input type="range" min="${min}" max="${max}" step="1" value="${value}" data-slider-tune="${key}" data-unit="${unit}">
-          </label>
-        `).join('')}
-        <button class="primary-btn slider-tune-continue" type="button" data-slider-tune-continue hidden>${last ? 'Ver resultados' : 'Continuar'}</button>
-      </div>
-    `;
+    return '';
   }
 
   function quizSliderHTML(question) {
@@ -2638,6 +2608,16 @@
       board.querySelector('[data-slider-tune-continue]')?.addEventListener('click', () => {
         continueQuizAfterFeedback();
       });
+      const getTickCenter = (ticks, index) => {
+        const tick = ticks[index];
+        const holder = board.querySelector('[data-slider-ticks]');
+        if (!tick || !holder) return null;
+        const widget = tick.closest('.quiz-slider-widget');
+        const widgetBox = widget?.getBoundingClientRect();
+        const tickBox = tick.getBoundingClientRect();
+        if (!widgetBox || !tickBox || !tickBox.width) return null;
+        return (tickBox.left - widgetBox.left) + (tickBox.width / 2);
+      };
       const update = () => {
         if (!slider) return;
         const min = Number(slider.min || 0);
@@ -2652,11 +2632,13 @@
         const tickMax = Math.max(1, ticks.length - 1);
         const tickIndex = Math.max(0, Math.min(tickMax, Math.round((pct / 100) * tickMax)));
         const visualPct = ticks.length > 1 ? (tickIndex / tickMax) * 100 : pct;
+        const tickCenter = getTickCenter(ticks, tickIndex);
+        const bubbleX = tickCenter == null ? `${visualPct}%` : `${tickCenter}px`;
         slider.style.setProperty('--slider-progress', `${pct}%`);
         slider.style.setProperty('--slider-visual-progress', `${visualPct}%`);
         board.style.setProperty('--slider-progress', `${pct}%`);
         board.style.setProperty('--slider-visual-progress', `${visualPct}%`);
-        board.style.setProperty('--slider-bubble-x', `${visualPct}%`);
+        board.style.setProperty('--slider-bubble-x', bubbleX);
         board.dataset.sliderVisualIndex = String(tickIndex);
         ticks.forEach((tick, index) => {
           tick.classList.toggle('active', index === tickIndex);
@@ -2668,6 +2650,8 @@
       slider?.addEventListener('change', update);
       applyTune();
       update();
+      setTimeout(update, 80);
+      window.addEventListener('resize', update, { passive: true });
       validate?.addEventListener('click', () => {
         const session = getQuizSession();
         const question = getCurrentQuizQuestion();
@@ -2688,7 +2672,8 @@
         const correctTickMax = Math.max(1, correctTicks.length - 1);
         const correctTickIndex = Math.max(0, Math.min(correctTickMax, Math.round((correctPct / 100) * correctTickMax)));
         const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : correctPct;
-        board.style.setProperty('--slider-correct-progress', `${correctVisualPct}%`);
+        const correctCenter = getTickCenter(correctTicks, correctTickIndex);
+        board.style.setProperty('--slider-correct-progress', correctCenter == null ? `${correctVisualPct}%` : `${correctCenter}px`);
         board.dataset.sliderCorrectVisualIndex = String(correctTickIndex);
         correctTicks.forEach((tick, index) => tick.classList.toggle('correct-answer', !ok && index === correctTickIndex));
         if (correctBubble) {
@@ -3429,7 +3414,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.36', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.37', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

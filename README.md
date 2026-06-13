@@ -450,7 +450,7 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - La marca de respuesta correcta en verde se alinea con el mismo sistema visual de bullets y se mantiene debajo del slider cuando hay error.
 - Versión/cache busting actualizados a `0.24.35`.
 
-### v0.24.36
+### v0.24.37
 
 - Ajustes al tipo de pregunta `slider` en Quizzes:
   - El rango visual se limita a un máximo de 10 pasos/unidades por intento.
@@ -461,4 +461,4 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
   - Se agregó un panel temporal de calibración para ajustar posición vertical y zoom de la paleta azul y de la paleta correcta.
 - Corrección visual en drag and drop y completar texto:
   - Los badges circulares `✓` y `×` ya no deberían cortarse por las tarjetas ni por el contenedor del quiz.
-- Versión/cache busting actualizados a `0.24.36`.
+- Versión/cache busting actualizados a `0.24.37`.
