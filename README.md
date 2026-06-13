@@ -292,3 +292,14 @@ Ajustes visuales adicionales en Rockstars:
 - El zoom de la información del banner ya no se aplica con `transform: scale()`, sino mediante tamaños de fuente calculados para evitar que el texto se vea borroso.
 - Se añadió más separación interna en los buscadores para que el texto `Buscar estudiante` no quede pegado al borde izquierdo.
 - Se actualizó cache busting a `0.24.18`.
+
+## v0.24.19
+
+- Se agregó la pestaña **Quizzes** dentro de cada asignatura, junto a Estudiantes, Clases y Rockstars.
+- Se creó la base `data/quizzes.json` con un quiz demo de Estadística para periodo 1.
+- La pestaña Quizzes tiene banner propio, selector de periodos y tarjetas de quizzes disponibles.
+- El quiz demo incluye estructura visual tipo concurso con opciones 2x2 en rojo, azul, amarillo y verde.
+- Se agregaron tipos de pregunta preparados: opción múltiple con única respuesta, verdadero/falso, pregunta abierta con botón de enviar y arrastrar para unir con tarjetas azules y rojas.
+- Las preguntas admiten texto principal, imagen ampliable al tocar y texto de apoyo debajo de la imagen.
+- Se añadió el recurso `assets/quiz-demo-statistics.svg` como imagen de demostración.
+- Se actualizó cache busting y versiones a `0.24.19`.

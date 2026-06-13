@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "description": "Base inicial de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso y arrastrar para unir.",
+  "quizzes": [
+    {
+      "id": "quiz-demo-estadistica-p1",
+      "title": "Demo Kahoot · Tablas de frecuencia",
+      "emoji": "🎮",
+      "mode": "Demo interactivo",
+      "period": 1,
+      "subject": "Estadística",
+      "area": "Matemáticas",
+      "questions": [
+        {
+          "id": "q1",
+          "type": "multiple_choice",
+          "prompt": "Según la gráfica, ¿cuál fruta tiene mayor frecuencia?",
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Gráfica de barras sobre fruta favorita",
+          "text": "Toca la imagen si necesitas verla en grande antes de responder.",
+          "options": [
+            { "id": "a", "text": "Mora", "correct": false },
+            { "id": "b", "text": "Banano", "correct": true },
+            { "id": "c", "text": "Pera", "correct": false },
+            { "id": "d", "text": "Mango", "correct": false }
+          ]
+        },
+        {
+          "id": "q2",
+          "type": "true_false",
+          "prompt": "La frecuencia absoluta indica cuántas veces aparece un dato.",
+          "text": "Marca verdadero o falso.",
+          "options": [
+            { "id": "true", "text": "Verdadero", "correct": true },
+            { "id": "false", "text": "Falso", "correct": false }
+          ]
+        },
+        {
+          "id": "q3",
+          "type": "open",
+          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia.",
+          "text": "Esta pregunta es abierta y usa un botón de envío para registrar la respuesta en modo demo."
+        },
+        {
+          "id": "q4",
+          "type": "match",
+          "prompt": "Arrastra cada concepto hacia su definición.",
+          "text": "En este tipo de pregunta se usan solo tarjetas azules y rojas.",
+          "pairs": [
+            { "id": "fa", "left": "Frecuencia absoluta", "right": "Cantidad de veces" },
+            { "id": "fr", "left": "Frecuencia relativa", "right": "Parte del total" },
+            { "id": "moda", "left": "Moda", "right": "Dato más repetido" }
+          ]
+        }
+      ]
+    }
+  ]
+}

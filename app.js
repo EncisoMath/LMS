@@ -1,13 +1,14 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.18';
+  const APP_VERSION = '0.24.19';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
     students: './data/students.json',
     classes: './data/classes.json',
-    rockstars: './data/rockstars.json'
+    rockstars: './data/rockstars.json',
+    quizzes: './data/quizzes.json'
   };
 
   const DEFAULT_PREFS = {
@@ -80,12 +81,15 @@
   const $toast = document.getElementById('toast');
 
   const state = {
-    data: { users: [], assignments: [], students: [], classes: [], rockstars: [] },
+    data: { users: [], assignments: [], students: [], classes: [], rockstars: [], quizzes: [] },
     user: null,
     assignment: null,
     period: 1,
     classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
     rockstarPeriod: Number(localStorage.getItem('encisomath:rockstarPeriod') || 1),
+    quizPeriod: Number(localStorage.getItem('encisomath:quizPeriod') || 1),
+    quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
+    quizQuestionIndex: 0,
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
@@ -377,6 +381,7 @@
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
           <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 Rockstars</button>
+          <button class="tab-btn ${tab === 'quizzes' ? 'active' : ''}" id="quizzesTab">🎮 Quizzes</button>
         </div>
         <section id="tabContent" class="section tab-section"></section>
         ${bottomNav('profe')}
@@ -389,10 +394,12 @@
       document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
+      document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
       applySubjectInfoTune();
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
+      else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
       else renderClassesTab({ animate: true });
     });
   }
@@ -472,8 +479,10 @@
     document.getElementById('studentsTab')?.classList.toggle('active', tab === 'students');
     document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
     document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
+    document.getElementById('quizzesTab')?.classList.toggle('active', tab === 'quizzes');
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
+    else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
   }
 
@@ -1201,6 +1210,305 @@
     return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
   }
 
+  function renderQuizzesTab(options = {}) {
+    const assignment = state.assignment;
+    const $content = document.getElementById('tabContent');
+    if (!assignment || !$content) return;
+    const quizzes = getQuizzesForCurrentAssignment();
+    const activeQuiz = getActiveQuiz(quizzes);
+    $content.innerHTML = `
+      <section class="quiz-hero" aria-label="Quizzes de la asignatura">
+        <div class="quiz-hero-grid" aria-hidden="true"></div>
+        <div class="quiz-podium" aria-hidden="true">
+          <span class="quiz-tile tile-red">▲</span>
+          <span class="quiz-tile tile-blue">◆</span>
+          <span class="quiz-tile tile-yellow">●</span>
+          <span class="quiz-tile tile-green">■</span>
+        </div>
+        <div class="quiz-title-block">
+          <div class="quiz-title-neon" data-text="QUIZZES">QUIZZES</div>
+          <p>Retos interactivos · Periodo ${state.quizPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
+        </div>
+      </section>
+      <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
+        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
+      </div>
+      <div class="quiz-library" id="quizLibrary">
+        ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
+      </div>
+      <div id="quizPlayer" class="quiz-player">
+        ${activeQuiz ? quizPlayerHTML(activeQuiz) : ''}
+      </div>
+    `;
+    bindQuizTabEvents();
+    if (options.animate) pulseElement($content, 'tab-enter');
+  }
+
+  function getBaseQuizzes() {
+    const source = state.data.quizzes;
+    if (Array.isArray(source)) return source;
+    if (Array.isArray(source?.quizzes)) return source.quizzes;
+    return [];
+  }
+
+  function getQuizzesForCurrentAssignment() {
+    const assignment = state.assignment;
+    if (!assignment) return [];
+    return getBaseQuizzes().filter((quiz) => {
+      if (Number(quiz.period || 1) !== Number(state.quizPeriod)) return false;
+      const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds : [];
+      if (ids.includes('*') || ids.includes(assignment.id)) return true;
+      if (quiz.subject && quiz.subject === assignment.subject) return true;
+      if (quiz.area && quiz.area === assignment.area) return true;
+      return !ids.length && !quiz.subject && !quiz.area;
+    });
+  }
+
+  function getActiveQuiz(quizzes = getQuizzesForCurrentAssignment()) {
+    if (!quizzes.length) return null;
+    const active = quizzes.find((quiz) => quiz.id === state.quizActiveId) || quizzes[0];
+    state.quizActiveId = active.id;
+    localStorage.setItem('encisomath:quizActiveId', active.id);
+    if (!Array.isArray(active.questions)) active.questions = [];
+    if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
+    return active;
+  }
+
+  function quizCardButtonHTML(quiz, active) {
+    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    return `
+      <button class="quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}">
+        <span class="quiz-card-icon">${escapeHTML(quiz.emoji || '🎮')}</span>
+        <span class="quiz-card-copy">
+          <strong>${escapeHTML(quiz.title || 'Quiz sin título')}</strong>
+          <small>${total} preguntas · ${escapeHTML(quiz.mode || 'Demo')}</small>
+        </span>
+      </button>
+    `;
+  }
+
+  function quizPlayerHTML(quiz) {
+    const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+    if (!questions.length) return `<div class="empty">Este quiz todavía no tiene preguntas.</div>`;
+    const index = Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1));
+    const question = questions[index];
+    return `
+      <section class="quiz-stage" data-quiz-stage="${escapeAttr(quiz.id)}">
+        <div class="quiz-stage-head">
+          <div>
+            <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
+            <h3>${escapeHTML(question.prompt || '')}</h3>
+          </div>
+          <span class="quiz-timer-pill">Demo</span>
+        </div>
+        ${question.image ? quizImageHTML(question) : ''}
+        ${question.text ? `<p class="quiz-support-text">${escapeHTML(question.text)}</p>` : ''}
+        ${quizQuestionBodyHTML(question)}
+        <div class="quiz-nav-row">
+          <button class="mini-btn" data-quiz-prev ${index === 0 ? 'disabled' : ''}>← Anterior</button>
+          <span>${index + 1}/${questions.length}</span>
+          <button class="mini-btn" data-quiz-next ${index >= questions.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function quizTypeLabel(type) {
+    const labels = {
+      multiple_choice: 'Opción múltiple',
+      true_false: 'Verdadero / falso',
+      open: 'Pregunta abierta',
+      match: 'Arrastrar para unir'
+    };
+    return labels[type] || 'Pregunta';
+  }
+
+  function quizImageHTML(question) {
+    return `
+      <button class="quiz-image-card" type="button" data-quiz-image="${escapeAttr(question.image)}" data-quiz-image-alt="${escapeAttr(question.imageAlt || question.prompt || 'Imagen del quiz')}" aria-label="Ampliar imagen de la pregunta">
+        <img src="${escapeAttr(question.image)}" alt="${escapeAttr(question.imageAlt || '')}" loading="lazy" />
+        <span>🔎 Tocar para ampliar</span>
+      </button>
+    `;
+  }
+
+  function quizQuestionBodyHTML(question) {
+    if (question.type === 'open') return quizOpenHTML(question);
+    if (question.type === 'true_false') return quizTrueFalseHTML(question);
+    if (question.type === 'match') return quizMatchHTML(question);
+    return quizMultipleChoiceHTML(question);
+  }
+
+  function quizMultipleChoiceHTML(question) {
+    const colors = ['red', 'blue', 'yellow', 'green'];
+    const shapes = ['▲', '◆', '●', '■'];
+    const options = Array.isArray(question.options) ? question.options : [];
+    return `
+      <div class="kahoot-grid kahoot-grid-2x2" role="list">
+        ${options.slice(0, 4).map((option, index) => `
+          <button class="kahoot-option kahoot-${colors[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
+            <span class="kahoot-shape">${shapes[index]}</span>
+            <span>${escapeHTML(option.text || '')}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function quizTrueFalseHTML(question) {
+    const options = Array.isArray(question.options) && question.options.length ? question.options : [
+      { id: 'true', text: 'Verdadero', correct: true },
+      { id: 'false', text: 'Falso', correct: false }
+    ];
+    const palette = ['blue', 'red'];
+    const shapes = ['◆', '▲'];
+    return `
+      <div class="kahoot-grid kahoot-grid-two" role="list">
+        ${options.slice(0, 2).map((option, index) => `
+          <button class="kahoot-option kahoot-${palette[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
+            <span class="kahoot-shape">${shapes[index]}</span>
+            <span>${escapeHTML(option.text || '')}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function quizOpenHTML(question) {
+    return `
+      <form class="quiz-open-form" data-quiz-open-form>
+        <textarea class="input quiz-open-input" placeholder="Escribe tu respuesta..." rows="4"></textarea>
+        <button class="primary-btn quiz-submit-btn" type="submit">Enviar respuesta</button>
+        <p class="quiz-open-feedback" data-quiz-open-feedback hidden>Respuesta enviada en modo demo.</p>
+      </form>
+    `;
+  }
+
+  function quizMatchHTML(question) {
+    const pairs = Array.isArray(question.pairs) ? question.pairs : [];
+    return `
+      <div class="quiz-match-board" data-quiz-match-board>
+        <div class="quiz-match-column">
+          <strong>Arrastra</strong>
+          ${pairs.map((pair) => `<button class="match-card match-blue" draggable="true" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`).join('')}
+        </div>
+        <div class="quiz-match-column">
+          <strong>Une aquí</strong>
+          ${pairs.map((pair) => `<div class="match-drop match-red" data-match-right="${escapeAttr(pair.id)}"><span>${escapeHTML(pair.right)}</span><small>Suelta aquí</small></div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function bindQuizTabEvents() {
+    document.querySelectorAll('[data-quiz-period]').forEach((button) => {
+      button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
+    });
+    document.querySelectorAll('[data-quiz-id]').forEach((button) => {
+      button.addEventListener('click', () => setActiveQuiz(button.dataset.quizId));
+    });
+    bindQuizPlayerEvents();
+  }
+
+  function bindQuizPlayerEvents() {
+    document.querySelectorAll('[data-quiz-prev]').forEach((button) => {
+      button.addEventListener('click', () => moveQuizQuestion(-1));
+    });
+    document.querySelectorAll('[data-quiz-next]').forEach((button) => {
+      button.addEventListener('click', () => moveQuizQuestion(1));
+    });
+    document.querySelectorAll('[data-quiz-answer]').forEach((button) => {
+      button.addEventListener('click', () => markQuizAnswer(button));
+    });
+    document.querySelectorAll('[data-quiz-image]').forEach((button) => {
+      button.addEventListener('click', () => openQuizImageModal(button.dataset.quizImage, button.dataset.quizImageAlt));
+    });
+    document.querySelectorAll('[data-quiz-open-form]').forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const feedback = form.querySelector('[data-quiz-open-feedback]');
+        if (feedback) feedback.hidden = false;
+        pulseElement(form, 'text-pop');
+      });
+    });
+    bindQuizMatchEvents();
+  }
+
+  function setQuizPeriod(period) {
+    if (![1, 2, 3, 4].includes(Number(period))) return;
+    state.quizPeriod = Number(period);
+    state.quizQuestionIndex = 0;
+    state.quizActiveId = '';
+    localStorage.setItem('encisomath:quizPeriod', String(state.quizPeriod));
+    renderQuizzesTab({ animate: true });
+  }
+
+  function setActiveQuiz(quizId) {
+    state.quizActiveId = quizId;
+    state.quizQuestionIndex = 0;
+    localStorage.setItem('encisomath:quizActiveId', quizId);
+    renderQuizzesTab({ animate: true });
+  }
+
+  function moveQuizQuestion(delta) {
+    const quiz = getActiveQuiz();
+    if (!quiz || !Array.isArray(quiz.questions)) return;
+    const max = quiz.questions.length - 1;
+    state.quizQuestionIndex = Math.max(0, Math.min(max, state.quizQuestionIndex + Number(delta)));
+    const player = document.getElementById('quizPlayer');
+    if (!player) return;
+    player.innerHTML = quizPlayerHTML(quiz);
+    bindQuizPlayerEvents();
+    pulseElement(player, 'class-grid-update');
+  }
+
+  function markQuizAnswer(button) {
+    const stage = button.closest('.quiz-stage');
+    if (!stage) return;
+    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => item.classList.remove('selected', 'correct', 'wrong'));
+    const correct = button.dataset.correct === 'true';
+    button.classList.add('selected', correct ? 'correct' : 'wrong');
+    pulseElement(button, correct ? 'flash-present' : 'flash-absent');
+  }
+
+  function bindQuizMatchEvents() {
+    let draggedId = '';
+    document.querySelectorAll('[data-match-left]').forEach((card) => {
+      card.addEventListener('dragstart', (event) => {
+        draggedId = card.dataset.matchLeft;
+        event.dataTransfer?.setData('text/plain', draggedId);
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    });
+    document.querySelectorAll('[data-match-right]').forEach((drop) => {
+      drop.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        drop.classList.add('over');
+      });
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+      drop.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const id = event.dataTransfer?.getData('text/plain') || draggedId;
+        drop.classList.remove('over', 'matched', 'wrong');
+        drop.classList.add(id === drop.dataset.matchRight ? 'matched' : 'wrong');
+        const label = document.querySelector(`[data-match-left="${escapeSelector(id)}"]`)?.textContent || 'Respuesta';
+        const small = drop.querySelector('small');
+        if (small) small.textContent = id === drop.dataset.matchRight ? `✓ ${label}` : `✕ ${label}`;
+      });
+    });
+  }
+
+  function openQuizImageModal(src, alt = '') {
+    openModal(`
+      <div class="modal-card quiz-image-modal">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" />
+        <p>${escapeHTML(alt || 'Imagen del quiz')}</p>
+      </div>
+    `);
+  }
+
   function renderClassesTab(options = {}) {
     const $content = document.getElementById('tabContent');
     if (!$content) return;
@@ -1841,7 +2149,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.18', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.19', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
