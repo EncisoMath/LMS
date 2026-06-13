@@ -1,18 +1,8 @@
 # EncisoMath PWA - AVA/LMS en GitHub Pages
 
-Versión actual: `0.7.0`
+Versión actual: `0.8.0`
 
 Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una PWA móvil instalable publicada con GitHub Pages.
-
-
-## Cambios v0.7.0
-
-- Modo negro total corregido: fondo real `#000000` en pantalla, paneles, barras y transiciones.
-- Scroll interno de la app para que la barra superior y la navegación inferior no se desplacen con el contenido.
-- Login web sin franjas laterales por `padding` o `scrollbar-gutter`.
-- Clases interactivas en modo oscuro y con color principal sincronizado desde preferencias.
-- Modal de eliminación reajustado: proporción mejorada, tipografía más cómic, franjas diagonales en loop continuo y signo de advertencia con squash/stretch.
-- Colores y glows recuperados para tarjetas de asistencia, botones activos y periodos en modo negro total.
 
 ## Qué incluye
 
@@ -22,12 +12,24 @@ Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una 
 - Vista docente inicial.
 - Portada tipo red social, foto de perfil y tarjetas de asignaturas.
 - Filtros por grado, área y curso.
-- Vista de asignatura con portada personalizable localmente.
+- Vista de asignatura con banner integrado, portada/icono personalizable localmente y gestor visual modal.
 - Pestaña de estudiantes con asistencia diaria: asistió, no asistió y excusa.
-- Nuevo estudiante agregado desde la asignatura actual.
+- Buscador de estudiantes y creación de estudiante mediante cuadro emergente con nombre y apellido separados.
 - Pestaña de clases por periodos, vista cuadrícula/lista.
-- Clase interactiva de ejemplo: gráficos de barras con calculadora visual en Canvas.
+- Clase interactiva de ejemplo en modo oscuro: gráficos de barras con calculadora visual en Canvas.
 - Datos semilla en archivos JSON.
+
+
+## Cambios v0.8
+
+- Glows más grandes y animados en login, tanto en azul oscuro como en negro total.
+- Corrección de barritas laterales en login web.
+- Vista de asignatura rediseñada: icono, nombre, sede, grado, curso y cantidad de estudiantes integrados en el banner.
+- Campo de estudiante convertido en buscador. El botón **Añadir** abre un modal con campos separados para nombre y apellido.
+- Barras superior e inferior reforzadas para permanecer fijas.
+- En vista de clase solo queda la barra superior de regreso.
+- Clase de ejemplo pasada a modo oscuro.
+- Warning de eliminación con estilo más cómic, glows y franjas diagonales en loop más limpio.
 
 ## Usuario demo
 

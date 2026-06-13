@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.7.0';
+  const APP_VERSION = '0.8.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -38,6 +38,7 @@
     classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
+    studentSearch: '',
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
@@ -295,31 +296,33 @@
     const coverStyle = coverBackgroundStyle(assignment);
     const iconSrc = getAssignmentIcon(assignment);
 
+    const studentCount = getStudentsForAssignment(assignment).length;
     const markup = `
       <main class="screen subject-screen">
-        <header class="topbar">
+        <header class="topbar fixed-lock">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>${escapeHTML(assignment.subject)}</h1>
           <span class="spacer"></span>
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
-        <div class="cover animated-cover" ${coverStyle}>${coverMotionHTML('subject')}</div>
-        <section class="subject-hero">
-          <article class="subject-panel">
+        <section class="subject-banner animated-cover" ${coverStyle}>
+          ${coverMotionHTML('subject')}
+          <div class="subject-banner-shade"></div>
+          <div class="subject-banner-content">
             <img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />
             <div class="subject-copy">
               <p class="subject-kicker">${escapeHTML(assignment.area)}</p>
               <h2>${escapeHTML(assignment.subject)}</h2>
-              <div class="subject-chips">
+              <div class="subject-chips compact">
                 <span>Grado ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</span>
                 <span>${escapeHTML(assignment.sede)}</span>
-                <span>${getStudentsForAssignment(assignment).length} estudiantes</span>
+                <span>${studentCount} estudiantes</span>
               </div>
               <button class="mini-btn visual-btn" id="visualManagerBtn">🎨 Gestor visual</button>
             </div>
-          </article>
+          </div>
         </section>
-        <div class="tab-row">
+        <div class="tab-row sticky-tabs">
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
         </div>
@@ -427,8 +430,6 @@
 
   function renderStudentsTab(options = {}) {
     const assignment = state.assignment;
-    const students = getStudentsForAssignment(assignment);
-    const attendance = getAttendance(assignment.id, state.attendanceDate);
     const $content = document.getElementById('tabContent');
     if (!$content) return;
 
@@ -437,12 +438,15 @@
         <div><strong>Asistencia diaria</strong><br><span class="card-sub">${readableDate(state.attendanceDate)}</span></div>
         <input id="attendanceDate" type="date" value="${state.attendanceDate}" />
       </div>
-      <form id="addStudentForm" class="add-box">
-        <input class="input" id="newStudentName" placeholder="Nombre del nuevo estudiante" required />
-        <button class="primary-btn" type="submit">Añadir</button>
-      </form>
-      <div class="student-list">
-        ${students.map((student) => studentCardHTML(student, attendance[student.id])).join('') || `<div class="empty">Aún no hay estudiantes en este curso.</div>`}
+      <div class="student-tools">
+        <div class="search-wrap">
+          <span aria-hidden="true">🔎</span>
+          <input class="input search-input" id="studentSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
+        </div>
+        <button class="primary-btn" id="openAddStudentBtn" type="button">Añadir</button>
+      </div>
+      <div id="studentList" class="student-list">
+        ${studentListHTML()}
       </div>
     `;
 
@@ -450,34 +454,43 @@
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
+  function studentListHTML() {
+    const assignment = state.assignment;
+    const attendance = getAttendance(assignment.id, state.attendanceDate);
+    const query = normalizeSearch(state.studentSearch || '');
+    const students = getStudentsForAssignment(assignment).filter((student) => {
+      if (!query) return true;
+      return normalizeSearch(`${student.fullName} ${student.id} ${student.username || ''}`).includes(query);
+    });
+    return students.map((student) => studentCardHTML(student, attendance[student.id])).join('')
+      || `<div class="empty">${query ? 'No hay estudiantes con ese filtro.' : 'Aún no hay estudiantes en este curso.'}</div>`;
+  }
+
+  function refreshStudentList() {
+    const list = document.getElementById('studentList');
+    if (!list) return;
+    list.innerHTML = studentListHTML();
+    bindStudentActionButtons();
+  }
+
   function bindStudentTabEvents() {
     const assignment = state.assignment;
     document.getElementById('attendanceDate').addEventListener('change', (event) => {
       state.attendanceDate = event.target.value || todayISO();
-      renderStudentsTab({ animate: true });
+      refreshStudentList();
     });
 
-    document.getElementById('addStudentForm').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const name = document.getElementById('newStudentName').value.trim();
-      if (!name) return;
-      const student = {
-        id: `local-${assignment.id}-${Date.now()}`,
-        fullName: name,
-        username: makeUsername(name),
-        photo: './assets/default-avatar.svg',
-        grade: assignment.grade,
-        course: assignment.course,
-        sede: assignment.sede
-      };
-      const key = `encisomath:addedStudents:${assignment.id}`;
-      const list = readJSON(key) || [];
-      list.push(student);
-      localStorage.setItem(key, JSON.stringify(list));
-      toast(`${name} fue añadido a ${assignment.subject} ${assignment.grade}-${assignment.course}.`);
-      renderStudentsTab({ animate: false });
+    document.getElementById('studentSearch').addEventListener('input', (event) => {
+      state.studentSearch = event.target.value;
+      refreshStudentList();
     });
 
+    document.getElementById('openAddStudentBtn').addEventListener('click', openAddStudentModal);
+    bindStudentActionButtons();
+  }
+
+  function bindStudentActionButtons() {
+    const assignment = state.assignment;
     document.querySelectorAll('[data-student-id][data-status]').forEach((button) => {
       button.addEventListener('click', () => {
         const studentId = button.dataset.studentId;
@@ -495,6 +508,57 @@
         if (student) openDeleteStudentModal(student);
       });
     });
+  }
+
+  function openAddStudentModal() {
+    const assignment = state.assignment;
+    openModal(`
+      <div class="modal-card add-student-modal">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Nuevo estudiante</p>
+        <h2>Añadir a ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</h2>
+        <p class="card-sub">Se guardará localmente en esta asignatura, sede ${escapeHTML(assignment.sede)}.</p>
+        <form id="newStudentModalForm" class="add-student-form">
+          <label class="field-label" for="studentFirstName">Nombre</label>
+          <input class="input" id="studentFirstName" autocomplete="off" placeholder="Ejemplo: Carlos Junior" required />
+          <label class="field-label" for="studentLastName">Apellido</label>
+          <input class="input" id="studentLastName" autocomplete="off" placeholder="Ejemplo: Acosta López" required />
+          <button class="primary-btn full" type="submit">Añadir estudiante</button>
+        </form>
+      </div>
+    `, () => {
+      const first = document.getElementById('studentFirstName');
+      first.focus();
+      document.getElementById('newStudentModalForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const firstName = document.getElementById('studentFirstName').value.trim();
+        const lastName = document.getElementById('studentLastName').value.trim();
+        if (!firstName || !lastName) return;
+        addNewStudent(firstName, lastName);
+      });
+    });
+  }
+
+  function addNewStudent(firstName, lastName) {
+    const assignment = state.assignment;
+    const fullName = `${lastName}, ${firstName}`.replace(/\s+/g, ' ').trim();
+    const student = {
+      id: `local-${assignment.id}-${Date.now()}`,
+      fullName,
+      username: makeUsername(`${firstName} ${lastName}`),
+      photo: './assets/default-avatar.svg',
+      grade: assignment.grade,
+      course: assignment.course,
+      sede: assignment.sede
+    };
+    const key = `encisomath:addedStudents:${assignment.id}`;
+    const list = readJSON(key) || [];
+    list.push(student);
+    localStorage.setItem(key, JSON.stringify(list));
+    closeModal();
+    toast(`Añadiste un nuevo estudiante: ${fullName}.`);
+    state.studentSearch = '';
+    renderStudentsTab({ animate: false });
   }
 
   function updateStudentCardAttendance(studentId, status) {
@@ -647,11 +711,10 @@
     const src = `${lesson.contentUrl}?v=${Date.now()}&assignment=${encodeURIComponent(assignment.id)}`;
     const markup = `
       <main class="screen class-screen">
-        <header class="topbar">
+        <header class="topbar fixed-lock lesson-topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>Clase</h1>
           <span class="spacer"></span>
-          <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
         <section class="lesson-head">
           <div class="class-emoji">${escapeHTML(lesson.emoji || '📘')}</div>
@@ -665,7 +728,6 @@
     `;
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', () => renderSubjectDetail('classes'));
-      document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
     });
   }
 
@@ -950,8 +1012,8 @@
     root.style.setProperty('--yellow-soft', blackMode ? 'rgba(245, 158, 11, .19)' : 'rgba(245, 158, 11, .16)');
     root.style.setProperty('--banner-deep', blackMode ? '#000000' : '#06121e');
     root.style.setProperty('--banner-base', blackMode ? '#000000' : '#04101c');
-    root.style.setProperty('--login-warm-glow', blackMode ? 'transparent' : 'rgba(255, 214, 10, .18)');
-    root.style.setProperty('--login-pink-glow', blackMode ? 'transparent' : 'rgba(255, 77, 157, .20)');
+    root.style.setProperty('--login-warm-glow', blackMode ? 'color-mix(in srgb, var(--maincolor) 22%, transparent)' : 'rgba(255, 214, 10, .20)');
+    root.style.setProperty('--login-pink-glow', blackMode ? 'rgba(255, 77, 157, .18)' : 'rgba(255, 77, 157, .22)');
     root.style.setProperty('--login-mid', blackMode ? '#000000' : '#050b14');
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -1065,6 +1127,10 @@
   function readableDate(iso) {
     const date = new Date(`${iso}T12:00:00`);
     return new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+  }
+
+  function normalizeSearch(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
   function makeUsername(name) {

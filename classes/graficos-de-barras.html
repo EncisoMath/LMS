@@ -6,85 +6,26 @@
   <title>Gráficos de barras</title>
   <style>
     :root {
-      --bg: #04101c;
-      --bg-2: #071827;
-      --panel: rgba(9, 25, 40, .92);
-      --panel-2: rgba(255,255,255,.065);
-      --main: #1b96bf;
-      --ink: #eef7ff;
-      --muted: #9fb1c4;
-      --line: rgba(255,255,255,.13);
-      --danger: #ef4444;
-      --radius: 6px;
+      --bg:#000;
+      --panel:#080d14;
+      --panel-2:#0d1622;
+      --line:rgba(255,255,255,.13);
+      --ink:#f8fbff;
+      --muted:#9aa9bb;
+      --blue:#1b96bf;
+      --blue-2:#39c7ff;
+      --yellow:#f59e0b;
+      --red:#ef4444;
+      --radius:6px;
     }
-    * { box-sizing: border-box; }
-    html, body { min-height: 100%; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Ubuntu", "Segoe UI", Roboto, Arial, sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--main) 20%, transparent), transparent 28%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-      padding: 14px 14px 40px;
-      letter-spacing: -.015em;
-    }
-    body.black-mode { background: #000; }
-    .lesson { max-width: 920px; margin: 0 auto; display: grid; gap: 14px; }
-    .hero, .card, .question {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
-      box-shadow: 0 16px 38px rgba(0,0,0,.28);
-    }
-    .hero {
-      position: relative;
-      overflow: hidden;
-      padding: 18px;
-      background:
-        radial-gradient(circle at 16% 16%, color-mix(in srgb, var(--main) 34%, transparent), transparent 28%),
-        linear-gradient(135deg, color-mix(in srgb, var(--main) 22%, #000), rgba(255,255,255,.045));
-    }
-    .hero::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      transform: rotate(-7deg) scale(1.18);
-      animation: gridMove 14s linear infinite;
-      opacity: .55;
-    }
-    .hero > * { position: relative; z-index: 1; }
-    .kicker { font-weight: 760; color: color-mix(in srgb, var(--main) 58%, white); letter-spacing: .09em; text-transform: uppercase; font-size: .75rem; }
-    .hero h1 { margin: 6px 0; font-size: clamp(1.8rem, 9vw, 3rem); line-height: .96; letter-spacing: -.065em; font-weight: 820; }
-    .hero p { margin: 0; color: var(--muted); font-weight: 520; line-height: 1.45; }
-    .card { padding: 16px; }
-    .card h2 { margin: 0 0 10px; font-size: 1.14rem; letter-spacing: -.035em; font-weight: 780; }
-    .steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-    .steps li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; color: var(--ink); line-height: 1.38; }
-    .num { width: 34px; height: 34px; border-radius: var(--radius); background: linear-gradient(135deg, var(--main), color-mix(in srgb, var(--main) 64%, #fff)); color: #fff; display: grid; place-items: center; font-weight: 850; box-shadow: 0 10px 20px color-mix(in srgb, var(--main) 22%, transparent); }
-    .formula { background: #000; color: #fff; border: 1px solid rgba(255,255,255,.11); border-radius: var(--radius); padding: 13px; font-weight: 760; overflow: auto; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--main) 12%, transparent); }
-    .builder { display: grid; gap: 12px; }
-    .row { display: grid; grid-template-columns: 1fr 92px; gap: 8px; }
-    .input { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: rgba(255,255,255,.07); color: var(--ink); font: inherit; outline: none; }
-    .input:focus { border-color: var(--main); box-shadow: 0 0 0 4px color-mix(in srgb, var(--main) 18%, transparent); }
-    .btn { border: 0; border-radius: var(--radius); padding: 12px 14px; background: linear-gradient(135deg, var(--main), color-mix(in srgb, var(--main) 64%, #fff)); color: #fff; font-weight: 780; box-shadow: 0 12px 24px color-mix(in srgb, var(--main) 20%, transparent); }
-    .btn.secondary { background: rgba(255,255,255,.08); color: color-mix(in srgb, var(--main) 50%, white); border: 1px solid var(--line); box-shadow: none; }
-    .btn.danger { background: rgba(239,68,68,.14); color: #fecaca; border: 1px solid rgba(239,68,68,.32); box-shadow: none; }
-    canvas { width: 100%; min-height: 260px; border: 1px solid var(--line); border-radius: var(--radius); background: #000; box-shadow: 0 0 26px color-mix(in srgb, var(--main) 10%, transparent); }
-    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
-    .mini { font-size: .88rem; color: var(--muted); font-weight: 560; line-height: 1.45; }
-    .question { padding: 14px; background: linear-gradient(135deg, rgba(245,158,11,.16), rgba(255,255,255,.045)); border-color: rgba(245,158,11,.34); }
-    .question strong { display: block; margin-bottom: 4px; color: #fff; }
-    @keyframes gridMove { to { background-position: 56px 56px; } }
-    @media (min-width: 720px) {
-      body { padding: 18px 18px 48px; }
-      .builder-grid { display: grid; grid-template-columns: 330px 1fr; gap: 14px; align-items: start; }
-      .row { grid-template-columns: 1fr 110px; }
-    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#000;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Ubuntu","Segoe UI",Roboto,Arial,sans-serif;overflow-x:hidden;}
+    body{padding:14px 14px 34px;background:radial-gradient(circle at 12% 0%,rgba(27,150,191,.20),transparent 26%),radial-gradient(circle at 90% 65%,rgba(245,158,11,.11),transparent 24%),#000;}
+    .lesson{max-width:900px;margin:0 auto;display:grid;gap:14px;}
+    .hero,.card,.question{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(135deg,rgba(13,22,34,.96),rgba(0,0,0,.94));box-shadow:0 18px 44px rgba(0,0,0,.55),0 0 34px rgba(27,150,191,.08);position:relative;overflow:hidden;}
+    .hero{padding:18px;min-height:136px;display:grid;align-content:end;}
+    .hero:before{content:"";position:absolute;inset:-40%;background:radial-gradient(circle at 18% 26%,rgba(27,150,191,.35),transparent 18%),radial-gradient(circle at 82% 18%,rgba(245,158,11,.22),transparent 18%),linear-gradient(115deg,transparent 0 48%,rgba(255,255,255,.055) 48% 51%,transparent 51%);background-size:auto,auto,42px 42px;animation:heroMove 12s ease-in-out infinite alternate;}
+    .hero>*{position:relative;z-index:1}.kicker{font-weight:820;color:color-mix(in srgb,var(--blue) 62%,white);letter-spacing:.09em;text-transform:uppercase;font-size:.76rem}.hero h1{margin:6px 0;font-size:clamp(1.7rem,10vw,3.2rem);line-height:.92;letter-spacing:-.07em}.hero p{margin:0;color:var(--muted);font-weight:520;line-height:1.42}.card{padding:15px}.card h2{margin:0 0 10px;font-size:1.2rem;letter-spacing:-.035em}.steps{display:grid;gap:9px;margin:0;padding:0;list-style:none}.steps li{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}.num{width:34px;height:34px;border-radius:var(--radius);background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;display:grid;place-items:center;font-weight:900;box-shadow:0 0 24px rgba(27,150,191,.28)}.formula{background:#020912;color:#fff;border-radius:var(--radius);padding:13px;font-weight:760;overflow:auto;border:1px solid rgba(27,150,191,.28);box-shadow:0 0 26px rgba(27,150,191,.13)}.builder{display:grid;gap:12px}.row{display:grid;grid-template-columns:1fr 96px;gap:8px}.input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:12px;background:rgba(255,255,255,.07);font:inherit;color:#fff;outline:none}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(27,150,191,.18)}.btn{border:0;border-radius:var(--radius);padding:12px 14px;background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;font-weight:850;box-shadow:0 0 26px rgba(27,150,191,.22)}.btn.secondary{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);color:#dff5ff}.btn.danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.34);color:#fecaca}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.mini{font-size:.88rem;color:var(--muted);font-weight:560;line-height:1.4}canvas{width:100%;min-height:260px;border:1px solid rgba(27,150,191,.32);border-radius:var(--radius);background:#050910;box-shadow:inset 0 0 28px rgba(27,150,191,.08)}.question{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(0,0,0,.95));border-color:rgba(245,158,11,.32);padding:14px;color:#fff}.question strong{display:block;margin-bottom:4px;color:#ffdf9b}@keyframes heroMove{0%{transform:translate3d(-1%,0,0) scale(1);filter:hue-rotate(0deg)}100%{transform:translate3d(2%,-2%,0) scale(1.08);filter:hue-rotate(22deg)}}@media(min-width:720px){.builder-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start}.row{grid-template-columns:1fr 110px}body{padding:18px}}
   </style>
 </head>
 <body>
@@ -131,17 +72,6 @@
   </main>
 
   <script>
-    const prefs = (() => {
-      try { return JSON.parse(localStorage.getItem('encisomath:prefs')) || {}; }
-      catch { return {}; }
-    })();
-    const accent = prefs.accent || '#1b96bf';
-    const bg = prefs.background || '#04101c';
-    document.documentElement.style.setProperty('--main', accent);
-    document.documentElement.style.setProperty('--bg', bg);
-    document.documentElement.style.setProperty('--bg-2', bg === '#000000' ? '#000000' : '#071827');
-    if (bg === '#000000') document.body.classList.add('black-mode');
-
     const label = document.getElementById('label');
     const value = document.getElementById('value');
     const chart = document.getElementById('chart');
@@ -156,27 +86,29 @@
       const w = chart.width;
       const h = chart.height;
       ctx.clearRect(0, 0, w, h);
-      const isBlack = (prefs.background || '#04101c') === '#000000';
-      ctx.fillStyle = isBlack ? '#000000' : '#06121e';
+      const bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, '#06111f');
+      bg.addColorStop(1, '#010407');
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
       const pad = 58;
       const max = Math.max(1, ...data.map(item => item.value));
       const plotW = w - pad * 1.4;
       const plotH = h - pad * 1.7;
-      ctx.strokeStyle = 'rgba(238,247,255,.86)';
+      ctx.strokeStyle = 'rgba(255,255,255,.78)';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(pad, 26);
       ctx.lineTo(pad, h - pad);
       ctx.lineTo(w - 28, h - pad);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(203,215,228,.88)';
-      ctx.font = '700 18px system-ui';
+      ctx.fillStyle = '#a7bdd3';
+      ctx.font = 'bold 18px system-ui';
       ctx.fillText('Valor', 18, 32);
       ctx.fillText('Categorías', w - 145, h - 18);
       if (!data.length) {
-        ctx.fillStyle = 'rgba(203,215,228,.72)';
-        ctx.font = '800 24px system-ui';
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 24px system-ui';
         ctx.fillText('Añade datos para ver el gráfico', 120, 210);
         return;
       }
@@ -187,16 +119,19 @@
         const barH = (item.value / max) * plotH;
         const y = h - pad - barH;
         const gradient = ctx.createLinearGradient(0, y, 0, h - pad);
-        gradient.addColorStop(0, accent);
-        gradient.addColorStop(1, shadeColor(accent, -24));
+        gradient.addColorStop(0, '#39c7ff');
+        gradient.addColorStop(1, '#1b96bf');
+        ctx.shadowColor = 'rgba(27,150,191,.45)';
+        ctx.shadowBlur = 18;
         ctx.fillStyle = gradient;
         roundRect(ctx, x, y, barW, barH, 6);
         ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '850 20px system-ui';
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#f8fbff';
+        ctx.font = '900 20px system-ui';
         ctx.textAlign = 'center';
         ctx.fillText(item.value, x + barW / 2, y - 10);
-        ctx.font = '750 16px system-ui';
+        ctx.font = '800 16px system-ui';
         ctx.fillText(shorten(item.label), x + barW / 2, h - pad + 24);
         ctx.textAlign = 'left';
       });
@@ -211,16 +146,6 @@
       ctx.arcTo(x, y + height, x, y, r);
       ctx.arcTo(x, y, x + width, y, r);
       ctx.closePath();
-    }
-
-    function shadeColor(hex, percent) {
-      const raw = String(hex).replace('#','');
-      const num = parseInt(raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw, 16);
-      const amt = Math.round(2.55 * percent);
-      const r = Math.max(0, Math.min(255, (num >> 16) + amt));
-      const g = Math.max(0, Math.min(255, ((num >> 8) & 0xff) + amt));
-      const b = Math.max(0, Math.min(255, (num & 0xff) + amt));
-      return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
     }
 
     function shorten(text) {
