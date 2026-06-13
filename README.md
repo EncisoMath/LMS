@@ -740,3 +740,20 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se añadieron reglas responsive para pantallas más cortas, compactando imagen, textos, tarjetas y espacios sin mover la estructura base del ítem.
 - Versiones/cache busting actualizados a `0.24.68`.
 
+
+## v0.24.69
+
+- Se parte de `v0.24.68`.
+- En Quizzes tipo `drag and drop` y `completar texto drag and drop`, Texto A y Texto B quedan con peso normal (`font-weight: 400`), sin negrita.
+- También se normalizó el peso de textos internos de esos dos tipos: tarjetas, espacios receptores, texto a completar y opciones, para evitar que sigan viéndose en bold.
+- Se mantiene la tuerca activa, la calibración actual y la protección de Quizzes desactivada temporalmente.
+- Versiones/cache busting actualizados a `0.24.69`.
+
+
+## v0.24.70
+
+- Se parte de `v0.24.69`.
+- Se quitó la negrita de **Texto A** y **Texto B** en todos los tipos de quiz: opción múltiple, verdadero/falso, pregunta abierta, drag and drop, completar texto drag and drop y slider.
+- Se mantiene la reducción automática por longitud y el tamaño configurado desde la tuerca, pero el peso visual queda normal (`font-weight: 400`).
+- Versiones/cache busting actualizados a `0.24.70`.
+
