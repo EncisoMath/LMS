@@ -2320,80 +2320,48 @@ html[data-bg-mode="black"] .student-card.flash-excused,
   .danger-head p { font-size: .92rem !important; }
 }
 
-/* v0.14 — base v0.12 con optimizacion puntual sin perder estilo */
-/* 1) Portadas del home sin animaciones: quedan visuales, pero estaticas. */
+/* v0.15 - regreso a v0.12 con optimización puntual solicitada */
+/* 1) Sin animaciones en las portadas de asignaturas del HOME únicamente */
 .home-screen .assignment-cover-mini,
 .home-screen .assignment-cover-mini::before,
 .home-screen .assignment-cover-mini::after,
-.home-screen .assignment-cover-mini .cover-grid,
-.home-screen .assignment-cover-mini .cover-motion,
-.home-screen .assignment-cover-mini .cover-symbol,
-.home-screen .assignment-cover-mini .cover-geo {
+.home-screen .assignment-cover-mini *,
+.home-screen .assignment-cover-mini *::before,
+.home-screen .assignment-cover-mini *::after {
   animation: none !important;
   transition: none !important;
 }
 .home-screen .assignment-cover-mini {
-  filter: saturate(1) brightness(.96) !important;
-  background-position: 0% 0%, 100% 100%, center, center !important;
+  background-position: center !important;
+  background-size: cover !important;
+  filter: none !important;
 }
+.home-screen .assignment-cover-mini .cover-motion,
 .home-screen .assignment-cover-mini .cover-grid {
-  background-position: 0 0 !important;
-  opacity: .28 !important;
-}
-.home-screen .assignment-cover-mini .cover-symbol,
-.home-screen .assignment-cover-mini .cover-geo {
-  transform: none !important;
-  will-change: auto !important;
+  display: none !important;
 }
 
-/* 2) Portada del perfil sin efecto breath. */
-.profile-cover,
-.profile-cover::before,
-.profile-cover::after {
+/* 2) Quitar SOLO el breath de la portada del perfil, no el resto de la app */
+.profile-cover {
   animation: none !important;
-  transition: none !important;
-  filter: saturate(1) brightness(.96) !important;
-  background-position: 0% 0%, 100% 100%, center, center !important;
-}
-.profile-cover .cover-grid,
-.profile-cover .cover-motion,
-.profile-cover .cover-symbol,
-.profile-cover .cover-geo {
-  will-change: auto !important;
+  background-position: center !important;
 }
 
-/* 3) En negro total, la vista de asignatura debe ser negro puro, sin glows de fondo. */
+/* 3) En modo negro, la vista de asignatura queda con fondo negro real, sin glows ni degradados de pantalla */
 html[data-bg-mode="black"] .subject-screen,
-html[data-bg-mode="black"] .subject-screen.screen {
+html[data-bg-mode="black"] .subject-screen.screen,
+html[data-bg-mode="black"] .subject-screen .section,
+html[data-bg-mode="black"] .subject-screen .tab-section {
   background: #000 !important;
   background-image: none !important;
 }
 html[data-bg-mode="black"] .subject-screen::before,
 html[data-bg-mode="black"] .subject-screen::after,
-html[data-bg-mode="black"] .subject-screen .screen-glow,
-html[data-bg-mode="black"] .subject-screen .ambient-glow {
-  content: none !important;
+html[data-bg-mode="black"] .subject-screen .section::before,
+html[data-bg-mode="black"] .subject-screen .section::after,
+html[data-bg-mode="black"] .subject-screen .tab-section::before,
+html[data-bg-mode="black"] .subject-screen .tab-section::after {
   display: none !important;
-  opacity: 0 !important;
-  animation: none !important;
-}
-html[data-bg-mode="black"] .subject-screen .section,
-html[data-bg-mode="black"] .subject-screen .tab-section,
-html[data-bg-mode="black"] .subject-screen .date-card,
-html[data-bg-mode="black"] .subject-screen .student-tools,
-html[data-bg-mode="black"] .subject-screen .tab-row,
-html[data-bg-mode="black"] .subject-screen .sticky-tabs {
-  background-color: #000 !important;
-  background-image: none !important;
-}
-
-/* Mantener destellos de asistencia visibles en negro sin animar el fondo. */
-html[data-bg-mode="black"] .student-card.flash-present {
-  animation: illuminateGreenV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
-}
-html[data-bg-mode="black"] .student-card.flash-absent {
-  animation: illuminateRedV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
-}
-html[data-bg-mode="black"] .student-card.flash-excused {
-  animation: illuminateYellowV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
+  content: none !important;
+  background: none !important;
 }

@@ -120,3 +120,12 @@ classes/medidas-de-tendencia-central.html
 ## v0.10
 
 - Los botones activos de asistencia ahora usan color fijo por estado: verde para Asistió, rojo para No asistió y amarillo para Excusa, independientemente del color del tema.
+
+## v0.15
+
+Base: archivo v0.12 subido por el usuario.
+
+Cambios puntuales:
+- Se quitaron las animaciones de las portadas de asignaturas en el home.
+- Se eliminó el efecto breath de la portada del perfil.
+- En modo negro, el fondo de la vista de asignatura queda negro real, sin glows ni degradados de pantalla.

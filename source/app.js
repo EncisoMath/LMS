@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.14.0';
+  const APP_VERSION = '0.15.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
