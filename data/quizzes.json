@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2",
   "description": "Base inicial de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numerico.",
   "quizzes": [
     {
@@ -17,7 +17,6 @@
           "prompt": "Según la gráfica, ¿cuál fruta tiene mayor frecuencia?",
           "image": "./assets/quiz-demo-statistics.svg",
           "imageAlt": "Gráfica de barras sobre fruta favorita",
-          "text": "Toca la imagen si necesitas verla en grande antes de responder.",
           "options": [
             {
               "id": "a",
@@ -45,7 +44,6 @@
           "id": "q2",
           "type": "true_false",
           "prompt": "La frecuencia absoluta indica cuántas veces aparece un dato.",
-          "text": "Marca verdadero o falso.",
           "options": [
             {
               "id": "true",
@@ -62,14 +60,12 @@
         {
           "id": "q3",
           "type": "open",
-          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia.",
-          "text": "Esta pregunta es abierta y usa un botón de envío para registrar la respuesta en modo demo."
+          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia."
         },
         {
           "id": "q4",
           "type": "match",
           "prompt": "Arrastra cada concepto hacia su definición.",
-          "text": "Arrastra cada tarjeta hacia la definición correcta y valida tus uniones.",
           "pairs": [
             {
               "id": "fa",
@@ -92,7 +88,7 @@
           "id": "q5",
           "type": "fill_text",
           "prompt": "Completa el texto arrastrando las palabras correctas.",
-          "text": "Puedes usar hasta 8 opciones de colores para llenar los espacios.",
+          "text": "Completa el texto arrastrando las palabras correctas.",
           "textParts": [
             "Pepito se fue a la montaña y después vio un ",
             ". Luego de eso se preguntó si debía ",
@@ -132,14 +128,6 @@
             {
               "id": "descansar",
               "text": "descansar"
-            },
-            {
-              "id": "volcan",
-              "text": "volcán"
-            },
-            {
-              "id": "gritar",
-              "text": "gritar"
             }
           ]
         },
@@ -147,7 +135,6 @@
           "id": "q6",
           "type": "slider",
           "prompt": "En una encuesta participaron 10 estudiantes. ¿Cuántos estudiantes participaron?",
-          "text": "Mueve el slider hasta el número correcto y valida tu respuesta.",
           "min": 0,
           "max": 20,
           "step": 1,

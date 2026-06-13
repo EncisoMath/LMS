@@ -567,3 +567,17 @@ Correcciones visuales puntuales en Quizzes sobre v0.24.48:
 - En completar texto, los espacios vacíos usan relleno gris claro con borde punteado fino y texto “Arrastra aquí”. Se eliminó el reborde oscuro cuando se coloca una opción.
 - Se ocultaron los mensajes locales tipo “1/3 correctas” o “2/2 espacios correctos” en drag and drop/completar texto, dejando solo la banda inferior general.
 - Se mantuvo la protección de Quizzes desactivada temporalmente como en v0.24.48.
+
+## v0.24.50
+
+Correcciones visuales y de composición en Quizzes sobre v0.24.49:
+
+- En ABCD, Verdadero/Falso y Pregunta abierta, el contenido principal se centra verticalmente mejor dentro de la pantalla del quiz para evitar que la pregunta quede pegada arriba.
+- En Pregunta abierta se simplificó la interfaz: se retiró el bloque de ayuda con emoji y se dejó solo el campo corto con placeholder `Escribe tu respuesta aquí` y el botón `Enviar respuesta` debajo.
+- Se añadió scroll automático al enfocar el campo de respuesta abierta para mejorar el comportamiento cuando aparece el teclado en Android.
+- En completar texto, las opciones se limitan visualmente a 6, el contenedor de opciones conserva una altura estable aunque se arrastren tarjetas y se eliminó el fondo azul oscuro.
+- En completar texto, los espacios vacíos conservan relleno gris claro y borde punteado fino, sin rebordes oscuros al colocar opciones.
+- En drag and drop, cuando aparece la banda inferior de correcto/incorrecto, el tablero ya no se desplaza hacia arriba hasta montarse sobre el texto de la pregunta.
+- Se mantiene la protección de Quizzes desactivada temporalmente como en v0.24.48/v0.24.49.
+- Versión/cache busting actualizados a `0.24.50`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.

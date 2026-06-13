@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.49';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.49: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.50';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.50: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1341,7 +1341,7 @@
     const session = getQuizSession();
     const promptClass = quizPromptClass(question.prompt || '');
     return `
-      <section class="quiz-stage ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
@@ -1432,14 +1432,7 @@
   function quizOpenHTML(question) {
     return `
       <form class="quiz-open-form quiz-open-card" data-quiz-open-form>
-        <div class="quiz-open-title-row">
-          <span class="quiz-open-icon" aria-hidden="true">✍️</span>
-          <div>
-            <strong>Escribe tu respuesta</strong>
-            <small>Responde con tus palabras.</small>
-          </div>
-        </div>
-        <textarea class="input quiz-open-input" placeholder="Escribe aquí..." rows="5"></textarea>
+        <textarea class="input quiz-open-input" placeholder="Escribe tu respuesta aquí" rows="3"></textarea>
         <button class="primary-btn quiz-submit-btn" type="submit">Enviar respuesta</button>
         <p class="quiz-open-feedback" data-quiz-open-feedback hidden>Respuesta enviada.</p>
       </form>
@@ -1499,7 +1492,7 @@
       <div class="quiz-fill-shell" data-quiz-fill-board>
         <div class="quiz-fill-text" data-fill-text>${fillText}</div>
         <div class="quiz-fill-options" data-fill-source>
-          ${options.slice(0, 8).map((option, index) => {
+          ${options.slice(0, 6).map((option, index) => {
             const color = palette[index % palette.length];
             return `<button class="fill-option fill-${color}" style="--fill-color:${colorHex[color]}" type="button" draggable="true" data-fill-color="${color}" data-fill-option="${escapeAttr(option.id || String(index))}">${escapeHTML(option.text || '')}</button>`;
           }).join('')}
@@ -1832,6 +1825,13 @@
       form.addEventListener('submit', (event) => {
         event.preventDefault();
         handleOpenAnswer(form);
+      });
+    });
+    document.querySelectorAll('.quiz-open-input').forEach((input) => {
+      input.addEventListener('focus', () => {
+        window.setTimeout(() => {
+          input.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        }, 260);
       });
     });
     bindQuizMatchEvents();

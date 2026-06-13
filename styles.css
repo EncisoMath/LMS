@@ -9904,3 +9904,177 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset {
   background: color-mix(in srgb, var(--maincolor) 72%, #0b1020) !important;
 }
+
+/* v0.24.50 - Ajustes de composición vertical y limpieza fina de Quizzes */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content {
+  padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  scroll-padding-bottom: calc(190px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Centrado vertical para preguntas que deben sentirse como una pantalla de respuesta, no como un formulario pegado arriba. */
+.quiz-stage-fullscreen.quiz-type-multiple_choice,
+.quiz-stage-fullscreen.quiz-type-true_false,
+.quiz-stage-fullscreen.quiz-type-open {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: clamp(12px, 2.6vh, 22px) !important;
+  min-height: calc(100dvh - 116px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+}
+.quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-stage-head,
+.quiz-stage-fullscreen.quiz-type-true_false .quiz-stage-head,
+.quiz-stage-fullscreen.quiz-type-open .quiz-stage-head {
+  width: 100% !important;
+  flex: 0 0 auto !important;
+}
+.quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-image-card {
+  flex: 0 0 auto !important;
+  margin: 0 auto !important;
+  max-height: min(34vh, 292px) !important;
+}
+.quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-grid,
+.quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid {
+  width: 100% !important;
+  margin-top: 0 !important;
+}
+.quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-grid-2x2 {
+  min-height: min(34vh, 250px) !important;
+  align-content: center !important;
+}
+
+/* Verdadero/Falso más alto y un poco más abajo dentro del bloque centrado. */
+.quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two {
+  margin-top: clamp(10px, 3vh, 28px) !important;
+  align-content: center !important;
+}
+.quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two .kahoot-option {
+  min-height: clamp(210px, 40vh, 300px) !important;
+}
+@media (max-width: 520px) {
+  .quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two .kahoot-option {
+    min-height: clamp(188px, 36vh, 270px) !important;
+  }
+}
+
+/* Pregunta abierta limpia: solo campo corto y botón. */
+.quiz-open-card {
+  width: 100% !important;
+  display: grid !important;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-open-title-row,
+.quiz-open-icon {
+  display: none !important;
+}
+.quiz-open-input {
+  min-height: 92px !important;
+  height: 96px !important;
+  max-height: 132px !important;
+  resize: none !important;
+  padding: 14px 12px !important;
+  background: #111827 !important;
+  border: 1px solid rgba(148, 163, 184, .34) !important;
+  border-radius: var(--radius) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+.quiz-open-input:focus {
+  border-color: color-mix(in srgb, var(--maincolor) 72%, #ffffff 8%) !important;
+  outline: 2px solid color-mix(in srgb, var(--maincolor) 34%, transparent) !important;
+  outline-offset: 2px !important;
+}
+.quiz-open-input::placeholder {
+  color: rgba(255,255,255,.52) !important;
+  font-weight: 700 !important;
+}
+.quiz-stage-fullscreen.quiz-type-open .quiz-submit-btn {
+  min-height: 52px !important;
+}
+
+/* Completar texto: máximo visual de 6 opciones, contenedor estable, sin fondo azul oscuro ni resize brusco. */
+.quiz-fill-options {
+  min-height: 142px !important;
+  align-content: start !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  padding: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-options {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+.quiz-fill-shell {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+.quiz-fill-text {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+.quiz-fill-shell .fill-drop {
+  background: #2f3947 !important;
+  background-color: #2f3947 !important;
+  border: 1px dashed rgba(255,255,255,.32) !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.quiz-fill-shell .fill-drop small {
+  color: rgba(255,255,255,.62) !important;
+  font-size: .64rem !important;
+}
+.quiz-fill-shell .fill-drop.fill-filled {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.quiz-fill-shell .fill-drop.fill-filled .fill-slot,
+.quiz-fill-shell .fill-drop.fill-filled .fill-option {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Drag/drop: cuando aparece la banda, no subir el tablero hasta montarlo sobre el título. */
+.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible {
+  padding-bottom: 168px !important;
+}
+.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-match-shell,
+.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-match-board {
+  transform: none !important;
+  margin-top: 0 !important;
+}
+
+/* Botones internos conservan color de tema plano. */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
+  background: var(--maincolor) !important;
+  background-color: var(--maincolor) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset {
+  background: color-mix(in srgb, var(--maincolor) 76%, #0b1020) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
