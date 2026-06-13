@@ -126,10 +126,13 @@ classes/medidas-de-tendencia-central.html
 
 - Ajuste del modal de eliminación: signos de exclamación más juntos y fondo rojo con patrón de alerta más marcado.
 
-## v0.17
 
-- Se agrego la clase interactiva **Diagrama de cajas y bigotes**.
-- Se agrego herramienta para ingresar datos y generar el grafico de caja y bigotes.
-- Se agrego la clase **Medidas de dispersion** con calculo paso a paso.
-- La herramienta muestra rango, desviacion media, varianza, desviacion estandar y coeficiente de variacion.
-- Se registraron las nuevas clases en `data/classes.json` para Estadistica, periodo 2.
+## v0.19
+- Login optimizado: se quitaron las figuras geométricas animadas.
+- Se conservaron y reforzaron los glows/destellos de esquina con animación más liviana.
+- No se tocaron clases, home, asistencia ni warning.
+
+
+## v0.19
+- Modo negro total como fondo por defecto y único modo de fondo.
+- Eliminada la opción de fondo azul oscuro.

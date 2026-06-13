@@ -1,6 +1,6 @@
 :root {
-  --app-bg: #04101c;
-  --app-bg-2: #071827;
+  --app-bg: #000000;
+  --app-bg-2: #000000;
   --maincolor: #1b96bf;
   --accent: var(--maincolor);
   --ink: #eef7ff;
@@ -27,14 +27,14 @@
   --body-accent-glow: color-mix(in srgb, var(--maincolor) 22%, transparent);
   --body-secondary-glow: rgba(88, 204, 2, .09);
   --screen-accent-glow: color-mix(in srgb, var(--maincolor) 14%, transparent);
-  --screen-top-mix: #0f2334;
+  --screen-top-mix: #000000;
   --bar-bg: rgba(4, 16, 28, .92);
   --bottom-bar-bg: rgba(4, 16, 28, .88);
   --profile-bg: rgba(4, 16, 28, .78);
   --subject-panel-bg: rgba(8, 26, 42, .9);
   --modal-bg: rgba(6, 18, 31, .96);
   --banner-deep: #06121e;
-  --banner-base: #04101c;
+  --banner-base: #000000;
   --login-warm-glow: rgba(255, 214, 10, .18);
   --login-pink-glow: rgba(255, 77, 157, .20);
   --login-mid: #050b14;
@@ -2488,4 +2488,69 @@ html[data-bg-mode="black"] .subject-screen .tab-section::after {
     right: 2px !important;
     top: 2px !important;
   }
+}
+
+
+/* v0.18 - login optimizado: sin figuras geométricas, solo glows de esquina */
+.login-screen .math-bg,
+.login-screen .shape {
+  display: none !important;
+  animation: none !important;
+}
+.login-screen {
+  background:
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--maincolor) 46%, transparent), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(255, 214, 10, .24), transparent 30%),
+    radial-gradient(circle at 82% 90%, rgba(255, 77, 157, .24), transparent 32%),
+    radial-gradient(circle at 18% 90%, rgba(34, 211, 238, .18), transparent 28%),
+    linear-gradient(160deg, #02050a 0%, var(--login-mid) 52%, #000 100%) !important;
+}
+.login-screen::after {
+  inset: -28% !important;
+  background:
+    radial-gradient(circle at 12% 16%, color-mix(in srgb, var(--maincolor) 58%, transparent), transparent 19%),
+    radial-gradient(circle at 90% 16%, rgba(255, 214, 10, .32), transparent 21%),
+    radial-gradient(circle at 82% 84%, rgba(255, 77, 157, .30), transparent 23%),
+    radial-gradient(circle at 16% 82%, rgba(34, 211, 238, .22), transparent 19%) !important;
+  filter: blur(22px) saturate(1.28) !important;
+  opacity: .94 !important;
+  animation: loginGlowOnly 11s ease-in-out infinite alternate !important;
+}
+@keyframes loginGlowOnly {
+  0% { transform: translate3d(-1.8%, .8%, 0) scale(1); filter: blur(21px) hue-rotate(0deg) saturate(1.16); opacity: .74; }
+  33% { transform: translate3d(2.6%, -1.4%, 0) scale(1.08); filter: blur(24px) hue-rotate(14deg) saturate(1.32); opacity: .98; }
+  66% { transform: translate3d(-1.2%, 2.4%, 0) scale(1.04); filter: blur(22px) hue-rotate(-12deg) saturate(1.38); opacity: .86; }
+  100% { transform: translate3d(2%, -1%, 0) scale(1.13); filter: blur(26px) hue-rotate(28deg) saturate(1.26); opacity: .98; }
+}
+html[data-bg-mode="black"] .login-screen {
+  background:
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--maincolor) 34%, transparent), transparent 28%),
+    radial-gradient(circle at 90% 14%, rgba(255, 214, 10, .20), transparent 30%),
+    radial-gradient(circle at 82% 90%, rgba(255, 77, 157, .22), transparent 32%),
+    linear-gradient(180deg, #000 0%, #000 100%) !important;
+}
+html[data-bg-mode="black"] .login-screen::after {
+  background:
+    radial-gradient(circle at 12% 16%, color-mix(in srgb, var(--maincolor) 50%, transparent), transparent 20%),
+    radial-gradient(circle at 90% 16%, rgba(255, 214, 10, .24), transparent 22%),
+    radial-gradient(circle at 82% 84%, rgba(255, 77, 157, .24), transparent 24%),
+    radial-gradient(circle at 16% 82%, rgba(34, 211, 238, .18), transparent 20%) !important;
+}
+
+
+/* v0.19 - modo negro como único fondo por defecto */
+html,
+body {
+  background-color: #000000 !important;
+}
+html[data-bg-mode="deep"] body,
+html[data-bg-mode="deep"] .screen,
+html[data-bg-mode="deep"] .subject-screen,
+html[data-bg-mode="deep"] .class-screen {
+  background-color: #000000 !important;
+}
+html[data-bg-mode="deep"] .screen,
+html[data-bg-mode="deep"] .subject-screen {
+  background:
+    linear-gradient(180deg, #000000 0%, #000000 100%) !important;
 }

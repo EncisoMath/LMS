@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.17.0';
+  const APP_VERSION = '0.19.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -11,7 +11,7 @@
 
   const DEFAULT_PREFS = {
     accent: '#1b96bf',
-    background: '#04101c'
+    background: '#000000'
   };
 
   const ACCENT_OPTIONS = [
@@ -23,7 +23,6 @@
   ];
 
   const BACKGROUND_OPTIONS = [
-    { label: 'Azul oscuro', value: '#04101c' },
     { label: 'Negro total', value: '#000000' }
   ];
 
@@ -119,7 +118,6 @@
     const last = readJSON('encisomath:lastUser');
     const markup = `
       <main class="login-screen">
-        ${animatedShapes()}
         <section class="login-card">
           <div class="logo-wrap" aria-label="EncisoMath">
             <div class="logo-mark">
