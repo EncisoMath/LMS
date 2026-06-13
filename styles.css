@@ -9128,3 +9128,63 @@ body.quiz-fullscreen-active {
     margin-left: 10px !important;
   }
 }
+
+/* v0.24.39 - Compact slider vertical spacing */
+.quiz-slider-shell {
+  padding: 10px 10px 12px !important;
+  gap: 7px !important;
+}
+.quiz-slider-visual-stage {
+  min-height: 154px !important;
+  padding: 0 !important;
+  margin-top: -2px !important;
+}
+.quiz-slider-widget {
+  min-height: 150px !important;
+  width: min(82vw, 294px) !important;
+}
+.quiz-slider-bubble {
+  top: -7px !important;
+}
+.quiz-slider-ticks {
+  top: 74px !important;
+  min-height: 46px !important;
+}
+.quiz-slider-ticks span[data-slider-tick] {
+  height: clamp(25px, 7.2vw, 34px) !important;
+}
+.quiz-slider-ticks span[data-slider-tick].active,
+.quiz-slider-ticks span[data-slider-tick].correct-answer {
+  height: clamp(37px, 10.2vw, 46px) !important;
+}
+.slider-correct-bubble {
+  top: 124px !important;
+}
+.quiz-phone-range {
+  height: 150px !important;
+}
+.quiz-slider-limits {
+  margin-top: -16px !important;
+  font-size: .72rem !important;
+}
+.quiz-slider-submit {
+  margin-top: 0 !important;
+  min-height: 44px !important;
+}
+.quiz-slider-shell.slider-wrong .quiz-slider-visual-stage {
+  min-height: 180px !important;
+}
+@media (max-width: 520px) {
+  .quiz-slider-shell { padding: 10px 10px 12px !important; gap: 7px !important; }
+  .quiz-slider-visual-stage { min-height: 154px !important; padding: 0 !important; margin-top: -2px !important; }
+  .quiz-slider-widget { min-height: 150px !important; width: min(84vw, 300px) !important; }
+  .quiz-slider-bubble { top: -7px !important; }
+  .quiz-slider-ticks { top: 74px !important; min-height: 46px !important; }
+  .quiz-slider-ticks span[data-slider-tick] { height: clamp(25px, 7.2vw, 34px) !important; }
+  .quiz-slider-ticks span[data-slider-tick].active,
+  .quiz-slider-ticks span[data-slider-tick].correct-answer { height: clamp(37px, 10.2vw, 46px) !important; }
+  .slider-correct-bubble { top: 124px !important; }
+  .quiz-phone-range { height: 150px !important; }
+  .quiz-slider-limits { margin-top: -16px !important; }
+  .quiz-slider-shell.slider-wrong .quiz-slider-visual-stage { min-height: 180px !important; }
+}

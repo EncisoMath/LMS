@@ -463,11 +463,17 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
   - Los badges circulares `✓` y `×` ya no deberían cortarse por las tarjetas ni por el contenedor del quiz.
 - Versión/cache busting actualizados a `0.24.37`.
 
-### v0.24.38
+### v0.24.39
 
 - Corrección en Quizzes tipo `slider`: cada bullet ahora corresponde a un único valor exacto. El rango visual se calcula como cantidad de valores válidos, no como intervalos, para evitar que un mismo bullet pueda mostrar dos números distintos.
 - El rango aleatorio alrededor de la respuesta correcta conserva máximo 10 valores/bullets visibles.
 - La selección por dedo/mouse se calcula desde el centro real del primer y último bullet, y se redondea al índice del bullet más cercano. Así la paleta azul se mueve de bullet en bullet, sin posiciones intermedias ni desfases.
 - La respuesta correcta verde también usa el mismo índice/bullet real que el slider del estudiante.
-- Versión/cache busting actualizados a `0.24.38`.
+- Versión/cache busting actualizados a `0.24.39`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+### v0.24.39
+- Se compacto verticalmente el componente de quiz tipo slider para evitar que el contenedor se vea demasiado alto respecto al tamano real del control.
+- Se redujo el espacio interno, la altura del escenario visual, la separacion entre barritas, etiquetas y boton, manteniendo el area tactil invisible para arrastrar la paleta.
+- Cuando la respuesta es incorrecta, el bloque conserva un poco mas de altura solo para que la paleta correcta verde no se monte sobre las etiquetas.
+- Version/cache busting actualizados a `0.24.39`.
