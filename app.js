@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.37';
+  const APP_VERSION = '0.24.38';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1531,21 +1531,25 @@
 
   function quizSliderRange(question) {
     const step = Math.abs(Number(question.step)) || 1;
-    const correct = Number.isFinite(Number(question.correct)) ? Number(question.correct) : 0;
-    const originalMin = Number.isFinite(Number(question.min)) ? Number(question.min) : Math.floor(correct - (step * 5));
-    const originalMax = Number.isFinite(Number(question.max)) ? Number(question.max) : originalMin + (step * 10);
-    const maxSteps = Math.max(2, Math.min(10, Number(question.rangeSteps) || 10));
+    const correctRaw = Number.isFinite(Number(question.correct)) ? Number(question.correct) : 0;
+    const correct = snapSliderValue(correctRaw, 0, step);
+    const hasMin = Number.isFinite(Number(question.min));
+    const hasMax = Number.isFinite(Number(question.max));
+    const originalMin = hasMin ? snapSliderValue(Number(question.min), 0, step) : snapSliderValue(correct - (step * 5), 0, step);
+    const originalMax = hasMax ? snapSliderValue(Number(question.max), 0, step) : snapSliderValue(originalMin + (step * 9), 0, step);
+    const maxValues = Math.max(2, Math.min(10, Number(question.rangeSteps) || 10));
+    const maxIntervals = Math.max(1, maxValues - 1);
+    const span = maxIntervals * step;
     let min = originalMin;
     let max = originalMax;
-    const originalSteps = Math.round(Math.abs((originalMax - originalMin) / step));
-    if (question.randomRange !== false || originalSteps > maxSteps) {
-      const span = maxSteps * step;
-      const rawLower = Number.isFinite(originalMin) ? originalMin : correct - span;
-      const rawUpper = Number.isFinite(originalMax) ? originalMax : correct + span;
-      let minStart = Math.max(rawLower, correct - span);
-      let maxStart = Math.min(correct, rawUpper - span);
+    const originalValues = Math.round(Math.abs((originalMax - originalMin) / step)) + 1;
+    if (question.randomRange !== false || originalValues > maxValues) {
+      const lowerBound = hasMin ? originalMin : snapSliderValue(correct - span, 0, step);
+      const upperBound = hasMax ? originalMax : snapSliderValue(correct + span, 0, step);
+      let minStart = Math.max(lowerBound, snapSliderValue(correct - span, 0, step));
+      let maxStart = Math.min(correct, snapSliderValue(upperBound - span, 0, step));
       if (maxStart < minStart) {
-        minStart = correct - span;
+        minStart = snapSliderValue(correct - span, 0, step);
         maxStart = correct;
       }
       const possibleStarts = Math.max(0, Math.round((maxStart - minStart) / step));
@@ -1553,20 +1557,24 @@
       min = snapSliderValue(minStart + (leftSteps * step), 0, step);
       max = snapSliderValue(min + span, 0, step);
     }
-    if (max <= min) max = snapSliderValue(min + (maxSteps * step), 0, step);
+    if (max <= min) max = snapSliderValue(min + span, 0, step);
     if (correct < min) {
-      min = snapSliderValue(correct, 0, step);
-      max = snapSliderValue(min + (maxSteps * step), 0, step);
+      min = correct;
+      max = snapSliderValue(min + span, 0, step);
     }
     if (correct > max) {
-      max = snapSliderValue(correct, 0, step);
-      min = snapSliderValue(max - (maxSteps * step), 0, step);
+      max = correct;
+      min = snapSliderValue(max - span, 0, step);
     }
-    const rangeSteps = Math.max(2, Math.min(maxSteps, Math.round(Math.abs((max - min) / step)) || maxSteps));
-    let initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : snapSliderValue(min + (Math.floor(rangeSteps / 2) * step), min, step);
-    if (initial < min || initial > max) initial = snapSliderValue(min + (Math.floor(rangeSteps / 2) * step), min, step);
-    initial = snapSliderValue(initial, min, step);
-    return { min, max, step, correct: snapSliderValue(correct, min, step), initial, tickCount: Math.max(2, rangeSteps) };
+    const valueCount = Math.max(2, Math.min(maxValues, Math.round(Math.abs((max - min) / step)) + 1));
+    max = snapSliderValue(min + ((valueCount - 1) * step), 0, step);
+    if (correct > max) {
+      max = correct;
+      min = snapSliderValue(max - ((valueCount - 1) * step), 0, step);
+    }
+    let initial = Number.isFinite(Number(question.initial)) ? snapSliderValue(Number(question.initial), min, step) : snapSliderValue(min + (Math.floor((valueCount - 1) / 2) * step), min, step);
+    if (initial < min || initial > max) initial = snapSliderValue(min + (Math.floor((valueCount - 1) / 2) * step), min, step);
+    return { min, max, step, correct, initial, tickCount: valueCount };
   }
 
   function getQuizSliderTune() {
@@ -2608,6 +2616,18 @@
       board.querySelector('[data-slider-tune-continue]')?.addEventListener('click', () => {
         continueQuizAfterFeedback();
       });
+      const getSliderMetrics = () => {
+        const min = Number(slider?.min || 0);
+        const max = Number(slider?.max || 100);
+        const step = Math.abs(Number(slider?.step || board.dataset.sliderStep || 1)) || 1;
+        const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
+        const tickMax = Math.max(1, ticks.length - 1);
+        return { min, max, step, ticks, tickMax };
+      };
+      const valueToIndex = (value, min, step, tickMax) => {
+        return Math.max(0, Math.min(tickMax, Math.round((Number(value) - min) / step)));
+      };
+      const indexToValue = (index, min, step) => snapSliderValue(min + (index * step), min, step);
       const getTickCenter = (ticks, index) => {
         const tick = ticks[index];
         const holder = board.querySelector('[data-slider-ticks]');
@@ -2618,25 +2638,36 @@
         if (!widgetBox || !tickBox || !tickBox.width) return null;
         return (tickBox.left - widgetBox.left) + (tickBox.width / 2);
       };
+      const setSliderFromPointer = (event) => {
+        if (!slider || slider.disabled) return;
+        const { min, step, ticks, tickMax } = getSliderMetrics();
+        const first = ticks[0]?.getBoundingClientRect();
+        const last = ticks[tickMax]?.getBoundingClientRect();
+        if (!first || !last) return;
+        const firstCenter = first.left + first.width / 2;
+        const lastCenter = last.left + last.width / 2;
+        const clientX = event.clientX ?? event.touches?.[0]?.clientX;
+        if (!Number.isFinite(clientX)) return;
+        const pct = (clientX - firstCenter) / Math.max(1, lastCenter - firstCenter);
+        const index = Math.max(0, Math.min(tickMax, Math.round(pct * tickMax)));
+        slider.value = formatSliderNumber(indexToValue(index, min, step), step);
+        update();
+      };
       const update = () => {
         if (!slider) return;
-        const min = Number(slider.min || 0);
-        const max = Number(slider.max || 100);
-        const step = Math.abs(Number(slider.step || board.dataset.sliderStep || 1)) || 1;
+        const { min, max, step, ticks, tickMax } = getSliderMetrics();
         const snapped = Math.max(min, Math.min(max, snapSliderValue(slider.value, min, step)));
-        const formatted = formatSliderNumber(snapped, step);
+        const tickIndex = valueToIndex(snapped, min, step, tickMax);
+        const exactValue = indexToValue(tickIndex, min, step);
+        const formatted = formatSliderNumber(exactValue, step);
         if (formatSliderNumber(slider.value, step) !== formatted) slider.value = formatted;
         if (valueLabel) valueLabel.textContent = formatted;
-        const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(step, max - min)) * 100));
-        const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
-        const tickMax = Math.max(1, ticks.length - 1);
-        const tickIndex = Math.max(0, Math.min(tickMax, Math.round((pct / 100) * tickMax)));
-        const visualPct = ticks.length > 1 ? (tickIndex / tickMax) * 100 : pct;
+        const visualPct = ticks.length > 1 ? (tickIndex / tickMax) * 100 : 0;
         const tickCenter = getTickCenter(ticks, tickIndex);
         const bubbleX = tickCenter == null ? `${visualPct}%` : `${tickCenter}px`;
-        slider.style.setProperty('--slider-progress', `${pct}%`);
+        slider.style.setProperty('--slider-progress', `${visualPct}%`);
         slider.style.setProperty('--slider-visual-progress', `${visualPct}%`);
-        board.style.setProperty('--slider-progress', `${pct}%`);
+        board.style.setProperty('--slider-progress', `${visualPct}%`);
         board.style.setProperty('--slider-visual-progress', `${visualPct}%`);
         board.style.setProperty('--slider-bubble-x', bubbleX);
         board.dataset.sliderVisualIndex = String(tickIndex);
@@ -2648,6 +2679,10 @@
       };
       slider?.addEventListener('input', update);
       slider?.addEventListener('change', update);
+      slider?.addEventListener('pointerdown', (event) => { setSliderFromPointer(event); slider.setPointerCapture?.(event.pointerId); });
+      slider?.addEventListener('pointermove', (event) => { if (event.buttons || slider.matches(':active')) setSliderFromPointer(event); });
+      slider?.addEventListener('touchstart', (event) => setSliderFromPointer(event), { passive: true });
+      slider?.addEventListener('touchmove', (event) => setSliderFromPointer(event), { passive: true });
       applyTune();
       update();
       setTimeout(update, 80);
@@ -2665,13 +2700,9 @@
         const tolerance = Math.max(0, Number(board.dataset.sliderTolerance || question.tolerance || 0));
         const ok = Math.abs(selected - correctValue) <= tolerance;
         board.classList.add(ok ? 'slider-correct' : 'slider-wrong');
-        const sliderMin = Number(slider.min || 0);
-        const sliderMax = Number(slider.max || 100);
-        const correctPct = Math.max(0, Math.min(100, ((correctValue - sliderMin) / Math.max(1, sliderMax - sliderMin)) * 100));
-        const correctTicks = Array.from(board.querySelectorAll('[data-slider-tick]'));
-        const correctTickMax = Math.max(1, correctTicks.length - 1);
-        const correctTickIndex = Math.max(0, Math.min(correctTickMax, Math.round((correctPct / 100) * correctTickMax)));
-        const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : correctPct;
+        const { min: sliderMin, step: sliderStep, ticks: correctTicks, tickMax: correctTickMax } = getSliderMetrics();
+        const correctTickIndex = valueToIndex(correctValue, sliderMin, sliderStep, correctTickMax);
+        const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : 0;
         const correctCenter = getTickCenter(correctTicks, correctTickIndex);
         board.style.setProperty('--slider-correct-progress', correctCenter == null ? `${correctVisualPct}%` : `${correctCenter}px`);
         board.dataset.sliderCorrectVisualIndex = String(correctTickIndex);
@@ -3414,7 +3445,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.37', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.38', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
