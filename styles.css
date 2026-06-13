@@ -9497,3 +9497,95 @@ body.quiz-fullscreen-active {
     0 0 24px color-mix(in srgb, var(--maincolor) 16%, transparent),
     0 12px 24px rgba(0,0,0,.34) !important;
 }
+
+/* v0.24.46 - Correcciones de botones planos, drag/drop y reveal tras optimizacion */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions button,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-next-main {
+  background: var(--maincolor) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: color-mix(in srgb, var(--maincolor) 72%, #ffffff 12%) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions .mini-btn {
+  background: color-mix(in srgb, var(--maincolor) 72%, #111827) !important;
+  color: #fff !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit:disabled {
+  opacity: .58 !important;
+  background: color-mix(in srgb, var(--maincolor) 46%, #1f2937) !important;
+  color: rgba(255,255,255,.78) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-option {
+  box-shadow: none !important;
+  outline: 0 !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched {
+  background: #58cc02 !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong {
+  background: #e21b3c !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-slot {
+  background: rgba(0,0,0,.12) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option {
+  background: #58cc02 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option {
+  background: #e21b3c !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-reveal-pending,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-reveal-pending {
+  opacity: .35 !important;
+  background: #4b5563 !important;
+  filter: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
+  background: var(--maincolor) !important;
+  color: #fff !important;
+}

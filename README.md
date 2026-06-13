@@ -507,7 +507,7 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - El valor final se aplica desde el código e ignora valores anteriores guardados en `localStorage` para evitar desfaces por calibraciones previas.
 - Cache busting actualizado a `0.24.43`.
 
-## v0.24.45
+## v0.24.44
 
 - Se implementó un modo seguro para Quizzes sobre la versión estable `v0.24.43`.
 - Durante la ejecución del quiz se bloquean acciones de riesgo como botón atrás, cambio de pestaña/app, pérdida de foco de ventana, menú contextual, copiar, cortar, pegar y atajos como imprimir/guardar/inspeccionar.
@@ -516,4 +516,22 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Se agregó marca de agua discreta durante el quiz con datos del usuario, asignatura y hora.
 - Se registra localmente un historial de eventos sospechosos en `localStorage` bajo la clave `encisomath:quizSecurityLog:<quizId>`.
 - Se intenta activar pantalla completa nativa cuando el navegador lo permite, manteniendo el bloqueo interno de navegación.
+- Versión/cache busting actualizados a `0.24.44`.
+
+## v0.24.45
+
+- Optimización visual de Quizzes para reducir carga en celulares.
+- Durante preguntas, resultados e intro del quiz se eliminaron glows, resplandores, sombras pesadas, filtros y degradados de elementos internos.
+- Las tarjetas, opciones, drag and drop, completar texto, slider, banda inferior y elementos internos quedan con colores planos.
+- Se conserva intacto el banner superior con información del quiz.
+- Los efectos fuertes se mantienen únicamente en las transiciones entre ítems.
 - Versión/cache busting actualizados a `0.24.45`.
+
+## v0.24.46
+
+- Corrección puntual posterior a la optimización visual de Quizzes.
+- Se restauró el color del tema en botones internos del quiz: Enviar respuesta, Reiniciar, Validar uniones, Validar texto y Validar número, manteniéndolos planos sin glow ni degradado.
+- En drag and drop y completar texto se eliminó el borde/fondo oscuro que aparecía encima de la opción colocada dentro del espacio receptor.
+- En la validación de drag and drop y completar texto, las tarjetas colocadas vuelven a cambiar completamente a verde o rojo según correcto/incorrecto, sin conservar el color original de la opción.
+- Se mantiene intacto el banner superior del quiz y los efectos fuertes siguen reservados para las transiciones entre ítems.
+- Versión/cache busting actualizados a `0.24.46`.
