@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.46';
+  const APP_VERSION = '0.24.47';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -2491,6 +2491,7 @@
       const clearFeedback = () => {
         board.querySelectorAll('.match-drop').forEach((drop) => {
           drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+          drop.querySelectorAll('[data-match-left]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
           delete drop.dataset.resultMark;
         });
         const feedback = board.querySelector('[data-match-feedback]');
@@ -2607,6 +2608,7 @@
         board.querySelectorAll('[data-match-left], [data-match-reset], [data-match-validate]').forEach((item) => { item.disabled = true; });
         drops.forEach((drop) => {
           drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
+          drop.querySelectorAll('[data-match-left]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
           delete drop.dataset.resultMark;
           drop.classList.add('match-reveal-pending');
         });
@@ -2616,6 +2618,11 @@
             if (ok) correct += 1;
             drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
             drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            const placedCard = drop.querySelector('[data-match-left]');
+            if (placedCard) {
+              placedCard.classList.remove('matched', 'wrong', 'match-reveal-pop');
+              placedCard.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            }
             drop.dataset.resultMark = ok ? '✓' : '×';
           }, 333 * (index + 1));
         });
@@ -2677,6 +2684,7 @@
       const clearFeedback = () => {
         board.querySelectorAll('.fill-drop').forEach((drop) => {
           drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+          drop.querySelectorAll('[data-fill-option]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
           delete drop.dataset.resultMark;
         });
         const feedback = board.querySelector('[data-fill-feedback]');
@@ -2773,6 +2781,7 @@
         board.querySelectorAll('[data-fill-option], [data-fill-reset], [data-fill-validate]').forEach((item) => { item.disabled = true; });
         drops.forEach((drop) => {
           drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
+          drop.querySelectorAll('[data-fill-option]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
           delete drop.dataset.resultMark;
           drop.classList.add('match-reveal-pending');
         });
@@ -2782,6 +2791,11 @@
             if (ok) correct += 1;
             drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
             drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            const placedCard = drop.querySelector('[data-fill-option]');
+            if (placedCard) {
+              placedCard.classList.remove('matched', 'wrong', 'match-reveal-pop');
+              placedCard.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            }
             drop.dataset.resultMark = ok ? '✓' : '×';
           }, 333 * (index + 1));
         });
@@ -3677,7 +3691,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.46', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.47', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

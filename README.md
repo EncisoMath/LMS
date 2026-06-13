@@ -535,3 +535,12 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - En la validación de drag and drop y completar texto, las tarjetas colocadas vuelven a cambiar completamente a verde o rojo según correcto/incorrecto, sin conservar el color original de la opción.
 - Se mantiene intacto el banner superior del quiz y los efectos fuertes siguen reservados para las transiciones entre ítems.
 - Versión/cache busting actualizados a `0.24.46`.
+
+## v0.24.47
+
+- Corrección puntual posterior a la optimización visual de Quizzes.
+- En drag and drop y completar texto, al validar las respuestas las tarjetas y opciones ahora cambian completamente a verde o rojo, sin mezclarse con el color original.
+- En completar texto se eliminó el reborde/fondo oscuro que aparecía sobre la opción colocada dentro del espacio.
+- El bloque del slider ya no se desplaza hacia arriba cuando aparece la banda inferior de feedback, evitando que la paleta toque el borde del contenedor.
+- Versión/cache busting actualizados a `0.24.47`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.

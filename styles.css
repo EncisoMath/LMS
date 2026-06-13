@@ -9589,3 +9589,83 @@ body.quiz-fullscreen-active {
   background: var(--maincolor) !important;
   color: #fff !important;
 }
+
+/* v0.24.47 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched {
+  background: #58cc02 !important;
+  background-color: #58cc02 !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.24) !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong {
+  background: #e21b3c !important;
+  background-color: #e21b3c !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.24) !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-slot {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched {
+  background: #58cc02 !important;
+  background-color: #58cc02 !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong {
+  background: #e21b3c !important;
+  background-color: #e21b3c !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell {
+  transform: translateY(0) !important;
+  transition: transform .22s cubic-bezier(.16,1,.3,1) !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage {
+  margin-top: 0 !important;
+}
