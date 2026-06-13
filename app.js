@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.22.0';
+  const APP_VERSION = '0.23.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -10,16 +10,27 @@
   };
 
   const DEFAULT_PREFS = {
-    accent: '#1b96bf',
+    accent: '#1976D2',
     background: '#000000'
   };
 
   const ACCENT_OPTIONS = [
-    { label: 'Enciso azul', value: '#1b96bf' },
-    { label: 'Duolingo verde', value: '#58cc02' },
-    { label: 'Neón violeta', value: '#8b5cf6' },
-    { label: 'Rojo alerta', value: '#ef4444' },
-    { label: 'Dorado', value: '#f59e0b' }
+    { label: 'Rojo intenso', value: '#D32F2F' },
+    { label: 'Rosa magenta', value: '#C2185B' },
+    { label: 'Púrpura real', value: '#7B1FA2' },
+    { label: 'Violeta profundo', value: '#512DA8' },
+    { label: 'Azul índigo', value: '#303F9F' },
+    { label: 'Azul Enciso', value: '#1976D2' },
+    { label: 'Azul cielo', value: '#0288D1' },
+    { label: 'Cian profundo', value: '#0097A7' },
+    { label: 'Verde azulado', value: '#00796B' },
+    { label: 'Verde bosque', value: '#388E3C' },
+    { label: 'Verde lima', value: '#689F38' },
+    { label: 'Oliva dorado', value: '#AFB42B' },
+    { label: 'Amarillo solar', value: '#FBC02D' },
+    { label: 'Ámbar', value: '#FFA000' },
+    { label: 'Naranja vivo', value: '#F57C00' },
+    { label: 'Terracota', value: '#E64A19' }
   ];
 
   const BACKGROUND_OPTIONS = [

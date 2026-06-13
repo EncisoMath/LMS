@@ -131,3 +131,9 @@ classes/medidas-de-tendencia-central.html
 - Login optimizado: se quitaron las figuras geométricas animadas.
 - Se conservaron y reforzaron los glows/destellos de esquina con animación más liviana.
 - No se tocaron clases, home, asistencia ni warning.
+
+
+## v0.23
+
+- Paleta de tema actualizada con 16 colores solicitados y nombres en español.
+- Color por defecto ajustado a Azul Enciso `#1976D2`.
