@@ -506,3 +506,14 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Se retiró el panel temporal de calibración del slider.
 - El valor final se aplica desde el código e ignora valores anteriores guardados en `localStorage` para evitar desfaces por calibraciones previas.
 - Cache busting actualizado a `0.24.43`.
+
+## v0.24.44
+
+- Se implementó un modo seguro para Quizzes sobre la versión estable `v0.24.43`.
+- Durante la ejecución del quiz se bloquean acciones de riesgo como botón atrás, cambio de pestaña/app, pérdida de foco de ventana, menú contextual, copiar, cortar, pegar y atajos como imprimir/guardar/inspeccionar.
+- En la primera acción sospechosa se muestra una advertencia con la misma línea visual del warning rojo: malla animada, modal de peligro, emoji 😡 y mensaje `Hey, pilas con lo que haces. Vuelves a hacerlo y te anulo el quiz.` Incluye botón `Continuar quiz`.
+- En la segunda acción sospechosa el quiz se da por terminado y se muestra pantalla de resultados/anulación por seguridad.
+- Se agregó marca de agua discreta durante el quiz con datos del usuario, asignatura y hora.
+- Se registra localmente un historial de eventos sospechosos en `localStorage` bajo la clave `encisomath:quizSecurityLog:<quizId>`.
+- Se intenta activar pantalla completa nativa cuando el navegador lo permite, manteniendo el bloqueo interno de navegación.
+- Versión/cache busting actualizados a `0.24.44`.

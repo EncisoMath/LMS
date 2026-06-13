@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.43';
+  const APP_VERSION = '0.24.44';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -131,7 +131,7 @@
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
-    quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '' },
+    quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '', securityEvents: [], securityWarningOpen: false, securityTerminated: false },
     quizTimers: [],
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
@@ -164,6 +164,7 @@
     applyPreferences();
     applyQuizFeedbackTune();
     registerServiceWorker();
+    bindQuizSecurityGuards();
     mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
       state.data = await loadAllData();
@@ -1644,7 +1645,11 @@
       selectedAnswerId: '',
       feedback: null,
       transitionFromIntro: false,
-      startedAt: Date.now()
+      startedAt: Date.now(),
+      securityEvents: [],
+      securityWarningOpen: false,
+      securityTerminated: false,
+      securityPausedFeedback: false
     };
     return state.quizSession;
   }
@@ -1803,6 +1808,9 @@
     document.querySelectorAll('[data-quiz-restart]').forEach((button) => {
       button.addEventListener('click', () => restartQuiz());
     });
+    document.querySelectorAll('[data-quiz-security-continue]').forEach((button) => {
+      button.addEventListener('click', continueQuizAfterSecurityWarning);
+    });
     document.querySelectorAll('[data-quiz-prev]').forEach((button) => {
       button.addEventListener('click', () => moveQuizQuestion(-1));
     });
@@ -1825,6 +1833,197 @@
     bindQuizMatchEvents();
     bindQuizFillTextEvents();
     bindQuizSliderEvents();
+  }
+
+
+  function bindQuizSecurityGuards() {
+    if (state.quizSecurityGuardsBound) return;
+    state.quizSecurityGuardsBound = true;
+
+    document.addEventListener('visibilitychange', () => {
+      if (!isQuizSecurityActive()) return;
+      if (document.visibilityState === 'hidden') {
+        state.quizSecurityHiddenPending = true;
+        return;
+      }
+      if (state.quizSecurityHiddenPending) {
+        state.quizSecurityHiddenPending = false;
+        handleQuizSuspiciousAction('cambio de pantalla, app o pestaña');
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      if (!isQuizSecurityActive()) return;
+      state.quizSecurityFocusPending = true;
+    });
+
+    window.addEventListener('focus', () => {
+      if (!isQuizSecurityActive() || !state.quizSecurityFocusPending) return;
+      state.quizSecurityFocusPending = false;
+      handleQuizSuspiciousAction('pérdida de foco de la ventana');
+    });
+
+    document.addEventListener('contextmenu', (event) => {
+      if (!isQuizSecurityActive()) return;
+      event.preventDefault();
+      handleQuizSuspiciousAction('menú contextual');
+    });
+
+    ['copy', 'cut', 'paste'].forEach((type) => {
+      document.addEventListener(type, (event) => {
+        if (!isQuizSecurityActive()) return;
+        event.preventDefault();
+        handleQuizSuspiciousAction(type === 'paste' ? 'pegar contenido' : 'copiar contenido');
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!isQuizSecurityActive()) return;
+      const key = String(event.key || '').toLowerCase();
+      const suspiciousCombo = (event.ctrlKey || event.metaKey) && ['c', 'v', 'x', 's', 'p', 'u', 'a'].includes(key);
+      const suspiciousKey = key === 'printscreen' || key === 'f12';
+      if (!suspiciousCombo && !suspiciousKey) return;
+      event.preventDefault();
+      handleQuizSuspiciousAction(suspiciousKey ? 'captura/inspección' : 'atajo del teclado');
+    }, true);
+
+    window.addEventListener('beforeunload', (event) => {
+      if (!isQuizSecurityActive()) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+  }
+
+  function isQuizSecurityActive() {
+    const session = getQuizSession();
+    if (!state.quizFullscreenActive) return false;
+    if (session.phase === 'results' || session.phase === 'confirm' || session.phase === 'idle') return false;
+    if (session.securityTerminated) return false;
+    return true;
+  }
+
+  function handleQuizSuspiciousAction(reason = 'acción sospechosa') {
+    const session = getQuizSession();
+    if (!isQuizSecurityActive()) return;
+    const now = Date.now();
+    if (now < Number(state.quizSecurityGraceUntil || 0)) return;
+    if (session.securityWarningOpen) return;
+    if (now - Number(state.quizSecurityLastEventAt || 0) < 900) return;
+    state.quizSecurityLastEventAt = now;
+
+    const event = { reason, at: now, questionIndex: state.quizQuestionIndex, phase: session.phase || 'question' };
+    session.securityEvents = Array.isArray(session.securityEvents) ? session.securityEvents : [];
+    session.securityEvents.push(event);
+    logQuizSecurityEvent(event);
+
+    if (session.securityEvents.length === 1) {
+      session.securityWarningOpen = true;
+      showQuizSecurityWarningModal(reason);
+      return;
+    }
+
+    finishQuizBySecurity(reason);
+  }
+
+  function logQuizSecurityEvent(event) {
+    try {
+      const quiz = getActiveQuiz();
+      const key = `encisomath:quizSecurityLog:${quiz?.id || 'quiz'}`;
+      const current = readJSON(key) || [];
+      current.push({
+        ...event,
+        quizId: quiz?.id || '',
+        assignmentId: state.assignment?.id || '',
+        userId: state.user?.id || '',
+        userName: state.user?.fullName || state.user?.name || ''
+      });
+      localStorage.setItem(key, JSON.stringify(current.slice(-80)));
+    } catch (_) {}
+  }
+
+  function showQuizSecurityWarningModal(reason = '') {
+    const existing = document.getElementById('quizSecurityModal');
+    if (existing) existing.remove();
+    const wrapper = document.createElement('div');
+    wrapper.id = 'quizSecurityModal';
+    wrapper.className = 'modal-layer quiz-security-layer';
+    wrapper.innerHTML = quizSecurityWarningHTML(reason);
+    document.body.appendChild(wrapper);
+    document.body.classList.add('modal-open', 'quiz-security-warning-open');
+    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
+    wrapper.querySelector('[data-quiz-security-continue]')?.addEventListener('click', continueQuizAfterSecurityWarning);
+    startDeleteWarningMotion();
+  }
+
+  function quizSecurityWarningHTML(reason = '') {
+    return `
+      <div class="modal-card danger-modal quiz-security-modal" role="dialog" aria-modal="true" aria-label="Advertencia de seguridad del quiz">
+        <div class="danger-head">
+          <span class="danger-red-mesh" aria-hidden="true"></span>
+          <div class="warning-tune-stack">
+            <div class="warning-icon quiz-security-emoji" aria-hidden="true">😡</div>
+          </div>
+          <div class="danger-copy">
+            <h2>HEY, PILAS CON LO QUE HACES</h2>
+            <p>Vuelves a hacerlo y te anulo el quiz.</p>
+          </div>
+        </div>
+        <div class="danger-body">
+          <div class="delete-target quiz-security-target">
+            <strong>Intento sospechoso detectado</strong>
+            <span>${escapeHTML(reason || 'Cambiaste de pantalla, app, pestaña o intentaste salir del quiz.')}</span>
+          </div>
+          <div class="danger-actions quiz-security-actions">
+            <button class="danger-confirm" type="button" data-quiz-security-continue>Continuar quiz</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function continueQuizAfterSecurityWarning() {
+    const layer = document.getElementById('quizSecurityModal');
+    const session = getQuizSession();
+    session.securityWarningOpen = false;
+    document.body.classList.remove('quiz-security-warning-open');
+    if (!document.getElementById('modalLayer')) document.body.classList.remove('modal-open');
+    if (layer) {
+      layer.classList.remove('show');
+      window.setTimeout(() => layer.remove(), 160);
+    }
+    if (state.quizFullscreenActive) {
+      try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
+    }
+  }
+
+  function finishQuizBySecurity(reason = '') {
+    const layer = document.getElementById('quizSecurityModal');
+    if (layer) layer.remove();
+    document.body.classList.remove('quiz-security-warning-open');
+    if (!document.getElementById('modalLayer')) document.body.classList.remove('modal-open');
+    clearQuizTimers();
+    const session = getQuizSession();
+    session.securityWarningOpen = false;
+    session.securityTerminated = true;
+    session.securityTerminatedReason = reason || 'Segundo intento sospechoso';
+    session.phase = 'results';
+    session.locked = false;
+    showQuizResults();
+  }
+
+  function requestQuizFullscreenMode() {
+    const layer = document.getElementById('quizFullscreenLayer') || document.documentElement;
+    try {
+      const request = layer.requestFullscreen || layer.webkitRequestFullscreen || layer.msRequestFullscreen;
+      if (request && !document.fullscreenElement && !document.webkitFullscreenElement) request.call(layer).catch?.(() => {});
+    } catch (_) {}
+  }
+
+  function exitQuizFullscreenMode() {
+    try {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document).catch?.(() => {});
+    } catch (_) {}
   }
 
   function setQuizPeriod(period) {
@@ -2034,11 +2233,13 @@
     closeModal(false);
     clearQuizTimers();
     state.quizFullscreenActive = true;
+    state.quizSecurityGraceUntil = Date.now() + 2400;
     lockQuizHistory();
     const session = getQuizSession();
     session.phase = 'intro';
     session.locked = false;
     renderQuizFullscreen(quiz);
+    requestQuizFullscreenMode();
     scheduleQuizTimer(() => {
       document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
     }, 1680);
@@ -2100,6 +2301,7 @@
 
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
+      ${phase !== 'confirm' && phase !== 'intro' ? quizSecurityWatermarkHTML() : ''}
       ${showTop ? `<div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
         <div>
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
@@ -2112,6 +2314,18 @@
       </div>
     `;
     bindQuizPlayerEvents();
+  }
+
+
+  function quizSecurityWatermarkHTML() {
+    const user = state.user || {};
+    const name = user.fullName || user.name || user.username || 'EncisoMath';
+    const id = user.id || user.userId || '';
+    const assignment = state.assignment || {};
+    const course = [assignment.subject, assignment.grade && `${assignment.grade}-${assignment.course}`].filter(Boolean).join(' · ');
+    const stamp = new Date().toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    const text = `${name}${id ? ` · ID ${id}` : ''}${course ? ` · ${course}` : ''} · ${stamp}`;
+    return `<div class="quiz-security-watermark" aria-hidden="true">${escapeHTML(text)}</div>`;
   }
 
   function quizStartModalHTML(quiz) {
@@ -2173,17 +2387,20 @@
 
   function quizResultsHTML(quiz) {
     const stats = getQuizStats(quiz);
-    const win = stats.scorable === 0 || stats.correct >= Math.ceil(stats.scorable * 0.6);
+    const session = getQuizSession();
+    const securedOut = Boolean(session.securityTerminated);
+    const win = !securedOut && (stats.scorable === 0 || stats.correct >= Math.ceil(stats.scorable * 0.6));
     return `
-      <section class="quiz-results-screen ${win ? 'is-win' : 'is-try'}">
+      <section class="quiz-results-screen ${securedOut ? 'is-security-ended' : (win ? 'is-win' : 'is-try')}">
         <div class="quiz-results-burst" aria-hidden="true"></div>
-        <div class="quiz-results-emoji">${win ? '🏆' : '💪'}</div>
-        <p class="section-kicker">Resultados</p>
-        <h2>${win ? '¡Quiz completado!' : 'Quiz terminado'}</h2>
-        <p>${win ? 'Buen trabajo. Esa mente vino en modo turbo.' : 'No pasa nada. La próxima ronda viene con revancha.'}</p>
+        <div class="quiz-results-emoji">${securedOut ? '😡' : (win ? '🏆' : '💪')}</div>
+        <p class="section-kicker">${securedOut ? 'Quiz anulado' : 'Resultados'}</p>
+        <h2>${securedOut ? 'Quiz terminado por seguridad' : (win ? '¡Quiz completado!' : 'Quiz terminado')}</h2>
+        <p>${securedOut ? 'Se detectó un segundo intento sospechoso durante el quiz.' : (win ? 'Buen trabajo. Esa mente vino en modo turbo.' : 'No pasa nada. La próxima ronda viene con revancha.')}</p>
+        ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
         <div class="quiz-score-board">
           <strong>${stats.correct}<small>/${stats.scorable || stats.total}</small></strong>
-          <span>${stats.scorable ? 'respuestas correctas' : 'respuestas revisables'}</span>
+          <span>${securedOut ? 'resultado no válido' : (stats.scorable ? 'respuestas correctas' : 'respuestas revisables')}</span>
         </div>
         <div class="quiz-results-actions">
           <button class="primary-btn" type="button" data-quiz-result-target="quizzes">Volver a Quizzes</button>
@@ -2211,6 +2428,7 @@
     const layer = document.getElementById('quizFullscreenLayer');
     if (layer) layer.remove();
     document.body.classList.remove('quiz-fullscreen-active');
+    exitQuizFullscreenMode();
     if (target === 'classes') setSubjectTab('classes');
     else if (target === 'rockstars') setSubjectTab('rockstars');
     else setSubjectTab('quizzes');
@@ -2221,9 +2439,11 @@
     if (!quiz) return;
     state.quizQuestionIndex = 0;
     state.quizFullscreenActive = true;
+    state.quizSecurityGraceUntil = Date.now() + 2200;
     resetQuizSession('intro');
     lockQuizHistory();
     renderQuizFullscreen(quiz);
+    requestQuizFullscreenMode();
     scheduleQuizTimer(() => {
       document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
     }, 1550);
@@ -2246,8 +2466,10 @@
   function keepQuizFullscreenLocked() {
     if (!state.quizFullscreenActive) return;
     try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
+    handleQuizSuspiciousAction('botón atrás o intento de salir');
+    if (!state.quizFullscreenActive) return;
     const quiz = getActiveQuiz();
-    if (quiz) renderQuizFullscreen(quiz);
+    if (quiz && !getQuizSession().securityWarningOpen) renderQuizFullscreen(quiz);
   }
 
   function bindQuizMatchEvents() {
@@ -3455,7 +3677,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.43', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.44', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
