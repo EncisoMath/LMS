@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.32';
+  const APP_VERSION = '0.24.33';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1519,23 +1519,16 @@
     const sliderTicks = Array.from({ length: 5 }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
     return `
       <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}">
-        <div class="quiz-slider-phone-stage">
-          <div class="quiz-slider-phone" aria-label="Respuesta numérica tipo slider">
-            <div class="quiz-slider-phone-screen">
-              <div class="quiz-slider-bubble">
-                <span data-slider-value>${initial}</span>${unit ? `<small>${unit}</small>` : ''}
-              </div>
-              <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}</div>
-              <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
+        <div class="quiz-slider-visual-stage">
+          <div class="quiz-slider-widget" aria-label="Respuesta numérica tipo slider">
+            <div class="quiz-slider-bubble">
+              <span data-slider-value>${initial}</span>${unit ? `<small>${unit}</small>` : ''}
             </div>
+            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}<span class="slider-correct-marker" data-slider-correct-marker aria-hidden="true"></span></div>
+            <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
           </div>
         </div>
         <div class="quiz-slider-limits"><span>${min}${unit ? ` ${unit}` : ''}</span><span>${max}${unit ? ` ${unit}` : ''}</span></div>
-        <div class="quiz-slider-correct" data-slider-correct-row hidden>
-          <small>Respuesta correcta</small>
-          <div class="quiz-slider-correct-pill"><span>${correct}</span>${unit ? `<em>${unit}</em>` : ''}</div>
-          <input class="quiz-number-slider quiz-number-slider-correct" type="range" min="${min}" max="${max}" step="${step}" value="${correct}" disabled />
-        </div>
         <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
       </div>
     `;
@@ -2508,7 +2501,7 @@
       const slider = board.querySelector('[data-quiz-slider]');
       const valueLabel = board.querySelector('[data-slider-value]');
       const validate = board.querySelector('[data-slider-validate]');
-      const correctRow = board.querySelector('[data-slider-correct-row]');
+      const correctMarker = board.querySelector('[data-slider-correct-marker]');
       const update = () => {
         if (!slider) return;
         if (valueLabel) valueLabel.textContent = slider.value;
@@ -2538,14 +2531,11 @@
         const tolerance = Math.max(0, Number(board.dataset.sliderTolerance || question.tolerance || 0));
         const ok = Math.abs(selected - correctValue) <= tolerance;
         board.classList.add(ok ? 'slider-correct' : 'slider-wrong');
-        if (correctRow) correctRow.hidden = false;
-        const correctSlider = board.querySelector('.quiz-number-slider-correct');
-        if (correctSlider) {
-          const min = Number(correctSlider.min || 0);
-          const max = Number(correctSlider.max || 100);
-          const pct = ((Number(correctSlider.value) - min) / Math.max(1, max - min)) * 100;
-          correctSlider.style.setProperty('--slider-progress', `${pct}%`);
-        }
+        const sliderMin = Number(slider.min || 0);
+        const sliderMax = Number(slider.max || 100);
+        const correctPct = Math.max(0, Math.min(100, ((correctValue - sliderMin) / Math.max(1, sliderMax - sliderMin)) * 100));
+        board.style.setProperty('--slider-correct-progress', `${correctPct}%`);
+        if (correctMarker) correctMarker.hidden = false;
         recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
         const stage = board.closest('.quiz-stage');
         const feedback = stage?.querySelector('[data-quiz-feedback]');
@@ -3279,7 +3269,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.32', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.33', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

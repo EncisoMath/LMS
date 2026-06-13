@@ -418,3 +418,14 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - Se mejoró la entrada de la banda con rebote más natural y zoom inicial, evitando que se quede pegada arriba.
 - Se extendió la banda hacia abajo para que durante el rebote no se vea hueco inferior.
 - La frase secundaria quedó con peso normal, sin negrita.
+
+### v0.24.33
+
+Ajuste del tipo de pregunta `slider` en Quizzes sobre `v0.24.32`.
+
+- Se retiró la estética de teléfono/celular completo; ahora se conserva únicamente el componente visual interno solicitado: globo grande con número, colita tipo bocadillo y barritas verticales inferiores.
+- El slider vuelve a estar en un solo componente: al validar ya no aparece un segundo slider de respuesta correcta.
+- Si la respuesta es incorrecta, la barrita seleccionada cambia a rojo y la posición correcta aparece en ese mismo slider como una marca/barrita verde.
+- Si la respuesta es correcta, el mismo componente cambia a verde y mantiene el feedback inferior estable de Quizzes.
+- Se conservaron interacción táctil móvil, validación numérica, tolerancia, unidad y avance automático.
+- Versión/cache busting actualizados a `0.24.33`.
