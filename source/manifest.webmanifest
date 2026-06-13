@@ -1,0 +1,25 @@
+{
+  "name": "EncisoMath AVA",
+  "short_name": "EncisoMath",
+  "description": "AVA/LMS móvil para clases, asistencia y contenidos interactivos.",
+  "start_url": "./index.html?v=0.14.0",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#04101c",
+  "theme_color": "#04101c",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
