@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.10.0';
+  const APP_VERSION = '0.11.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -305,7 +305,7 @@
           <span class="spacer"></span>
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
-        <section class="subject-banner animated-cover" ${coverStyle} data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
+        <section class="subject-banner animated-cover ${getAssignmentCover(assignment) ? 'has-custom-cover' : 'is-default-cover'}" ${coverStyle} data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
           ${coverMotionHTML('subject')}
           <div class="subject-banner-shade" aria-hidden="true"></div>
           <button class="subject-menu-btn" id="subjectMenuBtn" aria-label="Gestor visual">•••</button>
@@ -585,10 +585,13 @@
     openModal(`
       <div class="modal-card danger-modal">
         <div class="danger-head">
-          <div class="warning-icon" aria-hidden="true"><span class="bang-mark"><span class="bang-bar"></span><span class="bang-dot"></span></span></div>
+          <div class="warning-icon warning-duo" aria-hidden="true">
+            <img class="warning-mark warning-mark-a" src="./assets/warn-exp1.png" alt="" />
+            <img class="warning-mark warning-mark-b" src="./assets/warn-exp2.png" alt="" />
+          </div>
           <div>
-            <h2><span>¡OJO!</span> Eliminar estudiante</h2>
-            <p>Esta acción sacará al estudiante de este grupo en EncisoMath. Confirma solo si estás completamente seguro.</p>
+            <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>
+            <p>Esta acción es irreversible.</p>
           </div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
@@ -748,7 +751,7 @@
     return `
       <article class="assignment-card">
         <button class="assignment-open" data-open-assignment="${escapeAttr(item.id)}">
-          <div class="assignment-cover-mini animated-cover" ${coverStyle}>${coverMotionHTML('mini')}</div>
+          <div class="assignment-cover-mini animated-cover ${getAssignmentCover(item) ? 'has-custom-cover' : 'is-default-cover'}" ${coverStyle}>${coverMotionHTML('mini')}</div>
           <div class="assignment-body">
             <img class="subject-icon" src="${escapeAttr(iconSrc)}" alt="" />
             <div class="assignment-text">
@@ -907,7 +910,7 @@
   function coverBackgroundStyle(assignment) {
     const cover = getAssignmentCover(assignment);
     if (!cover) return '';
-    return `style="background-image: linear-gradient(rgba(0,0,0,.03), rgba(0,0,0,.06)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center; animation: none;"`;
+    return `style="--cover-image: url('${escapeAttr(cover)}');"`;
   }
 
   function saveImageOverride(event, type) {

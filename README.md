@@ -120,11 +120,3 @@ classes/medidas-de-tendencia-central.html
 ## v0.10
 
 - Los botones activos de asistencia ahora usan color fijo por estado: verde para Asistió, rojo para No asistió y amarillo para Excusa, independientemente del color del tema.
-
-## v0.10
-
-- Barras superior e inferior reforzadas para quedar fijas al viewport, no como elementos desplazables dentro de la vista de asignatura.
-- Banner de asignatura con degradado negro localizado únicamente en la zona del texto; el fondo/portada vuelve a verse.
-- Gestor visual movido a botón de tres puntos en la esquina superior derecha del banner.
-- Opción para mostrar u ocultar el icono de la asignatura dentro del banner.
-- Warning de eliminación rediseñado con signo de exclamación estilo cómic y patrón animado de advertencias rojas en loop diagonal.

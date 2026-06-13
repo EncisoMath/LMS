@@ -1781,3 +1781,333 @@ body {
 .app-shell {
   contain: none !important;
 }
+
+/* v0.11 — navegación realmente fija, banner integrado sin recuadro y warning corregido */
+body {
+  overflow: hidden !important;
+}
+.app-shell,
+#app {
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+.screen {
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+.home-screen,
+.subject-screen {
+  padding-bottom: calc(84px + var(--safe-bottom)) !important;
+}
+.subject-screen,
+.class-screen {
+  padding-top: calc(56px + var(--safe-top)) !important;
+}
+.class-screen {
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 12% 4%, color-mix(in srgb, var(--maincolor) 18%, transparent), transparent 28%),
+    linear-gradient(180deg, #000 0%, #02060c 100%) !important;
+}
+.topbar,
+.bottom-nav {
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(100vw, 1180px) !important;
+  z-index: 220 !important;
+}
+.topbar {
+  top: 0 !important;
+}
+.bottom-nav {
+  bottom: 0 !important;
+}
+
+/* Glows mejor visibles también en modo negro */
+html[data-bg-mode="black"] body {
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--maincolor) 24%, transparent), transparent 28%),
+    radial-gradient(circle at 82% 78%, rgba(255, 189, 0, .14), transparent 24%),
+    radial-gradient(circle at 74% 90%, rgba(255, 40, 125, .13), transparent 22%),
+    linear-gradient(180deg, #000 0%, #000 100%) !important;
+}
+html[data-bg-mode="black"] .screen,
+html[data-bg-mode="black"] .login-screen,
+html[data-bg-mode="black"] .loading-screen {
+  background:
+    radial-gradient(circle at 10% 4%, color-mix(in srgb, var(--maincolor) 18%, transparent), transparent 30%),
+    radial-gradient(circle at 84% 82%, rgba(255, 170, 0, .1), transparent 25%),
+    linear-gradient(180deg, #000 0%, #000 100%) !important;
+}
+
+/* Portadas con imagen personalizada + glow */
+.subject-banner.has-custom-cover,
+.assignment-cover-mini.has-custom-cover,
+.manager-preview-cover[style*="--cover-image"] {
+  background-image:
+    radial-gradient(circle at 12% 20%, color-mix(in srgb, var(--maincolor) 42%, transparent), transparent 28%),
+    radial-gradient(circle at 88% 16%, rgba(255,255,255,.10), transparent 22%),
+    radial-gradient(circle at 78% 86%, color-mix(in srgb, var(--maincolor) 22%, #000), transparent 28%),
+    linear-gradient(135deg, rgba(2,7,14,.18), rgba(2,7,14,.36)),
+    var(--cover-image, none) !important;
+  background-size: 150% 150%, 150% 150%, 160% 160%, 100% 100%, cover !important;
+  background-position: 0% 50%, 100% 0%, 100% 100%, center, center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen, screen, overlay, multiply, normal !important;
+  animation: bannerBreath 7.5s ease-in-out infinite !important;
+}
+.subject-banner.is-default-cover {
+  background:
+    radial-gradient(circle at 12% 22%, color-mix(in srgb, var(--maincolor) 58%, transparent), transparent 25%),
+    radial-gradient(circle at 78% 14%, color-mix(in srgb, var(--maincolor) 28%, transparent), transparent 22%),
+    radial-gradient(circle at 82% 90%, color-mix(in srgb, var(--maincolor) 36%, #000000), transparent 30%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--maincolor) 74%, var(--banner-deep)),
+      color-mix(in srgb, var(--maincolor) 42%, var(--banner-base)) 48%,
+      color-mix(in srgb, var(--maincolor) 68%, #000000) 100%) !important;
+  background-size: 140% 140% !important;
+  animation: bannerBreath 6.8s ease-in-out infinite !important;
+}
+.assignment-cover-mini.has-custom-cover .cover-grid,
+.assignment-cover-mini.has-custom-cover .cover-motion,
+.subject-banner.has-custom-cover .cover-grid,
+.subject-banner.has-custom-cover .cover-motion {
+  opacity: .78;
+}
+
+/* Banner de asignatura más compacto y sin recuadro visible */
+.subject-banner {
+  height: clamp(128px, 32vw, 158px) !important;
+  min-height: 128px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+.subject-banner-shade {
+  display: none !important;
+}
+.subject-banner-content {
+  position: relative !important;
+  z-index: 2 !important;
+  width: auto !important;
+  max-width: calc(100% - 56px) !important;
+  display: inline-grid !important;
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 0 50px 0 0 !important;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.subject-banner-content::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -14px;
+  right: 12px;
+  top: -12px;
+  bottom: -12px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse at left center, rgba(0,0,0,.90) 0%, rgba(0,0,0,.66) 42%, rgba(0,0,0,.30) 70%, transparent 100%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+.subject-banner[data-icon-hidden="true"] .subject-banner-content {
+  grid-template-columns: minmax(0, 1fr) !important;
+  max-width: calc(100% - 56px) !important;
+}
+.subject-banner[data-icon-hidden="true"] .subject-banner-content::before {
+  left: -12px;
+  right: -4px;
+}
+.subject-banner .subject-icon.xl {
+  width: 50px !important;
+  height: 50px !important;
+  padding: 5px !important;
+}
+.subject-banner .subject-kicker {
+  margin: 0 0 2px !important;
+  font-size: .78rem !important;
+}
+.subject-banner h2 {
+  margin: 0 0 6px !important;
+  font-size: clamp(1.35rem, 4.8vw, 2rem) !important;
+  line-height: .98 !important;
+}
+.subject-banner .subject-chips.compact {
+  margin: 0 !important;
+  gap: 5px !important;
+}
+.subject-banner .subject-chips.compact span {
+  padding: 4px 7px !important;
+  font-size: .78rem !important;
+  background: rgba(20, 24, 31, .48) !important;
+}
+.subject-menu-btn {
+  top: 50% !important;
+  right: 12px !important;
+  transform: translateY(-50%) !important;
+}
+.subject-menu-btn:active {
+  transform: translateY(-50%) scale(.94) !important;
+}
+
+/* Ventana de eliminar estudiante centrada y mejor proporcionada */
+.modal-layer {
+  padding: 18px !important;
+}
+.danger-modal {
+  width: min(92vw, 620px) !important;
+  max-width: 620px !important;
+  margin: 0 auto !important;
+  justify-self: center !important;
+  align-self: center !important;
+  border-radius: 8px !important;
+}
+.danger-head {
+  grid-template-columns: 88px minmax(0, 1fr) 38px !important;
+  gap: 12px !important;
+  min-height: 138px !important;
+  padding: 18px 18px 16px !important;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,.14), transparent 26%),
+    linear-gradient(135deg, #c51220 0%, #7d0b13 58%, #2a0306 100%) !important;
+}
+.danger-head::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  opacity: .26 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg transform='translate(42 42) rotate(45) translate(-42 -42)'%3E%3Ctext x='42' y='55' text-anchor='middle' font-family='Arial,sans-serif' font-size='34' font-weight='900' fill='%23ff8d98'%3E!%3C/text%3E%3C/g%3E%3C/svg%3E") !important;
+  background-size: 84px 84px !important;
+  background-repeat: repeat !important;
+  animation: warningFieldMove 4.8s linear infinite !important;
+}
+@keyframes warningFieldMove {
+  from { background-position: 0 0; }
+  to { background-position: 84px 84px; }
+}
+.danger-head h2 {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: clamp(1.42rem, 5.6vw, 2rem) !important;
+  line-height: .94 !important;
+  letter-spacing: -.07em !important;
+  font-weight: 930 !important;
+  text-transform: uppercase !important;
+}
+.danger-head p {
+  margin: 8px 0 0 !important;
+  color: rgba(255,255,255,.96) !important;
+  font-size: 1rem !important;
+  font-weight: 720 !important;
+  line-height: 1.15 !important;
+  max-width: 320px;
+}
+.warning-icon.warning-duo {
+  width: 82px !important;
+  height: 92px !important;
+  position: relative !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+.warning-mark {
+  position: absolute;
+  width: 52px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,.28));
+  transform-origin: 50% 92%;
+  will-change: transform;
+}
+.warning-mark-a {
+  left: 1px;
+  top: 10px;
+  animation: warningJumpA 1.14s cubic-bezier(.18,.9,.22,1) infinite;
+}
+.warning-mark-b {
+  right: 1px;
+  top: 0;
+  animation: warningJumpB 1.14s cubic-bezier(.18,.9,.22,1) infinite .11s;
+}
+@keyframes warningJumpA {
+  0%, 100% { transform: translateY(0) scaleX(.99) scaleY(1.01) rotate(-3deg); }
+  24% { transform: translateY(-18px) scaleX(.92) scaleY(1.08) rotate(0deg); }
+  48% { transform: translateY(7px) scaleX(1.14) scaleY(.86) rotate(-1deg); }
+  62% { transform: translateY(-5px) scaleX(.97) scaleY(1.03) rotate(1deg); }
+}
+@keyframes warningJumpB {
+  0%, 100% { transform: translateY(0) scaleX(.99) scaleY(1.01) rotate(4deg); }
+  22% { transform: translateY(-20px) scaleX(.9) scaleY(1.1) rotate(6deg); }
+  46% { transform: translateY(8px) scaleX(1.12) scaleY(.84) rotate(3deg); }
+  60% { transform: translateY(-4px) scaleX(.98) scaleY(1.02) rotate(5deg); }
+}
+.danger-body {
+  padding: 16px !important;
+}
+.delete-target {
+  margin-bottom: 14px !important;
+}
+.danger-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 140px !important;
+  gap: 10px !important;
+}
+@media (max-width: 520px) {
+  .subject-banner {
+    height: 122px !important;
+    padding: 10px 12px !important;
+  }
+  .subject-banner-content {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding-right: 46px !important;
+    max-width: calc(100% - 48px) !important;
+  }
+  .subject-banner .subject-icon.xl {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  .subject-banner h2 {
+    font-size: 1.06rem !important;
+    margin-bottom: 5px !important;
+  }
+  .subject-banner .subject-kicker {
+    font-size: .72rem !important;
+  }
+  .subject-banner .subject-chips.compact span {
+    font-size: .74rem !important;
+    padding: 4px 6px !important;
+  }
+  .subject-menu-btn {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  .danger-modal {
+    width: min(94vw, 410px) !important;
+  }
+  .danger-head {
+    grid-template-columns: 72px minmax(0, 1fr) 34px !important;
+    min-height: 124px !important;
+    padding: 16px 14px 14px !important;
+  }
+  .warning-icon.warning-duo {
+    width: 68px !important;
+    height: 82px !important;
+  }
+  .warning-mark {
+    width: 44px !important;
+  }
+  .danger-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
