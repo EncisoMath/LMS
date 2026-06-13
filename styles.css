@@ -10799,3 +10799,187 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text.quiz-feedback-visible .quiz-fill-shell {
   transform: none !important;
 }
+
+
+/* v0.24.62 - Ajustes finos Drag and drop: imagen completa, alturas estables y texto A/B uniforme */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  height: var(--quiz-tune-h, auto) !important;
+  min-height: var(--quiz-tune-h, min(18vh, 150px)) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: inherit !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  margin: 0 auto !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card img,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-card img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
+  --match-option-slot-h: 38px;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card {
+  min-height: var(--match-option-slot-h) !important;
+  height: var(--match-option-slot-h) !important;
+  max-height: var(--match-option-slot-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card {
+  width: 100% !important;
+  font-size: .74rem !important;
+  line-height: 1.05 !important;
+  white-space: normal !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop {
+  grid-template-rows: auto var(--match-option-slot-h) !important;
+  min-height: calc(var(--match-option-slot-h) + 26px) !important;
+  height: calc(var(--match-option-slot-h) + 26px) !important;
+  max-height: calc(var(--match-option-slot-h) + 26px) !important;
+  overflow: hidden !important;
+  align-content: start !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot small {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
+  font-family: inherit !important;
+  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 20px)) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.012em !important;
+  font-weight: 760 !important;
+  color: #fff !important;
+  text-align: left !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-md,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-md {
+  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .92) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-sm,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-sm {
+  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .84) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-xs,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-xs {
+  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .76) !important;
+}
+@media (max-height: 720px) {
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
+    --match-option-slot-h: 34px;
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
+    font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .82) !important;
+  }
+}
+
+/* v0.24.63 - Completar texto drag and drop: tipografía y alturas alineadas con Texto A/B y Drag and drop */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
+  --fill-option-slot-h: var(--match-option-slot-h, 38px);
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text *:not(.fill-option) {
+  font-family: inherit !important;
+  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 20px)) !important;
+  line-height: 1.13 !important;
+  letter-spacing: -.012em !important;
+  font-weight: 760 !important;
+  color: #fff !important;
+  text-align: left !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
+  padding: 8px 10px !important;
+  display: block !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
+  min-height: var(--fill-option-slot-h) !important;
+  height: var(--fill-option-slot-h) !important;
+  max-height: var(--fill-option-slot-h) !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
+  width: 100% !important;
+  padding: 0 10px !important;
+  font-family: inherit !important;
+  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 20px)) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.012em !important;
+  font-weight: 760 !important;
+  color: #fff !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop {
+  min-width: min(43vw, 176px) !important;
+  margin: 2px 4px !important;
+  padding: 0 6px !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
+  font-family: inherit !important;
+  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .62) !important;
+  line-height: 1 !important;
+  font-weight: 760 !important;
+  color: rgba(255,255,255,.72) !important;
+  letter-spacing: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options {
+  gap: 8px !important;
+  min-height: calc((var(--fill-option-slot-h) * 3) + 16px) !important;
+  grid-auto-rows: var(--fill-option-slot-h) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-actions .primary-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-actions .mini-btn {
+  min-height: var(--fill-option-slot-h) !important;
+}
+@media (max-height: 720px) {
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
+    --fill-option-slot-h: var(--match-option-slot-h, 34px);
+  }
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text *:not(.fill-option),
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
+    font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 20px)) * .82) !important;
+    line-height: 1.05 !important;
+  }
+}

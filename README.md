@@ -670,6 +670,24 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Cuando aparece la banda inferior de correcto/incorrecto, el tablero se mantiene compacto y no debe salirse ni montarse sobre otros elementos.
 - Versiones/cache busting actualizados a `0.24.57`.
 
+
+
+## v0.24.63
+
+- Se parte de `v0.24.62`.
+- En Quizzes tipo `fill_text` / Completar texto drag and drop, el texto del bloque de completar, las opciones y las etiquetas colocadas ahora usan el mismo control de fuente base de Texto A/B (`--quiz-text-font`), para que al mover el tamaño default también cambien estos elementos.
+- Se igualó la altura vertical de los espacios de rellenar y de las opciones con la referencia de Drag and drop, evitando que una opción colocada aumente la altura del espacio.
+- Se mantuvo el layout plano sin glow, blur ni degradados internos.
+- Versiones/cache busting actualizados a `0.24.63`.
+
+## v0.24.62
+
+- Se parte de `v0.24.61`.
+- En Quizzes tipo **Drag and drop**, la imagen ahora ocupa el alto configurado del contenedor y se muestra completa con `object-fit: contain`, evitando que solo se vea una franja de la imagen.
+- Las tarjetas de la columna **Opciones** y el espacio interno de **Suelta o toca una opción** quedan con la misma altura vertical, para que al colocar una opción no crezca ni cambie el alto del receptor.
+- En Drag and drop, **Texto A** y **Texto B** vuelven a usar el mismo tamaño/fuente/estilo base y la misma reducción automática por longitud de texto.
+- Versiones/cache busting actualizados a `0.24.62`.
+
 ## v0.24.61
 
 - Se parte de `v0.24.60`.
