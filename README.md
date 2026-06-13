@@ -440,3 +440,12 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Si la respuesta es incorrecta, no aparece otro slider: en el mismo componente se marca la selección del estudiante en rojo y se muestra la respuesta correcta en verde debajo, con una pestaña apuntando hacia arriba.
 - Si la respuesta es correcta, el mismo slider cambia a verde.
 - Versión/cache busting actualizados a `0.24.34`.
+
+### v0.24.35
+
+- Ajuste del quiz tipo `slider`: el globo numérico se compactó para que no quede sobredimensionado.
+- El globo azul ahora se alinea visualmente con la barrita/bullet activo y se desplaza junto al valor seleccionado.
+- El área táctil invisible del slider se amplió verticalmente para permitir arrastrar desde el globo con el dedo.
+- Las barritas/bullets se redujeron de tamaño para mejorar proporción en móvil.
+- La marca de respuesta correcta en verde se alinea con el mismo sistema visual de bullets y se mantiene debajo del slider cuando hay error.
+- Versión/cache busting actualizados a `0.24.35`.

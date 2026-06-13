@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.34';
+  const APP_VERSION = '0.24.35';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -2512,13 +2512,16 @@
         const min = Number(slider.min || 0);
         const max = Number(slider.max || 100);
         const pct = Math.max(0, Math.min(100, ((Number(slider.value) - min) / Math.max(1, max - min)) * 100));
-        const bubblePct = Math.max(0, Math.min(100, pct));
-        slider.style.setProperty('--slider-progress', `${pct}%`);
-        board.style.setProperty('--slider-progress', `${pct}%`);
-        board.style.setProperty('--slider-bubble-x', `${bubblePct}%`);
         const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
         const tickMax = Math.max(1, ticks.length - 1);
         const tickIndex = Math.max(0, Math.min(tickMax, Math.round((pct / 100) * tickMax)));
+        const visualPct = ticks.length > 1 ? (tickIndex / tickMax) * 100 : pct;
+        slider.style.setProperty('--slider-progress', `${pct}%`);
+        slider.style.setProperty('--slider-visual-progress', `${visualPct}%`);
+        board.style.setProperty('--slider-progress', `${pct}%`);
+        board.style.setProperty('--slider-visual-progress', `${visualPct}%`);
+        board.style.setProperty('--slider-bubble-x', `${visualPct}%`);
+        board.dataset.sliderVisualIndex = String(tickIndex);
         ticks.forEach((tick, index) => {
           tick.classList.toggle('active', index === tickIndex);
           tick.classList.toggle('before-active', index < tickIndex);
@@ -2542,7 +2545,12 @@
         const sliderMin = Number(slider.min || 0);
         const sliderMax = Number(slider.max || 100);
         const correctPct = Math.max(0, Math.min(100, ((correctValue - sliderMin) / Math.max(1, sliderMax - sliderMin)) * 100));
-        board.style.setProperty('--slider-correct-progress', `${correctPct}%`);
+        const correctTicks = Array.from(board.querySelectorAll('[data-slider-tick]'));
+        const correctTickMax = Math.max(1, correctTicks.length - 1);
+        const correctTickIndex = Math.max(0, Math.min(correctTickMax, Math.round((correctPct / 100) * correctTickMax)));
+        const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : correctPct;
+        board.style.setProperty('--slider-correct-progress', `${correctVisualPct}%`);
+        board.dataset.sliderCorrectVisualIndex = String(correctTickIndex);
         if (correctMarker) correctMarker.hidden = ok;
         if (correctBubble) {
           correctBubble.hidden = ok;
@@ -3282,7 +3290,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.34', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.35', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -8751,3 +8751,121 @@ body.quiz-fullscreen-active {
   .slider-correct-bubble { top: 242px !important; }
   .quiz-phone-range { top: 132px !important; height: 130px !important; }
 }
+
+/* v0.24.35 - Slider quiz precision and touch interaction */
+.quiz-slider-shell {
+  --slider-main-color: #1d72d8;
+  --slider-selected-color: var(--slider-main-color);
+  --slider-correct-color: #58cc02;
+  --slider-wrong-color: #e21b3c;
+  overflow: visible !important;
+}
+.quiz-slider-visual-stage {
+  min-height: clamp(220px, 39vh, 292px) !important;
+  padding: 8px 0 0 !important;
+  overflow: visible !important;
+}
+.quiz-slider-widget {
+  width: min(88vw, 312px) !important;
+  min-height: 225px !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.quiz-slider-bubble {
+  left: var(--slider-bubble-x, 50%) !important;
+  top: 2px !important;
+  width: clamp(62px, 23vw, 92px) !important;
+  min-height: clamp(58px, 20vw, 82px) !important;
+  border-radius: 6px !important;
+  transform: translateX(-50%) !important;
+  z-index: 12 !important;
+  pointer-events: none !important;
+}
+.quiz-slider-bubble::after {
+  bottom: -13px !important;
+  width: 25px !important;
+  height: 17px !important;
+}
+.quiz-slider-bubble span {
+  font-size: clamp(3rem, 15vw, 5.2rem) !important;
+  line-height: .88 !important;
+  letter-spacing: -.07em !important;
+}
+.quiz-slider-ticks {
+  top: clamp(112px, 28vw, 142px) !important;
+  width: 100% !important;
+  min-height: 62px !important;
+  gap: clamp(2px, .65vw, 5px) !important;
+  align-items: flex-end !important;
+  overflow: visible !important;
+  z-index: 4 !important;
+}
+.quiz-slider-ticks span[data-slider-tick] {
+  max-width: clamp(4px, 2.35vw, 11px) !important;
+  min-width: 3px !important;
+  height: clamp(34px, 10.5vw, 48px) !important;
+  border-radius: 999px !important;
+}
+.quiz-slider-ticks span[data-slider-tick].active {
+  height: clamp(48px, 14.5vw, 64px) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 0 15px color-mix(in srgb, var(--slider-selected-color) 55%, transparent), inset 0 -1px 0 rgba(0,0,0,.16) !important;
+}
+.slider-correct-marker {
+  left: var(--slider-correct-progress, 50%) !important;
+  bottom: 0 !important;
+  width: clamp(4px, 2.35vw, 11px) !important;
+  height: clamp(48px, 14.5vw, 64px) !important;
+  transform: translateX(-50%) translateY(-3px) !important;
+  border-radius: 999px !important;
+  background: #58cc02 !important;
+  box-shadow: 0 0 18px rgba(88,204,2,.7), inset 0 -1px 0 rgba(0,0,0,.16) !important;
+  z-index: 14 !important;
+}
+.slider-correct-bubble {
+  left: var(--slider-correct-progress, 50%) !important;
+  top: clamp(180px, 43vw, 214px) !important;
+  width: clamp(42px, 14vw, 58px) !important;
+  min-height: clamp(34px, 10vw, 46px) !important;
+  border-radius: 6px !important;
+  z-index: 13 !important;
+}
+.slider-correct-bubble::before {
+  top: -10px !important;
+  width: 18px !important;
+  height: 12px !important;
+}
+.slider-correct-bubble span {
+  font-size: clamp(1.35rem, 5.6vw, 2rem) !important;
+}
+.quiz-phone-range {
+  top: 0 !important;
+  height: clamp(185px, 46vw, 225px) !important;
+  z-index: 30 !important;
+  opacity: .001 !important;
+  cursor: grab !important;
+  touch-action: none !important;
+}
+.quiz-phone-range:active { cursor: grabbing !important; }
+.quiz-slider-limits {
+  margin-top: -22px !important;
+}
+.quiz-slider-submit {
+  margin-top: 4px !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage {
+  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
+}
+@media (max-width: 520px) {
+  .quiz-slider-visual-stage { min-height: 258px !important; }
+  .quiz-slider-widget { width: min(88vw, 314px) !important; min-height: 232px !important; }
+  .quiz-slider-bubble { width: clamp(62px, 24vw, 88px) !important; min-height: clamp(58px, 22vw, 78px) !important; }
+  .quiz-slider-bubble span { font-size: clamp(3rem, 16vw, 5rem) !important; }
+  .quiz-slider-ticks { top: 118px !important; min-height: 62px !important; gap: clamp(2px, .6vw, 4px) !important; }
+  .quiz-slider-ticks span[data-slider-tick] { max-width: clamp(4px, 2.2vw, 9px) !important; height: clamp(34px, 11vw, 46px) !important; }
+  .quiz-slider-ticks span[data-slider-tick].active,
+  .slider-correct-marker { height: clamp(48px, 15vw, 60px) !important; }
+  .slider-correct-bubble { top: 190px !important; }
+  .quiz-phone-range { top: 0 !important; height: 215px !important; }
+  .quiz-slider-limits { margin-top: -18px !important; }
+}
