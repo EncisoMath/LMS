@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.50';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.50: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.51';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.51: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',

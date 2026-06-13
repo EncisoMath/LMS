@@ -568,6 +568,12 @@ Correcciones visuales puntuales en Quizzes sobre v0.24.48:
 - Se ocultaron los mensajes locales tipo “1/3 correctas” o “2/2 espacios correctos” en drag and drop/completar texto, dejando solo la banda inferior general.
 - Se mantuvo la protección de Quizzes desactivada temporalmente como en v0.24.48.
 
+## v0.24.51
+
+- Corrección visual en Quizzes tipo drag and drop: se quitó el fondo azul oscuro que aparecía debajo de las zonas `Opciones` y `Une aquí`.
+- Se dejaron transparentes los contenedores internos del tablero de drag and drop sin afectar los colores de las tarjetas ni la validación correcto/incorrecto.
+- Versión/cache busting actualizados a `0.24.51`.
+
 ## v0.24.50
 
 Correcciones visuales y de composición en Quizzes sobre v0.24.49:
