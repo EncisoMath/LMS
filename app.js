@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.30';
+  const APP_VERSION = '0.24.31';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1373,7 +1373,9 @@
       multiple_choice: 'Opción múltiple',
       true_false: 'Verdadero / falso',
       open: 'Pregunta abierta',
-      match: 'Arrastrar para unir'
+      match: 'Arrastrar para unir',
+      fill_text: 'Completar texto',
+      slider: 'Respuesta con slider'
     };
     return labels[type] || 'Pregunta';
   }
@@ -1391,6 +1393,8 @@
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
     if (question.type === 'match') return quizMatchHTML(question);
+    if (question.type === 'fill_text') return quizFillTextHTML(question);
+    if (question.type === 'slider') return quizSliderHTML(question);
     return quizMultipleChoiceHTML(question);
   }
 
@@ -1468,6 +1472,62 @@
           <button class="primary-btn quiz-match-validate" type="button" data-match-validate>Validar uniones</button>
         </div>
         <p class="quiz-match-feedback" data-match-feedback hidden></p>
+      </div>
+    `;
+  }
+
+
+  function quizFillTextHTML(question) {
+    const blanks = Array.isArray(question.blanks) ? question.blanks : [];
+    const textParts = Array.isArray(question.textParts) ? question.textParts : [];
+    const options = Array.isArray(question.options) ? question.options : [];
+    const palette = ['red', 'blue', 'yellow', 'green', 'purple', 'orange', 'cyan', 'pink'];
+    const colorHex = {
+      red: '#e21b3c', blue: '#1368ce', yellow: '#d89e00', green: '#26890c',
+      purple: '#7b2ff7', orange: '#f57c00', cyan: '#00bcd4', pink: '#e91e63'
+    };
+    const fillText = blanks.map((blank, index) => {
+      const before = textParts[index] || '';
+      return `${escapeHTML(before)}<span class="fill-drop fill-empty" data-fill-blank="${escapeAttr(blank.id || `blank${index + 1}`)}" data-fill-answer="${escapeAttr(blank.answerId || blank.correctOptionId || '')}" data-fill-empty="true"><span class="fill-slot" data-fill-slot><small>___________</small></span></span>`;
+    }).join('') + escapeHTML(textParts[blanks.length] || '');
+    return `
+      <div class="quiz-fill-shell" data-quiz-fill-board>
+        <div class="quiz-fill-text" data-fill-text>${fillText}</div>
+        <div class="quiz-fill-options" data-fill-source>
+          ${options.slice(0, 8).map((option, index) => {
+            const color = palette[index % palette.length];
+            return `<button class="fill-option fill-${color}" style="--fill-color:${colorHex[color]}" type="button" draggable="true" data-fill-color="${color}" data-fill-option="${escapeAttr(option.id || String(index))}">${escapeHTML(option.text || '')}</button>`;
+          }).join('')}
+        </div>
+        <div class="quiz-fill-actions">
+          <button class="mini-btn quiz-fill-reset" type="button" data-fill-reset>Reiniciar</button>
+          <button class="primary-btn quiz-fill-validate" type="button" data-fill-validate>Validar texto</button>
+        </div>
+        <p class="quiz-match-feedback quiz-fill-feedback" data-fill-feedback hidden></p>
+      </div>
+    `;
+  }
+
+  function quizSliderHTML(question) {
+    const min = Number.isFinite(Number(question.min)) ? Number(question.min) : 0;
+    const max = Number.isFinite(Number(question.max)) ? Number(question.max) : 10;
+    const step = Number.isFinite(Number(question.step)) ? Number(question.step) : 1;
+    const correct = Number.isFinite(Number(question.correct)) ? Number(question.correct) : min;
+    const initial = Number.isFinite(Number(question.initial)) ? Number(question.initial) : Math.round((min + max) / 2);
+    const tolerance = Number.isFinite(Number(question.tolerance)) ? Number(question.tolerance) : 0;
+    return `
+      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}">
+        <div class="quiz-slider-value"><span data-slider-value>${initial}</span><small>${escapeHTML(question.unit || '')}</small></div>
+        <div class="quiz-slider-track-wrap">
+          <input class="quiz-number-slider" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" data-quiz-slider />
+        </div>
+        <div class="quiz-slider-limits"><span>${min}</span><span>${max}</span></div>
+        <div class="quiz-slider-correct" data-slider-correct-row hidden>
+          <small>Respuesta correcta</small>
+          <input class="quiz-number-slider quiz-number-slider-correct" type="range" min="${min}" max="${max}" step="${step}" value="${correct}" disabled />
+          <strong>${correct}${question.unit ? ` ${escapeHTML(question.unit)}` : ''}</strong>
+        </div>
+        <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
       </div>
     `;
   }
@@ -1668,6 +1728,8 @@
       });
     });
     bindQuizMatchEvents();
+    bindQuizFillTextEvents();
+    bindQuizSliderEvents();
   }
 
   function setQuizPeriod(period) {
@@ -2262,6 +2324,223 @@
           }
           scheduleQuizAdvance();
         }, (333 * total) + 420);
+      });
+    });
+  }
+
+
+  function bindQuizFillTextEvents() {
+    document.querySelectorAll('[data-quiz-fill-board]').forEach((board) => {
+      const source = board.querySelector('[data-fill-source]');
+      let selectedCard = null;
+      let draggedId = '';
+      const colors = ['red', 'blue', 'yellow', 'green', 'purple', 'orange', 'cyan', 'pink'];
+      const resetDropColor = (drop) => {
+        if (!drop) return;
+        colors.forEach((color) => drop.classList.remove(`fill-color-${color}`));
+        drop.style.removeProperty('--fill-color');
+        drop.classList.remove('fill-filled', 'matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+        drop.classList.add('fill-empty');
+        delete drop.dataset.fillColor;
+        delete drop.dataset.resultMark;
+      };
+      const returnCardToSource = (card) => {
+        if (!card || !source) return;
+        const oldDrop = card.closest('.fill-drop');
+        card.classList.remove('selected', 'dragging');
+        source.appendChild(card);
+        if (oldDrop && !oldDrop.querySelector('[data-fill-option]')) {
+          delete oldDrop.dataset.placedId;
+          oldDrop.dataset.fillEmpty = 'true';
+          resetDropColor(oldDrop);
+          const slot = oldDrop.querySelector('[data-fill-slot]');
+          if (slot) slot.innerHTML = '<small>___________</small>';
+        }
+      };
+      const clearFeedback = () => {
+        board.querySelectorAll('.fill-drop').forEach((drop) => {
+          drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+          delete drop.dataset.resultMark;
+        });
+        const feedback = board.querySelector('[data-fill-feedback]');
+        if (feedback) { feedback.hidden = true; feedback.textContent = ''; feedback.className = 'quiz-match-feedback quiz-fill-feedback'; }
+      };
+      const applyDropColor = (drop, card) => {
+        const color = card?.dataset.fillColor || 'blue';
+        const value = card?.style.getPropertyValue('--fill-color') || '';
+        colors.forEach((item) => drop.classList.remove(`fill-color-${item}`));
+        drop.classList.remove('fill-empty');
+        drop.classList.add('fill-filled', `fill-color-${color}`);
+        drop.dataset.fillColor = color;
+        if (value) drop.style.setProperty('--fill-color', value.trim());
+      };
+      const placeCard = (card, drop) => {
+        if (getQuizSession().locked || !card || !drop) return;
+        clearFeedback();
+        const slot = drop.querySelector('[data-fill-slot]');
+        if (!slot) return;
+        const previous = slot.querySelector('[data-fill-option]');
+        if (previous && previous !== card) returnCardToSource(previous);
+        const oldDrop = card.closest('.fill-drop');
+        slot.innerHTML = '';
+        slot.appendChild(card);
+        if (oldDrop && oldDrop !== drop) {
+          delete oldDrop.dataset.placedId;
+          oldDrop.dataset.fillEmpty = 'true';
+          resetDropColor(oldDrop);
+          const oldSlot = oldDrop.querySelector('[data-fill-slot]');
+          if (oldSlot && !oldSlot.querySelector('[data-fill-option]')) oldSlot.innerHTML = '<small>___________</small>';
+        }
+        card.classList.remove('selected', 'dragging');
+        drop.dataset.placedId = card.dataset.fillOption || '';
+        drop.dataset.fillEmpty = 'false';
+        applyDropColor(drop, card);
+        pulseElement(drop, 'match-join-pop');
+      };
+      board.querySelectorAll('[data-fill-option]').forEach((card) => {
+        card.addEventListener('dragstart', (event) => {
+          if (getQuizSession().locked) { event.preventDefault(); return; }
+          draggedId = card.dataset.fillOption || '';
+          selectedCard = card;
+          event.dataTransfer?.setData('text/plain', draggedId);
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        card.addEventListener('click', () => {
+          if (getQuizSession().locked) return;
+          board.querySelectorAll('[data-fill-option]').forEach((item) => item.classList.remove('selected'));
+          selectedCard = card;
+          card.classList.add('selected');
+        });
+      });
+      board.querySelectorAll('[data-fill-blank]').forEach((drop) => {
+        drop.addEventListener('dragover', (event) => {
+          if (getQuizSession().locked) return;
+          event.preventDefault();
+          drop.classList.add('over');
+        });
+        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+        drop.addEventListener('drop', (event) => {
+          if (getQuizSession().locked) return;
+          event.preventDefault();
+          const id = event.dataTransfer?.getData('text/plain') || draggedId;
+          const card = board.querySelector(`[data-fill-option="${escapeSelector(id)}"]`);
+          drop.classList.remove('over');
+          placeCard(card, drop);
+        });
+        drop.addEventListener('click', () => {
+          if (getQuizSession().locked) return;
+          if (selectedCard) placeCard(selectedCard, drop);
+        });
+      });
+      board.querySelector('[data-fill-reset]')?.addEventListener('click', () => {
+        if (getQuizSession().locked) return;
+        board.querySelectorAll('[data-fill-option]').forEach((card) => returnCardToSource(card));
+        board.querySelectorAll('.fill-drop').forEach((drop) => {
+          delete drop.dataset.placedId;
+          drop.dataset.fillEmpty = 'true';
+          drop.classList.remove('over');
+          resetDropColor(drop);
+          const slot = drop.querySelector('[data-fill-slot]');
+          if (slot) slot.innerHTML = '<small>___________</small>';
+        });
+        clearFeedback();
+      });
+      board.querySelector('[data-fill-validate]')?.addEventListener('click', () => {
+        const session = getQuizSession();
+        if (session.locked) return;
+        session.locked = true;
+        const drops = Array.from(board.querySelectorAll('.fill-drop'));
+        const total = drops.length;
+        let correct = 0;
+        board.querySelectorAll('[data-fill-option], [data-fill-reset], [data-fill-validate]').forEach((item) => { item.disabled = true; });
+        drops.forEach((drop) => {
+          drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
+          delete drop.dataset.resultMark;
+          drop.classList.add('match-reveal-pending');
+        });
+        drops.forEach((drop, index) => {
+          scheduleQuizTimer(() => {
+            const ok = Boolean(drop.dataset.placedId) && drop.dataset.placedId === drop.dataset.fillAnswer;
+            if (ok) correct += 1;
+            drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
+            drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            drop.dataset.resultMark = ok ? '✓' : '×';
+          }, 333 * (index + 1));
+        });
+        scheduleQuizTimer(() => {
+          const allCorrect = correct === total;
+          const currentQuestion = getCurrentQuizQuestion();
+          recordQuizAnswer(currentQuestion, allCorrect, { correctBlanks: correct, totalBlanks: total });
+          const feedback = board.querySelector('[data-fill-feedback]');
+          if (feedback) {
+            feedback.hidden = false;
+            feedback.innerHTML = allCorrect
+              ? '✅ Perfecto: completaste todos los espacios.'
+              : `❌ ${correct}/${total} espacios correctos. Revisa los marcados.`;
+            feedback.className = `quiz-match-feedback quiz-fill-feedback ${allCorrect ? 'ok' : 'check'}`;
+          }
+          const stage = board.closest('.quiz-stage');
+          const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
+          if (stageFeedback) {
+            stageFeedback.hidden = false;
+            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect, '', currentQuestion);
+            stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
+            stage?.classList.add('quiz-feedback-visible');
+          }
+          scheduleQuizAdvance();
+        }, (333 * total) + 420);
+      });
+    });
+  }
+
+  function bindQuizSliderEvents() {
+    document.querySelectorAll('[data-quiz-slider-board]').forEach((board) => {
+      const slider = board.querySelector('[data-quiz-slider]');
+      const valueLabel = board.querySelector('[data-slider-value]');
+      const validate = board.querySelector('[data-slider-validate]');
+      const correctRow = board.querySelector('[data-slider-correct-row]');
+      const update = () => {
+        if (!slider) return;
+        if (valueLabel) valueLabel.textContent = slider.value;
+        const min = Number(slider.min || 0);
+        const max = Number(slider.max || 100);
+        const pct = ((Number(slider.value) - min) / Math.max(1, max - min)) * 100;
+        slider.style.setProperty('--slider-progress', `${pct}%`);
+      };
+      slider?.addEventListener('input', update);
+      update();
+      validate?.addEventListener('click', () => {
+        const session = getQuizSession();
+        const question = getCurrentQuizQuestion();
+        if (!slider || !question || session.locked) return;
+        session.locked = true;
+        slider.disabled = true;
+        validate.disabled = true;
+        const selected = Number(slider.value);
+        const correctValue = Number(board.dataset.sliderCorrect || question.correct || 0);
+        const tolerance = Math.max(0, Number(board.dataset.sliderTolerance || question.tolerance || 0));
+        const ok = Math.abs(selected - correctValue) <= tolerance;
+        board.classList.add(ok ? 'slider-correct' : 'slider-wrong');
+        if (correctRow) correctRow.hidden = false;
+        const correctSlider = board.querySelector('.quiz-number-slider-correct');
+        if (correctSlider) {
+          const min = Number(correctSlider.min || 0);
+          const max = Number(correctSlider.max || 100);
+          const pct = ((Number(correctSlider.value) - min) / Math.max(1, max - min)) * 100;
+          correctSlider.style.setProperty('--slider-progress', `${pct}%`);
+        }
+        recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
+        const stage = board.closest('.quiz-stage');
+        const feedback = stage?.querySelector('[data-quiz-feedback]');
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.innerHTML = quizAnswerFeedbackHTML(ok, '', question);
+          feedback.className = `quiz-answer-feedback ${ok ? 'is-correct' : 'is-wrong'}`;
+          stage?.classList.add('quiz-feedback-visible');
+        }
+        pulseElement(board, ok ? 'match-join-pop' : 'quiz-slider-wrong-pop');
+        scheduleQuizAdvance();
       });
     });
   }
@@ -2984,7 +3263,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.30', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.31', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

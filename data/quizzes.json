@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "description": "Base inicial de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso y arrastrar para unir.",
+  "version": "1.1",
+  "description": "Base inicial de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numerico.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -19,10 +19,26 @@
           "imageAlt": "Gráfica de barras sobre fruta favorita",
           "text": "Toca la imagen si necesitas verla en grande antes de responder.",
           "options": [
-            { "id": "a", "text": "Mora", "correct": false },
-            { "id": "b", "text": "Banano", "correct": true },
-            { "id": "c", "text": "Pera", "correct": false },
-            { "id": "d", "text": "Mango", "correct": false }
+            {
+              "id": "a",
+              "text": "Mora",
+              "correct": false
+            },
+            {
+              "id": "b",
+              "text": "Banano",
+              "correct": true
+            },
+            {
+              "id": "c",
+              "text": "Pera",
+              "correct": false
+            },
+            {
+              "id": "d",
+              "text": "Mango",
+              "correct": false
+            }
           ]
         },
         {
@@ -31,8 +47,16 @@
           "prompt": "La frecuencia absoluta indica cuántas veces aparece un dato.",
           "text": "Marca verdadero o falso.",
           "options": [
-            { "id": "true", "text": "Verdadero", "correct": true },
-            { "id": "false", "text": "Falso", "correct": false }
+            {
+              "id": "true",
+              "text": "Verdadero",
+              "correct": true
+            },
+            {
+              "id": "false",
+              "text": "Falso",
+              "correct": false
+            }
           ]
         },
         {
@@ -45,12 +69,92 @@
           "id": "q4",
           "type": "match",
           "prompt": "Arrastra cada concepto hacia su definición.",
-          "text": "En este tipo de pregunta se usan solo tarjetas azules y rojas.",
+          "text": "Arrastra cada tarjeta hacia la definición correcta y valida tus uniones.",
           "pairs": [
-            { "id": "fa", "left": "Frecuencia absoluta", "right": "Cantidad de veces" },
-            { "id": "fr", "left": "Frecuencia relativa", "right": "Parte del total" },
-            { "id": "moda", "left": "Moda", "right": "Dato más repetido" }
+            {
+              "id": "fa",
+              "left": "Frecuencia absoluta",
+              "right": "Cantidad de veces"
+            },
+            {
+              "id": "fr",
+              "left": "Frecuencia relativa",
+              "right": "Parte del total"
+            },
+            {
+              "id": "moda",
+              "left": "Moda",
+              "right": "Dato más repetido"
+            }
           ]
+        },
+        {
+          "id": "q5",
+          "type": "fill_text",
+          "prompt": "Completa el texto arrastrando las palabras correctas.",
+          "text": "Puedes usar hasta 8 opciones de colores para llenar los espacios.",
+          "textParts": [
+            "Pepito se fue a la montaña y después vio un ",
+            ". Luego de eso se preguntó si debía ",
+            "."
+          ],
+          "blanks": [
+            {
+              "id": "b1",
+              "answerId": "condor"
+            },
+            {
+              "id": "b2",
+              "answerId": "explorar"
+            }
+          ],
+          "options": [
+            {
+              "id": "condor",
+              "text": "cóndor"
+            },
+            {
+              "id": "explorar",
+              "text": "explorar"
+            },
+            {
+              "id": "cuaderno",
+              "text": "cuaderno"
+            },
+            {
+              "id": "correr",
+              "text": "correr"
+            },
+            {
+              "id": "rio",
+              "text": "río"
+            },
+            {
+              "id": "descansar",
+              "text": "descansar"
+            },
+            {
+              "id": "volcan",
+              "text": "volcán"
+            },
+            {
+              "id": "gritar",
+              "text": "gritar"
+            }
+          ]
+        },
+        {
+          "id": "q6",
+          "type": "slider",
+          "prompt": "En una encuesta participaron 10 estudiantes. ¿Cuántos estudiantes participaron?",
+          "text": "Mueve el slider hasta el número correcto y valida tu respuesta.",
+          "min": 0,
+          "max": 20,
+          "step": 1,
+          "initial": 7,
+          "correct": 10,
+          "tolerance": 0,
+          "unit": "estudiantes"
         }
       ]
     }

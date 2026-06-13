@@ -418,3 +418,10 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - Se mejoró la entrada de la banda con rebote más natural y zoom inicial, evitando que se quede pegada arriba.
 - Se extendió la banda hacia abajo para que durante el rebote no se vea hueco inferior.
 - La frase secundaria quedó con peso normal, sin negrita.
+
+
+## v0.24.31
+- Se agregaron dos nuevos tipos de pregunta en Quizzes: completar texto con arrastrar y slider numérico.
+- El tipo completar texto usa espacios grises dentro de una oración y opciones de colores arrastrables hasta 8 opciones.
+- El tipo slider permite responder con número, usa slider azul durante la selección, verde/rojo al validar y muestra un slider pequeño con la respuesta correcta cuando se falla.
+- Se mantiene la línea visual de Kahoot/EncisoMath, la banda inferior estable de feedback y el avance automático del quiz.
