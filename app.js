@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.21';
+  const APP_VERSION = '0.24.22';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1239,7 +1239,7 @@
       <div class="quiz-library" id="quizLibrary">
         ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
-      ${activeQuiz ? `<div class="quiz-launch-note">Toca un quiz para iniciarlo en pantalla completa.</div>` : ''}
+      ${activeQuiz ? `<div class="quiz-launch-note">Toca un quiz para ver el aviso de inicio.</div>` : ''}
     `;
     bindQuizTabEvents();
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -1296,14 +1296,15 @@
     const question = questions[index];
     const fullscreen = Boolean(options.fullscreen);
     const session = getQuizSession();
+    const promptClass = quizPromptClass(question.prompt || '');
     return `
       <section class="quiz-stage ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
         <div class="quiz-stage-head">
-          <div>
+          <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
-            <h3>${escapeHTML(question.prompt || '')}</h3>
+            <span class="quiz-timer-pill">Item ${index + 1}</span>
           </div>
-          <span class="quiz-timer-pill">Item ${index + 1}</span>
+          <h3 class="${promptClass}">${escapeHTML(question.prompt || '')}</h3>
         </div>
         ${question.image ? quizImageHTML(question) : ''}
         ${question.text ? `<p class="quiz-support-text">${escapeHTML(question.text)}</p>` : ''}
@@ -1316,6 +1317,14 @@
         </div>` : ''}
       </section>
     `;
+  }
+
+  function quizPromptClass(prompt) {
+    const length = String(prompt || '').trim().length;
+    if (length > 190) return 'quiz-prompt quiz-prompt-xs';
+    if (length > 130) return 'quiz-prompt quiz-prompt-sm';
+    if (length > 85) return 'quiz-prompt quiz-prompt-md';
+    return 'quiz-prompt';
   }
 
   function quizTypeLabel(type) {
@@ -1393,19 +1402,24 @@
 
   function quizMatchHTML(question) {
     const pairs = Array.isArray(question.pairs) ? question.pairs : [];
+    const palette = ['red', 'blue', 'yellow', 'green'];
+    const colorHex = { red: '#e21b3c', blue: '#1368ce', yellow: '#d89e00', green: '#26890c' };
     return `
       <div class="quiz-match-shell" data-quiz-match-board>
         <div class="quiz-match-board">
           <div class="quiz-match-column match-source-column">
             <strong>Opciones</strong>
             <div class="match-source" data-match-source>
-              ${pairs.map((pair) => `<button class="match-card match-blue" type="button" draggable="true" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`).join('')}
+              ${pairs.map((pair, index) => {
+                const color = palette[index % palette.length];
+                return `<button class="match-card match-${color}" style="--match-color:${colorHex[color]}" type="button" draggable="true" data-match-color="${color}" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`;
+              }).join('')}
             </div>
           </div>
           <div class="quiz-match-column">
             <strong>Une aquí</strong>
             ${pairs.map((pair) => `
-              <div class="match-drop match-red" data-match-right="${escapeAttr(pair.id)}" data-match-empty="true">
+              <div class="match-drop match-empty" data-match-right="${escapeAttr(pair.id)}" data-match-empty="true">
                 <span class="match-drop-label">${escapeHTML(pair.right)}</span>
                 <div class="match-slot" data-match-slot><small>Suelta o toca una opción</small></div>
               </div>
@@ -1655,24 +1669,26 @@
   function startQuiz(quizId) {
     state.quizActiveId = quizId;
     state.quizQuestionIndex = 0;
-    state.quizFullscreenActive = true;
+    state.quizFullscreenActive = false;
     localStorage.setItem('encisomath:quizActiveId', quizId);
     const quiz = getActiveQuiz();
     if (!quiz) return;
     resetQuizSession('confirm');
-    lockQuizHistory();
-    renderQuizFullscreen(quiz);
+    openModal(quizStartModalHTML(quiz), () => bindQuizPlayerEvents());
   }
 
   function beginQuizFromConfirm() {
     const quiz = getActiveQuiz();
     if (!quiz) return;
+    closeModal(false);
     clearQuizTimers();
+    state.quizFullscreenActive = true;
+    lockQuizHistory();
     const session = getQuizSession();
     session.phase = 'intro';
     session.locked = false;
     renderQuizFullscreen(quiz);
-    scheduleQuizTimer(() => showQuizItemTransition(0), 2000);
+    scheduleQuizTimer(() => showQuizItemTransition(0), 2200);
   }
 
   function showQuizItemTransition(index = 0) {
@@ -1711,34 +1727,56 @@
     if (!layer) {
       layer = document.createElement('div');
       layer.id = 'quizFullscreenLayer';
-      layer.className = 'quiz-fullscreen-layer';
       document.body.appendChild(layer);
     }
     document.body.classList.add('quiz-fullscreen-active');
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
     else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length);
     else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
+    const showTop = phase === 'question' || phase === 'results';
 
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
-      <div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
+      ${showTop ? `<div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
         <div>
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : 'Modo quiz · sin salida hasta finalizar'}</small>
         </div>
         <span>${phase === 'results' ? 'FIN' : `${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}`}</span>
-      </div>
+      </div>` : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
       </div>
     `;
     bindQuizPlayerEvents();
+  }
+
+  function quizStartModalHTML(quiz) {
+    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    return `
+      <div class="modal-card quiz-start-modal">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="quiz-start-modal-head">
+          <div class="quiz-start-modal-mesh" aria-hidden="true"></div>
+          <p class="section-kicker">Antes de empezar</p>
+          <h2>¿Iniciarás este quiz?</h2>
+          <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
+        </div>
+        <div class="quiz-start-modal-body">
+          <h3>${escapeHTML(quiz.title || 'Quiz')}</h3>
+          <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
+          <div class="quiz-lock-warning">🔒 Cuando empieces, solo podrás salir al finalizar el quiz.</div>
+          <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
+        </div>
+      </div>
+    `;
   }
 
   function quizStartGateHTML(quiz) {
@@ -1758,8 +1796,8 @@
 
   function quizIntroSplashHTML(quiz) {
     return `
-      <section class="quiz-intro-splash">
-        <div class="quiz-intro-logo" aria-hidden="true">🎮</div>
+      <section class="quiz-intro-splash quiz-burst-scene">
+        <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
         <p class="section-kicker">Preparando reto</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
         <p>${escapeHTML(quiz.description || quiz.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
@@ -1769,7 +1807,8 @@
 
   function quizItemTransitionHTML(item, total) {
     return `
-      <section class="quiz-item-transition" aria-live="polite">
+      <section class="quiz-item-transition quiz-burst-scene" aria-live="polite">
+        <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
         <div class="quiz-transition-ribbon"><span>Ítem ${item}</span></div>
         <div class="quiz-transition-count">${item}<small>/${total}</small></div>
         <div class="quiz-transition-progress"><span></span></div>
@@ -1859,16 +1898,47 @@
       let selectedCard = null;
       let draggedId = '';
 
+      const resetDropColor = (drop) => {
+        if (!drop) return;
+        ['red', 'blue', 'yellow', 'green'].forEach((color) => drop.classList.remove(`match-color-${color}`));
+        drop.style.removeProperty('--match-color');
+        drop.classList.remove('match-filled', 'matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+        drop.classList.add('match-empty');
+        delete drop.dataset.matchColor;
+        delete drop.dataset.resultMark;
+      };
+
       const clearFeedback = () => {
-        board.querySelectorAll('.match-drop').forEach((drop) => drop.classList.remove('matched', 'wrong'));
+        board.querySelectorAll('.match-drop').forEach((drop) => {
+          drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
+          delete drop.dataset.resultMark;
+        });
         const feedback = board.querySelector('[data-match-feedback]');
         if (feedback) { feedback.hidden = true; feedback.textContent = ''; feedback.className = 'quiz-match-feedback'; }
       };
 
       const returnCardToSource = (card) => {
         if (!card || !source) return;
+        const oldDrop = card.closest('.match-drop');
         card.classList.remove('selected', 'dragging');
         source.appendChild(card);
+        if (oldDrop && !oldDrop.querySelector('[data-match-left]')) {
+          delete oldDrop.dataset.placedId;
+          oldDrop.dataset.matchEmpty = 'true';
+          resetDropColor(oldDrop);
+          const oldSlot = oldDrop.querySelector('[data-match-slot]');
+          if (oldSlot) oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
+        }
+      };
+
+      const applyDropColor = (drop, card) => {
+        const color = card?.dataset.matchColor || 'blue';
+        const value = card?.style.getPropertyValue('--match-color') || '';
+        ['red', 'blue', 'yellow', 'green'].forEach((item) => drop.classList.remove(`match-color-${item}`));
+        drop.classList.remove('match-empty');
+        drop.classList.add('match-filled', `match-color-${color}`);
+        drop.dataset.matchColor = color;
+        if (value) drop.style.setProperty('--match-color', value.trim());
       };
 
       const placeCard = (card, drop) => {
@@ -1878,23 +1948,20 @@
         if (!slot) return;
         const previous = slot.querySelector('[data-match-left]');
         if (previous && previous !== card) returnCardToSource(previous);
-        const oldSlot = card.closest('[data-match-slot]');
+        const oldDrop = card.closest('.match-drop');
         slot.innerHTML = '';
         slot.appendChild(card);
-        if (oldSlot && oldSlot !== slot && !oldSlot.querySelector('[data-match-left]')) {
-          oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
+        if (oldDrop && oldDrop !== drop) {
+          delete oldDrop.dataset.placedId;
+          oldDrop.dataset.matchEmpty = 'true';
+          resetDropColor(oldDrop);
+          const oldSlot = oldDrop.querySelector('[data-match-slot]');
+          if (oldSlot && !oldSlot.querySelector('[data-match-left]')) oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
         }
         card.classList.remove('selected', 'dragging');
         drop.dataset.placedId = card.dataset.matchLeft || '';
         drop.dataset.matchEmpty = 'false';
-        board.querySelectorAll('.match-drop').forEach((item) => {
-          if (item !== drop && item.dataset.placedId === card.dataset.matchLeft) {
-            delete item.dataset.placedId;
-            item.dataset.matchEmpty = 'true';
-            const otherSlot = item.querySelector('[data-match-slot]');
-            if (otherSlot && !otherSlot.querySelector('[data-match-left]')) otherSlot.innerHTML = '<small>Suelta o toca una opción</small>';
-          }
-        });
+        applyDropColor(drop, card);
         pulseElement(drop, 'match-join-pop');
       };
 
@@ -1942,7 +2009,8 @@
         board.querySelectorAll('.match-drop').forEach((drop) => {
           delete drop.dataset.placedId;
           drop.dataset.matchEmpty = 'true';
-          drop.classList.remove('over', 'matched', 'wrong');
+          drop.classList.remove('over');
+          resetDropColor(drop);
           const slot = drop.querySelector('[data-match-slot]');
           if (slot) slot.innerHTML = '<small>Suelta o toca una opción</small>';
         });
@@ -1953,45 +2021,123 @@
         const session = getQuizSession();
         if (session.locked) return;
         session.locked = true;
-        let total = 0;
+        const drops = Array.from(board.querySelectorAll('.match-drop'));
+        const total = drops.length;
         let correct = 0;
-        board.querySelectorAll('.match-drop').forEach((drop) => {
-          total += 1;
-          const ok = drop.dataset.placedId && drop.dataset.placedId === drop.dataset.matchRight;
-          drop.classList.toggle('matched', Boolean(ok));
-          drop.classList.toggle('wrong', Boolean(drop.dataset.placedId) && !ok);
-          if (ok) correct += 1;
-        });
         board.querySelectorAll('[data-match-left], [data-match-reset], [data-match-validate]').forEach((item) => { item.disabled = true; });
-        const allCorrect = correct === total;
-        const feedback = board.querySelector('[data-match-feedback]');
-        if (feedback) {
-          feedback.hidden = false;
-          feedback.innerHTML = allCorrect
-            ? '✅ Perfecto: todas las uniones son correctas.'
-            : `❌ ${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
-          feedback.className = `quiz-match-feedback ${allCorrect ? 'ok' : 'check'}`;
-        }
-        const stageFeedback = board.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
-        if (stageFeedback) {
-          stageFeedback.hidden = false;
-          stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect);
-          stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
-        }
-        recordQuizAnswer(getCurrentQuizQuestion(), allCorrect, { correctPairs: correct, totalPairs: total });
-        scheduleQuizAdvance();
+        drops.forEach((drop) => {
+          drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
+          delete drop.dataset.resultMark;
+          drop.classList.add('match-reveal-pending');
+        });
+        drops.forEach((drop, index) => {
+          scheduleQuizTimer(() => {
+            const ok = Boolean(drop.dataset.placedId) && drop.dataset.placedId === drop.dataset.matchRight;
+            if (ok) correct += 1;
+            drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
+            drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
+            drop.dataset.resultMark = ok ? '✓' : '×';
+          }, 333 * (index + 1));
+        });
+        scheduleQuizTimer(() => {
+          const allCorrect = correct === total;
+          const feedback = board.querySelector('[data-match-feedback]');
+          if (feedback) {
+            feedback.hidden = false;
+            feedback.innerHTML = allCorrect
+              ? '✅ Perfecto: todas las uniones son correctas.'
+              : `❌ ${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
+            feedback.className = `quiz-match-feedback ${allCorrect ? 'ok' : 'check'}`;
+          }
+          const stageFeedback = board.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
+          if (stageFeedback) {
+            stageFeedback.hidden = false;
+            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect);
+            stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
+          }
+          recordQuizAnswer(getCurrentQuizQuestion(), allCorrect, { correctPairs: correct, totalPairs: total });
+          scheduleQuizAdvance();
+        }, (333 * total) + 420);
       });
     });
   }
 
   function openQuizImageModal(src, alt = '') {
     openModal(`
-      <div class="modal-card quiz-image-modal">
+      <div class="modal-card quiz-image-modal quiz-image-zoom-modal">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" />
-        <p>${escapeHTML(alt || 'Imagen del quiz')}</p>
+        <div class="quiz-zoom-controls" aria-label="Controles de zoom">
+          <button class="mini-btn" type="button" data-quiz-zoom-out>−</button>
+          <button class="mini-btn" type="button" data-quiz-zoom-reset>100%</button>
+          <button class="mini-btn" type="button" data-quiz-zoom-in>+</button>
+        </div>
+        <div class="quiz-zoom-viewport" data-quiz-zoom-viewport>
+          <img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" data-quiz-zoom-image />
+        </div>
+        <p>${escapeHTML(alt || 'Imagen del quiz')} · Pellizca, arrastra o usa los botones para ampliar.</p>
       </div>
-    `);
+    `, bindQuizImageZoomModal);
+  }
+
+  function bindQuizImageZoomModal() {
+    const viewport = document.querySelector('[data-quiz-zoom-viewport]');
+    const image = document.querySelector('[data-quiz-zoom-image]');
+    if (!viewport || !image) return;
+    let scale = 1;
+    let x = 0;
+    let y = 0;
+    let dragStart = null;
+    const pointers = new Map();
+    let pinchStartDistance = 0;
+    let pinchStartScale = 1;
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const apply = () => {
+      if (scale <= 1.01) { x = 0; y = 0; }
+      image.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+      viewport.classList.toggle('is-zoomed', scale > 1.01);
+    };
+    const setScale = (value) => { scale = clamp(value, 1, 4); apply(); };
+    document.querySelector('[data-quiz-zoom-in]')?.addEventListener('click', () => setScale(scale + .35));
+    document.querySelector('[data-quiz-zoom-out]')?.addEventListener('click', () => setScale(scale - .35));
+    document.querySelector('[data-quiz-zoom-reset]')?.addEventListener('click', () => { scale = 1; x = 0; y = 0; apply(); });
+    viewport.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      setScale(scale + (event.deltaY < 0 ? .22 : -.22));
+    }, { passive: false });
+    viewport.addEventListener('dblclick', () => setScale(scale > 1.05 ? 1 : 2.15));
+    viewport.addEventListener('pointerdown', (event) => {
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      viewport.setPointerCapture?.(event.pointerId);
+      if (pointers.size === 1) dragStart = { x: event.clientX - x, y: event.clientY - y };
+      if (pointers.size === 2) {
+        const values = Array.from(pointers.values());
+        pinchStartDistance = Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+        pinchStartScale = scale;
+      }
+    });
+    viewport.addEventListener('pointermove', (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pointers.size === 2 && pinchStartDistance) {
+        const values = Array.from(pointers.values());
+        const distance = Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+        setScale(pinchStartScale * (distance / pinchStartDistance));
+        return;
+      }
+      if (scale > 1.01 && dragStart && pointers.size === 1) {
+        x = event.clientX - dragStart.x;
+        y = event.clientY - dragStart.y;
+        apply();
+      }
+    });
+    const endPointer = (event) => {
+      pointers.delete(event.pointerId);
+      if (!pointers.size) dragStart = null;
+      if (pointers.size < 2) pinchStartDistance = 0;
+    };
+    viewport.addEventListener('pointerup', endPointer);
+    viewport.addEventListener('pointercancel', endPointer);
+    apply();
   }
 
   function renderClassesTab(options = {}) {
@@ -2634,7 +2780,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.21', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.22', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

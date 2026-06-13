@@ -322,3 +322,15 @@ Ajustes visuales adicionales en Rockstars:
 - El bloqueo del botón atrás se mantiene durante la ejecución del quiz y se libera al llegar a resultados.
 - Se ajustó también la validación del tipo `match` para que al validar se registre el resultado, muestre feedback y avance automáticamente.
 - Actualizado cache busting a `0.24.21`.
+
+## v0.24.22
+
+Ajustes en Quizzes:
+- Al tocar una tarjeta de quiz ya no se abre inmediatamente la experiencia en pantalla completa; primero aparece un cuadro emergente de inicio con la línea visual de los modales y un banner con malla animada.
+- Al pulsar **Empezar quiz**, inicia una escena negra de presentación con el título y descripción del quiz, sin iconos, con figuras tipo Kahoot que salen desde el centro con glow y desplazamiento.
+- La transición entre ítems se rehízo para alinearse con el lenguaje visual de la app: fondo negro, figuras explosivas, etiqueta `Ítem N` en barrido lateral y barra de progreso de 100% a 0%.
+- Las preguntas usan una cabecera más flexible: el texto se adapta por longitud y aprovecha mejor el ancho del contenedor.
+- El tipo `match` / arrastrar para unir ahora usa opciones con paleta rojo, azul, amarillo y verde; las zonas receptoras empiezan grises y toman un tono oscuro del color de la opción colocada.
+- Al validar uniones, las tarjetas se opacan y se revelan una por una cada 0.333 segundos, con sacudida y marcado verde/rojo.
+- El modal de imagen del quiz ahora permite zoom con botones, doble toque/clic, rueda, arrastre y gesto de pellizco compatible con Pointer Events.
+- Versión/cache busting actualizados a `0.24.22`.
