@@ -3081,3 +3081,118 @@ html[data-bg-mode="black"] .login-screen {
   0% { opacity: 0; transform: translateY(10px) scale(.995); filter: none; }
   100% { opacity: 1; transform: translateY(0) scale(1); filter: none; }
 }
+
+
+/* v0.24.3 - warning con malla roja y rebote squash/stretch */
+.danger-head {
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 16%),
+    radial-gradient(circle at 82% 18%, rgba(255,82,104,.30), transparent 22%),
+    radial-gradient(circle at 52% 118%, rgba(255,20,48,.30), transparent 34%),
+    linear-gradient(135deg, #ff3348 0%, #d70b21 34%, #830913 70%, #220205 100%) !important;
+}
+
+/* Quita el patrón de signos de admiración y usa una malla roja tipo banner. */
+.danger-head::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -42px !important;
+  z-index: 0 !important;
+  opacity: .78 !important;
+  pointer-events: none !important;
+  background-image:
+    linear-gradient(rgba(255, 236, 240, .18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 205, 214, .14) 1px, transparent 1px),
+    linear-gradient(rgba(255, 55, 78, .20) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 33, 60, .16) 2px, transparent 2px) !important;
+  background-size: 24px 24px, 24px 24px, 96px 96px, 96px 96px !important;
+  background-position: 0 0, 0 0, 0 0, 0 0 !important;
+  transform: rotate(-8deg) scale(1.22) !important;
+  animation: dangerRedMeshDrift 10s linear infinite !important;
+  filter: none !important;
+}
+
+.danger-head::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.16), transparent 10%),
+    linear-gradient(90deg, rgba(0,0,0,.03), rgba(0,0,0,.22) 46%, rgba(0,0,0,.50) 100%) !important;
+  opacity: 1 !important;
+}
+
+@keyframes dangerRedMeshDrift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; }
+  to { background-position: 48px 48px, 48px 48px, 96px 96px, 96px 96px; }
+}
+
+.warning-icon.warning-duo {
+  overflow: visible !important;
+  width: 70px !important;
+  height: 108px !important;
+  transform: translateX(-2px) !important;
+}
+
+.warning-mark {
+  transform-origin: 50% 92% !important;
+  will-change: transform !important;
+  filter:
+    drop-shadow(0 7px 10px rgba(0,0,0,.34))
+    drop-shadow(0 0 8px rgba(255,255,255,.22)) !important;
+  backface-visibility: hidden !important;
+}
+
+.warning-mark-a {
+  left: 4px !important;
+  top: 29px !important;
+  z-index: 1 !important;
+  animation: warningPixarBounceA 1.06s cubic-bezier(.18,.92,.22,1) infinite !important;
+}
+
+.warning-mark-b {
+  left: 17px !important;
+  right: auto !important;
+  top: 4px !important;
+  z-index: 2 !important;
+  animation: warningPixarBounceB 1.06s cubic-bezier(.18,.92,.22,1) infinite .09s !important;
+}
+
+@keyframes warningPixarBounceA {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg) scaleX(1.03) scaleY(.97); }
+  8% { transform: translate3d(0, 3px, 0) rotate(-5deg) scaleX(1.18) scaleY(.82); }
+  18% { transform: translate3d(0, -5px, 0) rotate(-4deg) scaleX(.88) scaleY(1.15); }
+  35% { transform: translate3d(0, -21px, 0) rotate(-1deg) scaleX(.92) scaleY(1.11); }
+  50% { transform: translate3d(0, -13px, 0) rotate(1deg) scaleX(.96) scaleY(1.06); }
+  62% { transform: translate3d(0, 8px, 0) rotate(-2deg) scaleX(1.24) scaleY(.78); }
+  76% { transform: translate3d(0, -7px, 0) rotate(0deg) scaleX(.94) scaleY(1.08); }
+  88% { transform: translate3d(0, 2px, 0) rotate(-4deg) scaleX(1.08) scaleY(.92); }
+}
+
+@keyframes warningPixarBounceB {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(5deg) scaleX(1.02) scaleY(.98); }
+  7% { transform: translate3d(0, 3px, 0) rotate(5deg) scaleX(1.17) scaleY(.83); }
+  17% { transform: translate3d(0, -5px, 0) rotate(6deg) scaleX(.88) scaleY(1.15); }
+  34% { transform: translate3d(0, -23px, 0) rotate(8deg) scaleX(.91) scaleY(1.12); }
+  50% { transform: translate3d(0, -12px, 0) rotate(4deg) scaleX(.96) scaleY(1.06); }
+  61% { transform: translate3d(0, 9px, 0) rotate(3deg) scaleX(1.25) scaleY(.77); }
+  75% { transform: translate3d(0, -7px, 0) rotate(6deg) scaleX(.94) scaleY(1.08); }
+  88% { transform: translate3d(0, 2px, 0) rotate(4deg) scaleX(1.08) scaleY(.92); }
+}
+
+@media (max-width: 520px) {
+  .warning-icon.warning-duo {
+    width: 64px !important;
+    height: 100px !important;
+    transform: translateX(-3px) !important;
+  }
+  .warning-mark { width: 57px !important; }
+  .warning-mark-a { left: 2px !important; top: 29px !important; }
+  .warning-mark-b { left: 12px !important; top: 4px !important; }
+}

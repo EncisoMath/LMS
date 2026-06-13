@@ -145,3 +145,10 @@ classes/medidas-de-tendencia-central.html
 - El fondo global de `body`, `#app`, `.app-shell`, `.screen` y `.loading-screen` queda en negro plano durante cambios de vista.
 - Se desactivó el `filter: blur(...)` de la transición general para evitar que los elementos de la pantalla anterior se conviertan en manchas de color.
 - Se conserva el efecto neón únicamente en las figuras geométricas del login.
+
+
+## v0.24.3
+
+- Se restauró la animación tipo bounce/squash-stretch en los signos de exclamación del modal de eliminación.
+- Se eliminó el patrón de signos de exclamación del fondo del warning.
+- Se reemplazó por una malla roja diagonal inspirada en la malla de los banners de clases/asignaturas.
