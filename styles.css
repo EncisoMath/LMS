@@ -5811,3 +5811,303 @@ button.rock-btn {
   .kahoot-option { min-height: 78px; padding: 10px; font-size: .86rem; grid-template-columns: 28px minmax(0, 1fr); }
   .quiz-match-board { grid-template-columns: 1fr; }
 }
+
+/* v0.24.20 - quizzes fullscreen, respuestas limpias y unir real */
+.quiz-launch-note {
+  margin: 8px 2px 4px;
+  color: rgba(255,255,255,.64);
+  font-size: .84rem;
+  font-weight: 760;
+  text-align: center;
+}
+.quiz-card {
+  grid-template-columns: 46px minmax(0, 1fr) auto !important;
+}
+.quiz-start-pill {
+  border-radius: var(--radius);
+  padding: 7px 8px;
+  color: #fff;
+  font-size: .74rem;
+  font-weight: 980;
+  background: linear-gradient(135deg, rgba(226,27,60,.92), rgba(19,104,206,.88));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18) inset, 0 0 18px rgba(19,104,206,.22);
+}
+body.quiz-fullscreen-active {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+.quiz-fullscreen-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #02030a;
+  color: #fff;
+  padding: calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px);
+  overflow: hidden;
+  isolation: isolate;
+}
+.quiz-fullscreen-bg {
+  position: absolute;
+  inset: -28%;
+  z-index: -1;
+  opacity: .34;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(226,27,60,.38), transparent 24%),
+    radial-gradient(circle at 86% 8%, rgba(19,104,206,.34), transparent 25%),
+    radial-gradient(circle at 75% 86%, rgba(38,137,12,.26), transparent 28%),
+    linear-gradient(135deg, rgba(4, 7, 20, .98), rgba(1, 2, 8, 1));
+}
+.quiz-fullscreen-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.055);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 10px 22px rgba(0,0,0,.25);
+}
+.quiz-fullscreen-top strong {
+  display: block;
+  font-size: .92rem;
+  line-height: 1.1;
+}
+.quiz-fullscreen-top small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255,255,255,.58);
+  font-size: .72rem;
+  font-weight: 760;
+}
+.quiz-fullscreen-top > span {
+  flex: 0 0 auto;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font-weight: 1000;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset;
+}
+.quiz-fullscreen-content {
+  min-height: 0;
+  overflow: auto;
+  padding-top: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.quiz-stage-fullscreen {
+  min-height: calc(100vh - 88px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, auto) auto;
+  padding: 12px !important;
+  background: rgba(8, 10, 18, .96) !important;
+}
+.quiz-stage-fullscreen .quiz-image-card img {
+  max-height: min(34vh, 270px);
+  object-fit: contain;
+  background: #fff;
+}
+.quiz-stage-fullscreen .quiz-stage-head {
+  padding-top: 0;
+}
+.quiz-stage-fullscreen h3 {
+  font-size: clamp(1.05rem, 4.8vw, 1.42rem) !important;
+}
+.quiz-nav-row-fullscreen {
+  position: sticky;
+  bottom: 0;
+  padding-top: 10px;
+  background: linear-gradient(180deg, transparent, rgba(8,10,18,.96) 24%);
+}
+.quiz-next-main {
+  min-width: 148px;
+  min-height: 42px;
+  font-weight: 980 !important;
+}
+.kahoot-option {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .1s ease, box-shadow .12s ease, border-color .12s ease, filter .12s ease !important;
+}
+.kahoot-option::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,.08), rgba(255,255,255,.08));
+  transition: opacity .12s ease;
+}
+.kahoot-option:active,
+.kahoot-option.is-pressing {
+  transform: scale(.97) !important;
+  filter: saturate(1.18) brightness(1.03) !important;
+}
+.kahoot-option:active::after,
+.kahoot-option.is-pressing::after {
+  opacity: 1;
+}
+.kahoot-option.selected {
+  outline: 0 !important;
+  opacity: 1 !important;
+  filter: saturate(1.16) brightness(1.04) !important;
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,.22) inset,
+    0 0 0 2px color-mix(in srgb, currentColor 68%, transparent),
+    0 12px 25px rgba(0,0,0,.34),
+    0 0 22px color-mix(in srgb, currentColor 42%, transparent) !important;
+}
+.kahoot-option.correct {
+  outline: 0 !important;
+  box-shadow:
+    0 0 0 2px rgba(88,204,2,.42) inset,
+    0 0 0 2px rgba(88,204,2,.58),
+    0 0 24px rgba(88,204,2,.44),
+    0 13px 26px rgba(0,0,0,.35) !important;
+}
+.kahoot-option.wrong {
+  outline: 0 !important;
+  box-shadow:
+    0 0 0 2px rgba(239,68,68,.44) inset,
+    0 0 0 2px rgba(239,68,68,.58),
+    0 0 24px rgba(239,68,68,.44),
+    0 13px 26px rgba(0,0,0,.35) !important;
+  animation: quizWrongNudge 180ms ease;
+}
+.quiz-match-shell {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+.quiz-match-shell .quiz-match-board {
+  grid-template-columns: minmax(118px, .82fr) minmax(0, 1.18fr);
+  gap: 10px;
+}
+.match-source {
+  display: grid;
+  gap: 8px;
+  min-height: 74px;
+  border-radius: var(--radius);
+  padding: 8px;
+  border: 1px dashed rgba(19,104,206,.34);
+  background: rgba(19,104,206,.08);
+}
+.match-card,
+.match-drop {
+  border-radius: var(--radius) !important;
+}
+.match-card {
+  min-height: 52px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.match-card:active,
+.match-card.selected {
+  transform: scale(.98);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.22) inset, 0 0 22px rgba(19,104,206,.48), 0 10px 18px rgba(0,0,0,.28);
+}
+.match-card.dragging {
+  opacity: .92 !important;
+  transform: scale(.94) rotate(-1deg) !important;
+  filter: brightness(1.12) saturate(1.14);
+}
+.match-drop {
+  min-height: 92px;
+  display: grid;
+  grid-template-rows: auto minmax(42px, 1fr);
+  gap: 7px;
+  background: linear-gradient(135deg, rgba(226,27,60,.90), rgba(151,13,34,.90)) !important;
+}
+.match-drop-label {
+  font-size: .88rem;
+  line-height: 1.12;
+}
+.match-slot {
+  min-height: 44px;
+  display: grid;
+  align-items: center;
+  border-radius: var(--radius);
+  padding: 5px;
+  border: 1px dashed rgba(255,255,255,.34);
+  background: rgba(0,0,0,.16);
+}
+.match-slot .match-card {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px;
+  box-shadow: 0 7px 14px rgba(0,0,0,.24), 0 0 0 1px rgba(255,255,255,.13) inset;
+}
+.match-slot small {
+  color: rgba(255,255,255,.75);
+  font-size: .7rem;
+  font-weight: 800;
+  text-align: center;
+}
+.match-drop.over {
+  outline: 0 !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.24), 0 0 28px rgba(226,27,60,.46), 0 10px 18px rgba(0,0,0,.28);
+  transform: translateY(-1px);
+}
+.match-drop.matched {
+  background: linear-gradient(135deg, rgba(38,137,12,.94), rgba(21,96,28,.92)) !important;
+  box-shadow: 0 0 0 2px rgba(88,204,2,.28) inset, 0 0 22px rgba(88,204,2,.36), 0 10px 18px rgba(0,0,0,.28);
+}
+.match-drop.wrong {
+  background: linear-gradient(135deg, rgba(226,27,60,.96), rgba(105,10,26,.96)) !important;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 22px rgba(226,27,60,.42), 0 10px 18px rgba(0,0,0,.28);
+  animation: quizWrongNudge 180ms ease;
+}
+.match-join-pop { animation: matchJoinPop 220ms cubic-bezier(.16,1,.3,1); }
+.quiz-match-actions {
+  display: grid;
+  grid-template-columns: .8fr 1.2fr;
+  gap: 8px;
+}
+.quiz-match-validate,
+.quiz-match-reset {
+  min-height: 42px;
+}
+.quiz-match-feedback {
+  margin: 0;
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  font-weight: 900;
+  font-size: .86rem;
+}
+.quiz-match-feedback.ok {
+  color: #d9ffd1;
+  background: rgba(88,204,2,.12);
+  box-shadow: 0 0 0 1px rgba(88,204,2,.24) inset;
+}
+.quiz-match-feedback.check {
+  color: #ffe2e7;
+  background: rgba(226,27,60,.12);
+  box-shadow: 0 0 0 1px rgba(226,27,60,.24) inset;
+}
+@keyframes quizWrongNudge {
+  0%, 100% { transform: translateX(0); }
+  35% { transform: translateX(-3px); }
+  70% { transform: translateX(3px); }
+}
+@keyframes matchJoinPop {
+  0% { transform: scale(.98); }
+  65% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+@media (max-width: 520px) {
+  .quiz-fullscreen-layer { padding-left: 8px; padding-right: 8px; }
+  .quiz-fullscreen-top { padding: 8px; }
+  .quiz-stage-fullscreen { padding: 9px !important; }
+  .quiz-match-shell .quiz-match-board { grid-template-columns: 1fr; }
+  .quiz-match-actions { grid-template-columns: 1fr; }
+  .quiz-card { grid-template-columns: 42px minmax(0, 1fr) auto !important; }
+  .quiz-start-pill { font-size: .68rem; padding: 6px; }
+}

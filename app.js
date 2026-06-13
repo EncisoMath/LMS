@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.19';
+  const APP_VERSION = '0.24.20';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -90,6 +90,7 @@
     quizPeriod: Number(localStorage.getItem('encisomath:quizPeriod') || 1),
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     quizQuestionIndex: 0,
+    quizFullscreenActive: false,
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
@@ -1236,9 +1237,7 @@
       <div class="quiz-library" id="quizLibrary">
         ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
-      <div id="quizPlayer" class="quiz-player">
-        ${activeQuiz ? quizPlayerHTML(activeQuiz) : ''}
-      </div>
+      ${activeQuiz ? `<div class="quiz-launch-note">Toca un quiz para iniciarlo en pantalla completa.</div>` : ''}
     `;
     bindQuizTabEvents();
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -1283,31 +1282,33 @@
           <strong>${escapeHTML(quiz.title || 'Quiz sin título')}</strong>
           <small>${total} preguntas · ${escapeHTML(quiz.mode || 'Demo')}</small>
         </span>
+        <span class="quiz-start-pill">Iniciar</span>
       </button>
     `;
   }
 
-  function quizPlayerHTML(quiz) {
+  function quizPlayerHTML(quiz, options = {}) {
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     if (!questions.length) return `<div class="empty">Este quiz todavía no tiene preguntas.</div>`;
     const index = Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1));
     const question = questions[index];
+    const fullscreen = Boolean(options.fullscreen);
+    const isLast = index >= questions.length - 1;
     return `
-      <section class="quiz-stage" data-quiz-stage="${escapeAttr(quiz.id)}">
+      <section class="quiz-stage ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}">
         <div class="quiz-stage-head">
           <div>
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <h3>${escapeHTML(question.prompt || '')}</h3>
           </div>
-          <span class="quiz-timer-pill">Demo</span>
+          <span class="quiz-timer-pill">${fullscreen ? 'Pantalla completa' : 'Demo'}</span>
         </div>
         ${question.image ? quizImageHTML(question) : ''}
         ${question.text ? `<p class="quiz-support-text">${escapeHTML(question.text)}</p>` : ''}
         ${quizQuestionBodyHTML(question)}
-        <div class="quiz-nav-row">
-          <button class="mini-btn" data-quiz-prev ${index === 0 ? 'disabled' : ''}>← Anterior</button>
+        <div class="quiz-nav-row ${fullscreen ? 'quiz-nav-row-fullscreen' : ''}">
           <span>${index + 1}/${questions.length}</span>
-          <button class="mini-btn" data-quiz-next ${index >= questions.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+          <button class="mini-btn quiz-next-main" data-quiz-next ${isLast ? 'disabled' : ''}>${isLast ? 'Quiz terminado' : 'Siguiente →'}</button>
         </div>
       </section>
     `;
@@ -1387,15 +1388,29 @@
   function quizMatchHTML(question) {
     const pairs = Array.isArray(question.pairs) ? question.pairs : [];
     return `
-      <div class="quiz-match-board" data-quiz-match-board>
-        <div class="quiz-match-column">
-          <strong>Arrastra</strong>
-          ${pairs.map((pair) => `<button class="match-card match-blue" draggable="true" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`).join('')}
+      <div class="quiz-match-shell" data-quiz-match-board>
+        <div class="quiz-match-board">
+          <div class="quiz-match-column match-source-column">
+            <strong>Opciones</strong>
+            <div class="match-source" data-match-source>
+              ${pairs.map((pair) => `<button class="match-card match-blue" type="button" draggable="true" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`).join('')}
+            </div>
+          </div>
+          <div class="quiz-match-column">
+            <strong>Une aquí</strong>
+            ${pairs.map((pair) => `
+              <div class="match-drop match-red" data-match-right="${escapeAttr(pair.id)}" data-match-empty="true">
+                <span class="match-drop-label">${escapeHTML(pair.right)}</span>
+                <div class="match-slot" data-match-slot><small>Suelta o toca una opción</small></div>
+              </div>
+            `).join('')}
+          </div>
         </div>
-        <div class="quiz-match-column">
-          <strong>Une aquí</strong>
-          ${pairs.map((pair) => `<div class="match-drop match-red" data-match-right="${escapeAttr(pair.id)}"><span>${escapeHTML(pair.right)}</span><small>Suelta aquí</small></div>`).join('')}
+        <div class="quiz-match-actions">
+          <button class="mini-btn quiz-match-reset" type="button" data-match-reset>Reiniciar</button>
+          <button class="primary-btn quiz-match-validate" type="button" data-match-validate>Validar uniones</button>
         </div>
+        <p class="quiz-match-feedback" data-match-feedback hidden></p>
       </div>
     `;
   }
@@ -1405,7 +1420,7 @@
       button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
     });
     document.querySelectorAll('[data-quiz-id]').forEach((button) => {
-      button.addEventListener('click', () => setActiveQuiz(button.dataset.quizId));
+      button.addEventListener('click', () => startQuiz(button.dataset.quizId));
     });
     bindQuizPlayerEvents();
   }
@@ -1418,6 +1433,7 @@
       button.addEventListener('click', () => moveQuizQuestion(1));
     });
     document.querySelectorAll('[data-quiz-answer]').forEach((button) => {
+      button.addEventListener('pointerdown', () => pressQuizAnswer(button), { passive: true });
       button.addEventListener('click', () => markQuizAnswer(button));
     });
     document.querySelectorAll('[data-quiz-image]').forEach((button) => {
@@ -1455,6 +1471,10 @@
     if (!quiz || !Array.isArray(quiz.questions)) return;
     const max = quiz.questions.length - 1;
     state.quizQuestionIndex = Math.max(0, Math.min(max, state.quizQuestionIndex + Number(delta)));
+    if (state.quizFullscreenActive) {
+      renderQuizFullscreen(quiz);
+      return;
+    }
     const player = document.getElementById('quizPlayer');
     if (!player) return;
     player.innerHTML = quizPlayerHTML(quiz);
@@ -1462,39 +1482,179 @@
     pulseElement(player, 'class-grid-update');
   }
 
+  function pressQuizAnswer(button) {
+    if (!button) return;
+    button.classList.remove('is-pressing');
+    void button.offsetWidth;
+    button.classList.add('is-pressing');
+    window.setTimeout(() => button.classList.remove('is-pressing'), 180);
+  }
+
   function markQuizAnswer(button) {
     const stage = button.closest('.quiz-stage');
     if (!stage) return;
-    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => item.classList.remove('selected', 'correct', 'wrong'));
+    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => item.classList.remove('selected', 'correct', 'wrong', 'is-pressing'));
     const correct = button.dataset.correct === 'true';
     button.classList.add('selected', correct ? 'correct' : 'wrong');
-    pulseElement(button, correct ? 'flash-present' : 'flash-absent');
+  }
+
+  function startQuiz(quizId) {
+    state.quizActiveId = quizId;
+    state.quizQuestionIndex = 0;
+    state.quizFullscreenActive = true;
+    localStorage.setItem('encisomath:quizActiveId', quizId);
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    lockQuizHistory();
+    renderQuizFullscreen(quiz);
+  }
+
+  function renderQuizFullscreen(quiz = getActiveQuiz()) {
+    if (!quiz) return;
+    let layer = document.getElementById('quizFullscreenLayer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'quizFullscreenLayer';
+      layer.className = 'quiz-fullscreen-layer';
+      document.body.appendChild(layer);
+    }
+    document.body.classList.add('quiz-fullscreen-active');
+    layer.innerHTML = `
+      <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
+      <div class="quiz-fullscreen-top">
+        <div>
+          <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
+          <small>Modo quiz · sin salida durante la ejecución</small>
+        </div>
+        <span>${state.quizQuestionIndex + 1}/${Array.isArray(quiz.questions) ? quiz.questions.length : 0}</span>
+      </div>
+      <div class="quiz-fullscreen-content">
+        ${quizPlayerHTML(quiz, { fullscreen: true })}
+      </div>
+    `;
+    bindQuizPlayerEvents();
+  }
+
+  function lockQuizHistory() {
+    if (state.quizHistoryLocked) return;
+    state.quizHistoryLocked = true;
+    try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
+    window.addEventListener('popstate', keepQuizFullscreenLocked);
+  }
+
+  function keepQuizFullscreenLocked() {
+    if (!state.quizFullscreenActive) return;
+    try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
+    const quiz = getActiveQuiz();
+    if (quiz) renderQuizFullscreen(quiz);
   }
 
   function bindQuizMatchEvents() {
-    let draggedId = '';
-    document.querySelectorAll('[data-match-left]').forEach((card) => {
-      card.addEventListener('dragstart', (event) => {
-        draggedId = card.dataset.matchLeft;
-        event.dataTransfer?.setData('text/plain', draggedId);
-        card.classList.add('dragging');
+    document.querySelectorAll('[data-quiz-match-board]').forEach((board) => {
+      const source = board.querySelector('[data-match-source]');
+      let selectedCard = null;
+      let draggedId = '';
+
+      const clearFeedback = () => {
+        board.querySelectorAll('.match-drop').forEach((drop) => drop.classList.remove('matched', 'wrong'));
+        const feedback = board.querySelector('[data-match-feedback]');
+        if (feedback) { feedback.hidden = true; feedback.textContent = ''; feedback.className = 'quiz-match-feedback'; }
+      };
+
+      const returnCardToSource = (card) => {
+        if (!card || !source) return;
+        card.classList.remove('selected', 'dragging');
+        source.appendChild(card);
+      };
+
+      const placeCard = (card, drop) => {
+        if (!card || !drop) return;
+        clearFeedback();
+        const slot = drop.querySelector('[data-match-slot]');
+        if (!slot) return;
+        const previous = slot.querySelector('[data-match-left]');
+        if (previous && previous !== card) returnCardToSource(previous);
+        const oldSlot = card.closest('[data-match-slot]');
+        if (oldSlot && oldSlot !== slot && !oldSlot.querySelector('[data-match-left]')) {
+          oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
+        }
+        slot.innerHTML = '';
+        slot.appendChild(card);
+        card.classList.remove('selected', 'dragging');
+        drop.dataset.placedId = card.dataset.matchLeft || '';
+        drop.dataset.matchEmpty = 'false';
+        board.querySelectorAll('.match-drop').forEach((item) => {
+          if (item !== drop && item.dataset.placedId === card.dataset.matchLeft) {
+            delete item.dataset.placedId;
+            item.dataset.matchEmpty = 'true';
+            const otherSlot = item.querySelector('[data-match-slot]');
+            if (otherSlot && !otherSlot.querySelector('[data-match-left]')) otherSlot.innerHTML = '<small>Suelta o toca una opción</small>';
+          }
+        });
+        pulseElement(drop, 'match-join-pop');
+      };
+
+      board.querySelectorAll('[data-match-left]').forEach((card) => {
+        card.addEventListener('dragstart', (event) => {
+          draggedId = card.dataset.matchLeft || '';
+          selectedCard = card;
+          event.dataTransfer?.setData('text/plain', draggedId);
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        card.addEventListener('click', () => {
+          board.querySelectorAll('[data-match-left]').forEach((item) => item.classList.remove('selected'));
+          selectedCard = card;
+          card.classList.add('selected');
+        });
       });
-      card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    });
-    document.querySelectorAll('[data-match-right]').forEach((drop) => {
-      drop.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        drop.classList.add('over');
+
+      board.querySelectorAll('[data-match-right]').forEach((drop) => {
+        drop.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          drop.classList.add('over');
+        });
+        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+        drop.addEventListener('drop', (event) => {
+          event.preventDefault();
+          const id = event.dataTransfer?.getData('text/plain') || draggedId;
+          const card = board.querySelector(`[data-match-left="${escapeSelector(id)}"]`);
+          drop.classList.remove('over');
+          placeCard(card, drop);
+        });
+        drop.addEventListener('click', () => {
+          if (selectedCard) placeCard(selectedCard, drop);
+        });
       });
-      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-      drop.addEventListener('drop', (event) => {
-        event.preventDefault();
-        const id = event.dataTransfer?.getData('text/plain') || draggedId;
-        drop.classList.remove('over', 'matched', 'wrong');
-        drop.classList.add(id === drop.dataset.matchRight ? 'matched' : 'wrong');
-        const label = document.querySelector(`[data-match-left="${escapeSelector(id)}"]`)?.textContent || 'Respuesta';
-        const small = drop.querySelector('small');
-        if (small) small.textContent = id === drop.dataset.matchRight ? `✓ ${label}` : `✕ ${label}`;
+
+      board.querySelector('[data-match-reset]')?.addEventListener('click', () => {
+        board.querySelectorAll('[data-match-left]').forEach((card) => returnCardToSource(card));
+        board.querySelectorAll('.match-drop').forEach((drop) => {
+          delete drop.dataset.placedId;
+          drop.dataset.matchEmpty = 'true';
+          drop.classList.remove('over', 'matched', 'wrong');
+          const slot = drop.querySelector('[data-match-slot]');
+          if (slot) slot.innerHTML = '<small>Suelta o toca una opción</small>';
+        });
+        clearFeedback();
+      });
+
+      board.querySelector('[data-match-validate]')?.addEventListener('click', () => {
+        let total = 0;
+        let correct = 0;
+        board.querySelectorAll('.match-drop').forEach((drop) => {
+          total += 1;
+          const ok = drop.dataset.placedId && drop.dataset.placedId === drop.dataset.matchRight;
+          drop.classList.toggle('matched', Boolean(ok));
+          drop.classList.toggle('wrong', Boolean(drop.dataset.placedId) && !ok);
+          if (ok) correct += 1;
+        });
+        const feedback = board.querySelector('[data-match-feedback]');
+        if (feedback) {
+          feedback.hidden = false;
+          feedback.textContent = correct === total ? 'Perfecto: todas las uniones son correctas.' : `${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
+          feedback.className = `quiz-match-feedback ${correct === total ? 'ok' : 'check'}`;
+        }
       });
     });
   }
@@ -2149,7 +2309,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.19', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.20', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

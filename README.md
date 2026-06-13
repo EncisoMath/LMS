@@ -303,3 +303,10 @@ Ajustes visuales adicionales en Rockstars:
 - Las preguntas admiten texto principal, imagen ampliable al tocar y texto de apoyo debajo de la imagen.
 - Se añadió el recurso `assets/quiz-demo-statistics.svg` como imagen de demostración.
 - Se actualizó cache busting y versiones a `0.24.19`.
+
+## v0.24.20
+
+- Mejorado el efecto al pulsar respuestas de opción múltiple y verdadero/falso: ya no aparece glow blanco fuerte ni se opaca la opción; se mantiene el color Kahoot y se marca correcto/incorrecto con borde y glow controlado.
+- Rehecho el tipo de pregunta `match` / arrastrar para unir: las opciones azules se mueven realmente hacia los espacios rojos, desaparecen de la columna de opciones al soltarlas, permiten reemplazo, reinicio y validación con botón. También se agregó selección por toque como apoyo en móviles.
+- Los quizzes ahora se abren en una capa de pantalla completa dentro de la app, sin botón de salida ni regreso visible; se bloquea el back del navegador mientras el quiz está activo.
+- Actualizado cache busting a `0.24.20`.
