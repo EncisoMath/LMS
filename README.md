@@ -545,11 +545,25 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Versión/cache busting actualizados a `0.24.47`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
-## v0.24.48
+## v0.24.49
 
 - Versión temporal para pruebas: se desactivó la protección de Quizzes añadida en v0.24.44.
 - Ya no se muestran advertencias por acciones sospechosas, no se anula el quiz por cambio de pestaña/app, pérdida de foco, back, copiar/pegar, menú contextual o atajos.
 - Se desactivó la marca de agua de seguridad y el intento de pantalla completa nativa.
 - Se mantiene el fullscreen interno del quiz, las transiciones, resultados, Quizzes, Rockstars y demás mejoras de v0.24.47.
 - Se actualizó el mensaje del modal de inicio a modo seguro temporalmente desactivado para pruebas.
-- Versión/cache busting actualizados a `0.24.48`.
+- Versión/cache busting actualizados a `0.24.49`.
+
+## v0.24.49
+
+Correcciones visuales puntuales en Quizzes sobre v0.24.48:
+
+- Se alargaron verticalmente los botones de Verdadero/Falso.
+- Se retiraron las ayudas internas tipo “Marca verdadero o falso”, “arrastra”, “mueve el slider” y textos de apoyo dentro de recuadros oscuros.
+- En ABCD se quitó el texto/etiqueta “Tocar para ampliar” sobre la imagen, manteniendo la imagen ampliable.
+- Se eliminaron visualmente los badges circulares de check/X en todas las preguntas.
+- La pregunta abierta recibió una interfaz más trabajada, plana y liviana, sin degradados, blur ni glow.
+- En drag and drop y completar texto, los resultados validados vuelven a quedar totalmente verdes o rojos, con texto blanco y sin mezcla con el color original.
+- En completar texto, los espacios vacíos usan relleno gris claro con borde punteado fino y texto “Arrastra aquí”. Se eliminó el reborde oscuro cuando se coloca una opción.
+- Se ocultaron los mensajes locales tipo “1/3 correctas” o “2/2 espacios correctos” en drag and drop/completar texto, dejando solo la banda inferior general.
+- Se mantuvo la protección de Quizzes desactivada temporalmente como en v0.24.48.

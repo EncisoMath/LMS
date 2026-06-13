@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.48';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.48: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.49';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.49: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1350,7 +1350,6 @@
           <h3 class="${promptClass}">${escapeHTML(question.prompt || '')}</h3>
         </div>
         ${question.image ? quizImageHTML(question) : ''}
-        ${question.text ? `<p class="quiz-support-text">${escapeHTML(question.text)}</p>` : ''}
         ${quizQuestionBodyHTML(question)}
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
         ${!fullscreen ? `
@@ -1386,7 +1385,6 @@
     return `
       <button class="quiz-image-card" type="button" data-quiz-image="${escapeAttr(question.image)}" data-quiz-image-alt="${escapeAttr(question.imageAlt || question.prompt || 'Imagen del quiz')}" aria-label="Ampliar imagen de la pregunta">
         <img src="${escapeAttr(question.image)}" alt="${escapeAttr(question.imageAlt || '')}" loading="lazy" />
-        <span>🔎 Tocar para ampliar</span>
       </button>
     `;
   }
@@ -1407,7 +1405,6 @@
       <div class="kahoot-grid kahoot-grid-2x2" role="list">
         ${options.slice(0, 4).map((option, index) => `
           <button class="kahoot-option kahoot-${colors[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
-            <span class="kahoot-result-badge" aria-hidden="true"></span>
             <span class="kahoot-answer-text">${escapeHTML(option.text || '')}</span>
           </button>
         `).join('')}
@@ -1425,7 +1422,6 @@
       <div class="kahoot-grid kahoot-grid-two" role="list">
         ${options.slice(0, 2).map((option, index) => `
           <button class="kahoot-option kahoot-${palette[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
-            <span class="kahoot-result-badge" aria-hidden="true"></span>
             <span class="kahoot-answer-text">${escapeHTML(option.text || '')}</span>
           </button>
         `).join('')}
@@ -1435,10 +1431,17 @@
 
   function quizOpenHTML(question) {
     return `
-      <form class="quiz-open-form" data-quiz-open-form>
-        <textarea class="input quiz-open-input" placeholder="Escribe tu respuesta..." rows="4"></textarea>
+      <form class="quiz-open-form quiz-open-card" data-quiz-open-form>
+        <div class="quiz-open-title-row">
+          <span class="quiz-open-icon" aria-hidden="true">✍️</span>
+          <div>
+            <strong>Escribe tu respuesta</strong>
+            <small>Responde con tus palabras.</small>
+          </div>
+        </div>
+        <textarea class="input quiz-open-input" placeholder="Escribe aquí..." rows="5"></textarea>
         <button class="primary-btn quiz-submit-btn" type="submit">Enviar respuesta</button>
-        <p class="quiz-open-feedback" data-quiz-open-feedback hidden>Respuesta enviada en modo demo.</p>
+        <p class="quiz-open-feedback" data-quiz-open-feedback hidden>Respuesta enviada.</p>
       </form>
     `;
   }
@@ -1490,7 +1493,7 @@
     };
     const fillText = blanks.map((blank, index) => {
       const before = textParts[index] || '';
-      return `${escapeHTML(before)}<span class="fill-drop fill-empty" data-fill-blank="${escapeAttr(blank.id || `blank${index + 1}`)}" data-fill-answer="${escapeAttr(blank.answerId || blank.correctOptionId || '')}" data-fill-empty="true"><span class="fill-slot" data-fill-slot><small>___________</small></span></span>`;
+      return `${escapeHTML(before)}<span class="fill-drop fill-empty" data-fill-blank="${escapeAttr(blank.id || `blank${index + 1}`)}" data-fill-answer="${escapeAttr(blank.answerId || blank.correctOptionId || '')}" data-fill-empty="true"><span class="fill-slot" data-fill-slot><small>Arrastra aquí</small></span></span>`;
     }).join('') + escapeHTML(textParts[blanks.length] || '');
     return `
       <div class="quiz-fill-shell" data-quiz-fill-board>
@@ -2639,11 +2642,9 @@
           recordQuizAnswer(currentQuestion, allCorrect, { correctPairs: correct, totalPairs: total });
           const feedback = board.querySelector('[data-match-feedback]');
           if (feedback) {
-            feedback.hidden = false;
-            feedback.innerHTML = allCorrect
-              ? '✅ Perfecto: todas las uniones son correctas.'
-              : `❌ ${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
-            feedback.className = `quiz-match-feedback ${allCorrect ? 'ok' : 'check'}`;
+            feedback.hidden = true;
+            feedback.innerHTML = '';
+            feedback.className = 'quiz-match-feedback';
           }
           const stage = board.closest('.quiz-stage');
           const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
@@ -2685,7 +2686,7 @@
           oldDrop.dataset.fillEmpty = 'true';
           resetDropColor(oldDrop);
           const slot = oldDrop.querySelector('[data-fill-slot]');
-          if (slot) slot.innerHTML = '<small>___________</small>';
+          if (slot) slot.innerHTML = '<small>Arrastra aquí</small>';
         }
       };
       const clearFeedback = () => {
@@ -2721,7 +2722,7 @@
           oldDrop.dataset.fillEmpty = 'true';
           resetDropColor(oldDrop);
           const oldSlot = oldDrop.querySelector('[data-fill-slot]');
-          if (oldSlot && !oldSlot.querySelector('[data-fill-option]')) oldSlot.innerHTML = '<small>___________</small>';
+          if (oldSlot && !oldSlot.querySelector('[data-fill-option]')) oldSlot.innerHTML = '<small>Arrastra aquí</small>';
         }
         card.classList.remove('selected', 'dragging');
         drop.dataset.placedId = card.dataset.fillOption || '';
@@ -2774,7 +2775,7 @@
           drop.classList.remove('over');
           resetDropColor(drop);
           const slot = drop.querySelector('[data-fill-slot]');
-          if (slot) slot.innerHTML = '<small>___________</small>';
+          if (slot) slot.innerHTML = '<small>Arrastra aquí</small>';
         });
         clearFeedback();
       });
@@ -2812,11 +2813,9 @@
           recordQuizAnswer(currentQuestion, allCorrect, { correctBlanks: correct, totalBlanks: total });
           const feedback = board.querySelector('[data-fill-feedback]');
           if (feedback) {
-            feedback.hidden = false;
-            feedback.innerHTML = allCorrect
-              ? '✅ Perfecto: completaste todos los espacios.'
-              : `❌ ${correct}/${total} espacios correctos. Revisa los marcados.`;
-            feedback.className = `quiz-match-feedback quiz-fill-feedback ${allCorrect ? 'ok' : 'check'}`;
+            feedback.hidden = true;
+            feedback.innerHTML = '';
+            feedback.className = 'quiz-match-feedback quiz-fill-feedback';
           }
           const stage = board.closest('.quiz-stage');
           const stageFeedback = stage?.querySelector('[data-quiz-feedback]');

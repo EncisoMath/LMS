@@ -9590,7 +9590,7 @@ body.quiz-fullscreen-active {
   color: #fff !important;
 }
 
-/* v0.24.48 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
+/* v0.24.47 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched,
@@ -9681,4 +9681,226 @@ body.quiz-fullscreen-active,
 }
 .quiz-security-watermark {
   display: none !important;
+}
+
+/* v0.24.49 - Limpieza fina de Quizzes: ayudas fuera, open mejorado, badges fuera y estados planos */
+.quiz-support-text,
+.quiz-image-card span,
+.kahoot-result-badge,
+.quiz-match-shell .match-drop::after,
+.quiz-fill-shell .fill-drop::after,
+.match-drop.matched::after,
+.match-drop.wrong::after,
+.fill-drop.matched::after,
+.fill-drop.wrong::after {
+  display: none !important;
+  content: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-image-card {
+  cursor: zoom-in !important;
+}
+
+/* True/False más alto y más protagonista, sin texto de ayuda. */
+.kahoot-grid-two {
+  margin-top: 34px !important;
+  gap: 10px !important;
+}
+.kahoot-grid-two .kahoot-option {
+  min-height: clamp(168px, 31vh, 230px) !important;
+  padding: 18px 12px !important;
+  display: grid !important;
+  place-items: center !important;
+  grid-template-columns: 1fr !important;
+  font-size: clamp(1.25rem, 6vw, 1.78rem) !important;
+}
+@media (max-width: 520px) {
+  .kahoot-grid-two .kahoot-option {
+    min-height: clamp(154px, 28vh, 210px) !important;
+  }
+}
+
+/* Pregunta abierta: más cuerpo visual, pero plana y liviana. */
+.quiz-open-card {
+  display: grid !important;
+  gap: 12px !important;
+  margin-top: 14px !important;
+  padding: 14px !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  border-radius: var(--radius) !important;
+  background: #0b1020 !important;
+}
+.quiz-open-title-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: var(--radius);
+  background: #111827;
+}
+.quiz-open-title-row .quiz-open-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius);
+  background: var(--maincolor);
+  color: #fff;
+  font-size: 1.25rem;
+}
+.quiz-open-title-row strong {
+  display: block;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+.quiz-open-title-row small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255,255,255,.62);
+  font-size: .78rem;
+  font-weight: 700;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-title-row {
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+.quiz-open-input {
+  min-height: 150px !important;
+  border-radius: var(--radius) !important;
+  line-height: 1.35 !important;
+  font-weight: 760 !important;
+}
+.quiz-open-input::placeholder { color: rgba(255,255,255,.42) !important; }
+
+/* Completar texto: espacios limpios, grises, con borde punteado fino. */
+.fill-drop {
+  min-width: min(42vw, 170px) !important;
+  min-height: 42px !important;
+  padding: 4px !important;
+  background: #293241 !important;
+  background-color: #293241 !important;
+  background-image: none !important;
+  border: 1px dashed rgba(255,255,255,.34) !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.fill-drop small {
+  color: rgba(255,255,255,.58) !important;
+  font-size: .66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: .01em !important;
+}
+.fill-drop.over {
+  border-color: rgba(255,255,255,.62) !important;
+  background: #334155 !important;
+  outline: 0 !important;
+}
+.fill-drop.fill-filled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+.fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.fill-slot .fill-option {
+  min-height: 38px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  color: #fff !important;
+  text-shadow: none !important;
+}
+
+/* Drag/drop y completar texto: validación totalmente roja o verde, sin mezcla con el color original. */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched {
+  background: #58cc02 !important;
+  background-color: #58cc02 !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong {
+  background: #e21b3c !important;
+  background-color: #e21b3c !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched *,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong *,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched *,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong * {
+  color: #fff !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched {
+  background: #58cc02 !important;
+  background-color: #58cc02 !important;
+  background-image: none !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong {
+  background: #e21b3c !important;
+  background-color: #e21b3c !important;
+  background-image: none !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot .fill-option {
+  color: #fff !important;
+}
+
+/* Sin ayudas locales de conteo debajo de drag/drop y completar texto. */
+.quiz-match-feedback,
+.quiz-fill-feedback {
+  display: none !important;
+}
+
+/* Botones internos del quiz siempre con color del tema, planos. */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
+  background: var(--maincolor) !important;
+  background-color: var(--maincolor) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: color-mix(in srgb, var(--maincolor) 70%, #ffffff 10%) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset {
+  background: color-mix(in srgb, var(--maincolor) 72%, #0b1020) !important;
 }
