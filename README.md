@@ -490,3 +490,11 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Corrección puntual en Quizzes tipo `slider`: se ajustó verticalmente la paleta superior del usuario después de la compactación del componente, evitando que quede demasiado arriba cuando se valida una respuesta incorrecta.
 - La paleta azul/roja conserva el zoom final `61%`, pero su Y interno pasa a `34px` para alinearse mejor con la barrita activa compactada.
 - Cache busting actualizado a `0.24.41`.
+
+
+## v0.24.42
+
+- Versión temporal para calibrar el slider numérico.
+- Se reactivó un panel de ajuste dentro del tipo `slider` para modificar en vivo únicamente la posición vertical Y de la paleta azul del usuario.
+- El valor se guarda en `localStorage` como `encisomath:quizSliderTune` y puede pasarse luego para fijarlo en una versión estable.
+- Cache busting actualizado a `0.24.42`.

@@ -9201,3 +9201,21 @@ body.quiz-fullscreen-active {
 .quiz-slider-shell:not(.slider-wrong):not(.slider-correct) .quiz-slider-bubble {
   transform: translateX(-50%) translateY(var(--slider-user-y, 34px)) scale(var(--slider-user-scale, .61)) !important;
 }
+
+/* v0.24.42 - Panel temporal para calibrar Y de la paleta azul del slider */
+.quiz-slider-tune-panel[data-slider-y-panel] {
+  display: grid !important;
+  pointer-events: auto !important;
+  margin-top: 8px !important;
+}
+.quiz-slider-tune-panel[data-slider-y-panel] .slider-tune-row {
+  display: block !important;
+  pointer-events: auto !important;
+}
+.quiz-slider-tune-panel[data-slider-y-panel] input {
+  pointer-events: auto !important;
+}
+.quiz-slider-tune-panel[data-slider-y-panel] + .slider-tune-continue,
+.quiz-slider-tune-panel[data-slider-y-panel] .slider-tune-continue {
+  display: none !important;
+}

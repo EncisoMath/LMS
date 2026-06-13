@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.41';
+  const APP_VERSION = '0.24.42';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1578,11 +1578,32 @@
   }
 
   function getQuizSliderTune() {
-    return { userY: 34, userZoom: 61, correctY: 13, correctZoom: 118 };
+    const defaults = { userY: 34, userZoom: 61, correctY: 13, correctZoom: 118 };
+    try {
+      const saved = JSON.parse(localStorage.getItem('encisomath:quizSliderTune') || '{}');
+      return {
+        userY: Number.isFinite(Number(saved.userY)) ? Number(saved.userY) : defaults.userY,
+        userZoom: Number.isFinite(Number(saved.userZoom)) ? Number(saved.userZoom) : defaults.userZoom,
+        correctY: Number.isFinite(Number(saved.correctY)) ? Number(saved.correctY) : defaults.correctY,
+        correctZoom: Number.isFinite(Number(saved.correctZoom)) ? Number(saved.correctZoom) : defaults.correctZoom
+      };
+    } catch (error) {
+      return defaults;
+    }
   }
 
   function quizSliderTunePanelHTML(last = false) {
-    return '';
+    const tune = getQuizSliderTune();
+    return `
+      <div class="quiz-slider-tune-panel" data-slider-y-panel>
+        <strong>Ajuste temporal slider</strong>
+        <small>Mueve la paleta azul hasta que quede arriba del bullet. Pásame el valor final.</small>
+        <label class="slider-tune-row">
+          <span>Mover paleta azul Y <b data-slider-tune-value="userY">${tune.userY}px</b></span>
+          <input type="range" min="-40" max="80" step="1" value="${tune.userY}" data-slider-tune="userY" data-unit="px" />
+        </label>
+      </div>
+    `;
   }
 
   function quizSliderHTML(question) {
@@ -3446,7 +3467,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.41', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.42', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
