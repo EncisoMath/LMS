@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.56';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.56: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.61';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.61: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -60,7 +60,7 @@
     curve: 12,
     spread: 18,
     height: 122,
-    lift: 30,
+    lift: 0,
     bounce: 22,
     bandX: 0,
     bandY: 13,
@@ -75,11 +75,12 @@
     textY: -18,
     textZoom: 83
   };
+  const QUIZ_FEEDBACK_BAND_DELAY_MS = 300;
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'curve', group: 'Banda', label: 'Curva superior', min: 0, max: 70, step: 1, unit: 'px' },
     { key: 'spread', group: 'Banda', label: 'Ancho de curva', min: 0, max: 22, step: 1, unit: 'vw' },
     { key: 'height', group: 'Banda', label: 'Alto de banda', min: 72, max: 180, step: 1, unit: 'px' },
-    { key: 'lift', group: 'Banda', label: 'Subir contenido', min: 0, max: 56, step: 1, unit: 'px' },
+    { key: 'lift', group: 'Banda', label: 'Subir contenido (desactivado)', min: 0, max: 0, step: 1, unit: 'px' },
     { key: 'bounce', group: 'Banda', label: 'Rebote entrada', min: 0, max: 28, step: 1, unit: 'px' },
     { key: 'bandX', group: 'Banda', label: 'Mover banda X', min: -80, max: 80, step: 1, unit: 'px' },
     { key: 'bandY', group: 'Banda', label: 'Mover banda Y', min: -60, max: 60, step: 1, unit: 'px' },
@@ -1360,7 +1361,7 @@
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
-        ${calibratable ? quizLayoutTunePanelHTML(question.type, questions.length, index) : ''}
+        ${calibratable ? quizLayoutTunePanelHTML(question.type, questions.length, index, Boolean(question.image)) : ''}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -1394,7 +1395,7 @@
     { key: 'textA_y', label: 'Texto A Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'textA_w', label: 'Texto A ancho', min: 70, max: 110, step: 1, unit: '%' },
     { key: 'textA_h', label: 'Texto A alto', min: 0, max: 180, step: 1, unit: 'px' },
-    { key: 'textA_font', label: 'Texto A fuente base', min: 12, max: 32, step: 1, unit: 'px' },
+    { key: 'text_font', label: 'Texto A/B fuente base', min: 12, max: 32, step: 1, unit: 'px' },
     { key: 'image_x', label: 'Imagen X', min: -80, max: 80, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'image_w', label: 'Imagen ancho', min: 70, max: 110, step: 1, unit: '%' },
@@ -1403,7 +1404,6 @@
     { key: 'textB_y', label: 'Texto B Y', min: -120, max: 120, step: 1, unit: 'px' },
     { key: 'textB_w', label: 'Texto B ancho', min: 70, max: 110, step: 1, unit: '%' },
     { key: 'textB_h', label: 'Texto B alto', min: 0, max: 180, step: 1, unit: 'px' },
-    { key: 'textB_font', label: 'Texto B fuente base', min: 10, max: 28, step: 1, unit: 'px' },
     { key: 'answers_x', label: 'Opciones X', min: -80, max: 80, step: 1, unit: 'px' },
     { key: 'answers_y', label: 'Opciones Y', min: -160, max: 160, step: 1, unit: 'px' },
     { key: 'answers_w', label: 'Opciones ancho', min: 70, max: 110, step: 1, unit: '%' },
@@ -1411,9 +1411,9 @@
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, textA_font: 20,
+    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, text_font: 20,
     image_x: 0, image_y: 0, image_w: 100, image_h: 0,
-    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0, textB_font: 17,
+    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0,
     answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
   };
 
@@ -1432,6 +1432,12 @@
       const raw = Number(tune[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_LAYOUT_TUNE_DEFAULTS[field.key];
     });
+    if (!Number.isFinite(Number(tune.text_font))) {
+      const legacyTextA = Number(tune.textA_font);
+      const legacyTextB = Number(tune.textB_font);
+      const legacyFont = Number.isFinite(legacyTextA) ? legacyTextA : legacyTextB;
+      if (Number.isFinite(legacyFont)) normalized.text_font = Math.max(12, Math.min(32, legacyFont));
+    }
     return normalized;
   }
 
@@ -1439,6 +1445,23 @@
     const normalized = normalizeQuizLayoutTune(tune);
     try { localStorage.setItem(`encisomath:quizLayoutTune:${type}`, JSON.stringify(normalized)); } catch (_) {}
     return normalized;
+  }
+
+  function quizImagePreviewKey(type = 'default') {
+    return `encisomath:quizImagePreviewVisible:${type || 'default'}`;
+  }
+
+  function getQuizImagePreviewVisible(type = 'default') {
+    try {
+      return localStorage.getItem(quizImagePreviewKey(type)) !== 'false';
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function setQuizImagePreviewVisible(type = 'default', visible = true) {
+    try { localStorage.setItem(quizImagePreviewKey(type), visible ? 'true' : 'false'); } catch (_) {}
+    return Boolean(visible);
   }
 
   function quizLayoutTuneNavHTML(totalQuestions = 0, currentIndex = 0) {
@@ -1463,7 +1486,7 @@
     `;
   }
 
-  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0) {
+  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
     if (!['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(type)) return '';
     const tune = getQuizLayoutTune(type);
     return `
@@ -1477,6 +1500,14 @@
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
+          ${hasImage ? `
+          <div class="quiz-layout-image-preview-row">
+            <label class="quiz-layout-image-preview-toggle">
+              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
+              <span>Mostrar imagen en vista previa</span>
+            </label>
+            <small>Solo oculta/muestra la imagen para revisar como se ve el item.</small>
+          </div>` : ''}
           <div class="quiz-layout-tune-scroll">
             ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
               <label class="quiz-layout-tune-row">
@@ -1525,6 +1556,15 @@
           if (event.target === panel) closePanel();
         });
       }
+      const imagePreviewToggle = panel.querySelector('[data-quiz-image-preview-toggle]');
+      if (imagePreviewToggle && imagePreviewToggle.dataset.boundImagePreviewToggle !== 'true') {
+        imagePreviewToggle.dataset.boundImagePreviewToggle = 'true';
+        imagePreviewToggle.checked = getQuizImagePreviewVisible(type);
+        imagePreviewToggle.addEventListener('change', () => {
+          setQuizImagePreviewVisible(type, imagePreviewToggle.checked);
+          applyQuizLayoutTune(type, getQuizLayoutTune(type));
+        });
+      }
       panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
         if (input.dataset.boundLayoutTune === 'true') return;
         input.dataset.boundLayoutTune = 'true';
@@ -1556,6 +1596,7 @@
   function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type)) {
     const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
     if (!stage) return;
+    stage.classList.toggle('quiz-hide-image-preview', !getQuizImagePreviewVisible(type));
     const safe = normalizeQuizLayoutTune(tune);
     const setBox = (name, prefix) => {
       const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
@@ -1565,8 +1606,11 @@
       box.style.setProperty('--quiz-tune-w', `${safe[`${prefix}_w`]}%`);
       if (Number(safe[`${prefix}_h`]) > 0) box.style.setProperty('--quiz-tune-h', `${safe[`${prefix}_h`]}px`);
       else box.style.removeProperty('--quiz-tune-h');
-      if (prefix === 'textA') box.style.setProperty('--quiz-text-a-font', `${safe.textA_font}px`);
-      if (prefix === 'textB') box.style.setProperty('--quiz-text-b-font', `${safe.textB_font}px`);
+      if (prefix === 'textA' || prefix === 'textB') {
+        box.style.setProperty('--quiz-text-font', `${safe.text_font}px`);
+        box.style.setProperty('--quiz-text-a-font', `${safe.text_font}px`);
+        box.style.setProperty('--quiz-text-b-font', `${safe.text_font}px`);
+      }
     };
     setBox('textA', 'textA');
     setBox('image', 'image');
@@ -2323,14 +2367,7 @@
     scheduleQuizTimer(() => {
       revealQuizAnswer(stage, button, selectedCorrect);
       recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
-      const feedback = stage.querySelector('[data-quiz-feedback]');
-      if (feedback) {
-        feedback.hidden = false;
-        feedback.innerHTML = quizAnswerFeedbackHTML(selectedCorrect, '', question);
-        feedback.className = `quiz-answer-feedback ${selectedCorrect ? 'is-correct' : 'is-wrong'}`;
-        stage.classList.add('quiz-feedback-visible');
-      }
-      scheduleQuizAdvance();
+      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question);
     }, 1000);
   }
 
@@ -2387,6 +2424,24 @@
     return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${emoji}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
   }
 
+  function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
+    const feedback = stage?.querySelector('[data-quiz-feedback]');
+    if (!feedback) return;
+    feedback.hidden = false;
+    feedback.innerHTML = quizAnswerFeedbackHTML(correct, neutralText, question);
+    feedback.className = neutralText
+      ? 'quiz-answer-feedback is-neutral'
+      : `quiz-answer-feedback ${correct ? 'is-correct' : 'is-wrong'}`;
+    stage?.classList.add('quiz-feedback-visible');
+  }
+
+  function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '') {
+    scheduleQuizTimer(() => {
+      showQuizFeedbackBand(stage, correct, question, neutralText);
+      scheduleQuizAdvance();
+    }, QUIZ_FEEDBACK_BAND_DELAY_MS);
+  }
+
   function recordQuizAnswer(question, correct, extra = {}) {
     const session = getQuizSession();
     const index = Number(state.quizQuestionIndex);
@@ -2434,16 +2489,9 @@
     session.locked = true;
     form.querySelectorAll('textarea, button').forEach((item) => { item.disabled = true; });
     const stage = form.closest('.quiz-stage');
-    const feedback = stage?.querySelector('[data-quiz-feedback]');
-    if (feedback) {
-      feedback.hidden = false;
-      feedback.innerHTML = quizAnswerFeedbackHTML(null, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', question);
-      feedback.className = 'quiz-answer-feedback is-neutral';
-      stage?.classList.add('quiz-feedback-visible');
-    }
     recordQuizAnswer(question, null, { text: value });
     pulseElement(form, 'text-pop');
-    scheduleQuizAdvance();
+    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.');
   }
 
   function startQuiz(quizId) {
@@ -2879,15 +2927,8 @@
             feedback.className = 'quiz-match-feedback';
           }
           const stage = board.closest('.quiz-stage');
-          const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
-          if (stageFeedback) {
-            stageFeedback.hidden = false;
-            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect, '', currentQuestion);
-            stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
-            stage?.classList.add('quiz-feedback-visible');
-          }
-          scheduleQuizAdvance();
-        }, (333 * total) + 420);
+          showQuizFeedbackBandAfterDelay(stage, allCorrect, currentQuestion);
+        }, (333 * total));
       });
     });
   }
@@ -3050,15 +3091,8 @@
             feedback.className = 'quiz-match-feedback quiz-fill-feedback';
           }
           const stage = board.closest('.quiz-stage');
-          const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
-          if (stageFeedback) {
-            stageFeedback.hidden = false;
-            stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect, '', currentQuestion);
-            stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
-            stage?.classList.add('quiz-feedback-visible');
-          }
-          scheduleQuizAdvance();
-        }, (333 * total) + 420);
+          showQuizFeedbackBandAfterDelay(stage, allCorrect, currentQuestion);
+        }, (333 * total));
       });
     });
   }
@@ -3197,16 +3231,9 @@
         }
         recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
         const stage = board.closest('.quiz-stage');
-        const feedback = stage?.querySelector('[data-quiz-feedback]');
-        if (feedback) {
-          feedback.hidden = false;
-          feedback.innerHTML = quizAnswerFeedbackHTML(ok, '', question);
-          feedback.className = `quiz-answer-feedback ${ok ? 'is-correct' : 'is-wrong'}`;
-          stage?.classList.add('quiz-feedback-visible');
-        }
         board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
         pulseElement(board, ok ? 'match-join-pop' : 'quiz-slider-wrong-pop');
-        scheduleQuizAdvance();
+        showQuizFeedbackBandAfterDelay(stage, ok, question);
       });
     });
   }
@@ -3929,7 +3956,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.56', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.61', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

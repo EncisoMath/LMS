@@ -1,3 +1,22 @@
+
+
+## v0.24.60
+
+- Se parte de `v0.24.59`.
+- En el modal de la tuerca de Quizzes se agrego una opcion para mostrar/ocultar la imagen como vista previa, sin borrar la imagen del item.
+- Texto A ahora se alinea a la izquierda y se pega a la parte inferior de su contenedor.
+- Texto B ahora se alinea a la izquierda y se pega a la parte superior de su contenedor.
+- Se mantiene el tamano base unificado de Texto A/B y la reduccion automatica segun la longitud del texto.
+- Version/cache busting actualizados a `0.24.60`.
+
+## v0.24.59
+
+- Se parte de `v0.24.58`.
+- Se corrigió la inconsistencia entre `Texto A` y `Texto B`: ahora ambos usan el mismo tamaño base por defecto (`20px`) y el mismo estilo visual.
+- En la tuerca, el control de fuente queda unificado como `Texto A/B fuente base`, evitando que Texto A y Texto B tengan tamaños distintos por defecto.
+- Se mantiene la reducción automática de fuente según longitud para ambos textos con los mismos porcentajes.
+- Versiones/cache busting actualizados a `0.24.59`.
+
 # EncisoMath PWA - AVA/LMS en GitHub Pages
 
 Versión inicial: `0.1.0`
@@ -633,3 +652,30 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se amplió el modo temporal de calibración de Quizzes a todos los tipos de pregunta: opción múltiple, verdadero/falso, pregunta abierta, arrastrar para unir, completar texto y slider numérico.
 - Ahora `Drag and drop`, `Completar texto`, `Escribir respuesta` y `Slider` también muestran bordes verdes de referencia y sliders para ajustar posición X/Y, ancho y alto de Texto A, imagen, Texto B y zona de respuesta.
 - Se mantiene la protección de Quizzes desactivada temporalmente como en las versiones v0.24.48-v0.24.52.
+
+## v0.24.58
+
+- Se parte de `v0.24.57`.
+- Se unificó el estilo visual de los contenedores **Texto A** y **Texto B** en todos los tipos de quiz: opción múltiple, verdadero/falso, pregunta abierta, drag and drop, completar texto y slider.
+- Texto A mantiene el mismo tamaño base, peso, alineación, color, line-height y letter-spacing en todos los tipos.
+- Texto B mantiene el mismo tamaño base, peso, alineación, color, line-height y letter-spacing en todos los tipos.
+- Se conserva la reducción automática de fuente según longitud del texto (`md`, `sm`, `xs`) usando los tamaños base configurables desde la tuerca.
+- Versiones/cache busting actualizados a `0.24.58`.
+
+## v0.24.57
+
+- Se parte de `v0.24.56`.
+- Se compactó verticalmente el layout de Quizzes tipo `drag and drop` para que el contenido quepa mejor en la pantalla fullscreen sin activar scroll general.
+- En `drag and drop` se redujeron tamaños de Texto A, Texto B, imagen, tarjetas, receptores, espacios internos, separaciones y botones de acción, especialmente en móvil.
+- Cuando aparece la banda inferior de correcto/incorrecto, el tablero se mantiene compacto y no debe salirse ni montarse sobre otros elementos.
+- Versiones/cache busting actualizados a `0.24.57`.
+
+## v0.24.61
+
+- Se parte de `v0.24.60`.
+- En Quizzes, se eliminó el efecto `lift`: cuando aparece la banda inferior de **Correcto/Incorrecto**, el contenido del ítem ya no se mueve hacia arriba y permanece en su posición.
+- La banda inferior de feedback ahora aparece con retraso de `0.3s` después de que las opciones/tarjetas/slider ya se marcaron en verde o rojo.
+- Se fijó `--quiz-feedback-lift: 0px` y se agregaron overrides para neutralizar desplazamientos en ABCD, Verdadero/Falso, Pregunta abierta, Drag and drop, Completar texto y Slider.
+- Se mantiene la protección de Quizzes desactivada temporalmente.
+- Versiones/cache busting actualizados a `0.24.61`.
+
