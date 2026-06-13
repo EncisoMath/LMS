@@ -1,42 +1,124 @@
-# EncisoMath PWA v0.4
+# EncisoMath PWA - AVA/LMS en GitHub Pages
 
-Base funcional de EncisoMath como PWA instalable para GitHub Pages.
+Versión inicial: `0.1.0`
+
+Este proyecto es una base funcional para migrar el AVA hecho en Glide hacia una PWA móvil instalable publicada con GitHub Pages.
+
+## Qué incluye
+
+- PWA instalable para Android y escritorio.
+- Service Worker configurado para **no cachear** y pedir siempre la versión publicada más reciente.
+- Login por ID con último usuario y opción de mantener sesión iniciada.
+- Vista docente inicial.
+- Portada tipo red social, foto de perfil y tarjetas de asignaturas.
+- Filtros por grado, área y curso.
+- Vista de asignatura con portada personalizable localmente.
+- Pestaña de estudiantes con asistencia diaria: asistió, no asistió y excusa.
+- Nuevo estudiante agregado desde la asignatura actual.
+- Pestaña de clases por periodos, vista cuadrícula/lista.
+- Clase interactiva de ejemplo: gráficos de barras con calculadora visual en Canvas.
+- Datos semilla en archivos JSON.
 
 ## Usuario demo
 
+- Docente: `0720`
+
+Los usuarios se editan en:
+
 ```text
-0720
+data/users.json
 ```
 
-## Cambios v0.4
+## Estructura
 
-- Fondo global de la app en `#04101c`.
-- Color principal por defecto `#1b96bf`.
-- Opción para cambiar color principal y elegir fondo azul oscuro o negro total desde el menú de tres puntos del perfil.
-- Encabezado docente rediseñado con inspiración tipo Twitter/X: portada animada, avatar, nombre, usuario y metadatos.
-- Portadas con animación matemática/geométrica más orgánica, sin brillo artificial de izquierda a derecha.
-- Tarjetas de asignaturas rediseñadas y sin contador de estudiantes en la cuadrícula.
-- Gestor visual retirado de las tarjetas de asignatura; ahora aparece solo dentro de la asignatura como cuadro emergente.
-- Botón de cerrar sesión en la fila superior del perfil.
-- Barra inferior fija; no se desplaza con el contenido.
-- Ajuste para que el scroll del navegador en web no mueva el contenido al aparecer.
-- Cambio de asistencia sin fade de toda la pantalla: ahora se ilumina solo la tarjeta del estudiante.
-- Cambio de pestañas sin remonte visual de toda la pantalla.
-- Tarjetas de estudiantes más compactas.
-- Botones de asistencia con texto: Asistió, No asistió y Excusa.
-- Botón para eliminar estudiante en cada tarjeta.
-- Modal de eliminación con alerta roja, fondo oscuro, líneas diagonales animadas y signo de exclamación con bounce.
-- Esquinas de ventanas, tarjetas, botones, cuadros y modales en `6px`.
+```text
+encisomath-pwa/
+├── index.html
+├── styles.css
+├── app.js
+├── sw.js
+├── manifest.webmanifest
+├── data/
+│   ├── users.json
+│   ├── assignments.json
+│   ├── students.json
+│   └── classes.json
+├── classes/
+│   └── graficos-de-barras.html
+└── assets/
+    ├── icon-192.png
+    ├── icon-512.png
+    ├── default-avatar.svg
+    ├── default-profile.svg
+    └── subject-statistics.svg
+```
 
-## Publicación en GitHub Pages
+## Cómo publicarlo en GitHub Pages
 
-1. Crear un repositorio, por ejemplo `encisomath-ava`.
-2. Subir todos los archivos de esta carpeta a la raíz del repositorio.
-3. Ir a `Settings > Pages`.
-4. Elegir `Deploy from a branch`.
-5. Rama `main`, carpeta `/root`.
-6. Abrir la URL publicada desde Chrome Android y usar `Instalar app`.
+1. Crea un repositorio nuevo en GitHub, por ejemplo `encisomath-ava`.
+2. Sube todos los archivos de esta carpeta a la raíz del repositorio.
+3. En GitHub entra a **Settings > Pages**.
+4. En **Build and deployment**, selecciona:
+   - Source: `Deploy from a branch`
+   - Branch: `main`
+   - Folder: `/root`
+5. Guarda y espera el enlace de GitHub Pages.
+6. Abre el enlace en Android con Chrome y usa **Agregar a pantalla principal** o **Instalar app**.
 
-## Nota sobre datos
+## Sobre los JSON en GitHub
 
-Los JSON en `data/` funcionan como datos base. GitHub Pages no puede escribir directamente sobre esos JSON desde el navegador de forma segura. Por ahora, asistencia, estudiantes añadidos, estudiantes eliminados, sesión, apariencia e imágenes personalizadas se guardan en `localStorage` del dispositivo.
+GitHub Pages permite leer archivos JSON, pero no permite escribirlos desde la app de forma segura. Esta versión usa:
+
+- JSON del repositorio como datos base.
+- `localStorage` del dispositivo para sesión, asistencia, estudiantes añadidos y portada personalizada.
+
+Para guardar asistencia y cambios en la nube sin riesgo, hace falta una segunda fase con una de estas opciones:
+
+- Google Sheets + Apps Script.
+- Supabase/Firebase.
+- Backend pequeño con autenticación.
+- GitHub API, pero nunca exponiendo un token privado en el navegador.
+
+## Sobre notificaciones
+
+Esta base incluye prueba de notificación local usando la API de notificaciones del navegador. Las notificaciones push reales cuando la app está cerrada requieren un servidor o servicio externo que envíe los mensajes push.
+
+## Cómo crear una nueva clase interactiva
+
+1. Crea un archivo HTML dentro de `classes/`, por ejemplo:
+
+```text
+classes/medidas-de-tendencia-central.html
+```
+
+2. Incluye HTML, CSS y JavaScript dentro de ese archivo. Puede tener gráficos, calculadoras, simuladores, preguntas, canvas, etc.
+3. Registra la clase en `data/classes.json`:
+
+```json
+{
+  "id": "central-tendency",
+  "period": 2,
+  "area": "Matemáticas",
+  "subject": "Estadística",
+  "title": "Media, mediana y moda",
+  "emoji": "🎯",
+  "type": "Clase interactiva",
+  "estimatedTime": "50 min",
+  "contentUrl": "./classes/medidas-de-tendencia-central.html"
+}
+```
+
+## Próximas fases recomendadas
+
+1. Completar vista estudiante.
+2. Añadir exportación/importación de asistencia.
+3. Crear panel de administración de JSON.
+4. Conectar persistencia real en la nube.
+5. Diseñar una plantilla estándar para clases generadas con ChatGPT.
+
+
+## Cambios v0.6
+
+- Modo negro total corregido: se eliminan halos verdosos y fondos azul oscuro residuales.
+- Banners, barras, paneles, modales y login respetan mejor el fondo negro puro cuando se selecciona esa opción.
+- Se mantienen los banners con el color principal seleccionado, pero sobre base negra.

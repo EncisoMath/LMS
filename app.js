@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.4.0';
+  const APP_VERSION = '0.6.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -238,7 +238,7 @@
             ${selectHTML('areaFilter', 'Área', areas, state.filters.area)}
             ${selectHTML('courseFilter', 'Curso', courses, state.filters.course)}
           </div>
-          <div class="grid assignments-grid">
+          <div id="assignmentsGrid" class="grid assignments-grid">
             ${filtered.map(assignmentCardHTML).join('') || `<div class="empty">No hay asignaturas con esos filtros.</div>`}
           </div>
         </section>
@@ -249,18 +249,42 @@
     mount(markup, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('profileMenuBtn').addEventListener('click', openProfileMenuModal);
-      bindFilter('gradeFilter', 'grade', renderTeacherHome);
-      bindFilter('areaFilter', 'area', renderTeacherHome);
-      bindFilter('courseFilter', 'course', renderTeacherHome);
+      document.getElementById('profileMenuBtn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        openProfileMenuModal();
+      });
+      bindFilter('gradeFilter', 'grade', renderTeacherAssignmentGrid);
+      bindFilter('areaFilter', 'area', renderTeacherAssignmentGrid);
+      bindFilter('courseFilter', 'course', renderTeacherAssignmentGrid);
 
-      document.querySelectorAll('[data-open-assignment]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const assignment = assignments.find((item) => item.id === button.dataset.openAssignment);
-          if (!assignment) return;
-          state.assignment = assignment;
-          renderSubjectDetail('students');
-        });
+      bindAssignmentCards(assignments);
+    });
+  }
+
+  function renderTeacherAssignmentGrid() {
+    const teacher = state.user;
+    const assignments = getTeacherAssignments(teacher.id);
+    const filtered = assignments.filter((item) => {
+      return (state.filters.grade === 'all' || item.grade === state.filters.grade)
+        && (state.filters.area === 'all' || item.area === state.filters.area)
+        && (state.filters.course === 'all' || item.course === state.filters.course);
+    });
+    const grid = document.getElementById('assignmentsGrid');
+    if (!grid) return;
+    grid.innerHTML = filtered.map(assignmentCardHTML).join('') || `<div class="empty">No hay asignaturas con esos filtros.</div>`;
+    grid.classList.remove('grid-local-update');
+    void grid.offsetWidth;
+    grid.classList.add('grid-local-update');
+    bindAssignmentCards(assignments);
+  }
+
+  function bindAssignmentCards(assignments = getTeacherAssignments(state.user?.id)) {
+    document.querySelectorAll('[data-open-assignment]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const assignment = assignments.find((item) => item.id === button.dataset.openAssignment);
+        if (!assignment) return;
+        state.assignment = assignment;
+        renderSubjectDetail('students');
       });
     });
   }
@@ -451,7 +475,7 @@
       list.push(student);
       localStorage.setItem(key, JSON.stringify(list));
       toast(`${name} fue añadido a ${assignment.subject} ${assignment.grade}-${assignment.course}.`);
-      renderStudentsTab({ animate: true });
+      renderStudentsTab({ animate: false });
     });
 
     document.querySelectorAll('[data-student-id][data-status]').forEach((button) => {
@@ -492,9 +516,9 @@
     openModal(`
       <div class="modal-card danger-modal">
         <div class="danger-head">
-          <div class="warning-icon" aria-hidden="true"><span class="bang-stick">!</span><span class="bang-dot"></span></div>
+          <div class="warning-icon" aria-hidden="true"><span class="bang-mark"><span class="bang-bar"></span><span class="bang-dot"></span></span></div>
           <div>
-            <h2>¡OJO! Eliminar estudiante</h2>
+            <h2><span>¡OJO!</span> Eliminar estudiante</h2>
             <p>Esta acción sacará al estudiante de este grupo en EncisoMath. Confirma solo si estás completamente seguro.</p>
           </div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
@@ -533,48 +557,89 @@
 
     closeModal();
     toast(`${student.fullName} fue retirado del listado local.`);
-    renderStudentsTab({ animate: true });
+    renderStudentsTab({ animate: false });
   }
 
   function renderClassesTab(options = {}) {
-    const assignment = state.assignment;
-    const classes = state.data.classes.filter((item) => item.subject === assignment.subject || item.area === assignment.area);
-    const periods = [1, 2, 3, 4];
-    const filtered = classes.filter((item) => Number(item.period) === Number(state.period));
     const $content = document.getElementById('tabContent');
     if (!$content) return;
 
     $content.innerHTML = `
-      <div class="period-tabs">
-        ${periods.map((period) => `<button class="period-btn ${Number(state.period) === period ? 'active' : ''}" data-period="${period}">${period}°</button>`).join('')}
+      <div class="period-tabs" id="periodTabs">
+        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.period) === period ? 'active' : ''}" data-period="${period}">${period}°</button>`).join('')}
       </div>
       <div class="view-row">
-        <strong>Periodo ${state.period}</strong>
+        <strong id="periodLabel">Periodo ${state.period}</strong>
         <div>
           <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn">▦ Cuadrícula</button>
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn">☰ Lista</button>
         </div>
       </div>
-      <div class="class-grid ${state.classViewMode}-mode">
-        ${filtered.map(classCardHTML).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`}
+      <div id="classGrid" class="class-grid ${state.classViewMode}-mode">
+        ${renderClassCardsHTML()}
       </div>
     `;
 
+    bindPeriodButtons();
+    bindClassViewButtons();
+    bindClassCards();
+    if (options.animate) pulseElement($content, 'tab-enter');
+  }
+
+  function getClassesForCurrentAssignment() {
+    const assignment = state.assignment;
+    return state.data.classes.filter((item) => item.subject === assignment.subject || item.area === assignment.area);
+  }
+
+  function renderClassCardsHTML() {
+    const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
+    return filtered.map(classCardHTML).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
+  }
+
+  function bindPeriodButtons() {
     document.querySelectorAll('[data-period]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.period = Number(button.dataset.period);
-        renderClassesTab({ animate: true });
-      });
+      button.addEventListener('click', () => setPeriod(Number(button.dataset.period)));
     });
-    document.getElementById('gridModeBtn').addEventListener('click', () => setClassViewMode('grid'));
-    document.getElementById('listModeBtn').addEventListener('click', () => setClassViewMode('list'));
+  }
+
+  function setPeriod(period) {
+    if (Number(state.period) === Number(period)) return;
+    const previous = document.querySelector(`[data-period="${state.period}"]`);
+    const next = document.querySelector(`[data-period="${period}"]`);
+    previous?.classList.remove('active');
+    next?.classList.add('active');
+    pulseElement(previous, 'period-shift');
+    pulseElement(next, 'period-shift');
+    state.period = Number(period);
+    const label = document.getElementById('periodLabel');
+    if (label) {
+      label.textContent = `Periodo ${state.period}`;
+      pulseElement(label, 'text-pop');
+    }
+    updateClassGrid(true);
+  }
+
+  function bindClassViewButtons() {
+    document.getElementById('gridModeBtn')?.addEventListener('click', () => setClassViewMode('grid'));
+    document.getElementById('listModeBtn')?.addEventListener('click', () => setClassViewMode('list'));
+  }
+
+  function bindClassCards() {
     document.querySelectorAll('[data-class-id]').forEach((button) => {
       button.addEventListener('click', () => {
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
         if (item) renderLesson(item);
       });
     });
-    if (options.animate) pulseElement($content, 'tab-enter');
+  }
+
+  function updateClassGrid(animate = false) {
+    const grid = document.getElementById('classGrid');
+    if (!grid) return;
+    grid.className = `class-grid ${state.classViewMode}-mode`;
+    grid.innerHTML = renderClassCardsHTML();
+    bindClassCards();
+    if (animate) pulseElement(grid, 'class-grid-update');
   }
 
   function renderLesson(lesson) {
@@ -763,7 +828,7 @@
   function coverBackgroundStyle(assignment) {
     const cover = getAssignmentCover(assignment);
     if (!cover) return '';
-    return `style="background-image: linear-gradient(rgba(4,16,28,.12), rgba(4,16,28,.28)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center;"`;
+    return `style="background-image: linear-gradient(rgba(4,16,28,.12), rgba(4,16,28,.28)), url('${escapeAttr(cover)}'); background-size: cover; background-position: center; animation: none;"`;
   }
 
   function saveImageOverride(event, type) {
@@ -803,9 +868,12 @@
   }
 
   function setClassViewMode(mode) {
+    if (state.classViewMode === mode) return;
     state.classViewMode = mode;
     localStorage.setItem('encisomath:classViewMode', mode);
-    renderClassesTab({ animate: true });
+    document.getElementById('gridModeBtn')?.classList.toggle('selected', mode === 'grid');
+    document.getElementById('listModeBtn')?.classList.toggle('selected', mode === 'list');
+    updateClassGrid(true);
   }
 
   function bindFilter(id, key, callback) {
@@ -855,11 +923,34 @@
   function applyPreferences() {
     const safeAccent = ACCENT_OPTIONS.some((item) => item.value === state.prefs.accent) ? state.prefs.accent : DEFAULT_PREFS.accent;
     const safeBackground = BACKGROUND_OPTIONS.some((item) => item.value === state.prefs.background) ? state.prefs.background : DEFAULT_PREFS.background;
+    const blackMode = safeBackground === '#000000';
     state.prefs.accent = safeAccent;
     state.prefs.background = safeBackground;
-    document.documentElement.style.setProperty('--maincolor', safeAccent);
-    document.documentElement.style.setProperty('--app-bg', safeBackground);
-    document.documentElement.style.setProperty('--app-bg-2', safeBackground === '#000000' ? '#050505' : '#071827');
+
+    const root = document.documentElement;
+    root.dataset.bgMode = blackMode ? 'black' : 'deep';
+    root.style.setProperty('--maincolor', safeAccent);
+    root.style.setProperty('--app-bg', safeBackground);
+    root.style.setProperty('--app-bg-2', blackMode ? '#000000' : '#071827');
+    root.style.setProperty('--body-accent-glow', blackMode ? 'transparent' : 'color-mix(in srgb, var(--maincolor) 22%, transparent)');
+    root.style.setProperty('--body-secondary-glow', blackMode ? 'transparent' : 'rgba(88, 204, 2, .09)');
+    root.style.setProperty('--screen-accent-glow', blackMode ? 'transparent' : 'color-mix(in srgb, var(--maincolor) 14%, transparent)');
+    root.style.setProperty('--screen-top-mix', blackMode ? '#000000' : '#0f2334');
+    root.style.setProperty('--bar-bg', blackMode ? 'rgba(0, 0, 0, .96)' : 'rgba(4, 16, 28, .92)');
+    root.style.setProperty('--bottom-bar-bg', blackMode ? 'rgba(0, 0, 0, .96)' : 'rgba(4, 16, 28, .88)');
+    root.style.setProperty('--profile-bg', blackMode ? 'rgba(0, 0, 0, .86)' : 'rgba(4, 16, 28, .78)');
+    root.style.setProperty('--panel', blackMode ? 'rgba(7, 7, 7, .94)' : 'rgba(9, 25, 40, .88)');
+    root.style.setProperty('--panel-2', blackMode ? 'rgba(11, 11, 11, .78)' : 'rgba(12, 31, 49, .74)');
+    root.style.setProperty('--panel-3', blackMode ? 'rgba(255, 255, 255, .05)' : 'rgba(255, 255, 255, .055)');
+    root.style.setProperty('--line', blackMode ? 'rgba(255, 255, 255, .13)' : 'rgba(160, 188, 214, .18)');
+    root.style.setProperty('--subject-panel-bg', blackMode ? 'rgba(8, 8, 8, .92)' : 'rgba(8, 26, 42, .9)');
+    root.style.setProperty('--modal-bg', blackMode ? 'rgba(6, 6, 6, .97)' : 'rgba(6, 18, 31, .96)');
+    root.style.setProperty('--banner-deep', blackMode ? '#000000' : '#06121e');
+    root.style.setProperty('--banner-base', blackMode ? '#000000' : '#04101c');
+    root.style.setProperty('--login-warm-glow', blackMode ? 'transparent' : 'rgba(255, 214, 10, .18)');
+    root.style.setProperty('--login-pink-glow', blackMode ? 'transparent' : 'rgba(255, 77, 157, .20)');
+    root.style.setProperty('--login-mid', blackMode ? '#000000' : '#050b14');
+
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) metaTheme.setAttribute('content', safeBackground);
   }
@@ -872,30 +963,36 @@
   }
 
   function openModal(markup, afterRender) {
-    closeModal(false);
+    const existing = document.getElementById('modalLayer');
+    if (existing) existing.remove();
     const wrapper = document.createElement('div');
     wrapper.id = 'modalLayer';
     wrapper.className = 'modal-layer';
     wrapper.innerHTML = markup;
     document.body.appendChild(wrapper);
-    requestAnimationFrame(() => wrapper.classList.add('show'));
+    document.body.classList.add('modal-open');
     wrapper.addEventListener('click', (event) => {
-      if (event.target === wrapper || event.target.matches('[data-close-modal]')) closeModal();
+      if (event.target === wrapper || event.target.closest('[data-close-modal]')) closeModal();
     });
     document.addEventListener('keydown', escCloseModal);
     if (typeof afterRender === 'function') afterRender();
+    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
   }
 
   function closeModal(animate = true) {
     const layer = document.getElementById('modalLayer');
     if (!layer) return;
     document.removeEventListener('keydown', escCloseModal);
-    if (!animate) {
+    const removeLayer = () => {
       layer.remove();
+      document.body.classList.remove('modal-open');
+    };
+    if (!animate) {
+      removeLayer();
       return;
     }
     layer.classList.remove('show');
-    window.setTimeout(() => layer.remove(), 180);
+    window.setTimeout(removeLayer, 180);
   }
 
   function escCloseModal(event) {
@@ -903,6 +1000,7 @@
   }
 
   function pulseElement(element, className) {
+    if (!element) return;
     element.classList.remove(className);
     void element.offsetWidth;
     element.classList.add(className);
