@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.29';
+  const APP_VERSION = '0.24.30';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -59,20 +59,20 @@
     curve: 12,
     spread: 18,
     height: 122,
-    lift: 14,
-    bounce: 18,
+    lift: 30,
+    bounce: 22,
     bandX: 0,
-    bandY: 0,
-    bandZoom: 100,
-    emojiX: 0,
-    emojiY: 0,
-    emojiZoom: 100,
-    titleX: 0,
+    bandY: 13,
+    bandZoom: 110,
+    emojiX: 25,
+    emojiY: -11,
+    emojiZoom: 132,
+    titleX: 30,
     titleY: 0,
-    titleZoom: 100,
-    textX: 0,
-    textY: 0,
-    textZoom: 100
+    titleZoom: 138,
+    textX: 30,
+    textY: -18,
+    textZoom: 83
   };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'curve', group: 'Banda', label: 'Curva superior', min: 0, max: 70, step: 1, unit: 'px' },
@@ -1583,12 +1583,7 @@
   }
 
   function readQuizFeedbackTune() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(QUIZ_FEEDBACK_TUNE_KEY) || '{}');
-      return normalizeQuizFeedbackTune(raw);
-    } catch (_) {
-      return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
-    }
+    return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
   }
 
   function normalizeQuizFeedbackTune(tune = {}) {
@@ -1601,8 +1596,7 @@
   }
 
   function saveQuizFeedbackTune(tune) {
-    const normalized = normalizeQuizFeedbackTune(tune);
-    localStorage.setItem(QUIZ_FEEDBACK_TUNE_KEY, JSON.stringify(normalized));
+    return normalizeQuizFeedbackTune(tune);
   }
 
   function updateQuizFeedbackTuneOutput(key, value) {
@@ -1821,11 +1815,7 @@
   }
 
   function scheduleQuizAdvance() {
-    const stage = document.querySelector('#quizFullscreenLayer .quiz-stage-fullscreen.quiz-feedback-visible') || document.querySelector('.quiz-stage.quiz-feedback-visible');
-    if (stage) {
-      showQuizFeedbackTunePanel(stage);
-      return;
-    }
+    document.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
     scheduleQuizTimer(() => continueQuizAfterFeedback(), 4000);
   }
 
@@ -2994,7 +2984,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.29', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.30', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

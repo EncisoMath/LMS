@@ -7703,3 +7703,75 @@ body.quiz-fullscreen-active {
   }
   .quiz-feedback-tune-actions { grid-template-columns: 1fr !important; }
 }
+
+/* v0.24.30 - valores finales banda quiz y rebote con zoom */
+:root {
+  --quiz-feedback-curve: 12px;
+  --quiz-feedback-spread: 18vw;
+  --quiz-feedback-height: 122px;
+  --quiz-feedback-lift: 30px;
+  --quiz-feedback-bounce: 22px;
+  --quiz-feedback-band-x: 0px;
+  --quiz-feedback-band-y: 13px;
+  --quiz-feedback-band-scale: 1.1;
+  --quiz-feedback-emoji-x: 25px;
+  --quiz-feedback-emoji-y: -11px;
+  --quiz-feedback-emoji-scale: 1.32;
+  --quiz-feedback-title-x: 30px;
+  --quiz-feedback-title-y: 0px;
+  --quiz-feedback-title-scale: 1.38;
+  --quiz-feedback-text-x: 30px;
+  --quiz-feedback-text-y: -18px;
+  --quiz-feedback-text-scale: .83;
+}
+.quiz-feedback-tune-panel,
+.quiz-feedback-tune-panel.is-live {
+  display: none !important;
+  pointer-events: none !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible {
+  padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 56px) !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
+  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
+  transition: transform .28s cubic-bezier(.16,1,.3,1) !important;
+}
+.quiz-stage-fullscreen .quiz-answer-feedback {
+  bottom: -52px !important;
+  animation: quizFeedbackSheetBounceZoomV30 520ms cubic-bezier(.2, 1.15, .32, 1) both !important;
+  transform-origin: bottom center !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card {
+  min-height: calc(var(--quiz-feedback-height) + 52px) !important;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom) + 52px) !important;
+  transform: translate(var(--quiz-feedback-band-x), var(--quiz-feedback-band-y)) scale(var(--quiz-feedback-band-scale)) !important;
+  transform-origin: bottom center !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card p {
+  font-weight: 400 !important;
+  opacity: .96 !important;
+}
+@keyframes quizFeedbackSheetBounceZoomV30 {
+  0% {
+    opacity: 0;
+    transform: translateY(118%) scale(.92);
+  }
+  48% {
+    opacity: 1;
+    transform: translateY(calc(-1 * var(--quiz-feedback-bounce))) scale(1.045);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(6px) scale(.99);
+  }
+  84% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
