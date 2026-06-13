@@ -7137,3 +7137,185 @@ body.quiz-fullscreen-active {
     font-size: 1.2rem !important;
   }
 }
+
+/* v0.24.25 - reveal Kahoot igual a drag/drop, badges visibles y banda inferior curva */
+.kahoot-grid {
+  gap: 10px 12px !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+}
+.kahoot-option {
+  overflow: visible !important;
+  isolation: visible !important;
+  position: relative !important;
+  z-index: 1;
+}
+.quiz-choice-revealed .kahoot-option.unused-reveal,
+.quiz-choice-revealed .kahoot-option.is-dimmed {
+  z-index: 1 !important;
+  opacity: .74 !important;
+  background: linear-gradient(135deg, #545b66, #252b34) !important;
+  color: rgba(255,255,255,.54) !important;
+  filter: grayscale(.36) saturate(.30) brightness(.86) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 8px 16px rgba(0,0,0,.24) !important;
+  scale: .985;
+  animation: quizUnusedSettleV25 333ms ease both !important;
+}
+.quiz-choice-revealed .kahoot-option.correct-reveal,
+.quiz-choice-revealed .kahoot-option.wrong-reveal {
+  opacity: 1 !important;
+  filter: none !important;
+  z-index: 44 !important;
+  transform: translateZ(0) !important;
+  will-change: scale, translate, rotate;
+}
+.quiz-choice-revealed .kahoot-option.correct-reveal {
+  background: linear-gradient(135deg, #58cc02, #26890c 62%, #145f1e) !important;
+  border-color: rgba(198,255,176,.46) !important;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.18) inset,
+    0 0 34px rgba(88,204,2,.56),
+    0 12px 24px rgba(0,0,0,.34) !important;
+  animation: kahootRevealCorrectExact 333ms cubic-bezier(.16,1,.3,1) both !important;
+}
+.quiz-choice-revealed .kahoot-option.wrong-reveal {
+  z-index: 46 !important;
+  background: linear-gradient(135deg, #ff3357, #e21b3c 62%, #7d0b20) !important;
+  border-color: rgba(255,210,216,.48) !important;
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.16) inset,
+    0 0 34px rgba(226,27,60,.60),
+    0 12px 24px rgba(0,0,0,.34) !important;
+  animation: kahootRevealWrongExact 333ms cubic-bezier(.16,1,.3,1) both !important;
+}
+.quiz-choice-revealed .kahoot-option.correct-reveal .kahoot-result-badge,
+.quiz-choice-revealed .kahoot-option.wrong-reveal .kahoot-result-badge {
+  z-index: 80 !important;
+  animation: quizBadgePopBigV25 333ms cubic-bezier(.16,1,.3,1) both !important;
+}
+.kahoot-result-badge {
+  pointer-events: none !important;
+  top: -16px !important;
+  right: -16px !important;
+  left: auto !important;
+  z-index: 80 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 999px !important;
+  border: 2px solid rgba(255,255,255,.78) !important;
+  outline: 2px solid rgba(0,0,0,.18) !important;
+}
+.quiz-choice-revealed .kahoot-option.wrong-reveal .kahoot-result-badge {
+  background: #e21b3c !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.36), 0 0 0 3px rgba(255,255,255,.18) inset, 0 0 24px rgba(226,27,60,.72) !important;
+}
+.quiz-choice-revealed .kahoot-option.correct-reveal .kahoot-result-badge {
+  background: #58cc02 !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.36), 0 0 0 3px rgba(255,255,255,.18) inset, 0 0 24px rgba(88,204,2,.72) !important;
+}
+@keyframes kahootRevealCorrectExact {
+  0% { scale: .96; translate: 0 0; rotate: 0deg; filter: brightness(1.18); }
+  48% { scale: 1.06; translate: 0 -1px; rotate: 0deg; filter: brightness(1.05); }
+  100% { scale: 1; translate: 0 0; rotate: 0deg; filter: none; }
+}
+@keyframes kahootRevealWrongExact {
+  0% { scale: .96; translate: 0 0; rotate: 0deg; filter: brightness(1.16); }
+  24% { scale: 1.04; translate: -5px 0; rotate: -1.2deg; }
+  50% { scale: 1.02; translate: 5px 0; rotate: 1.2deg; }
+  76% { scale: 1.01; translate: -2px 0; rotate: -.5deg; }
+  100% { scale: 1; translate: 0 0; rotate: 0deg; filter: none; }
+}
+@keyframes quizUnusedSettleV25 {
+  0% { opacity: 1; scale: 1; filter: none; }
+  100% { opacity: .74; scale: .985; }
+}
+@keyframes quizBadgePopBigV25 {
+  0% { opacity: 0; scale: .25; rotate: -30deg; }
+  62% { opacity: 1; scale: 1.18; rotate: 5deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+.quiz-stage-fullscreen {
+  transition: padding-bottom .28s ease !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible {
+  padding-bottom: 190px !important;
+}
+.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
+.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
+  transform: translateY(-18px);
+  transition: transform .32s cubic-bezier(.16,1,.3,1);
+}
+.quiz-stage-fullscreen .quiz-answer-feedback {
+  overflow: visible !important;
+  background: transparent !important;
+  animation: quizFeedbackSheetRiseV25 360ms cubic-bezier(.16,1,.3,1) both !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card {
+  position: relative !important;
+  isolation: isolate !important;
+  width: 100vw !important;
+  min-height: 128px !important;
+  border-radius: 0 !important;
+  margin-top: 42px !important;
+  padding: 10px 22px calc(20px + env(safe-area-inset-bottom)) !important;
+  overflow: visible !important;
+  box-shadow:
+    0 -18px 38px rgba(0,0,0,.40),
+    0 0 0 1px rgba(255,255,255,.13) inset,
+    0 -4px 24px rgba(255,255,255,.08) inset !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card::before {
+  content: '';
+  position: absolute;
+  left: -12vw;
+  right: -12vw;
+  top: -56px;
+  height: 86px;
+  z-index: -1;
+  background: inherit;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow:
+    0 -18px 38px rgba(0,0,0,.35),
+    0 -2px 0 rgba(255,255,255,.10) inset;
+}
+.quiz-stage-fullscreen .quiz-feedback-card.is-correct,
+.quiz-stage-fullscreen .quiz-feedback-card.is-correct::before {
+  background: linear-gradient(135deg, #58cc02 0%, #26890c 58%, #145f1e 100%) !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card.is-wrong,
+.quiz-stage-fullscreen .quiz-feedback-card.is-wrong::before {
+  background: linear-gradient(135deg, #ff3357 0%, #e21b3c 58%, #8d0d25 100%) !important;
+}
+.quiz-stage-fullscreen .quiz-feedback-card.is-neutral,
+.quiz-stage-fullscreen .quiz-feedback-card.is-neutral::before {
+  background: linear-gradient(135deg, #1368ce 0%, #0b4aa2 58%, #071d48 100%) !important;
+}
+@keyframes quizFeedbackSheetRiseV25 {
+  0% { opacity: 0; transform: translateY(105%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 520px) {
+  .kahoot-grid { gap: 9px 10px !important; }
+  .quiz-stage-fullscreen.quiz-feedback-visible { padding-bottom: 178px !important; }
+  .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+  .quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
+  .quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
+    transform: translateY(-14px);
+  }
+  .quiz-stage-fullscreen .quiz-feedback-card {
+    min-height: 116px !important;
+    margin-top: 38px !important;
+    padding: 8px 18px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+  .quiz-stage-fullscreen .quiz-feedback-card::before {
+    top: -48px;
+    height: 76px;
+  }
+  .kahoot-result-badge {
+    top: -14px !important;
+    right: -14px !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+}

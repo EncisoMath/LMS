@@ -356,3 +356,15 @@ Ajustes menores de Quizzes sobre `v0.24.23`.
 - El feedback inferior `¡Correcto!` / `¡Incorrecto!` ahora se muestra como una banda inferior tipo Kahoot, fija al borde inferior de la pantalla, de extremo a extremo, con curva superior y color completo verde/rojo según resultado.
 - Versión/cache busting actualizados a `0.24.24`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.25
+
+Ajustes de pulido en Quizzes:
+
+- En preguntas ABCD y Verdadero/Falso, el reveal correcto/incorrecto usa una animación equivalente a la validación del drag and drop: pop para correcta y sacudida para incorrecta.
+- Las opciones no usadas quedan en gris durante el reveal.
+- Se reforzó el z-index de las tarjetas y badges para que los círculos `✓` y `×` no se corten ni queden tapados por tarjetas vecinas.
+- La banda inferior de feedback `¡Correcto!` / `¡Incorrecto!` se rehízo con una curva superior amplia tipo Kahoot, ocupando todo el ancho inferior.
+- Se eliminó el rebote hacia arriba de la banda para evitar que aparezca fondo negro debajo durante la animación.
+- Al aparecer la banda inferior, el contenido del quiz se desplaza ligeramente hacia arriba para no quedar tapado.
+- Versión/cache busting actualizados a `0.24.25`.

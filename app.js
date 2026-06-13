@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.24';
+  const APP_VERSION = '0.24.25';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1585,6 +1585,7 @@
         feedback.hidden = false;
         feedback.innerHTML = quizAnswerFeedbackHTML(selectedCorrect);
         feedback.className = `quiz-answer-feedback ${selectedCorrect ? 'is-correct' : 'is-wrong'}`;
+        stage.classList.add('quiz-feedback-visible');
       }
       scheduleQuizAdvance();
     }, 1000);
@@ -1593,14 +1594,22 @@
   function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
-    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
+    const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
+    const revealItems = [];
+    items.forEach((item) => {
       const isCorrect = item.dataset.correct === 'true';
-      const unused = !isCorrect && !(item === selectedButton && !selectedCorrect);
-      item.classList.remove('selected', 'unused-reveal');
-      item.classList.toggle('correct-reveal', isCorrect);
-      item.classList.toggle('wrong-reveal', item === selectedButton && !selectedCorrect);
+      const isWrongSelection = item === selectedButton && !selectedCorrect;
+      const unused = !isCorrect && !isWrongSelection;
+      item.classList.remove('selected', 'correct-reveal', 'wrong-reveal', 'unused-reveal', 'kahoot-reveal-pop', 'kahoot-reveal-wrong', 'kahoot-reveal-correct');
       item.classList.toggle('is-dimmed', unused);
       item.classList.toggle('unused-reveal', unused);
+      if (isCorrect || isWrongSelection) revealItems.push({ item, isCorrect });
+    });
+    revealItems.forEach(({ item, isCorrect }, index) => {
+      scheduleQuizTimer(() => {
+        item.classList.remove('is-dimmed');
+        item.classList.add(isCorrect ? 'correct-reveal' : 'wrong-reveal', 'kahoot-reveal-pop', isCorrect ? 'kahoot-reveal-correct' : 'kahoot-reveal-wrong');
+      }, 90 * index);
     });
   }
 
@@ -2059,11 +2068,13 @@
               : `❌ ${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
             feedback.className = `quiz-match-feedback ${allCorrect ? 'ok' : 'check'}`;
           }
-          const stageFeedback = board.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
+          const stage = board.closest('.quiz-stage');
+          const stageFeedback = stage?.querySelector('[data-quiz-feedback]');
           if (stageFeedback) {
             stageFeedback.hidden = false;
             stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect);
             stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
+            stage?.classList.add('quiz-feedback-visible');
           }
           recordQuizAnswer(getCurrentQuizQuestion(), allCorrect, { correctPairs: correct, totalPairs: total });
           scheduleQuizAdvance();
@@ -2790,7 +2801,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.24', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.25', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
