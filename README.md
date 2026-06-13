@@ -137,9 +137,11 @@ classes/medidas-de-tendencia-central.html
 
 - Paleta de tema actualizada con 16 colores solicitados y nombres en español.
 - Color por defecto ajustado a Azul Enciso `#1976D2`.
-## v0.24.1
-- Redistribución de figuras geométricas en login para usar mejor el espacio superior e inferior sin quedar tapadas por la tarjeta de inicio.
-- Recuperación del efecto neón/glow en las figuras del login.
-- Pantalla de carga con fondo negro plano, sin glows radiales pesados.
-- Selector de color principal reemplazado por color picker real con validación contra colores demasiado oscuros o demasiado claros.
 
+
+## v0.24.2
+
+- Se eliminaron glows residuales que aparecían entre transiciones de pantalla.
+- El fondo global de `body`, `#app`, `.app-shell`, `.screen` y `.loading-screen` queda en negro plano durante cambios de vista.
+- Se desactivó el `filter: blur(...)` de la transición general para evitar que los elementos de la pantalla anterior se conviertan en manchas de color.
+- Se conserva el efecto neón únicamente en las figuras geométricas del login.

@@ -3009,3 +3009,75 @@ html[data-bg-mode="black"] .loading-screen::after {
   }
 }
 
+
+/* v0.24.2 - transiciones negras sin glows residuales */
+html,
+body,
+.app-shell,
+#app {
+  background: #000000 !important;
+  background-image: none !important;
+}
+
+body::before,
+body::after,
+.app-shell::before,
+.app-shell::after,
+#app::before,
+#app::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  animation: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+}
+
+.screen,
+html[data-bg-mode="black"] .screen,
+.loading-screen,
+html[data-bg-mode="black"] .loading-screen {
+  background: #000000 !important;
+  background-image: none !important;
+}
+
+.screen::before,
+.screen::after,
+html[data-bg-mode="black"] .screen::before,
+html[data-bg-mode="black"] .screen::after,
+.loading-screen::before,
+.loading-screen::after,
+html[data-bg-mode="black"] .loading-screen::before,
+html[data-bg-mode="black"] .loading-screen::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  background-image: none !important;
+  animation: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+}
+
+.login-screen,
+html[data-bg-mode="black"] .login-screen {
+  background: #000000 !important;
+  background-image: none !important;
+}
+
+#app,
+#app.is-leaving,
+#app.is-entering .screen,
+#app.is-entering .login-screen,
+#app.is-entering .loading-screen {
+  filter: none !important;
+}
+
+#app.is-leaving {
+  opacity: 0 !important;
+  transform: translateY(8px) scale(.995) !important;
+}
+
+@keyframes screenIn {
+  0% { opacity: 0; transform: translateY(10px) scale(.995); filter: none; }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: none; }
+}
