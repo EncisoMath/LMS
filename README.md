@@ -121,15 +121,11 @@ classes/medidas-de-tendencia-central.html
 
 - Los botones activos de asistencia ahora usan color fijo por estado: verde para Asistió, rojo para No asistió y amarillo para Excusa, independientemente del color del tema.
 
+## v0.15
 
-## v0.13
+Base: archivo v0.12 subido por el usuario.
 
-Versión de intento de optimización móvil.
-
-- Se redujo el uso de blur, backdrop-filter, drop-shadow múltiple y animaciones de background en pantallas con listas.
-- Las transiciones globales ahora son más cortas y sin desenfoque.
-- Los banners de home/asignatura conservan el glow estático sin animar background-position.
-- Las tarjetas de estudiantes, asignaturas y clases usan aislamiento de pintura para mejorar el scroll.
-- El destello de asistencia se mantiene en modo azul oscuro y negro total, pero con animación más liviana.
-- Se mantiene la pantalla de login con animaciones, porque ahí no hay listas largas.
-- Se actualizó versión interna, manifest y service worker a 0.13.0.
+Cambios puntuales:
+- Se quitaron las animaciones de las portadas de asignaturas en el home.
+- Se eliminó el efecto breath de la portada del perfil.
+- En modo negro, el fondo de la vista de asignatura queda negro real, sin glows ni degradados de pantalla.

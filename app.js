@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.13.0';
+  const APP_VERSION = '0.15.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -101,7 +101,7 @@
       $app.classList.remove('is-leaving');
       $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
-      window.setTimeout(() => $app.classList.remove('is-entering'), 260);
+      window.setTimeout(() => $app.classList.remove('is-entering'), 620);
       firstPaint = false;
     };
 
@@ -112,7 +112,7 @@
     }
 
     $app.classList.add('is-leaving');
-    transitionTimer = window.setTimeout(paint, 120);
+    transitionTimer = window.setTimeout(paint, 285);
   }
 
   function renderLogin() {
