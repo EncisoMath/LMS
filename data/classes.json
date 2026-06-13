@@ -1,7 +1,0 @@
-[
-  { "id": "bar-charts", "period": 1, "area": "Matemáticas", "subject": "Estadística", "title": "Gráficos de barras", "emoji": "📊", "type": "Clase interactiva", "estimatedTime": "50 min", "contentUrl": "./classes/graficos-de-barras.html" },
-  { "id": "frequency-tables", "period": 1, "area": "Matemáticas", "subject": "Estadística", "title": "Tablas de frecuencia", "emoji": "📋", "type": "Actividad guiada", "estimatedTime": "45 min", "contentUrl": "./classes/graficos-de-barras.html" },
-  { "id": "central-tendency", "period": 2, "area": "Matemáticas", "subject": "Estadística", "title": "Media, mediana y moda", "emoji": "🎯", "type": "Clase interactiva", "estimatedTime": "50 min", "contentUrl": "./classes/graficos-de-barras.html" },
-  { "id": "probability-intro", "period": 3, "area": "Matemáticas", "subject": "Estadística", "title": "Probabilidad básica", "emoji": "🎲", "type": "Simulación", "estimatedTime": "55 min", "contentUrl": "./classes/graficos-de-barras.html" },
-  { "id": "final-project", "period": 4, "area": "Matemáticas", "subject": "Estadística", "title": "Proyecto estadístico final", "emoji": "🚀", "type": "Reto", "estimatedTime": "90 min", "contentUrl": "./classes/graficos-de-barras.html" }
-]
