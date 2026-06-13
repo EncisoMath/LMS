@@ -717,12 +717,13 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Versiones/cache busting actualizados a `0.24.65`.
 
 
-## v0.24.66
+## v0.24.67
 
-- Se parte de `v0.24.65`.
-- En Quizzes tipo `fill_text` / completar texto drag and drop, los espacios vacíos inline se compactaron verticalmente para quedar más cercanos al alto real de una línea de texto.
-- Se redujo el margen vertical de los espacios `Arrastra aquí` para evitar saltos grandes entre líneas del texto a completar.
-- Se eliminó el padding/margen lateral extra del contenedor de respuesta para que el bloque use mejor el ancho disponible.
-- Las opciones colocadas dentro de los espacios mantienen la altura compacta del espacio receptor.
-- Versiones/cache busting actualizados a `0.24.66`.
-
+- Se parte de `v0.24.66`.
+- Se fijaron como valores iniciales del layout los ajustes enviados por el usuario para los tipos de pregunta: opción múltiple, verdadero/falso y pregunta abierta.
+- Valores principales aplicados:
+  - Opción múltiple: Texto A Y `30px`, imagen Y `30px`, imagen alto `200px`, Texto B Y `30px`, opciones X `-11px`, opciones Y `30px`, opciones ancho `106%`, fuente base `18px`.
+  - Verdadero/Falso: Texto A Y `0px`, Texto A alto `85px`, imagen Y `0px`, imagen alto `200px`, Texto B Y `1px`, Texto B alto `85px`, opciones X `-11px`, opciones Y `0px`, opciones ancho `106%`, fuente base `18px`.
+  - Pregunta abierta: Texto A Y `30px`, imagen Y `30px`, imagen alto `200px`, Texto B Y `30px`, opciones Y `30px`, fuente base `18px`.
+- En esos tres tipos se ocultaron los contornos verdes de calibración, pero se mantiene la tuerca para seguir ajustando y navegar entre ítems.
+- Versiones/cache busting actualizadas a `0.24.67`.

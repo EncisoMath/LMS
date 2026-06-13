@@ -11120,3 +11120,20 @@ body.quiz-fullscreen-active,
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+
+
+/* v0.24.67 - Defaults finales para ABCD/VF/Abierta y ocultar contornos verdes en esos tipos */
+.quiz-calibration-mode.quiz-type-multiple_choice .quiz-tune-box,
+.quiz-calibration-mode.quiz-type-true_false .quiz-tune-box,
+.quiz-calibration-mode.quiz-type-open .quiz-tune-box {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+.quiz-calibration-mode.quiz-type-multiple_choice .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-true_false .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-open .quiz-tune-box::before,
+.quiz-calibration-mode.quiz-type-multiple_choice .quiz-tune-box::after,
+.quiz-calibration-mode.quiz-type-true_false .quiz-tune-box::after,
+.quiz-calibration-mode.quiz-type-open .quiz-tune-box::after {
+  display: none !important;
+}

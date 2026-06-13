@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.66';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.66: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.67';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.67: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1426,20 +1426,46 @@
     answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
   };
 
+  const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
+    multiple_choice: {
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 18,
+      image_x: 0, image_y: 30, image_w: 100, image_h: 200,
+      textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
+      answers_x: -11, answers_y: 30, answers_w: 106, answers_h: 90
+    },
+    true_false: {
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 18,
+      image_x: 0, image_y: 0, image_w: 100, image_h: 200,
+      textB_x: 0, textB_y: 1, textB_w: 100, textB_h: 85,
+      answers_x: -11, answers_y: 0, answers_w: 106, answers_h: 90
+    },
+    open: {
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 18,
+      image_x: 0, image_y: 30, image_w: 100, image_h: 200,
+      textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
+      answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
+    }
+  };
+
+  function getQuizLayoutTuneDefaults(type = 'default') {
+    return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
+  }
+
   function getQuizLayoutTune(type = 'default') {
     try {
       const saved = JSON.parse(localStorage.getItem(`encisomath:quizLayoutTune:${type}`) || '{}');
-      return normalizeQuizLayoutTune(saved);
+      return normalizeQuizLayoutTune(saved, type);
     } catch (_) {
-      return { ...QUIZ_LAYOUT_TUNE_DEFAULTS };
+      return normalizeQuizLayoutTune({}, type);
     }
   }
 
-  function normalizeQuizLayoutTune(tune = {}) {
-    const normalized = { ...QUIZ_LAYOUT_TUNE_DEFAULTS };
+  function normalizeQuizLayoutTune(tune = {}, type = 'default') {
+    const defaults = getQuizLayoutTuneDefaults(type);
+    const normalized = { ...defaults };
     QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
       const raw = Number(tune[field.key]);
-      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_LAYOUT_TUNE_DEFAULTS[field.key];
+      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : defaults[field.key];
     });
     if (!Number.isFinite(Number(tune.text_font))) {
       const legacyTextA = Number(tune.textA_font);
@@ -1451,7 +1477,7 @@
   }
 
   function saveQuizLayoutTune(type, tune) {
-    const normalized = normalizeQuizLayoutTune(tune);
+    const normalized = normalizeQuizLayoutTune(tune, type);
     try { localStorage.setItem(`encisomath:quizLayoutTune:${type}`, JSON.stringify(normalized)); } catch (_) {}
     return normalized;
   }
@@ -1589,14 +1615,14 @@
         });
       });
       panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
-        saveQuizLayoutTune(type, { ...QUIZ_LAYOUT_TUNE_DEFAULTS });
-        applyQuizLayoutTune(type, { ...QUIZ_LAYOUT_TUNE_DEFAULTS });
+        saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
+        applyQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
         panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
           const key = input.dataset.quizLayoutTune;
-          input.value = QUIZ_LAYOUT_TUNE_DEFAULTS[key];
+          input.value = getQuizLayoutTuneDefaults(type)[key];
           const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
           const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${QUIZ_LAYOUT_TUNE_DEFAULTS[key]}${field.unit}`;
+          if (output && field) output.textContent = `${getQuizLayoutTuneDefaults(type)[key]}${field.unit}`;
         });
       });
     });
@@ -1606,7 +1632,7 @@
     const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
     if (!stage) return;
     stage.classList.toggle('quiz-hide-image-preview', !getQuizImagePreviewVisible(type));
-    const safe = normalizeQuizLayoutTune(tune);
+    const safe = normalizeQuizLayoutTune(tune, type);
     const unifiedFont = `${safe.text_font}px`;
     stage.style.setProperty('--quiz-text-font', unifiedFont);
     stage.style.setProperty('--quiz-text-a-font', unifiedFont);
@@ -3977,7 +4003,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.66', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.67', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
