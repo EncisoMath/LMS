@@ -3362,3 +3362,144 @@ html[data-bg-mode="black"] .login-screen {
   .warning-bounce-b { left: 12px !important; top: 4px !important; }
   .danger-red-mesh { animation-duration: 1.9s, 1.45s !important; }
 }
+
+/* v0.24.5 - warning: animacion original v0.20 + malla de cabecera de clases en rojo */
+.danger-head {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  grid-template-columns: 100px minmax(0, 1fr) 38px !important;
+  min-height: 148px !important;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(255,255,255,.14), transparent 18%),
+    linear-gradient(135deg, #ff3342 0%, #c40d1b 44%, #62050e 76%, #230104 100%) !important;
+}
+
+.danger-head::before,
+.danger-head::after {
+  display: none !important;
+  content: none !important;
+  animation: none !important;
+  background: none !important;
+}
+
+.danger-head > :not(.danger-red-mesh) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.danger-red-mesh {
+  display: block !important;
+  position: absolute !important;
+  inset: -18px !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  opacity: .56 !important;
+  background-image:
+    linear-gradient(rgba(255, 210, 216, .26) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 128, 140, .20) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 0 !important;
+  transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
+  transform-origin: center !important;
+  will-change: background-position !important;
+  animation: lessonGridDrift 14s linear infinite !important;
+  filter: none !important;
+}
+
+.danger-red-mesh::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.12), transparent 44%, rgba(0,0,0,.46)),
+    radial-gradient(circle at 74% 18%, rgba(255,255,255,.12), transparent 24%) !important;
+  pointer-events: none !important;
+}
+
+.warning-icon.warning-duo {
+  position: relative !important;
+  overflow: visible !important;
+  width: 98px !important;
+  height: 118px !important;
+  justify-self: center !important;
+  align-self: center !important;
+  transform: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.warning-bounce,
+.warning-bounce-a,
+.warning-bounce-b {
+  display: contents !important;
+  animation: none !important;
+}
+
+.warning-icon.warning-duo .warning-mark {
+  position: absolute !important;
+  display: block !important;
+  width: 70px !important;
+  max-width: none !important;
+  height: auto !important;
+  object-fit: contain !important;
+  transform-origin: 50% 92% !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  filter:
+    drop-shadow(0 9px 10px rgba(0,0,0,.34))
+    drop-shadow(0 0 12px rgba(255,255,255,.12)) !important;
+}
+
+.warning-icon.warning-duo .warning-mark-a {
+  left: 8px !important;
+  top: 30px !important;
+  right: auto !important;
+  z-index: 1 !important;
+  animation: warningJumpCloseA 1.12s cubic-bezier(.18,.9,.22,1) infinite !important;
+}
+
+.warning-icon.warning-duo .warning-mark-b {
+  left: 38px !important;
+  right: auto !important;
+  top: 3px !important;
+  z-index: 2 !important;
+  animation: warningJumpCloseB 1.12s cubic-bezier(.18,.9,.22,1) infinite .1s !important;
+}
+
+@keyframes warningJumpCloseA {
+  0%,100% { transform: translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(-8deg); }
+  24% { transform: translate3d(3px,-17px,0) scaleX(.90) scaleY(1.10) rotate(-5deg); }
+  48% { transform: translate3d(4px,7px,0) scaleX(1.16) scaleY(.84) rotate(-8deg); }
+  62% { transform: translate3d(2px,-5px,0) scaleX(.98) scaleY(1.04) rotate(-6deg); }
+}
+
+@keyframes warningJumpCloseB {
+  0%,100% { transform: translate3d(0,0,0) scaleX(.99) scaleY(1.01) rotate(5deg); }
+  22% { transform: translate3d(-3px,-19px,0) scaleX(.90) scaleY(1.10) rotate(7deg); }
+  46% { transform: translate3d(-4px,8px,0) scaleX(1.14) scaleY(.84) rotate(4deg); }
+  60% { transform: translate3d(-2px,-4px,0) scaleX(.98) scaleY(1.03) rotate(6deg); }
+}
+
+@media (max-width: 520px) {
+  .danger-head {
+    grid-template-columns: 88px minmax(0, 1fr) 34px !important;
+    min-height: 138px !important;
+    gap: 8px !important;
+  }
+  .warning-icon.warning-duo {
+    width: 88px !important;
+    height: 108px !important;
+  }
+  .warning-icon.warning-duo .warning-mark {
+    width: 64px !important;
+  }
+  .warning-icon.warning-duo .warning-mark-a {
+    left: 4px !important;
+    top: 29px !important;
+  }
+  .warning-icon.warning-duo .warning-mark-b {
+    left: 32px !important;
+    top: 3px !important;
+  }
+}
