@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.11';
+  const APP_VERSION = '0.24.12';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -361,7 +361,7 @@
         <div class="tab-row sticky-tabs">
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
-          <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 ROCKSTARS</button>
+          <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 Rockstars</button>
         </div>
         <section id="tabContent" class="section tab-section"></section>
         ${bottomNav('profe')}
@@ -862,16 +862,21 @@
         <div class="rockstar-rocket-stage" aria-hidden="true">
           <div class="rocket-wrap">
             <div class="rocket-emoji">🚀</div>
+            <span class="flame-plume" aria-hidden="true"></span>
             <span class="flame flame-a"></span>
             <span class="flame flame-b"></span>
             <span class="flame flame-c"></span>
+            <span class="flame flame-d"></span>
+            <span class="smoke smoke-a"></span>
+            <span class="smoke smoke-b"></span>
             <span class="spark spark-a"></span>
             <span class="spark spark-b"></span>
             <span class="spark spark-c"></span>
+            <span class="spark spark-d"></span>
           </div>
         </div>
         <div class="rockstar-title-block">
-          <div class="rockstar-title-neon">ROCKSTARS</div>
+          <div class="rockstar-title-neon" data-text="ROCKSTAR">ROCKSTAR</div>
           <p>Participación · Periodo ${state.rockstarPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
         </div>
       </section>
@@ -961,6 +966,11 @@
   function addRockstarDelta(studentId, delta) {
     const assignment = state.assignment;
     if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return;
+    const attendance = getAttendance(assignment.id, todayISO());
+    if (isRockstarLocked(attendance[studentId])) {
+      toast('Estudiante sin puntos hoy por asistencia');
+      return;
+    }
     const events = getLocalRockstarEvents(assignment.id);
     events.push({
       id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -979,23 +989,36 @@
     const assignment = state.assignment;
     const card = document.querySelector(`[data-rockstar-card="${escapeSelector(studentId)}"]`);
     if (!assignment || !card) return;
+    const attendance = getAttendance(assignment.id, todayISO());
+    const status = attendance[studentId];
+    const locked = isRockstarLocked(status);
     const points = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
     const tier = getRockstarTier(points);
+    const visual = locked ? getSleepingTier() : tier;
     const badge = card.querySelector('[data-rockstar-badge]');
     const score = card.querySelector('[data-rockstar-score]');
     const meta = card.querySelector('[data-rockstar-meta]');
+    card.className = `student-card rockstar-card ${visual.className}${locked ? ' rockstar-disabled' : ''}`;
     if (badge) {
-      badge.textContent = tier.emoji;
-      badge.className = `rockstar-avatar ${tier.className}`;
+      badge.textContent = visual.emoji;
+      badge.className = `rockstar-avatar ${visual.className}`;
       pulseElement(badge, 'text-pop');
     }
     if (score) {
       score.textContent = String(points);
-      score.className = `rockstar-score ${tier.className}`;
+      score.className = `rockstar-score ${visual.className}`;
       pulseElement(score, 'text-pop');
     }
-    if (meta) meta.textContent = `Periodo ${state.rockstarPeriod} · ${tier.label}`;
-    pulseElement(card, points >= 0 ? 'flash-present' : 'flash-absent');
+    if (meta) meta.textContent = locked ? `Periodo ${state.rockstarPeriod} · No disponible por asistencia` : `Periodo ${state.rockstarPeriod} · ${tier.label}`;
+    pulseElement(card, locked ? 'flash-excused' : (points >= 0 ? 'flash-present' : 'flash-absent'));
+  }
+
+  function isRockstarLocked(status) {
+    return status === 'absent' || status === 'excused';
+  }
+
+  function getSleepingTier() {
+    return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
   }
 
   function renderClassesTab(options = {}) {
@@ -1134,28 +1157,32 @@
 
   function rockstarCardHTML(student, points, status) {
     const statusInfo = statusMap[status] || null;
+    const locked = isRockstarLocked(status);
     const tier = getRockstarTier(points);
-    const attendanceClass = statusInfo ? `status-${status}` : 'status-unmarked';
+    const visual = locked ? getSleepingTier() : tier;
     const attendanceLabel = statusInfo ? `${statusInfo.emoji} ${statusInfo.label}` : 'Sin marcar hoy';
+    const actionHTML = locked
+      ? `<div class="rockstar-locked-note" aria-label="Estudiante sin puntos disponibles hoy">😴 Sin puntos hoy</div>`
+      : `<div class="rockstar-buttons">
+          <button class="rock-btn rock-minus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="-1" title="Quitar un punto">−1</button>
+          <button class="rock-btn rock-plus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="1" title="Dar un punto">+1</button>
+        </div>`;
     return `
-      <article class="student-card rockstar-card ${attendanceClass}" data-rockstar-card="${escapeAttr(student.id)}">
+      <article class="student-card rockstar-card ${visual.className}${locked ? ' rockstar-disabled' : ''}" data-rockstar-card="${escapeAttr(student.id)}">
         <div class="student-main rockstar-main">
-          <div class="rockstar-avatar ${tier.className}" data-rockstar-badge>${tier.emoji}</div>
+          <div class="rockstar-avatar ${visual.className}" data-rockstar-badge>${visual.emoji}</div>
           <div class="student-info rockstar-info">
             <div class="student-name">${escapeHTML(student.fullName)}</div>
             <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
             <div class="student-meta">📅 Asistencia hoy: ${attendanceLabel}</div>
-            <div class="student-meta" data-rockstar-meta>Periodo ${state.rockstarPeriod} · ${tier.label}</div>
+            <div class="student-meta" data-rockstar-meta>Periodo ${state.rockstarPeriod} · ${locked ? 'No disponible por asistencia' : tier.label}</div>
           </div>
         </div>
         <div class="rockstar-score-box" aria-label="Puntos del estudiante">
-          <span class="rockstar-score ${tier.className}" data-rockstar-score>${points}</span>
+          <span class="rockstar-score ${visual.className}" data-rockstar-score>${points}</span>
           <span class="rockstar-score-label">pts</span>
         </div>
-        <div class="rockstar-buttons">
-          <button class="rock-btn rock-minus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="-1" title="Quitar un punto">−1</button>
-          <button class="rock-btn rock-plus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="1" title="Dar un punto">+1</button>
-        </div>
+        ${actionHTML}
       </article>
     `;
   }
@@ -1635,7 +1662,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.11', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.12', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

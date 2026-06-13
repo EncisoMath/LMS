@@ -229,3 +229,15 @@ classes/medidas-de-tendencia-central.html
 - El encabezado ROCKSTARS incluye cohete animado, fuego, chispas y texto neón cambiante.
 - Se creó `data/rockstars.json` como base de eventos con el ID del estudiante como llave; cada evento usa `assignmentId`, `period`, `date` y `delta`.
 - Los nuevos eventos creados desde la PWA se almacenan localmente en `localStorage` con clave `encisomath:rockstars:<assignmentId>`.
+
+## v0.24.12
+
+Mejoras visuales de la pestaña Rockstars:
+
+- La pestaña se muestra como `Rockstars`, no en mayúsculas sostenidas.
+- El banner usa el texto `ROCKSTAR` con borde, gradiente neón animado y mayor intensidad visual.
+- Se mejoró el fuego del cohete con plume central, capas de llama, humo y chispas.
+- Se eliminó el degradado lateral por asistencia en las tarjetas Rockstar.
+- Las tarjetas Rockstar ahora tienen borde y glow neón según el color/rango del puntaje.
+- El número de puntos aparece más grande, sin recuadro, con `pts` proporcional.
+- Estudiantes con asistencia `No asistió` o `Excusa` aparecen desactivados, en gris, con emoji 😴 y sin botones `-1`/`+1`.
