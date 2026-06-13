@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.23.0';
+  const APP_VERSION = '0.24.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -129,6 +129,7 @@
     const last = readJSON('encisomath:lastUser');
     const markup = `
       <main class="login-screen">
+        ${animatedShapes()}
         <section class="login-card">
           <div class="logo-wrap" aria-label="EncisoMath">
             <div class="logo-mark">
@@ -843,18 +844,20 @@
   function animatedShapes() {
     return `
       <div class="math-bg" aria-hidden="true">
-        <span class="shape circle" style="--w:84px;--h:84px;left:6%;top:8%;--c:#1b96bf;--o:.82;--dx:96px;--dy:180px;--r1:140deg;--dur:7.2s;--delay:-1s"></span>
-        <span class="shape triangle" style="--w:76px;--h:70px;left:76%;top:7%;--c:#ffd60a;--o:.84;--dx:-120px;--dy:190px;--r1:-160deg;--dur:8.4s;--delay:-2.4s"></span>
-        <span class="shape square outline" style="--w:60px;--h:60px;left:82%;top:68%;--c:#ff4d9d;--o:.8;--dx:-132px;--dy:-220px;--r1:220deg;--dur:7.8s;--delay:-3s"></span>
-        <span class="shape rect" style="--w:126px;--h:44px;left:7%;top:80%;--c:#58cc02;--o:.7;--dx:120px;--dy:-260px;--r1:86deg;--dur:9.5s;--delay:-4.3s"></span>
-        <span class="shape circle outline" style="--w:48px;--h:48px;left:47%;top:18%;--c:#8b5cf6;--o:.78;--dx:80px;--dy:250px;--r1:180deg;--dur:7.3s;--delay:-5s"></span>
-        <span class="shape triangle" style="--w:50px;--h:48px;left:18%;top:55%;--c:#33c7ff;--o:.85;--dx:155px;--dy:-140px;--r1:260deg;--dur:8.6s;--delay:-6s"></span>
-        <span class="shape square" style="--w:32px;--h:32px;left:58%;top:78%;--c:#ff4d9d;--o:.82;--dx:-145px;--dy:-165px;--r1:260deg;--dur:6.8s;--delay:-2.5s"></span>
-        <span class="shape rect outline" style="--w:96px;--h:36px;left:61%;top:35%;--c:#22d3ee;--o:.75;--dx:105px;--dy:-155px;--r1:-135deg;--dur:10.4s;--delay:-7s"></span>
-        <span class="shape circle" style="--w:24px;--h:24px;left:30%;top:28%;--c:#ff9f1c;--o:.9;--dx:170px;--dy:95px;--r1:90deg;--dur:6.2s;--delay:-1.8s"></span>
-        <span class="shape square" style="--w:26px;--h:26px;left:89%;top:42%;--c:#ff3b30;--o:.85;--dx:-150px;--dy:155px;--r1:190deg;--dur:7.6s;--delay:-3.7s"></span>
-        <span class="shape circle outline" style="--w:36px;--h:36px;left:4%;top:39%;--c:#06b6d4;--o:.8;--dx:126px;--dy:130px;--r1:120deg;--dur:8.7s;--delay:-4.4s"></span>
-        <span class="shape triangle outline" style="--w:62px;--h:62px;left:39%;top:62%;--c:#a855f7;--o:.76;--dx:-118px;--dy:-178px;--r1:-210deg;--dur:10.8s;--delay:-5.1s"></span>
+        <span class="shape circle" style="--w:54px;--h:54px;left:5%;top:7%;--c:#1976D2;--o:.78;--dx:42px;--dy:98px;--r1:120deg;--dur:7.4s;--delay:-1.2s"></span>
+        <span class="shape triangle" style="--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.82;--dx:-34px;--dy:110px;--r1:-150deg;--dur:8.2s;--delay:-2.2s"></span>
+        <span class="shape square outline" style="--w:42px;--h:42px;left:88%;top:24%;--c:#C2185B;--o:.76;--dx:-42px;--dy:80px;--r1:210deg;--dur:8s;--delay:-3.1s"></span>
+        <span class="shape rect" style="--w:34px;--h:86px;left:4%;top:56%;--c:#388E3C;--o:.72;--dx:44px;--dy:-110px;--r1:80deg;--dur:9.2s;--delay:-4.3s"></span>
+        <span class="shape circle outline" style="--w:34px;--h:34px;left:86%;top:62%;--c:#0097A7;--o:.78;--dx:-48px;--dy:-90px;--r1:170deg;--dur:7.6s;--delay:-5.3s"></span>
+        <span class="shape triangle" style="--w:42px;--h:40px;left:7%;top:82%;--c:#E64A19;--o:.80;--dx:52px;--dy:-84px;--r1:240deg;--dur:8.8s;--delay:-6s"></span>
+        <span class="shape square" style="--w:24px;--h:24px;left:91%;top:82%;--c:#D32F2F;--o:.80;--dx:-72px;--dy:-88px;--r1:190deg;--dur:7.2s;--delay:-2.8s"></span>
+        <span class="shape rect outline" style="--w:82px;--h:28px;left:74%;top:76%;--c:#0288D1;--o:.70;--dx:-58px;--dy:-92px;--r1:-130deg;--dur:10.2s;--delay:-6.8s"></span>
+        <span class="shape circle" style="--w:18px;--h:18px;left:12%;top:30%;--c:#FFA000;--o:.88;--dx:34px;--dy:56px;--r1:90deg;--dur:6.4s;--delay:-1.8s"></span>
+        <span class="shape square" style="--w:22px;--h:22px;left:92%;top:43%;--c:#F57C00;--o:.82;--dx:-48px;--dy:72px;--r1:190deg;--dur:7.6s;--delay:-3.7s"></span>
+        <span class="shape circle outline" style="--w:28px;--h:28px;left:3%;top:42%;--c:#0288D1;--o:.76;--dx:42px;--dy:62px;--r1:120deg;--dur:8.7s;--delay:-4.4s"></span>
+        <span class="shape triangle outline" style="--w:46px;--h:46px;left:82%;top:88%;--c:#7B1FA2;--o:.74;--dx:-74px;--dy:-108px;--r1:-210deg;--dur:10.8s;--delay:-5.1s"></span>
+        <span class="shape rect" style="--w:92px;--h:26px;left:2%;top:18%;--c:#512DA8;--o:.68;--dx:48px;--dy:96px;--r1:38deg;--dur:9.6s;--delay:-7.2s"></span>
+        <span class="shape circle" style="--w:40px;--h:40px;left:89%;top:8%;--c:#689F38;--o:.70;--dx:-62px;--dy:112px;--r1:-70deg;--dur:8.9s;--delay:-6.1s"></span>
       </div>
     `;
   }

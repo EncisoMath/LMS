@@ -2854,3 +2854,43 @@ button {
   .warning-mark-a { left: 3px !important; top: 27px !important; }
   .warning-mark-b { left: 11px !important; top: 2px !important; }
 }
+
+
+/* v0.24 - Login negro sin glows grandes; figuras geométricas visibles y distribuidas en bordes */
+.login-screen,
+html[data-bg-mode="black"] .login-screen {
+  background: #000000 !important;
+  overflow: hidden !important;
+}
+.login-screen::before,
+.login-screen::after,
+html[data-bg-mode="black"] .login-screen::before,
+html[data-bg-mode="black"] .login-screen::after {
+  display: none !important;
+  content: none !important;
+  animation: none !important;
+}
+.login-screen .math-bg {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  contain: layout paint style;
+}
+.login-screen .shape {
+  display: block !important;
+  animation: shapeTravel var(--dur, 7s) cubic-bezier(.2, .72, .2, 1) infinite !important;
+  animation-delay: var(--delay, 0s) !important;
+  filter: none !important;
+  will-change: transform, opacity !important;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c, var(--maincolor)) 38%, transparent), inset 0 1px 0 rgba(255,255,255,.34) !important;
+}
+.login-screen .shape.outline {
+  border-width: 3px !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--c, var(--maincolor)) 42%, transparent) !important;
+}
+.login-card {
+  z-index: 3 !important;
+}
