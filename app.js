@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.9';
+  const APP_VERSION = '0.24.10';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -17,13 +17,13 @@
   const WARNING_GAP_KEY = 'encisomath:warningBangGap';
   const WARNING_TUNE_KEY = 'encisomath:warningTune';
   const WARNING_TUNE_DEFAULTS = {
-    gap: 2,
-    iconX: 0,
-    iconY: 0,
-    markSize: 62,
-    zoomMin: 92,
-    zoomMax: 116,
-    textX: 0,
+    gap: 0,
+    iconX: -14,
+    iconY: -22,
+    markSize: 78,
+    zoomMin: 100,
+    zoomMax: 155,
+    textX: 14,
     textY: 0
   };
   const WARNING_TUNE_FIELDS = [
@@ -665,7 +665,6 @@
             <strong>${escapeHTML(student.fullName)}</strong>
             <span>ID ${escapeHTML(student.id)} · ${escapeHTML(assignment.sede)} · ${escapeHTML(assignment.grade)}° ${escapeHTML(assignment.course)}</span>
           </div>
-          ${renderWarningTunePanel()}
           <div class="danger-actions">
             <button class="danger-confirm" id="confirmDeleteStudent">Sí, eliminar estudiante</button>
             <button class="ghost-btn" data-close-modal>Cancelar</button>
@@ -685,18 +684,7 @@
   }
 
   function getWarningTune() {
-    const stored = readJSON(WARNING_TUNE_KEY) || {};
-    const legacyGap = Number(localStorage.getItem(WARNING_GAP_KEY));
-    const source = { ...WARNING_TUNE_DEFAULTS, ...stored };
-    if (!Object.prototype.hasOwnProperty.call(stored, 'gap') && Number.isFinite(legacyGap)) {
-      source.gap = legacyGap;
-    }
-    const tune = {};
-    WARNING_TUNE_FIELDS.forEach((field) => {
-      tune[field.key] = warningTuneNumber(source[field.key], WARNING_TUNE_DEFAULTS[field.key], field.min, field.max);
-    });
-    if (tune.zoomMax < tune.zoomMin + 2) tune.zoomMax = Math.min(155, tune.zoomMin + 2);
-    return tune;
+    return { ...WARNING_TUNE_DEFAULTS };
   }
 
   function saveWarningTune(tune) {
@@ -832,8 +820,8 @@
   }
 
   function startDeleteWarningMotion() {
-    initWarningTuneControls();
-    restartDeleteWarningAnimations(getWarningTune());
+    const tune = applyWarningTune(getWarningTune());
+    restartDeleteWarningAnimations(tune);
   }
 
   function deleteStudent(student) {
@@ -1407,7 +1395,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.9', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.10', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

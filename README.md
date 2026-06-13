@@ -201,3 +201,10 @@ classes/medidas-de-tendencia-central.html
 - El panel permite ajustar separacion de los signos, movimiento horizontal/vertical de los signos, tamano base, zoom minimo, zoom maximo y movimiento horizontal/vertical del texto.
 - Los valores se guardan en `localStorage` con la clave `encisomath:warningTune` para que el usuario pueda probar y reportar los valores finales.
 - Se mantuvo la malla roja animada del warning y se actualizo cache busting a `0.24.9`.
+
+## v0.24.10
+
+- Se fijaron los valores reportados por el usuario para el warning de eliminacion: separacion `0px`, mover signos horizontal `-14px`, mover signos vertical `-22px`, tamano `78px`, zoom minimo `100%`, zoom maximo `155%`, mover texto horizontal `14px` y mover texto vertical `0px`.
+- Se retiro el panel temporal de calibracion del modal para dejar el warning limpio.
+- El warning ahora ignora valores anteriores guardados en `localStorage` para que el diseno fijo se mantenga igual en todos los navegadores.
+- Se mantuvo la malla roja animada y se actualizo cache busting a `0.24.10`.
