@@ -9317,3 +9317,183 @@ body.quiz-fullscreen-active {
     font-size: 2.65rem !important;
   }
 }
+
+/* v0.24.45 - Quizzes optimizados: sin glow ni degradados durante preguntas/resultados/intro.
+   Se conserva intacto el banner superior del quiz y se mantienen efectos fuertes solo en transiciones de ítems. */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-bg {
+  opacity: 1 !important;
+  background: #02030a !important;
+  background-image: none !important;
+  filter: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content *,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content *::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background-image: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-start-gate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-intro-splash,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-screen {
+  background: #080a12 !important;
+  border-color: rgba(255,255,255,.12) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-image-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-support-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-form,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-feedback,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-shell,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-source,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-shell,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-options,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-shell {
+  background: #0b1020 !important;
+  border-color: rgba(255,255,255,.14) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-input,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) textarea.quiz-open-input {
+  background: #101727 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-start-confirm,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-next-main,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions button {
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option::after {
+  display: none !important;
+  opacity: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-red { background: #e21b3c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-blue { background: #1368ce !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-yellow { background: #d89e00 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-green { background: #26890c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.correct-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.correct { background: #58cc02 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.wrong-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.wrong { background: #e21b3c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.unused-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.is-dimmed { background: #6b7280 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-result-badge {
+  box-shadow: none !important;
+  border: 2px solid rgba(255,255,255,.75) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-red,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-red { background: #e21b3c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-blue,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-blue { background: #1368ce !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-yellow,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-yellow { background: #d89e00 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-green,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-green { background: #26890c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop {
+  background: #374151 !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-red,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-red { background: #7f1d1d !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-blue,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-blue { background: #123c7a !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-yellow,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-yellow { background: #7a5300 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-green,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-green { background: #14532d !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched { background: #58cc02 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong { background: #e21b3c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot {
+  background: #111827 !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-widget,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-visual-stage {
+  background: transparent !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-bubble {
+  background: var(--slider-selected-color, #1d72d8) !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-bubble::after {
+  background: var(--slider-selected-color, #1d72d8) !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-ticks span[data-slider-tick] {
+  background: #d1d5db !important;
+  box-shadow: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-ticks span[data-slider-tick].active {
+  background: var(--slider-selected-color, #1d72d8) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-ticks span[data-slider-tick].correct-answer {
+  background: #58cc02 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .slider-correct-bubble,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .slider-correct-bubble::before {
+  background: #58cc02 !important;
+  box-shadow: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-answer-feedback,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card::before {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background-image: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-correct::before { background: #58cc02 !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-wrong::before { background: #e21b3c !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-neutral,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card.is-neutral::before { background: #1368ce !important; }
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-feedback-card > span {
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-security-watermark {
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* Mantener intacto el banner superior del quiz: se reafirman sus reglas visuales base. */
+.quiz-fullscreen-top {
+  background:
+    radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--maincolor) 28%, transparent), transparent 28%),
+    radial-gradient(circle at 88% 92%, rgba(226,27,60,.18), transparent 30%),
+    linear-gradient(135deg, rgba(5,12,24,.94), rgba(5,7,17,.98)) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.05) inset,
+    0 0 24px color-mix(in srgb, var(--maincolor) 16%, transparent),
+    0 12px 24px rgba(0,0,0,.34) !important;
+}

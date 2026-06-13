@@ -507,7 +507,7 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - El valor final se aplica desde el código e ignora valores anteriores guardados en `localStorage` para evitar desfaces por calibraciones previas.
 - Cache busting actualizado a `0.24.43`.
 
-## v0.24.44
+## v0.24.45
 
 - Se implementó un modo seguro para Quizzes sobre la versión estable `v0.24.43`.
 - Durante la ejecución del quiz se bloquean acciones de riesgo como botón atrás, cambio de pestaña/app, pérdida de foco de ventana, menú contextual, copiar, cortar, pegar y atajos como imprimir/guardar/inspeccionar.
@@ -516,4 +516,4 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Se agregó marca de agua discreta durante el quiz con datos del usuario, asignatura y hora.
 - Se registra localmente un historial de eventos sospechosos en `localStorage` bajo la clave `encisomath:quizSecurityLog:<quizId>`.
 - Se intenta activar pantalla completa nativa cuando el navegador lo permite, manteniendo el bloqueo interno de navegación.
-- Versión/cache busting actualizados a `0.24.44`.
+- Versión/cache busting actualizados a `0.24.45`.
