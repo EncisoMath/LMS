@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.28';
+  const APP_VERSION = '0.24.29';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,13 +55,43 @@
   ];
 
   const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune';
-  const QUIZ_FEEDBACK_TUNE_DEFAULTS = { curve: 12, spread: 18, height: 170, lift: 19, bounce: 20 };
+  const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
+    curve: 12,
+    spread: 18,
+    height: 122,
+    lift: 14,
+    bounce: 18,
+    bandX: 0,
+    bandY: 0,
+    bandZoom: 100,
+    emojiX: 0,
+    emojiY: 0,
+    emojiZoom: 100,
+    titleX: 0,
+    titleY: 0,
+    titleZoom: 100,
+    textX: 0,
+    textY: 0,
+    textZoom: 100
+  };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
-    { key: 'curve', label: 'Curva superior', min: 8, max: 70, step: 1, unit: 'px' },
-    { key: 'spread', label: 'Ancho de curva', min: 0, max: 18, step: 1, unit: 'vw' },
-    { key: 'height', label: 'Alto de banda', min: 92, max: 170, step: 1, unit: 'px' },
-    { key: 'lift', label: 'Subir contenido', min: 0, max: 42, step: 1, unit: 'px' },
-    { key: 'bounce', label: 'Rebote entrada', min: 0, max: 22, step: 1, unit: 'px' }
+    { key: 'curve', group: 'Banda', label: 'Curva superior', min: 0, max: 70, step: 1, unit: 'px' },
+    { key: 'spread', group: 'Banda', label: 'Ancho de curva', min: 0, max: 22, step: 1, unit: 'vw' },
+    { key: 'height', group: 'Banda', label: 'Alto de banda', min: 72, max: 180, step: 1, unit: 'px' },
+    { key: 'lift', group: 'Banda', label: 'Subir contenido', min: 0, max: 56, step: 1, unit: 'px' },
+    { key: 'bounce', group: 'Banda', label: 'Rebote entrada', min: 0, max: 28, step: 1, unit: 'px' },
+    { key: 'bandX', group: 'Banda', label: 'Mover banda X', min: -80, max: 80, step: 1, unit: 'px' },
+    { key: 'bandY', group: 'Banda', label: 'Mover banda Y', min: -60, max: 60, step: 1, unit: 'px' },
+    { key: 'bandZoom', group: 'Banda', label: 'Zoom banda', min: 70, max: 130, step: 1, unit: '%' },
+    { key: 'emojiX', group: 'Emoji', label: 'Mover emoji X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'emojiY', group: 'Emoji', label: 'Mover emoji Y', min: -56, max: 56, step: 1, unit: 'px' },
+    { key: 'emojiZoom', group: 'Emoji', label: 'Zoom emoji', min: 50, max: 160, step: 1, unit: '%' },
+    { key: 'titleX', group: 'Titulo', label: 'Mover titulo X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'titleY', group: 'Titulo', label: 'Mover titulo Y', min: -56, max: 56, step: 1, unit: 'px' },
+    { key: 'titleZoom', group: 'Titulo', label: 'Zoom titulo', min: 70, max: 150, step: 1, unit: '%' },
+    { key: 'textX', group: 'Frase', label: 'Mover frase X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'textY', group: 'Frase', label: 'Mover frase Y', min: -56, max: 56, step: 1, unit: 'px' },
+    { key: 'textZoom', group: 'Frase', label: 'Zoom frase', min: 70, max: 150, step: 1, unit: '%' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -1479,29 +1509,73 @@
   }
 
 
-  function quizFeedbackTunePanelHTML() {
+  function quizFeedbackTunePanelHTML(options = {}) {
     const tune = getQuizFeedbackTune();
-    const rows = QUIZ_FEEDBACK_TUNE_FIELDS.map((field) => {
-      const value = tune[field.key];
-      return `
-        <label class="quiz-feedback-tune-row">
-          <span class="quiz-feedback-tune-head"><strong>${field.label}</strong><output data-quiz-feedback-tune-value="${field.key}">${value}${field.unit}</output></span>
-          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${field.key}" />
-        </label>
-      `;
-    }).join('');
+    const groups = QUIZ_FEEDBACK_TUNE_FIELDS.reduce((acc, field) => {
+      const group = field.group || 'Ajustes';
+      if (!acc[group]) acc[group] = [];
+      acc[group].push(field);
+      return acc;
+    }, {});
+    const rows = Object.entries(groups).map(([group, fields]) => `
+      <div class="quiz-feedback-tune-group">
+        <h4>${escapeHTML(group)}</h4>
+        ${fields.map((field) => {
+          const value = tune[field.key];
+          return `
+            <label class="quiz-feedback-tune-row">
+              <span class="quiz-feedback-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
+              <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
+            </label>
+          `;
+        }).join('')}
+      </div>
+    `).join('');
     return `
-      <section class="quiz-feedback-tune-panel" aria-label="Ajuste temporal de la banda de feedback">
+      <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
         <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz</div>
-        <div class="quiz-feedback-tune-help">Pásame estos valores cuando la curva y el rebote queden bien.</div>
+        <div class="quiz-feedback-tune-help">Avance automático desactivado. Ajusta banda, emoji y textos; luego pásame los valores.</div>
         ${rows}
-        <button class="btn ghost small quiz-feedback-tune-reset" type="button" id="quizFeedbackTuneReset">Restablecer banda</button>
+        <div class="quiz-feedback-tune-actions">
+          <button class="btn ghost small quiz-feedback-tune-reset" type="button" data-quiz-feedback-tune-reset>Restablecer banda</button>
+          <button class="primary-btn small" type="button" data-quiz-feedback-continue>${options.last ? 'Ver resultados' : 'Continuar'}</button>
+        </div>
       </section>
     `;
   }
 
   function bindQuizFeedbackTunePanel() {
-    applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+    applyQuizFeedbackTune(getQuizFeedbackTune());
+    document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
+      if (input.dataset.boundTune === 'true') return;
+      input.dataset.boundTune = 'true';
+      input.addEventListener('input', () => {
+        const current = getQuizFeedbackTune();
+        const key = input.dataset.quizFeedbackTune;
+        current[key] = Number(input.value);
+        saveQuizFeedbackTune(current);
+        applyQuizFeedbackTune(current);
+        updateQuizFeedbackTuneOutput(key, current[key]);
+      });
+    });
+    document.querySelectorAll('[data-quiz-feedback-tune-reset]').forEach((button) => {
+      if (button.dataset.boundTuneReset === 'true') return;
+      button.dataset.boundTuneReset = 'true';
+      button.addEventListener('click', () => {
+        saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+        applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+        document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
+          const key = input.dataset.quizFeedbackTune;
+          input.value = QUIZ_FEEDBACK_TUNE_DEFAULTS[key];
+          updateQuizFeedbackTuneOutput(key, QUIZ_FEEDBACK_TUNE_DEFAULTS[key]);
+        });
+      });
+    });
+    document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
+      if (button.dataset.boundContinue === 'true') return;
+      button.dataset.boundContinue = 'true';
+      button.addEventListener('click', continueQuizAfterFeedback);
+    });
   }
 
   function getQuizFeedbackTune() {
@@ -1509,15 +1583,25 @@
   }
 
   function readQuizFeedbackTune() {
-    return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
+    try {
+      const raw = JSON.parse(localStorage.getItem(QUIZ_FEEDBACK_TUNE_KEY) || '{}');
+      return normalizeQuizFeedbackTune(raw);
+    } catch (_) {
+      return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
+    }
   }
 
-  function saveQuizFeedbackTune(tune) {
-    const normalized = {};
+  function normalizeQuizFeedbackTune(tune = {}) {
+    const normalized = { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
     QUIZ_FEEDBACK_TUNE_FIELDS.forEach((field) => {
       const raw = Number(tune[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_FEEDBACK_TUNE_DEFAULTS[field.key];
     });
+    return normalized;
+  }
+
+  function saveQuizFeedbackTune(tune) {
+    const normalized = normalizeQuizFeedbackTune(tune);
     localStorage.setItem(QUIZ_FEEDBACK_TUNE_KEY, JSON.stringify(normalized));
   }
 
@@ -1529,11 +1613,24 @@
 
   function applyQuizFeedbackTune(tune = getQuizFeedbackTune()) {
     const root = document.documentElement;
-    root.style.setProperty('--quiz-feedback-curve', `${Number(tune.curve) || QUIZ_FEEDBACK_TUNE_DEFAULTS.curve}px`);
-    root.style.setProperty('--quiz-feedback-spread', `${Number(tune.spread) || 0}vw`);
-    root.style.setProperty('--quiz-feedback-height', `${Number(tune.height) || QUIZ_FEEDBACK_TUNE_DEFAULTS.height}px`);
-    root.style.setProperty('--quiz-feedback-lift', `${Number(tune.lift) || 0}px`);
-    root.style.setProperty('--quiz-feedback-bounce', `${Number(tune.bounce) || 0}px`);
+    const safe = normalizeQuizFeedbackTune(tune);
+    root.style.setProperty('--quiz-feedback-curve', `${Number(safe.curve) || QUIZ_FEEDBACK_TUNE_DEFAULTS.curve}px`);
+    root.style.setProperty('--quiz-feedback-spread', `${Number(safe.spread) || 0}vw`);
+    root.style.setProperty('--quiz-feedback-height', `${Number(safe.height) || QUIZ_FEEDBACK_TUNE_DEFAULTS.height}px`);
+    root.style.setProperty('--quiz-feedback-lift', `${Number(safe.lift) || 0}px`);
+    root.style.setProperty('--quiz-feedback-bounce', `${Number(safe.bounce) || 0}px`);
+    root.style.setProperty('--quiz-feedback-band-x', `${Number(safe.bandX) || 0}px`);
+    root.style.setProperty('--quiz-feedback-band-y', `${Number(safe.bandY) || 0}px`);
+    root.style.setProperty('--quiz-feedback-band-scale', `${(Number(safe.bandZoom) || 100) / 100}`);
+    root.style.setProperty('--quiz-feedback-emoji-x', `${Number(safe.emojiX) || 0}px`);
+    root.style.setProperty('--quiz-feedback-emoji-y', `${Number(safe.emojiY) || 0}px`);
+    root.style.setProperty('--quiz-feedback-emoji-scale', `${(Number(safe.emojiZoom) || 100) / 100}`);
+    root.style.setProperty('--quiz-feedback-title-x', `${Number(safe.titleX) || 0}px`);
+    root.style.setProperty('--quiz-feedback-title-y', `${Number(safe.titleY) || 0}px`);
+    root.style.setProperty('--quiz-feedback-title-scale', `${(Number(safe.titleZoom) || 100) / 100}`);
+    root.style.setProperty('--quiz-feedback-text-x', `${Number(safe.textX) || 0}px`);
+    root.style.setProperty('--quiz-feedback-text-y', `${Number(safe.textY) || 0}px`);
+    root.style.setProperty('--quiz-feedback-text-scale', `${(Number(safe.textZoom) || 100) / 100}`);
   }
 
   function bindQuizTabEvents() {
@@ -1724,10 +1821,26 @@
   }
 
   function scheduleQuizAdvance() {
+    const stage = document.querySelector('#quizFullscreenLayer .quiz-stage-fullscreen.quiz-feedback-visible') || document.querySelector('.quiz-stage.quiz-feedback-visible');
+    if (stage) {
+      showQuizFeedbackTunePanel(stage);
+      return;
+    }
     scheduleQuizTimer(() => continueQuizAfterFeedback(), 4000);
   }
 
+  function showQuizFeedbackTunePanel(stage) {
+    if (!stage) return;
+    stage.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
+    const quiz = getActiveQuiz();
+    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+    const last = state.quizQuestionIndex >= total - 1;
+    stage.insertAdjacentHTML('beforeend', quizFeedbackTunePanelHTML({ live: true, last }));
+    bindQuizFeedbackTunePanel();
+  }
+
   function continueQuizAfterFeedback() {
+    document.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
     const quiz = getActiveQuiz();
     if (!quiz || !Array.isArray(quiz.questions)) return;
     if (state.quizQuestionIndex >= quiz.questions.length - 1) {
@@ -2881,7 +2994,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.28', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.29', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

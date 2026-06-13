@@ -398,3 +398,16 @@ Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
 - Se mantuvo la curva superior y el rebote, pero se redujo la altura, el desplazamiento del contenido y el tamaño visual del icono/texto para mejorar proporción.
 - Se conserva la extensión inferior suficiente para que durante el rebote no aparezca hueco bajo la banda.
 - Versiones y cache busting actualizados a `0.24.28`.
+
+## v0.24.29
+
+- Versión temporal de calibración para la banda inferior de feedback en Quizzes.
+- Se desactivó temporalmente el avance automático después de responder para que la banda permanezca visible.
+- Cuando aparece la banda de correcto/incorrecto, se muestra un panel de sliders en vivo para ajustar:
+  - Banda: curva superior, ancho de curva, alto, desplazamiento del contenido, rebote, posición X/Y y zoom.
+  - Emoji: posición X/Y y zoom.
+  - Título: posición X/Y y zoom.
+  - Frase: posición X/Y y zoom.
+- Los valores se guardan en `localStorage` bajo `encisomath:quizFeedbackTune` mientras se prueban.
+- Se añadió botón `Continuar` / `Ver resultados` en el panel porque el avance automático queda desactivado temporalmente.
+- Versión/cache busting actualizados a `0.24.29`.
