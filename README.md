@@ -544,3 +544,12 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - El bloque del slider ya no se desplaza hacia arriba cuando aparece la banda inferior de feedback, evitando que la paleta toque el borde del contenedor.
 - Versión/cache busting actualizados a `0.24.47`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.48
+
+- Versión temporal para pruebas: se desactivó la protección de Quizzes añadida en v0.24.44.
+- Ya no se muestran advertencias por acciones sospechosas, no se anula el quiz por cambio de pestaña/app, pérdida de foco, back, copiar/pegar, menú contextual o atajos.
+- Se desactivó la marca de agua de seguridad y el intento de pantalla completa nativa.
+- Se mantiene el fullscreen interno del quiz, las transiciones, resultados, Quizzes, Rockstars y demás mejoras de v0.24.47.
+- Se actualizó el mensaje del modal de inicio a modo seguro temporalmente desactivado para pruebas.
+- Versión/cache busting actualizados a `0.24.48`.

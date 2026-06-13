@@ -1,7 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.47';
+  const APP_VERSION = '0.24.48';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.48: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1837,6 +1838,7 @@
 
 
   function bindQuizSecurityGuards() {
+    if (!QUIZ_SECURITY_ENABLED) return;
     if (state.quizSecurityGuardsBound) return;
     state.quizSecurityGuardsBound = true;
 
@@ -1895,6 +1897,7 @@
   }
 
   function isQuizSecurityActive() {
+    if (!QUIZ_SECURITY_ENABLED) return false;
     const session = getQuizSession();
     if (!state.quizFullscreenActive) return false;
     if (session.phase === 'results' || session.phase === 'confirm' || session.phase === 'idle') return false;
@@ -2012,6 +2015,7 @@
   }
 
   function requestQuizFullscreenMode() {
+    if (!QUIZ_SECURITY_ENABLED) return;
     const layer = document.getElementById('quizFullscreenLayer') || document.documentElement;
     try {
       const request = layer.requestFullscreen || layer.webkitRequestFullscreen || layer.msRequestFullscreen;
@@ -2305,7 +2309,7 @@
       ${showTop ? `<div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
         <div>
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
-          <small>${phase === 'results' ? 'Quiz finalizado' : 'Modo quiz · sin salida hasta finalizar'}</small>
+          <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
         </div>
         <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
       </div>` : ''}
@@ -2318,6 +2322,7 @@
 
 
   function quizSecurityWatermarkHTML() {
+    if (!QUIZ_SECURITY_ENABLED) return '';
     const user = state.user || {};
     const name = user.fullName || user.name || user.username || 'EncisoMath';
     const id = user.id || user.userId || '';
@@ -2342,7 +2347,7 @@
         <div class="quiz-start-modal-body">
           <h3>${escapeHTML(quiz.title || 'Quiz')}</h3>
           <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
-          <div class="quiz-lock-warning">🔒 Cuando empieces, solo podrás salir al finalizar el quiz.</div>
+          <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
         </div>
       </div>
@@ -2357,7 +2362,7 @@
         <p class="section-kicker">Antes de empezar</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
         <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
-        <div class="quiz-lock-warning">🔒 Cuando empieces, solo podrás salir al finalizar el quiz.</div>
+        <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
         <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
         <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
       </section>
@@ -2451,6 +2456,7 @@
   }
 
   function lockQuizHistory() {
+    if (!QUIZ_SECURITY_ENABLED) return;
     if (state.quizHistoryLocked) return;
     state.quizHistoryLocked = true;
     try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
@@ -2464,6 +2470,7 @@
   }
 
   function keepQuizFullscreenLocked() {
+    if (!QUIZ_SECURITY_ENABLED) return;
     if (!state.quizFullscreenActive) return;
     try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
     handleQuizSuspiciousAction('botón atrás o intento de salir');

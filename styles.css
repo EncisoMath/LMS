@@ -9590,7 +9590,7 @@ body.quiz-fullscreen-active {
   color: #fff !important;
 }
 
-/* v0.24.47 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
+/* v0.24.48 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched,
@@ -9668,4 +9668,17 @@ body.quiz-fullscreen-active {
 }
 .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage {
   margin-top: 0 !important;
+}
+
+
+/* v0.24.48 - Protección de Quizzes desactivada temporalmente */
+body.quiz-fullscreen-active,
+.quiz-fullscreen-layer,
+.quiz-fullscreen-layer * {
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+  -webkit-touch-callout: default !important;
+}
+.quiz-security-watermark {
+  display: none !important;
 }
