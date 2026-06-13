@@ -379,3 +379,14 @@ Ajustes de pulido en Quizzes:
 - La banda inferior recuperó rebote configurable y ahora desplaza también la pregunta abierta.
 - En Verdadero/Falso los botones son más altos y quedan más abajo.
 - Se quitaron las figuras geométricas de opciones ABCD y Verdadero/Falso.
+
+## v0.24.27
+
+Ajustes finales de la banda inferior de feedback de Quizzes sobre `v0.24.26`.
+
+- Se fijaron los valores enviados por el usuario para la banda: curva superior `12px`, ancho de curva `18vw`, alto `170px`, subir contenido `19px` y rebote `20px`.
+- Se retiró/ocultó el panel temporal de calibración de la banda para dejar la interfaz limpia.
+- La banda inferior ahora se extiende más hacia abajo y se posiciona con offset inferior para que, durante el rebote, no se vea un hueco blanco/negro debajo.
+- El texto secundario/frase cómica de la banda quedó sin negrita fuerte, con peso normal.
+- Se ignoran valores anteriores guardados en `localStorage` para mantener el diseño fijo en cualquier navegador.
+- Versión/cache busting actualizados a `0.24.27`.

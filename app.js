@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.26';
+  const APP_VERSION = '0.24.27';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,7 +55,7 @@
   ];
 
   const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune';
-  const QUIZ_FEEDBACK_TUNE_DEFAULTS = { curve: 28, spread: 6, height: 118, lift: 16, bounce: 8 };
+  const QUIZ_FEEDBACK_TUNE_DEFAULTS = { curve: 12, spread: 18, height: 170, lift: 19, bounce: 20 };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'curve', label: 'Curva superior', min: 8, max: 70, step: 1, unit: 'px' },
     { key: 'spread', label: 'Ancho de curva', min: 0, max: 18, step: 1, unit: 'vw' },
@@ -1247,7 +1247,6 @@
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
       </div>
-      ${quizFeedbackTunePanelHTML()}
       <div class="quiz-library" id="quizLibrary">
         ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
@@ -1502,27 +1501,7 @@
   }
 
   function bindQuizFeedbackTunePanel() {
-    applyQuizFeedbackTune();
-    document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.quizFeedbackTune;
-        const value = Number(input.value);
-        const tune = getQuizFeedbackTune();
-        tune[key] = value;
-        saveQuizFeedbackTune(tune);
-        updateQuizFeedbackTuneOutput(key, value);
-        applyQuizFeedbackTune(tune);
-      });
-    });
-    document.getElementById('quizFeedbackTuneReset')?.addEventListener('click', () => {
-      saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
-      document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
-        const key = input.dataset.quizFeedbackTune;
-        input.value = QUIZ_FEEDBACK_TUNE_DEFAULTS[key];
-        updateQuizFeedbackTuneOutput(key, QUIZ_FEEDBACK_TUNE_DEFAULTS[key]);
-      });
-      applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
-    });
+    applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
   }
 
   function getQuizFeedbackTune() {
@@ -1530,13 +1509,7 @@
   }
 
   function readQuizFeedbackTune() {
-    const saved = readJSON(QUIZ_FEEDBACK_TUNE_KEY) || {};
-    const tune = { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
-    QUIZ_FEEDBACK_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(saved[field.key]);
-      tune[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : tune[field.key];
-    });
-    return tune;
+    return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
   }
 
   function saveQuizFeedbackTune(tune) {
@@ -2908,7 +2881,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.26', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.27', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
