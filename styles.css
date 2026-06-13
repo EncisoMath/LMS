@@ -3196,3 +3196,169 @@ html[data-bg-mode="black"] .login-screen {
   .warning-mark-a { left: 2px !important; top: 29px !important; }
   .warning-mark-b { left: 12px !important; top: 4px !important; }
 }
+
+/* v0.24.4 - animacion real del warning: malla roja + bounce squash/stretch */
+.danger-head {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background:
+    radial-gradient(circle at 8% 8%, rgba(255,255,255,.14), transparent 16%),
+    linear-gradient(135deg, #ff2f46 0%, #cf061d 42%, #65060f 74%, #180104 100%) !important;
+}
+
+.danger-head::before,
+.danger-head::after {
+  display: none !important;
+  content: none !important;
+  animation: none !important;
+  background: none !important;
+}
+
+.danger-head > :not(.danger-red-mesh) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.danger-red-mesh {
+  display: block !important;
+  position: absolute !important;
+  inset: -58px !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  opacity: .82;
+  background-image:
+    linear-gradient(115deg, transparent 0 46%, rgba(255,255,255,.18) 47% 49%, transparent 50% 100%),
+    linear-gradient(25deg, transparent 0 46%, rgba(255,130,145,.14) 47% 49%, transparent 50% 100%),
+    linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255,90,110,.22), rgba(80,0,8,.10)) !important;
+  background-size: 42px 42px, 42px 42px, 24px 24px, 24px 24px, 100% 100% !important;
+  background-position: 0 0, 0 0, 0 0, 0 0, center;
+  transform: rotate(-8deg) scale(1.24) translate3d(0,0,0);
+  will-change: background-position, transform, opacity !important;
+  animation-name: dangerRedMeshRunV24, dangerRedMeshPulseV24 !important;
+  animation-duration: 2.45s, 1.7s !important;
+  animation-timing-function: linear, ease-in-out !important;
+  animation-iteration-count: infinite, infinite !important;
+  animation-direction: normal, alternate !important;
+  filter: none !important;
+}
+
+.danger-red-mesh::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255,255,255,.18), transparent 11%),
+    linear-gradient(90deg, rgba(0,0,0,.02), rgba(0,0,0,.22) 48%, rgba(0,0,0,.52) 100%) !important;
+  opacity: 1 !important;
+}
+
+@keyframes dangerRedMeshRunV24 {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0, center;
+    transform: rotate(-8deg) scale(1.24) translate3d(0,0,0);
+  }
+  100% {
+    background-position: 84px 42px, -84px 42px, 48px 48px, 48px 48px, center;
+    transform: rotate(-8deg) scale(1.24) translate3d(18px, -9px, 0);
+  }
+}
+
+@keyframes dangerRedMeshPulseV24 {
+  0% { opacity: .64; }
+  100% { opacity: .94; }
+}
+
+.warning-icon.warning-duo {
+  position: relative !important;
+  overflow: visible !important;
+  width: 70px !important;
+  height: 108px !important;
+  transform: translateX(-2px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.warning-bounce {
+  position: absolute !important;
+  display: block !important;
+  width: 58px !important;
+  height: auto !important;
+  transform-origin: 50% 92% !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  transform: translate3d(0,0,0);
+}
+
+.warning-bounce-a {
+  left: 4px !important;
+  top: 29px !important;
+  z-index: 1 !important;
+  animation-name: warningPixarBounceWrapA24 !important;
+  animation-duration: .92s !important;
+  animation-timing-function: cubic-bezier(.17,.88,.24,1) !important;
+  animation-iteration-count: infinite !important;
+}
+
+.warning-bounce-b {
+  left: 17px !important;
+  top: 4px !important;
+  z-index: 2 !important;
+  animation-name: warningPixarBounceWrapB24 !important;
+  animation-duration: .92s !important;
+  animation-timing-function: cubic-bezier(.17,.88,.24,1) !important;
+  animation-iteration-count: infinite !important;
+  animation-delay: .09s !important;
+}
+
+.warning-bounce .warning-mark,
+.warning-mark.warning-mark-a,
+.warning-mark.warning-mark-b {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  animation: none !important;
+  transform: none !important;
+  filter:
+    drop-shadow(0 8px 11px rgba(0,0,0,.38))
+    drop-shadow(0 0 9px rgba(255,255,255,.25)) !important;
+}
+
+@keyframes warningPixarBounceWrapA24 {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-6deg) scaleX(1.02) scaleY(.98); }
+  10% { transform: translate3d(0, 5px, 0) rotate(-6deg) scaleX(1.24) scaleY(.76); }
+  22% { transform: translate3d(0, -8px, 0) rotate(-4deg) scaleX(.86) scaleY(1.18); }
+  42% { transform: translate3d(0, -25px, 0) rotate(-1deg) scaleX(.91) scaleY(1.13); }
+  58% { transform: translate3d(0, -8px, 0) rotate(1deg) scaleX(.96) scaleY(1.05); }
+  68% { transform: translate3d(0, 8px, 0) rotate(-3deg) scaleX(1.28) scaleY(.72); }
+  82% { transform: translate3d(0, -8px, 0) rotate(-1deg) scaleX(.94) scaleY(1.09); }
+}
+
+@keyframes warningPixarBounceWrapB24 {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(6deg) scaleX(1.02) scaleY(.98); }
+  10% { transform: translate3d(0, 5px, 0) rotate(6deg) scaleX(1.24) scaleY(.76); }
+  22% { transform: translate3d(0, -8px, 0) rotate(7deg) scaleX(.86) scaleY(1.18); }
+  42% { transform: translate3d(0, -27px, 0) rotate(9deg) scaleX(.91) scaleY(1.13); }
+  58% { transform: translate3d(0, -8px, 0) rotate(5deg) scaleX(.96) scaleY(1.05); }
+  68% { transform: translate3d(0, 9px, 0) rotate(4deg) scaleX(1.28) scaleY(.72); }
+  82% { transform: translate3d(0, -8px, 0) rotate(6deg) scaleX(.94) scaleY(1.09); }
+}
+
+@media (max-width: 520px) {
+  .warning-icon.warning-duo {
+    width: 64px !important;
+    height: 100px !important;
+    transform: translateX(-3px) !important;
+  }
+  .warning-bounce { width: 57px !important; }
+  .warning-bounce-a { left: 2px !important; top: 29px !important; }
+  .warning-bounce-b { left: 12px !important; top: 4px !important; }
+  .danger-red-mesh { animation-duration: 1.9s, 1.45s !important; }
+}

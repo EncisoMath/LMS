@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.3';
+  const APP_VERSION = '0.24.4';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -622,9 +622,10 @@
     openModal(`
       <div class="modal-card danger-modal">
         <div class="danger-head">
+          <span class="danger-red-mesh" aria-hidden="true"></span>
           <div class="warning-icon warning-duo" aria-hidden="true">
-            <img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" />
-            <img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" />
+            <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
+            <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
           </div>
           <div>
             <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>
@@ -1219,7 +1220,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.4', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

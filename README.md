@@ -152,3 +152,11 @@ classes/medidas-de-tendencia-central.html
 - Se restauró la animación tipo bounce/squash-stretch en los signos de exclamación del modal de eliminación.
 - Se eliminó el patrón de signos de exclamación del fondo del warning.
 - Se reemplazó por una malla roja diagonal inspirada en la malla de los banners de clases/asignaturas.
+
+## v0.24.4
+
+- Se corrigió la animación visible del warning de eliminación: los signos de exclamación ahora se animan mediante contenedores `span` independientes, con bounce y squash/stretch más marcado.
+- La malla roja del encabezado del warning dejó de depender del pseudo-elemento y ahora usa un elemento real `.danger-red-mesh`, con animación de desplazamiento y pulso.
+- Se agregó cache busting a `styles.css`, `app.js` y `sw.js` para forzar que el navegador cargue la versión actualizada.
+- Versión actualizada a `0.24.4`.
+
