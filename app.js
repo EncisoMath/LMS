@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.13';
+  const APP_VERSION = '0.24.14';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -958,18 +958,28 @@
       button.addEventListener('click', () => {
         const studentId = button.dataset.rockstarStudent;
         const delta = Number(button.dataset.rockstarDelta);
-        addRockstarDelta(studentId, delta);
+        const changed = addRockstarDelta(studentId, delta);
+        if (changed) flashRockstarButton(button, delta);
       });
     });
   }
 
+  function flashRockstarButton(button, delta) {
+    if (!button) return;
+    const className = Number(delta) > 0 ? 'rock-hit-plus' : 'rock-hit-minus';
+    button.classList.remove('rock-hit-plus', 'rock-hit-minus');
+    void button.offsetWidth;
+    button.classList.add(className);
+    window.setTimeout(() => button.classList.remove(className), 520);
+  }
+
   function addRockstarDelta(studentId, delta) {
     const assignment = state.assignment;
-    if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return;
+    if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return false;
     const attendance = getAttendance(assignment.id, todayISO());
     if (isRockstarLocked(attendance[studentId])) {
       toast('Estudiante sin puntos hoy por asistencia');
-      return;
+      return false;
     }
     const events = getLocalRockstarEvents(assignment.id);
     events.push({
@@ -981,11 +991,11 @@
       delta: Number(delta)
     });
     saveLocalRockstarEvents(assignment.id, events);
-    updateRockstarCard(studentId);
-    toast(delta > 0 ? '+1 punto Rockstar' : '-1 punto Rockstar');
+    updateRockstarCard(studentId, Number(delta));
+    return true;
   }
 
-  function updateRockstarCard(studentId) {
+  function updateRockstarCard(studentId, delta = 0) {
     const assignment = state.assignment;
     const card = document.querySelector(`[data-rockstar-card="${escapeSelector(studentId)}"]`);
     if (!assignment || !card) return;
@@ -1010,7 +1020,7 @@
       pulseElement(score, 'text-pop');
     }
     if (meta) meta.textContent = locked ? `Periodo ${state.rockstarPeriod} · No disponible por asistencia` : `Periodo ${state.rockstarPeriod} · ${tier.label}`;
-    pulseElement(card, locked ? 'flash-excused' : (points >= 0 ? 'flash-present' : 'flash-absent'));
+    pulseElement(card, locked ? 'flash-excused' : (Number(delta) < 0 ? 'flash-absent' : 'flash-present'));
   }
 
   function isRockstarLocked(status) {
@@ -1662,7 +1672,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.13', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.14', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

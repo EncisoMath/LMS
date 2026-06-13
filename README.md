@@ -242,6 +242,13 @@ Mejoras visuales de la pestaña Rockstars:
 - El número de puntos aparece más grande, sin recuadro, con `pts` proporcional.
 - Estudiantes con asistencia `No asistió` o `Excusa` aparecen desactivados, en gris, con emoji 😴 y sin botones `-1`/`+1`.
 
+## v0.24.14
+
+- Se quita el toast automático al sumar/restar puntos Rockstar; ahora el cambio se confirma visualmente en el botón y la tarjeta.
+- Se reduce el glow de la palabra ROCKSTAR del banner para mejorar legibilidad sin perder el efecto neón.
+- Los botones +1 y -1 quedan forzados a verde/rojo al tocarse, sin depender del color del tema.
+- El total de puntos se agranda y se aumenta el resplandor exterior de las tarjetas Rockstar para acercarlas más al estilo de Estudiantes.
+
 ## v0.24.13
 
 Ajustes visuales en Rockstars:

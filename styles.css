@@ -4803,3 +4803,143 @@ html[data-bg-mode="black"] .login-screen {
   border-color: rgba(148,163,184,.30) !important;
   box-shadow: 0 0 0 1px rgba(148,163,184,.10), 0 0 16px rgba(148,163,184,.08), 0 10px 24px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.03) !important;
 }
+
+/* v0.24.14 - ajustes finos Rockstars */
+.rockstar-title-neon {
+  text-shadow:
+    0 0 4px rgba(255,255,255,.68),
+    0 0 9px rgba(34,211,238,.48),
+    0 0 16px rgba(255,43,214,.38) !important;
+  filter: drop-shadow(0 0 5px rgba(34,211,238,.20)) drop-shadow(0 0 8px rgba(255,43,214,.16)) !important;
+  -webkit-text-stroke: .85px rgba(255,255,255,.72) !important;
+}
+.rockstar-title-neon::before {
+  -webkit-text-stroke: 3px rgba(255,43,214,.20) !important;
+  filter: blur(.6px) !important;
+  opacity: .52 !important;
+}
+@keyframes rockstarNeonBreath {
+  from { filter: drop-shadow(0 0 4px rgba(34,211,238,.22)) drop-shadow(0 0 7px rgba(255,43,214,.18)); }
+  to { filter: drop-shadow(0 0 7px rgba(255,43,214,.30)) drop-shadow(0 0 11px rgba(34,211,238,.22)); }
+}
+
+.rockstar-score-box {
+  min-width: 108px !important;
+  top: 4px !important;
+  right: 9px !important;
+  align-items: flex-end !important;
+}
+.rockstar-score {
+  font-size: 2.95rem !important;
+  line-height: .88 !important;
+  letter-spacing: -.08em !important;
+  text-shadow:
+    0 0 10px var(--tier-glow, rgba(255,255,255,.42)),
+    0 0 22px var(--tier-glow, rgba(255,255,255,.32)),
+    0 0 42px var(--tier-glow, rgba(255,255,255,.20)) !important;
+}
+.rockstar-score-label {
+  font-size: .98rem !important;
+  line-height: 1 !important;
+  margin-bottom: 3px !important;
+}
+.rockstar-main {
+  padding-right: 118px !important;
+}
+
+html[data-bg-mode="black"] .student-card.rockstar-card,
+.student-card.rockstar-card {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rock-card-color, #ffffff) 30%, transparent),
+    0 0 38px color-mix(in srgb, var(--rock-card-glow, rgba(255,255,255,.22)) 86%, transparent),
+    0 16px 34px rgba(0,0,0,.64),
+    inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-diamond,
+.student-card.rockstar-card.tier-diamond {
+  background: linear-gradient(135deg, rgba(34,211,238,.30), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(34,211,238,.82) !important;
+  box-shadow: 0 0 0 1px rgba(34,211,238,.28), 0 0 38px rgba(34,211,238,.28), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-fire,
+.student-card.rockstar-card.tier-fire {
+  background: linear-gradient(135deg, rgba(255,111,0,.31), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(255,176,0,.82) !important;
+  box-shadow: 0 0 0 1px rgba(255,176,0,.28), 0 0 38px rgba(255,111,0,.29), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-cool,
+.student-card.rockstar-card.tier-cool {
+  background: linear-gradient(135deg, rgba(2,136,209,.31), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(56,189,248,.82) !important;
+  box-shadow: 0 0 0 1px rgba(56,189,248,.28), 0 0 38px rgba(2,136,209,.28), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-rocket,
+.student-card.rockstar-card.tier-rocket {
+  background: linear-gradient(135deg, rgba(255,43,214,.30), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(255,102,216,.80) !important;
+  box-shadow: 0 0 0 1px rgba(255,43,214,.27), 0 0 38px rgba(255,43,214,.28), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-neutral,
+.student-card.rockstar-card.tier-neutral {
+  background: linear-gradient(135deg, rgba(88,204,2,.30), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(88,204,2,.78) !important;
+  box-shadow: 0 0 0 1px rgba(88,204,2,.26), 0 0 36px rgba(88,204,2,.24), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-angry,
+.student-card.rockstar-card.tier-angry {
+  background: linear-gradient(135deg, rgba(239,68,68,.31), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(239,68,68,.80) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.27), 0 0 38px rgba(239,68,68,.29), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-skull,
+.student-card.rockstar-card.tier-skull {
+  background: linear-gradient(135deg, rgba(148,163,184,.27), rgba(0,0,0,.92) 62%) !important;
+  border-color: rgba(209,213,219,.68) !important;
+  box-shadow: 0 0 0 1px rgba(209,213,219,.22), 0 0 36px rgba(148,163,184,.27), 0 16px 34px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+.rockstar-card .rock-btn.rock-plus,
+.rockstar-card .rock-btn.rock-plus:hover,
+.rockstar-card .rock-btn.rock-plus:focus-visible,
+.rockstar-card .rock-btn.rock-plus:active,
+.rockstar-card .rock-btn.rock-plus.rock-hit-plus {
+  color: #fff !important;
+  outline: 3px solid rgba(88,204,2,.20) !important;
+  border-color: rgba(88,204,2,.86) !important;
+  background: linear-gradient(135deg, rgba(88,204,2,.46), rgba(88,204,2,.18)) !important;
+  box-shadow: 0 0 0 1px rgba(88,204,2,.16) inset, 0 0 24px rgba(88,204,2,.52), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+.rockstar-card .rock-btn.rock-minus,
+.rockstar-card .rock-btn.rock-minus:hover,
+.rockstar-card .rock-btn.rock-minus:focus-visible,
+.rockstar-card .rock-btn.rock-minus:active,
+.rockstar-card .rock-btn.rock-minus.rock-hit-minus {
+  color: #fff !important;
+  outline: 3px solid rgba(239,68,68,.20) !important;
+  border-color: rgba(239,68,68,.86) !important;
+  background: linear-gradient(135deg, rgba(239,68,68,.46), rgba(239,68,68,.18)) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.16) inset, 0 0 24px rgba(239,68,68,.52), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+.rockstar-card .rock-btn.rock-hit-plus {
+  animation: rockPlusConfirm .46s cubic-bezier(.16, 1, .3, 1) !important;
+}
+.rockstar-card .rock-btn.rock-hit-minus {
+  animation: rockMinusConfirm .46s cubic-bezier(.16, 1, .3, 1) !important;
+}
+@keyframes rockPlusConfirm {
+  0% { transform: translateY(-1px) scale(1); filter: brightness(1); }
+  38% { transform: translateY(-2px) scale(1.035); filter: brightness(1.26) saturate(1.18); box-shadow: 0 0 0 1px rgba(88,204,2,.22) inset, 0 0 34px rgba(88,204,2,.74), 0 10px 22px rgba(0,0,0,.30); }
+  100% { transform: translateY(-1px) scale(1); filter: brightness(1); }
+}
+@keyframes rockMinusConfirm {
+  0% { transform: translateY(-1px) scale(1); filter: brightness(1); }
+  38% { transform: translateY(-2px) scale(1.035); filter: brightness(1.24) saturate(1.16); box-shadow: 0 0 0 1px rgba(239,68,68,.22) inset, 0 0 34px rgba(239,68,68,.74), 0 10px 22px rgba(0,0,0,.30); }
+  100% { transform: translateY(-1px) scale(1); filter: brightness(1); }
+}
+
+@media (max-width: 420px) {
+  .rockstar-main { padding-right: 100px !important; }
+  .rockstar-score-box { min-width: 96px !important; right: 7px !important; }
+  .rockstar-score { font-size: 2.45rem !important; }
+  .rockstar-score-label { font-size: .84rem !important; margin-bottom: 2px !important; }
+}
