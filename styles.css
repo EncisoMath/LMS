@@ -5408,3 +5408,54 @@ button.rock-btn {
   transform: translateY(0) scale(.985) !important;
   filter: saturate(1.15) brightness(1.08) !important;
 }
+
+/* v0.24.18 - valores finales: puntos, info banner y buscadores */
+.rockstar-score-tune-panel,
+.subject-info-tune-panel {
+  display: none !important;
+}
+
+.search-wrap {
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+}
+.search-wrap span {
+  padding-left: 4px !important;
+}
+.search-wrap .input,
+.search-wrap .input.search-input {
+  padding-left: 10px !important;
+  padding-right: 12px !important;
+}
+
+.subject-banner .subject-copy {
+  transform: translate3d(var(--subject-info-x, 10px), 0, 0) !important;
+  transform-origin: left center !important;
+  will-change: auto !important;
+  text-rendering: geometricPrecision !important;
+  -webkit-font-smoothing: antialiased !important;
+  backface-visibility: visible !important;
+}
+.subject-banner .subject-kicker {
+  font-size: var(--subject-kicker-size, .904rem) !important;
+  line-height: 1.08 !important;
+}
+.subject-banner h2 {
+  font-size: var(--subject-title-size, 1.37rem) !important;
+  line-height: .95 !important;
+}
+.subject-banner .subject-chips.compact span {
+  font-size: var(--subject-chip-size, .932rem) !important;
+  line-height: 1.1 !important;
+}
+
+@media (max-width: 520px) {
+  .subject-banner .subject-kicker {
+    font-size: var(--subject-kicker-size, .904rem) !important;
+  }
+  .subject-banner h2 {
+    font-size: var(--subject-title-size, 1.37rem) !important;
+  }
+  .subject-banner .subject-chips.compact span {
+    font-size: var(--subject-chip-size, .932rem) !important;
+  }
+}

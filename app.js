@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.17';
+  const APP_VERSION = '0.24.18';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -39,7 +39,7 @@
   ];
 
   const ROCKSTAR_SCORE_TUNE_KEY = 'encisomath:rockstarScoreTune';
-  const ROCKSTAR_SCORE_TUNE_DEFAULTS = { x: 0, y: 0, zoom: 100 };
+  const ROCKSTAR_SCORE_TUNE_DEFAULTS = { x: -2, y: 6, zoom: 79 };
   const ROCKSTAR_SCORE_TUNE_FIELDS = [
     { key: 'x', label: 'Mover puntos horizontal', min: -70, max: 70, step: 1, unit: 'px' },
     { key: 'y', label: 'Mover puntos vertical', min: -36, max: 36, step: 1, unit: 'px' },
@@ -47,7 +47,7 @@
   ];
 
   const SUBJECT_INFO_TUNE_KEY = 'encisomath:subjectInfoTune';
-  const SUBJECT_INFO_TUNE_DEFAULTS = { x: 0, zoom: 100 };
+  const SUBJECT_INFO_TUNE_DEFAULTS = { x: 10, zoom: 137 };
   const SUBJECT_INFO_TUNE_FIELDS = [
     { key: 'x', label: 'Mover info horizontal', min: -90, max: 90, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
@@ -373,7 +373,6 @@
             </div>
           </div>
         </section>
-        ${subjectInfoTunePanelHTML()}
         <div class="tab-row sticky-tabs">
           <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
           <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
@@ -391,7 +390,6 @@
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
-      bindSubjectInfoTunePanel();
       applySubjectInfoTune();
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
@@ -444,14 +442,7 @@
   }
 
   function getSubjectInfoTune() {
-    const saved = readJSON(SUBJECT_INFO_TUNE_KEY) || {};
-    return SUBJECT_INFO_TUNE_FIELDS.reduce((tune, field) => {
-      const raw = Number(saved[field.key]);
-      const fallback = SUBJECT_INFO_TUNE_DEFAULTS[field.key];
-      const value = Number.isFinite(raw) ? raw : fallback;
-      tune[field.key] = Math.min(field.max, Math.max(field.min, value));
-      return tune;
-    }, {});
+    return { ...SUBJECT_INFO_TUNE_DEFAULTS };
   }
 
   function saveSubjectInfoTune(tune) {
@@ -469,8 +460,12 @@
 
   function applySubjectInfoTune(tune = getSubjectInfoTune()) {
     const root = document.documentElement;
+    const scale = (Number(tune.zoom) || 100) / 100;
     root.style.setProperty('--subject-info-x', `${Number(tune.x) || 0}px`);
-    root.style.setProperty('--subject-info-scale', `${(Number(tune.zoom) || 100) / 100}`);
+    root.style.setProperty('--subject-info-scale', `${scale}`);
+    root.style.setProperty('--subject-kicker-size', `${(0.66 * scale).toFixed(3)}rem`);
+    root.style.setProperty('--subject-title-size', `${(1.00 * scale).toFixed(3)}rem`);
+    root.style.setProperty('--subject-chip-size', `${(0.68 * scale).toFixed(3)}rem`);
   }
 
   function setSubjectTab(tab) {
@@ -982,7 +977,6 @@
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
       </div>
-      ${rockstarScoreTunePanelHTML()}
       <div class="student-tools rockstar-tools">
         <div class="search-wrap">
           <span aria-hidden="true">🔎</span>
@@ -1023,7 +1017,6 @@
       refreshRockstarList();
     });
 
-    bindRockstarScoreTunePanel();
     applyRockstarScoreTune();
     bindRockstarActionButtons();
   }
@@ -1073,14 +1066,7 @@
   }
 
   function getRockstarScoreTune() {
-    const saved = readJSON(ROCKSTAR_SCORE_TUNE_KEY) || {};
-    return ROCKSTAR_SCORE_TUNE_FIELDS.reduce((tune, field) => {
-      const raw = Number(saved[field.key]);
-      const fallback = ROCKSTAR_SCORE_TUNE_DEFAULTS[field.key];
-      const value = Number.isFinite(raw) ? raw : fallback;
-      tune[field.key] = Math.min(field.max, Math.max(field.min, value));
-      return tune;
-    }, {});
+    return { ...ROCKSTAR_SCORE_TUNE_DEFAULTS };
   }
 
   function saveRockstarScoreTune(tune) {
@@ -1855,7 +1841,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.17', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.18', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

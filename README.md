@@ -284,3 +284,11 @@ Ajustes visuales adicionales en Rockstars:
 - Se agregó un panel temporal para calibrar la información del banner de asignatura con sliders de posición X y zoom. Los valores se guardan en `localStorage` como `encisomath:subjectInfoTune`.
 - Se hizo más inmediata la respuesta visual de los botones `+1` y `-1` en Rockstars: el flash verde/rojo ahora inicia en `pointerdown` y dura menos, evitando sensación de botón pegado.
 - Se actualizó cache busting a `0.24.17`.
+
+## v0.24.18
+
+- Se fijaron los valores finales de la calibración de puntos Rockstar: X `-2px`, Y `6px`, zoom `79%`, y se retiró el panel temporal de puntos.
+- Se fijaron los valores finales de la información del banner de asignatura: X `10px`, zoom `137%`, y se retiró el panel temporal del banner.
+- El zoom de la información del banner ya no se aplica con `transform: scale()`, sino mediante tamaños de fuente calculados para evitar que el texto se vea borroso.
+- Se añadió más separación interna en los buscadores para que el texto `Buscar estudiante` no quede pegado al borde izquierdo.
+- Se actualizó cache busting a `0.24.18`.
