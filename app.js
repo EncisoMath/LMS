@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.63';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.63: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.65';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.64: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1340,8 +1340,10 @@
     const question = questions[index];
     const fullscreen = Boolean(options.fullscreen);
     const promptText = question.textA || question.prompt || '';
-    const promptClass = quizPromptClass(promptText || '');
-    const textBClass = quizLengthClass(question.textB || '', 'quiz-text-b');
+    const textBText = question.textB || '';
+    const sharedTextModifier = quizSharedTextModifier(promptText, textBText);
+    const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
+    const textBClass = quizLengthClass(textBText, 'quiz-text-b', sharedTextModifier);
     const calibratable = ['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
@@ -1379,13 +1381,20 @@
     return '';
   }
 
-  function quizLengthClass(text, prefix) {
-    const modifier = quizLengthModifier(text);
+  function quizLengthClass(text, prefix, forcedModifier = '') {
+    const modifier = forcedModifier || quizLengthModifier(text);
     return modifier ? `${prefix}-${modifier}` : '';
   }
 
-  function quizPromptClass(prompt) {
-    const modifier = quizLengthModifier(prompt);
+  function quizSharedTextModifier(textA, textB) {
+    const a = String(textA || '');
+    const b = String(textB || '');
+    const longest = a.length >= b.length ? a : b;
+    return quizLengthModifier(longest);
+  }
+
+  function quizPromptClass(prompt, forcedModifier = '') {
+    const modifier = forcedModifier || quizLengthModifier(prompt);
     return `quiz-prompt${modifier ? ` quiz-prompt-${modifier}` : ''}`;
   }
 
@@ -1598,6 +1607,18 @@
     if (!stage) return;
     stage.classList.toggle('quiz-hide-image-preview', !getQuizImagePreviewVisible(type));
     const safe = normalizeQuizLayoutTune(tune);
+    const unifiedFont = `${safe.text_font}px`;
+    stage.style.setProperty('--quiz-text-font', unifiedFont);
+    stage.style.setProperty('--quiz-text-a-font', unifiedFont);
+    stage.style.setProperty('--quiz-text-b-font', unifiedFont);
+    stage.style.setProperty('--quiz-fill-font', unifiedFont);
+    const answerZone = stage.querySelector('[data-quiz-tune-target="answers"]');
+    if (answerZone) {
+      answerZone.style.setProperty('--quiz-text-font', unifiedFont);
+      answerZone.style.setProperty('--quiz-text-a-font', unifiedFont);
+      answerZone.style.setProperty('--quiz-text-b-font', unifiedFont);
+      answerZone.style.setProperty('--quiz-fill-font', unifiedFont);
+    }
     const setBox = (name, prefix) => {
       const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
       if (!box) return;
@@ -3956,7 +3977,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.63', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.65', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

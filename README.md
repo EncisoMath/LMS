@@ -672,6 +672,16 @@ unzip -t encisomath-pwa-v0.24.52.zip
 
 
 
+
+## v0.24.64
+
+- Se parte de `v0.24.63`.
+- En Quizzes tipo `fill_text` / Completar texto drag and drop se corrigió la tipografía de la zona de respuesta.
+- El texto del enunciado a completar, los espacios `Arrastra aquí`, las opciones disponibles y las opciones colocadas ahora usan la misma variable de fuente que Texto A/B (`--quiz-text-font` / `--quiz-fill-font`).
+- El ajuste `Texto A/B fuente base` de la tuerca también controla estos textos de Completar texto, evitando que se vean más grandes que Texto A y Texto B.
+- Se mantuvieron las alturas alineadas con Drag and drop para espacios y opciones.
+- Versión/cache busting actualizados a `0.24.64`.
+
 ## v0.24.63
 
 - Se parte de `v0.24.62`.
@@ -696,4 +706,13 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se fijó `--quiz-feedback-lift: 0px` y se agregaron overrides para neutralizar desplazamientos en ABCD, Verdadero/Falso, Pregunta abierta, Drag and drop, Completar texto y Slider.
 - Se mantiene la protección de Quizzes desactivada temporalmente.
 - Versiones/cache busting actualizados a `0.24.61`.
+
+
+## v0.24.65
+
+- Se parte de `v0.24.64`.
+- Corrección en Quizzes tipo `drag and drop`: Texto A y Texto B ahora comparten el mismo modificador de longitud, calculado con el texto más largo de los dos.
+- Esto evita que Texto A y Texto B queden con tamaños distintos cuando uno es más largo que el otro.
+- Se mantiene la reducción automática de fuente cuando el texto es largo, pero aplicada de forma pareja a ambos contenedores.
+- Versiones/cache busting actualizados a `0.24.65`.
 
