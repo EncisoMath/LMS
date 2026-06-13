@@ -137,3 +137,9 @@ classes/medidas-de-tendencia-central.html
 
 - Paleta de tema actualizada con 16 colores solicitados y nombres en español.
 - Color por defecto ajustado a Azul Enciso `#1976D2`.
+## v0.24.1
+- Redistribución de figuras geométricas en login para usar mejor el espacio superior e inferior sin quedar tapadas por la tarjeta de inicio.
+- Recuperación del efecto neón/glow en las figuras del login.
+- Pantalla de carga con fondo negro plano, sin glows radiales pesados.
+- Selector de color principal reemplazado por color picker real con validación contra colores demasiado oscuros o demasiado claros.
+

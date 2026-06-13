@@ -2894,3 +2894,118 @@ html[data-bg-mode="black"] .login-screen::after {
 .login-card {
   z-index: 3 !important;
 }
+
+/* v0.24.1 - login neon mejor distribuido, carga sin glows y color picker real */
+.login-screen .math-bg-login {
+  z-index: 2 !important;
+  overflow: visible !important;
+}
+.login-screen .math-bg-login .shape {
+  filter: saturate(1.35) brightness(1.08) !important;
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--c, var(--maincolor)) 90%, transparent),
+    0 0 28px color-mix(in srgb, var(--c, var(--maincolor)) 58%, transparent),
+    0 0 62px color-mix(in srgb, var(--c, var(--maincolor)) 28%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.42) !important;
+  animation:
+    shapeTravel var(--dur, 7s) cubic-bezier(.2, .72, .2, 1) infinite,
+    shapePulse calc(var(--dur, 7s) * .54) ease-in-out infinite !important;
+}
+.login-screen .math-bg-login .shape.outline {
+  border-width: 4px !important;
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--c, var(--maincolor)) 92%, transparent),
+    0 0 30px color-mix(in srgb, var(--c, var(--maincolor)) 58%, transparent),
+    0 0 70px color-mix(in srgb, var(--c, var(--maincolor)) 30%, transparent) !important;
+}
+.login-screen .login-card {
+  z-index: 4 !important;
+}
+.loading-screen,
+html[data-bg-mode="black"] .loading-screen {
+  background: #000000 !important;
+}
+.loading-screen::before,
+.loading-screen::after,
+html[data-bg-mode="black"] .loading-screen::before,
+html[data-bg-mode="black"] .loading-screen::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  animation: none !important;
+  filter: none !important;
+}
+.loading-screen .math-bg-loading .shape {
+  filter: none !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c, var(--maincolor)) 26%, transparent), inset 0 1px 0 rgba(255,255,255,.20) !important;
+}
+.loading-screen .math-bg-loading .shape.outline {
+  border-width: 3px !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c, var(--maincolor)) 28%, transparent) !important;
+}
+.color-picker-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.color-picker {
+  width: 74px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.08);
+  cursor: pointer;
+  overflow: hidden;
+}
+.color-picker::-webkit-color-swatch-wrapper { padding: 5px; }
+.color-picker::-webkit-color-swatch { border: 0; border-radius: var(--radius); }
+.color-picker::-moz-color-swatch { border: 0; border-radius: var(--radius); }
+.color-picker-meta { display: grid; gap: 7px; min-width: 0; }
+.color-hex-input {
+  height: 48px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 650;
+}
+.color-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  color: var(--muted);
+  font-size: .84rem;
+  font-weight: 560;
+}
+.color-preview::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: var(--radius);
+  background: var(--preview-color, var(--maincolor));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--preview-color, var(--maincolor)) 42%, transparent);
+  border: 1px solid rgba(255,255,255,.20);
+}
+.settings-help {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.profile-menu-modal .settings-group .ghost-btn {
+  width: 100%;
+}
+@media (max-width: 420px) {
+  .login-screen .math-bg-login .shape {
+    transform-origin: center;
+  }
+  .color-picker-row {
+    grid-template-columns: 66px minmax(0, 1fr);
+  }
+  .color-picker {
+    width: 66px;
+  }
+}
+

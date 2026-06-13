@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.0';
+  const APP_VERSION = '0.24.1';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -129,7 +129,7 @@
     const last = readJSON('encisomath:lastUser');
     const markup = `
       <main class="login-screen">
-        ${animatedShapes()}
+        ${animatedShapes('login')}
         <section class="login-card">
           <div class="logo-wrap" aria-label="EncisoMath">
             <div class="logo-mark">
@@ -186,7 +186,7 @@
   function renderLoadingHTML(text = randomPhrase()) {
     return `
       <main class="loading-screen">
-        ${animatedShapes()}
+        ${animatedShapes('loading')}
         <section class="loader-card">
           <div class="loader-orbit"><span>π</span><span>Σ</span><span>√</span></div>
           <div class="loading-phrase">${escapeHTML(text)}</div>
@@ -414,10 +414,16 @@
         <p class="section-kicker">Perfil y apariencia</p>
         <h2>Gestionar EncisoMath</h2>
         <div class="settings-group">
-          <label class="settings-label" for="accentSelect">Color principal</label>
-          <select id="accentSelect" class="select dark-select">
-            ${ACCENT_OPTIONS.map((item) => `<option value="${escapeAttr(item.value)}" ${state.prefs.accent === item.value ? 'selected' : ''}>${escapeHTML(item.label)}</option>`).join('')}
-          </select>
+          <label class="settings-label" for="accentPicker">Color principal</label>
+          <div class="color-picker-row">
+            <input id="accentPicker" class="color-picker" type="color" value="${escapeAttr(state.prefs.accent)}" aria-label="Escoger color principal" />
+            <div class="color-picker-meta">
+              <input id="accentHex" class="input color-hex-input" value="${escapeAttr(state.prefs.accent)}" maxlength="7" spellcheck="false" aria-label="Color principal en hexadecimal" />
+              <span id="accentPreview" class="color-preview" style="--preview-color:${escapeAttr(state.prefs.accent)}">Color actual</span>
+            </div>
+          </div>
+          <p class="settings-help">Puedes escoger cualquier color medio o intenso. Se bloquean tonos casi negros y tonos casi blancos para conservar contraste.</p>
+          <button class="ghost-btn" id="accentResetBtn" type="button">Restablecer Azul Enciso</button>
         </div>
         <div class="settings-group">
           <label class="settings-label" for="backgroundSelect">Fondo de la app</label>
@@ -432,7 +438,28 @@
         </div>
       </div>
     `, () => {
-      document.getElementById('accentSelect').addEventListener('change', (event) => updatePreference('accent', event.target.value));
+      const accentPicker = document.getElementById('accentPicker');
+      const accentHex = document.getElementById('accentHex');
+      const syncAccentPreview = (value) => {
+        const normalized = normalizeHexColor(value) || state.prefs.accent;
+        accentPicker.value = normalized;
+        accentHex.value = normalized.toUpperCase();
+        document.getElementById('accentPreview')?.style.setProperty('--preview-color', normalized);
+      };
+      const commitAccent = (value) => {
+        const normalized = normalizeHexColor(value);
+        if (!normalized || !isAllowedAccentColor(normalized)) {
+          syncAccentPreview(state.prefs.accent);
+          toast('Ese color queda demasiado oscuro o demasiado claro. Elige un tono medio o intenso.');
+          return;
+        }
+        updatePreference('accent', normalized);
+        syncAccentPreview(normalized);
+      };
+      accentPicker.addEventListener('input', (event) => syncAccentPreview(event.target.value));
+      accentPicker.addEventListener('change', (event) => commitAccent(event.target.value));
+      accentHex.addEventListener('change', (event) => commitAccent(event.target.value));
+      document.getElementById('accentResetBtn').addEventListener('click', () => commitAccent(DEFAULT_PREFS.accent));
       document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
       document.getElementById('profileSoonBtn').addEventListener('click', () => toast('Gestión completa de perfil queda para la siguiente fase.'));
       document.getElementById('notifyMenuBtn').addEventListener('click', requestNotificationTest);
@@ -841,23 +868,41 @@
     }
   };
 
-  function animatedShapes() {
+  function animatedShapes(mode = 'loading') {
+    const loginShapes = [
+      ['circle', '--w:52px;--h:52px;left:6%;top:9%;--c:#1976D2;--o:.92;--dx:34px;--dy:42px;--r1:120deg;--dur:7.6s;--delay:-1.2s'],
+      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.90;--dx:-28px;--dy:54px;--r1:-150deg;--dur:8.1s;--delay:-2.1s'],
+      ['square outline', '--w:40px;--h:40px;left:87%;top:17%;--c:#C2185B;--o:.86;--dx:-36px;--dy:28px;--r1:210deg;--dur:8.4s;--delay:-3.3s'],
+      ['circle', '--w:28px;--h:28px;left:77%;top:21%;--c:#689F38;--o:.82;--dx:22px;--dy:-38px;--r1:-70deg;--dur:7.2s;--delay:-5.7s'],
+      ['rect', '--w:74px;--h:22px;left:14%;top:19%;--c:#512DA8;--o:.84;--dx:-48px;--dy:-38px;--r1:38deg;--dur:9.6s;--delay:-6.2s'],
+      ['circle outline', '--w:30px;--h:30px;left:7%;top:79%;--c:#0288D1;--o:.86;--dx:50px;--dy:-46px;--r1:120deg;--dur:8.7s;--delay:-4.4s'],
+      ['triangle', '--w:42px;--h:40px;left:20%;top:90%;--c:#E64A19;--o:.90;--dx:42px;--dy:-56px;--r1:240deg;--dur:8.8s;--delay:-6s'],
+      ['square', '--w:28px;--h:28px;left:83%;top:88%;--c:#D32F2F;--o:.90;--dx:-58px;--dy:-54px;--r1:190deg;--dur:7.3s;--delay:-2.8s'],
+      ['rect outline', '--w:78px;--h:26px;left:64%;top:78%;--c:#0288D1;--o:.82;--dx:-38px;--dy:60px;--r1:-130deg;--dur:10.2s;--delay:-6.8s'],
+      ['circle', '--w:20px;--h:20px;left:14%;top:70%;--c:#FFA000;--o:.88;--dx:30px;--dy:52px;--r1:90deg;--dur:6.4s;--delay:-1.8s'],
+      ['square', '--w:24px;--h:24px;left:88%;top:72%;--c:#F57C00;--o:.86;--dx:-46px;--dy:62px;--r1:190deg;--dur:7.6s;--delay:-3.7s'],
+      ['triangle outline', '--w:46px;--h:46px;left:72%;top:95%;--c:#7B1FA2;--o:.82;--dx:-72px;--dy:-68px;--r1:-210deg;--dur:10.8s;--delay:-5.1s']
+    ];
+    const loadingShapes = [
+      ['circle', '--w:54px;--h:54px;left:5%;top:7%;--c:#1976D2;--o:.78;--dx:42px;--dy:98px;--r1:120deg;--dur:7.4s;--delay:-1.2s'],
+      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.82;--dx:-34px;--dy:110px;--r1:-150deg;--dur:8.2s;--delay:-2.2s'],
+      ['square outline', '--w:42px;--h:42px;left:88%;top:24%;--c:#C2185B;--o:.76;--dx:-42px;--dy:80px;--r1:210deg;--dur:8s;--delay:-3.1s'],
+      ['rect', '--w:34px;--h:86px;left:4%;top:56%;--c:#388E3C;--o:.72;--dx:44px;--dy:-110px;--r1:80deg;--dur:9.2s;--delay:-4.3s'],
+      ['circle outline', '--w:34px;--h:34px;left:86%;top:62%;--c:#0097A7;--o:.78;--dx:-48px;--dy:-90px;--r1:170deg;--dur:7.6s;--delay:-5.3s'],
+      ['triangle', '--w:42px;--h:40px;left:7%;top:82%;--c:#E64A19;--o:.80;--dx:52px;--dy:-84px;--r1:240deg;--dur:8.8s;--delay:-6s'],
+      ['square', '--w:24px;--h:24px;left:91%;top:82%;--c:#D32F2F;--o:.80;--dx:-72px;--dy:-88px;--r1:190deg;--dur:7.2s;--delay:-2.8s'],
+      ['rect outline', '--w:82px;--h:28px;left:74%;top:76%;--c:#0288D1;--o:.70;--dx:-58px;--dy:-92px;--r1:-130deg;--dur:10.2s;--delay:-6.8s'],
+      ['circle', '--w:18px;--h:18px;left:12%;top:30%;--c:#FFA000;--o:.88;--dx:34px;--dy:56px;--r1:90deg;--dur:6.4s;--delay:-1.8s'],
+      ['square', '--w:22px;--h:22px;left:92%;top:43%;--c:#F57C00;--o:.82;--dx:-48px;--dy:72px;--r1:190deg;--dur:7.6s;--delay:-3.7s'],
+      ['circle outline', '--w:28px;--h:28px;left:3%;top:42%;--c:#0288D1;--o:.76;--dx:42px;--dy:62px;--r1:120deg;--dur:8.7s;--delay:-4.4s'],
+      ['triangle outline', '--w:46px;--h:46px;left:82%;top:88%;--c:#7B1FA2;--o:.74;--dx:-74px;--dy:-108px;--r1:-210deg;--dur:10.8s;--delay:-5.1s'],
+      ['rect', '--w:92px;--h:26px;left:2%;top:18%;--c:#512DA8;--o:.68;--dx:48px;--dy:96px;--r1:38deg;--dur:9.6s;--delay:-7.2s'],
+      ['circle', '--w:40px;--h:40px;left:89%;top:8%;--c:#689F38;--o:.70;--dx:-62px;--dy:112px;--r1:-70deg;--dur:8.9s;--delay:-6.1s']
+    ];
+    const shapes = mode === 'login' ? loginShapes : loadingShapes;
     return `
-      <div class="math-bg" aria-hidden="true">
-        <span class="shape circle" style="--w:54px;--h:54px;left:5%;top:7%;--c:#1976D2;--o:.78;--dx:42px;--dy:98px;--r1:120deg;--dur:7.4s;--delay:-1.2s"></span>
-        <span class="shape triangle" style="--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.82;--dx:-34px;--dy:110px;--r1:-150deg;--dur:8.2s;--delay:-2.2s"></span>
-        <span class="shape square outline" style="--w:42px;--h:42px;left:88%;top:24%;--c:#C2185B;--o:.76;--dx:-42px;--dy:80px;--r1:210deg;--dur:8s;--delay:-3.1s"></span>
-        <span class="shape rect" style="--w:34px;--h:86px;left:4%;top:56%;--c:#388E3C;--o:.72;--dx:44px;--dy:-110px;--r1:80deg;--dur:9.2s;--delay:-4.3s"></span>
-        <span class="shape circle outline" style="--w:34px;--h:34px;left:86%;top:62%;--c:#0097A7;--o:.78;--dx:-48px;--dy:-90px;--r1:170deg;--dur:7.6s;--delay:-5.3s"></span>
-        <span class="shape triangle" style="--w:42px;--h:40px;left:7%;top:82%;--c:#E64A19;--o:.80;--dx:52px;--dy:-84px;--r1:240deg;--dur:8.8s;--delay:-6s"></span>
-        <span class="shape square" style="--w:24px;--h:24px;left:91%;top:82%;--c:#D32F2F;--o:.80;--dx:-72px;--dy:-88px;--r1:190deg;--dur:7.2s;--delay:-2.8s"></span>
-        <span class="shape rect outline" style="--w:82px;--h:28px;left:74%;top:76%;--c:#0288D1;--o:.70;--dx:-58px;--dy:-92px;--r1:-130deg;--dur:10.2s;--delay:-6.8s"></span>
-        <span class="shape circle" style="--w:18px;--h:18px;left:12%;top:30%;--c:#FFA000;--o:.88;--dx:34px;--dy:56px;--r1:90deg;--dur:6.4s;--delay:-1.8s"></span>
-        <span class="shape square" style="--w:22px;--h:22px;left:92%;top:43%;--c:#F57C00;--o:.82;--dx:-48px;--dy:72px;--r1:190deg;--dur:7.6s;--delay:-3.7s"></span>
-        <span class="shape circle outline" style="--w:28px;--h:28px;left:3%;top:42%;--c:#0288D1;--o:.76;--dx:42px;--dy:62px;--r1:120deg;--dur:8.7s;--delay:-4.4s"></span>
-        <span class="shape triangle outline" style="--w:46px;--h:46px;left:82%;top:88%;--c:#7B1FA2;--o:.74;--dx:-74px;--dy:-108px;--r1:-210deg;--dur:10.8s;--delay:-5.1s"></span>
-        <span class="shape rect" style="--w:92px;--h:26px;left:2%;top:18%;--c:#512DA8;--o:.68;--dx:48px;--dy:96px;--r1:38deg;--dur:9.6s;--delay:-7.2s"></span>
-        <span class="shape circle" style="--w:40px;--h:40px;left:89%;top:8%;--c:#689F38;--o:.70;--dx:-62px;--dy:112px;--r1:-70deg;--dur:8.9s;--delay:-6.1s"></span>
+      <div class="math-bg math-bg-${escapeAttr(mode)}" aria-hidden="true">
+        ${shapes.map(([className, style]) => `<span class="shape ${className}" style="${style}"></span>`).join('')}
       </div>
     `;
   }
@@ -1015,7 +1060,8 @@
   }
 
   function applyPreferences() {
-    const safeAccent = ACCENT_OPTIONS.some((item) => item.value === state.prefs.accent) ? state.prefs.accent : DEFAULT_PREFS.accent;
+    const requestedAccent = normalizeHexColor(state.prefs.accent);
+    const safeAccent = requestedAccent && isAllowedAccentColor(requestedAccent) ? requestedAccent : DEFAULT_PREFS.accent;
     const safeBackground = BACKGROUND_OPTIONS.some((item) => item.value === state.prefs.background) ? state.prefs.background : DEFAULT_PREFS.background;
     const blackMode = safeBackground === '#000000';
     state.prefs.accent = safeAccent;
@@ -1053,10 +1099,71 @@
   }
 
   function updatePreference(key, value) {
-    state.prefs[key] = value;
+    let nextValue = value;
+    if (key === 'accent') {
+      const normalized = normalizeHexColor(value);
+      if (!normalized || !isAllowedAccentColor(normalized)) {
+        toast('Ese color queda demasiado oscuro o demasiado claro. Elige un tono medio o intenso.');
+        return false;
+      }
+      nextValue = normalized;
+    }
+    state.prefs[key] = nextValue;
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
     applyPreferences();
     toast('Apariencia actualizada.');
+    return true;
+  }
+
+  function normalizeHexColor(value) {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    const shortMatch = trimmed.match(/^#?([0-9a-fA-F]{3})$/);
+    if (shortMatch) {
+      return `#${shortMatch[1].split('').map((char) => char + char).join('').toUpperCase()}`;
+    }
+    const fullMatch = trimmed.match(/^#?([0-9a-fA-F]{6})$/);
+    return fullMatch ? `#${fullMatch[1].toUpperCase()}` : null;
+  }
+
+  function isAllowedAccentColor(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return false;
+    const { lightness, saturation } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+    if (lightness < 0.18 || lightness > 0.88) return false;
+    if (saturation < 0.12 && (lightness < 0.24 || lightness > 0.76)) return false;
+    return true;
+  }
+
+  function hexToRgb(hex) {
+    const normalized = normalizeHexColor(hex);
+    if (!normalized) return null;
+    const value = normalized.slice(1);
+    return {
+      r: parseInt(value.slice(0, 2), 16),
+      g: parseInt(value.slice(2, 4), 16),
+      b: parseInt(value.slice(4, 6), 16)
+    };
+  }
+
+  function rgbToHsl(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+    let s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return { hue: h, saturation: s, lightness: l };
   }
 
   function openModal(markup, afterRender) {
