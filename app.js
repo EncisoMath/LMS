@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.70';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.70: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.71';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.71: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1428,44 +1428,44 @@
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
     multiple_choice: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 18,
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 20,
       image_x: 0, image_y: 30, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
       answers_x: -11, answers_y: 30, answers_w: 106, answers_h: 90
     },
     true_false: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 18,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 20,
       image_x: 0, image_y: 0, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 1, textB_w: 100, textB_h: 85,
       answers_x: -11, answers_y: 0, answers_w: 106, answers_h: 90
     },
     open: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 18,
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 20,
       image_x: 0, image_y: 30, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
       answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
     },
     match: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 18,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 20,
       image_x: 0, image_y: 10, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 20, textB_w: 100, textB_h: 80,
       answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
     },
     fill_text: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 16,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 20,
       image_x: 0, image_y: 0, image_w: 100, image_h: 180,
       textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 80,
       answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
     },
     slider: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 18,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 20,
       image_x: 0, image_y: 0, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 100,
       answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
     }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.70';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.71';
 
   function getQuizLayoutTuneDefaults(type = 'default') {
     return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
@@ -4027,7 +4027,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.70', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.71', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

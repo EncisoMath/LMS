@@ -11300,3 +11300,63 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
   font-weight: 400 !important;
 }
+
+
+/* v0.24.71 - Fuente base 20px para Texto A, Texto B y opciones/respuestas en todos los quizzes */
+.quiz-stage,
+.quiz-stage-fullscreen {
+  --quiz-text-font: 20px;
+  --quiz-text-a-font: 20px;
+  --quiz-text-b-font: 20px;
+  --quiz-fill-font: 20px;
+}
+
+.quiz-stage .quiz-text-a,
+.quiz-stage .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b {
+  font-size: var(--quiz-text-font, 20px) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-md,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-md {
+  font-size: calc(var(--quiz-text-font, 20px) * .92) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-sm,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-sm {
+  font-size: calc(var(--quiz-text-font, 20px) * .84) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-xs,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-xs {
+  font-size: calc(var(--quiz-text-font, 20px) * .76) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-answer-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-answer-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open textarea.quiz-open-input,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop-label,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-reset,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-validate,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-submit {
+  font-size: var(--quiz-text-font, 20px) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot {
+  font-size: var(--quiz-fill-font, var(--quiz-text-font, 20px)) !important;
+}
+
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot small,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
+  font-size: calc(var(--quiz-text-font, 20px) * .55) !important;
+}

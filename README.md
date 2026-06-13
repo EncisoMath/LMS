@@ -750,6 +750,14 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Versiones/cache busting actualizados a `0.24.69`.
 
 
+
+## v0.24.71
+
+- Se fijó la fuente base de Texto A/B en 20px para ABCD, Verdadero/Falso, Pregunta abierta, Drag and drop, Completar texto y Slider.
+- La fuente de opciones y zonas de respuesta ahora hereda la misma base visual de 20px en esos tipos de quiz.
+- Se actualizó la llave de calibración de layout a `v0.24.71` para evitar que valores antiguos de `localStorage` mantengan 18px o 16px.
+- Versiones/cache busting actualizados a `0.24.71`.
+
 ## v0.24.70
 
 - Se parte de `v0.24.69`.
