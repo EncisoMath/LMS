@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-no-cache-v0.24.7';
+const SW_VERSION = 'encisomath-no-cache-v0.24.9';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

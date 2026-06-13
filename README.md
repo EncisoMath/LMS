@@ -186,3 +186,18 @@ classes/medidas-de-tendencia-central.html
 - Ajuste visual del warning de eliminación: los signos de exclamación quedaron más pegados entre sí.
 - Se reemplazó el rebote/squash por una animación de zoom in / zoom out más limpia.
 - Se mantuvo la malla roja animada del encabezado del warning.
+
+## v0.24.8
+
+- Se agrego un control temporal debajo de los signos de exclamacion del warning de eliminacion para calibrar visualmente la separacion entre ambos signos.
+- El slider ajusta la variable `--warning-gap` en tiempo real y guarda el valor en `localStorage` con la clave `encisomath:warningBangGap`.
+- Rango de prueba: -8 px a 24 px. Valor inicial: 8 px.
+- Se mantiene la animacion zoom in / zoom out de los signos y la malla roja animada del encabezado.
+- Se actualizo cache busting a `0.24.8`.
+
+## v0.24.9
+
+- Se agrego un panel temporal de calibracion dentro del warning de eliminacion de estudiante.
+- El panel permite ajustar separacion de los signos, movimiento horizontal/vertical de los signos, tamano base, zoom minimo, zoom maximo y movimiento horizontal/vertical del texto.
+- Los valores se guardan en `localStorage` con la clave `encisomath:warningTune` para que el usuario pueda probar y reportar los valores finales.
+- Se mantuvo la malla roja animada del warning y se actualizo cache busting a `0.24.9`.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.7';
+  const APP_VERSION = '0.24.9';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -13,6 +13,29 @@
     accent: '#1976D2',
     background: '#000000'
   };
+
+  const WARNING_GAP_KEY = 'encisomath:warningBangGap';
+  const WARNING_TUNE_KEY = 'encisomath:warningTune';
+  const WARNING_TUNE_DEFAULTS = {
+    gap: 2,
+    iconX: 0,
+    iconY: 0,
+    markSize: 62,
+    zoomMin: 92,
+    zoomMax: 116,
+    textX: 0,
+    textY: 0
+  };
+  const WARNING_TUNE_FIELDS = [
+    { key: 'gap', label: 'Separacion !', min: -18, max: 22, step: 1, unit: 'px' },
+    { key: 'iconX', label: 'Mover ! horizontal', min: -32, max: 32, step: 1, unit: 'px' },
+    { key: 'iconY', label: 'Mover ! vertical', min: -32, max: 32, step: 1, unit: 'px' },
+    { key: 'markSize', label: 'Tamano !', min: 48, max: 78, step: 1, unit: 'px' },
+    { key: 'zoomMin', label: 'Zoom minimo', min: 70, max: 120, step: 1, unit: '%' },
+    { key: 'zoomMax', label: 'Zoom maximo', min: 100, max: 155, step: 1, unit: '%' },
+    { key: 'textX', label: 'Mover texto horizontal', min: -36, max: 36, step: 1, unit: 'px' },
+    { key: 'textY', label: 'Mover texto vertical', min: -30, max: 30, step: 1, unit: 'px' }
+  ];
 
   const ACCENT_OPTIONS = [
     { label: 'Rojo intenso', value: '#D32F2F' },
@@ -54,6 +77,7 @@
 
   let firstPaint = true;
   let transitionTimer = null;
+  let warningMotionAnimations = [];
 
   const phrases = [
     'Cargando... acomodando los signos para que no se peleen.',
@@ -623,11 +647,14 @@
       <div class="modal-card danger-modal">
         <div class="danger-head">
           <span class="danger-red-mesh" aria-hidden="true"></span>
-          <div class="warning-icon warning-duo" aria-hidden="true">
-            <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
-            <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
+          <div class="warning-tune-stack">
+            <div class="warning-icon warning-duo" aria-hidden="true">
+              <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
+              <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
+            </div>
+
           </div>
-          <div>
+          <div class="danger-copy">
             <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>
             <p>Esta acción es irreversible.</p>
           </div>
@@ -638,6 +665,7 @@
             <strong>${escapeHTML(student.fullName)}</strong>
             <span>ID ${escapeHTML(student.id)} · ${escapeHTML(assignment.sede)} · ${escapeHTML(assignment.grade)}° ${escapeHTML(assignment.course)}</span>
           </div>
+          ${renderWarningTunePanel()}
           <div class="danger-actions">
             <button class="danger-confirm" id="confirmDeleteStudent">Sí, eliminar estudiante</button>
             <button class="ghost-btn" data-close-modal>Cancelar</button>
@@ -650,49 +678,162 @@
     });
   }
 
-  function startDeleteWarningMotion() {
+  function warningTuneNumber(value, fallback, min, max) {
+    const numeric = Number(value);
+    const resolved = Number.isFinite(numeric) ? numeric : fallback;
+    return Math.max(min, Math.min(max, Math.round(resolved)));
+  }
+
+  function getWarningTune() {
+    const stored = readJSON(WARNING_TUNE_KEY) || {};
+    const legacyGap = Number(localStorage.getItem(WARNING_GAP_KEY));
+    const source = { ...WARNING_TUNE_DEFAULTS, ...stored };
+    if (!Object.prototype.hasOwnProperty.call(stored, 'gap') && Number.isFinite(legacyGap)) {
+      source.gap = legacyGap;
+    }
+    const tune = {};
+    WARNING_TUNE_FIELDS.forEach((field) => {
+      tune[field.key] = warningTuneNumber(source[field.key], WARNING_TUNE_DEFAULTS[field.key], field.min, field.max);
+    });
+    if (tune.zoomMax < tune.zoomMin + 2) tune.zoomMax = Math.min(155, tune.zoomMin + 2);
+    return tune;
+  }
+
+  function saveWarningTune(tune) {
+    localStorage.setItem(WARNING_TUNE_KEY, JSON.stringify(tune));
+    localStorage.setItem(WARNING_GAP_KEY, String(tune.gap));
+  }
+
+  function warningTuneValueLabel(field, value) {
+    return `${value}${field.unit}`;
+  }
+
+  function renderWarningTunePanel() {
+    const tune = getWarningTune();
+    return `
+      <div class="warning-calibration-panel" aria-label="Panel temporal de ajuste del warning">
+        <div class="warning-calibration-head">
+          <strong>Ajuste temporal del warning</strong>
+          <span>Pásame estos valores cuando quede bien.</span>
+        </div>
+        <div class="warning-calibration-grid">
+          ${WARNING_TUNE_FIELDS.map((field) => `
+            <label class="warning-tune-control" for="warningTune-${field.key}">
+              <span>${field.label} <output id="warningTuneOut-${field.key}">${warningTuneValueLabel(field, tune[field.key])}</output></span>
+              <input id="warningTune-${field.key}" data-warning-tune="${field.key}" type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" />
+            </label>
+          `).join('')}
+        </div>
+        <button class="warning-tune-reset" type="button" id="warningTuneReset">Restablecer ajustes</button>
+      </div>
+    `;
+  }
+
+  function applyWarningTune(tune = getWarningTune()) {
+    const zoomMid = Math.round((tune.zoomMin + tune.zoomMax) / 2);
+    document.querySelectorAll('.danger-modal').forEach((modal) => {
+      modal.style.setProperty('--warning-gap', `${tune.gap}px`);
+      modal.style.setProperty('--warning-icon-x', `${tune.iconX}px`);
+      modal.style.setProperty('--warning-icon-y', `${tune.iconY}px`);
+      modal.style.setProperty('--warning-mark-size', `${tune.markSize}px`);
+      modal.style.setProperty('--warning-zoom-min', (tune.zoomMin / 100).toFixed(3));
+      modal.style.setProperty('--warning-zoom-mid', (zoomMid / 100).toFixed(3));
+      modal.style.setProperty('--warning-zoom-max', (tune.zoomMax / 100).toFixed(3));
+      modal.style.setProperty('--warning-text-x', `${tune.textX}px`);
+      modal.style.setProperty('--warning-text-y', `${tune.textY}px`);
+    });
+
+    WARNING_TUNE_FIELDS.forEach((field) => {
+      const input = document.getElementById(`warningTune-${field.key}`);
+      const output = document.getElementById(`warningTuneOut-${field.key}`);
+      if (input) input.value = String(tune[field.key]);
+      if (output) output.textContent = warningTuneValueLabel(field, tune[field.key]);
+    });
+    return tune;
+  }
+
+  function initWarningTuneControls() {
+    let tune = applyWarningTune(getWarningTune());
+    document.querySelectorAll('[data-warning-tune]').forEach((slider) => {
+      slider.addEventListener('input', () => {
+        const field = WARNING_TUNE_FIELDS.find((item) => item.key === slider.dataset.warningTune);
+        if (!field) return;
+        tune = { ...tune, [field.key]: warningTuneNumber(slider.value, WARNING_TUNE_DEFAULTS[field.key], field.min, field.max) };
+        if (tune.zoomMax < tune.zoomMin + 2) {
+          if (field.key === 'zoomMin') tune.zoomMax = Math.min(155, tune.zoomMin + 2);
+          if (field.key === 'zoomMax') tune.zoomMin = Math.max(70, tune.zoomMax - 2);
+        }
+        saveWarningTune(tune);
+        applyWarningTune(tune);
+        restartDeleteWarningAnimations(tune);
+      });
+    });
+
+    const reset = document.getElementById('warningTuneReset');
+    if (reset) {
+      reset.addEventListener('click', () => {
+        tune = { ...WARNING_TUNE_DEFAULTS };
+        saveWarningTune(tune);
+        applyWarningTune(tune);
+        restartDeleteWarningAnimations(tune);
+      });
+    }
+  }
+
+  function restartDeleteWarningAnimations(tune = getWarningTune()) {
+    warningMotionAnimations.forEach((animation) => animation.cancel());
+    warningMotionAnimations = [];
     const mesh = document.querySelector('.danger-red-mesh');
     const markA = document.querySelector('.warning-bounce-a');
     const markB = document.querySelector('.warning-bounce-b');
     if (!Element.prototype.animate) return;
 
     if (mesh) {
-      mesh.animate([
+      warningMotionAnimations.push(mesh.animate([
         { backgroundPosition: '0 0, 0 0' },
         { backgroundPosition: '48px 48px, 48px 48px' }
       ], {
         duration: 14000,
         iterations: Infinity,
         easing: 'linear'
-      });
+      }));
     }
 
+    const min = (tune.zoomMin / 100).toFixed(3);
+    const mid = ((tune.zoomMin + tune.zoomMax) / 200).toFixed(3);
+    const max = (tune.zoomMax / 100).toFixed(3);
+
     if (markA) {
-      markA.animate([
-        { transform: 'translate3d(0,0,0) scale(.92) rotate(-8deg)', offset: 0 },
-        { transform: 'translate3d(0,0,0) scale(1.14) rotate(-8deg)', offset: .46 },
-        { transform: 'translate3d(0,0,0) scale(1.04) rotate(-8deg)', offset: .62 },
-        { transform: 'translate3d(0,0,0) scale(.92) rotate(-8deg)', offset: 1 }
+      warningMotionAnimations.push(markA.animate([
+        { transform: `scale(${min}) rotate(-8deg)`, offset: 0 },
+        { transform: `scale(${max}) rotate(-8deg)`, offset: .46 },
+        { transform: `scale(${mid}) rotate(-8deg)`, offset: .62 },
+        { transform: `scale(${min}) rotate(-8deg)`, offset: 1 }
       ], {
         duration: 920,
         iterations: Infinity,
         easing: 'cubic-bezier(.34,1.56,.64,1)'
-      });
+      }));
     }
 
     if (markB) {
-      markB.animate([
-        { transform: 'translate3d(0,0,0) scale(.94) rotate(6deg)', offset: 0 },
-        { transform: 'translate3d(0,0,0) scale(1.16) rotate(6deg)', offset: .44 },
-        { transform: 'translate3d(0,0,0) scale(1.05) rotate(6deg)', offset: .60 },
-        { transform: 'translate3d(0,0,0) scale(.94) rotate(6deg)', offset: 1 }
+      warningMotionAnimations.push(markB.animate([
+        { transform: `scale(${min}) rotate(6deg)`, offset: 0 },
+        { transform: `scale(${max}) rotate(6deg)`, offset: .44 },
+        { transform: `scale(${mid}) rotate(6deg)`, offset: .60 },
+        { transform: `scale(${min}) rotate(6deg)`, offset: 1 }
       ], {
         duration: 920,
         iterations: Infinity,
         delay: 80,
         easing: 'cubic-bezier(.34,1.56,.64,1)'
-      });
+      }));
     }
+  }
+
+  function startDeleteWarningMotion() {
+    initWarningTuneControls();
+    restartDeleteWarningAnimations(getWarningTune());
   }
 
   function deleteStudent(student) {
@@ -1266,7 +1407,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.7', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.9', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
