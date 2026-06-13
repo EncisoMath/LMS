@@ -587,3 +587,24 @@ Correcciones visuales y de composición en Quizzes sobre v0.24.49:
 - Se mantiene la protección de Quizzes desactivada temporalmente como en v0.24.48/v0.24.49.
 - Versión/cache busting actualizados a `0.24.50`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.52
+
+- Se corrigió en Quizzes tipo `fill_text` el fondo azul oscuro detrás del contenedor de opciones, dejándolo transparente como en drag and drop.
+- En todos los ítems, la cabecera `Pregunta X de Y` y el rectángulo `Item X` vuelven a quedar arriba, separados del contenido central de la pregunta.
+- Se agregó navegación rápida por ítems durante la ejecución del quiz con botones numerados, permitiendo saltar a cualquier pregunta aunque no esté resuelta.
+- Se recrearon las preguntas demo con estructura de texto A + imagen opcional + texto B + respuesta, para simular preguntas más reales.
+- En ABCD, Verdadero/Falso y Pregunta abierta se agregó modo temporal de calibración con bordes verdes de referencia y sliders para ajustar posición X/Y, ancho y alto de Texto A, imagen, Texto B y opciones/respuesta.
+- En ABCD y Verdadero/Falso se ajustó el ancho de los contenedores de opciones para aprovechar mejor el espacio horizontal.
+- Se mantiene la protección de Quizzes desactivada temporalmente como en v0.24.48-v0.24.51.
+- Versión/cache busting actualizados a `0.24.52`.
+
+Validación realizada:
+
+```bash
+node --check app.js
+node --check sw.js
+python3 -m json.tool manifest.webmanifest
+python3 -m json.tool data/*.json
+unzip -t encisomath-pwa-v0.24.52.zip
+```

@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.51';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.51: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.52';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.52: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1338,20 +1338,27 @@
     const index = Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1));
     const question = questions[index];
     const fullscreen = Boolean(options.fullscreen);
-    const session = getQuizSession();
-    const promptClass = quizPromptClass(question.prompt || '');
+    const promptText = question.textA || question.prompt || '';
+    const promptClass = quizPromptClass(promptText || '');
+    const calibratable = ['multiple_choice', 'true_false', 'open'].includes(question.type);
     return `
-      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <span class="quiz-timer-pill">Item ${index + 1}</span>
           </div>
-          <h3 class="${promptClass}">${escapeHTML(question.prompt || '')}</h3>
         </div>
-        ${question.image ? quizImageHTML(question) : ''}
-        ${quizQuestionBodyHTML(question)}
+        <div class="quiz-question-content">
+          <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
+          ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
+          ${question.textB ? `<p class="quiz-text-b quiz-tune-box" data-quiz-tune-target="textB">${escapeHTML(question.textB)}</p>` : ''}
+          <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
+            ${quizQuestionBodyHTML(question)}
+          </div>
+        </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
+        ${calibratable ? quizLayoutTunePanelHTML(question.type) : ''}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -1367,6 +1374,126 @@
     if (length > 130) return 'quiz-prompt quiz-prompt-sm';
     if (length > 85) return 'quiz-prompt quiz-prompt-md';
     return 'quiz-prompt';
+  }
+
+
+  const QUIZ_LAYOUT_TUNE_FIELDS = [
+    { key: 'textA_x', label: 'Texto A X', min: -80, max: 80, step: 1, unit: 'px' },
+    { key: 'textA_y', label: 'Texto A Y', min: -120, max: 120, step: 1, unit: 'px' },
+    { key: 'textA_w', label: 'Texto A ancho', min: 70, max: 110, step: 1, unit: '%' },
+    { key: 'textA_h', label: 'Texto A alto', min: 0, max: 180, step: 1, unit: 'px' },
+    { key: 'image_x', label: 'Imagen X', min: -80, max: 80, step: 1, unit: 'px' },
+    { key: 'image_y', label: 'Imagen Y', min: -120, max: 120, step: 1, unit: 'px' },
+    { key: 'image_w', label: 'Imagen ancho', min: 70, max: 110, step: 1, unit: '%' },
+    { key: 'image_h', label: 'Imagen alto', min: 80, max: 320, step: 1, unit: 'px' },
+    { key: 'textB_x', label: 'Texto B X', min: -80, max: 80, step: 1, unit: 'px' },
+    { key: 'textB_y', label: 'Texto B Y', min: -120, max: 120, step: 1, unit: 'px' },
+    { key: 'textB_w', label: 'Texto B ancho', min: 70, max: 110, step: 1, unit: '%' },
+    { key: 'textB_h', label: 'Texto B alto', min: 0, max: 180, step: 1, unit: 'px' },
+    { key: 'answers_x', label: 'Opciones X', min: -80, max: 80, step: 1, unit: 'px' },
+    { key: 'answers_y', label: 'Opciones Y', min: -160, max: 160, step: 1, unit: 'px' },
+    { key: 'answers_w', label: 'Opciones ancho', min: 70, max: 110, step: 1, unit: '%' },
+    { key: 'answers_h', label: 'Opciones alto', min: 90, max: 420, step: 1, unit: 'px' }
+  ];
+
+  const QUIZ_LAYOUT_TUNE_DEFAULTS = {
+    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0,
+    image_x: 0, image_y: 0, image_w: 100, image_h: 0,
+    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0,
+    answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
+  };
+
+  function getQuizLayoutTune(type = 'default') {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`encisomath:quizLayoutTune:${type}`) || '{}');
+      return normalizeQuizLayoutTune(saved);
+    } catch (_) {
+      return { ...QUIZ_LAYOUT_TUNE_DEFAULTS };
+    }
+  }
+
+  function normalizeQuizLayoutTune(tune = {}) {
+    const normalized = { ...QUIZ_LAYOUT_TUNE_DEFAULTS };
+    QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_LAYOUT_TUNE_DEFAULTS[field.key];
+    });
+    return normalized;
+  }
+
+  function saveQuizLayoutTune(type, tune) {
+    const normalized = normalizeQuizLayoutTune(tune);
+    try { localStorage.setItem(`encisomath:quizLayoutTune:${type}`, JSON.stringify(normalized)); } catch (_) {}
+    return normalized;
+  }
+
+  function quizLayoutTunePanelHTML(type = 'default') {
+    if (!['multiple_choice', 'true_false', 'open'].includes(type)) return '';
+    const tune = getQuizLayoutTune(type);
+    return `
+      <section class="quiz-layout-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}">
+        <strong>Ajuste temporal de layout</strong>
+        <small>Mueve Texto A, imagen, Texto B y opciones. Los bordes verdes son referencias de calibración.</small>
+        ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
+          <label class="quiz-layout-tune-row">
+            <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
+            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
+          </label>
+        `).join('')}
+        <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
+      </section>
+    `;
+  }
+
+  function bindQuizLayoutTunePanel() {
+    document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
+      const type = panel.dataset.quizLayoutType || 'default';
+      applyQuizLayoutTune(type, getQuizLayoutTune(type));
+      panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
+        if (input.dataset.boundLayoutTune === 'true') return;
+        input.dataset.boundLayoutTune = 'true';
+        input.addEventListener('input', () => {
+          const current = getQuizLayoutTune(type);
+          const key = input.dataset.quizLayoutTune;
+          current[key] = Number(input.value);
+          saveQuizLayoutTune(type, current);
+          applyQuizLayoutTune(type, current);
+          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
+          if (output && field) output.textContent = `${current[key]}${field.unit}`;
+        });
+      });
+      panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
+        saveQuizLayoutTune(type, { ...QUIZ_LAYOUT_TUNE_DEFAULTS });
+        applyQuizLayoutTune(type, { ...QUIZ_LAYOUT_TUNE_DEFAULTS });
+        panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
+          const key = input.dataset.quizLayoutTune;
+          input.value = QUIZ_LAYOUT_TUNE_DEFAULTS[key];
+          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
+          if (output && field) output.textContent = `${QUIZ_LAYOUT_TUNE_DEFAULTS[key]}${field.unit}`;
+        });
+      }, { once: true });
+    });
+  }
+
+  function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type)) {
+    const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
+    if (!stage) return;
+    const safe = normalizeQuizLayoutTune(tune);
+    const setBox = (name, prefix) => {
+      const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
+      if (!box) return;
+      box.style.setProperty('--quiz-tune-x', `${safe[`${prefix}_x`]}px`);
+      box.style.setProperty('--quiz-tune-y', `${safe[`${prefix}_y`]}px`);
+      box.style.setProperty('--quiz-tune-w', `${safe[`${prefix}_w`]}%`);
+      if (Number(safe[`${prefix}_h`]) > 0) box.style.setProperty('--quiz-tune-h', `${safe[`${prefix}_h`]}px`);
+      else box.style.removeProperty('--quiz-tune-h');
+    };
+    setBox('textA', 'textA');
+    setBox('image', 'image');
+    setBox('textB', 'textB');
+    setBox('answers', 'answers');
   }
 
   function quizTypeLabel(type) {
@@ -1814,6 +1941,9 @@
     document.querySelectorAll('[data-quiz-next]').forEach((button) => {
       button.addEventListener('click', () => moveQuizQuestion(1));
     });
+    document.querySelectorAll('[data-quiz-jump]').forEach((button) => {
+      button.addEventListener('click', () => jumpQuizQuestion(Number(button.dataset.quizJump)));
+    });
     document.querySelectorAll('[data-quiz-answer]').forEach((button) => {
       button.addEventListener('pointerdown', () => pressQuizAnswer(button), { passive: true });
       button.addEventListener('click', () => handleQuizAnswer(button));
@@ -1834,6 +1964,7 @@
         }, 260);
       });
     });
+    bindQuizLayoutTunePanel();
     bindQuizMatchEvents();
     bindQuizFillTextEvents();
     bindQuizSliderEvents();
@@ -2047,6 +2178,20 @@
     state.quizQuestionIndex = 0;
     localStorage.setItem('encisomath:quizActiveId', quizId);
     renderQuizzesTab({ animate: true });
+  }
+
+  function jumpQuizQuestion(index) {
+    const quiz = getActiveQuiz();
+    if (!quiz || !Array.isArray(quiz.questions)) return;
+    const max = quiz.questions.length - 1;
+    state.quizQuestionIndex = Math.max(0, Math.min(max, Number(index) || 0));
+    clearQuizTimers();
+    const session = getQuizSession();
+    session.phase = 'question';
+    session.locked = false;
+    session.selectedAnswerId = '';
+    session.feedback = null;
+    renderQuizFullscreen(quiz);
   }
 
   function moveQuizQuestion(delta) {
@@ -2285,6 +2430,15 @@
     renderQuizFullscreen(quiz);
   }
 
+  function quizFastNavHTML(total = 0) {
+    if (!total) return '';
+    const buttons = Array.from({ length: total }, (_, index) => {
+      const active = index === state.quizQuestionIndex ? 'active' : '';
+      return `<button class="quiz-fast-btn ${active}" type="button" data-quiz-jump="${index}">${index + 1}</button>`;
+    }).join('');
+    return `<nav class="quiz-fast-nav" aria-label="Navegación rápida de preguntas">${buttons}</nav>`;
+  }
+
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
@@ -2316,6 +2470,7 @@
         </div>
         <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
       </div>` : ''}
+      ${phase === 'question' ? quizFastNavHTML(questions.length) : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
       </div>
@@ -3697,7 +3852,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.47', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.52', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

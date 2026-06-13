@@ -1,6 +1,6 @@
 {
-  "version": "1.2",
-  "description": "Base inicial de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numerico.",
+  "version": "1.3",
+  "description": "Base de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numerico.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -14,127 +14,78 @@
         {
           "id": "q1",
           "type": "multiple_choice",
-          "prompt": "Según la gráfica, ¿cuál fruta tiene mayor frecuencia?",
+          "prompt": "Según la gráfica, ¿qué conclusión es correcta?",
+          "textA": "Un profe hizo una consulta sobre la fruta favorita del curso y registró los datos como se ve en la siguiente gráfica:",
           "image": "./assets/quiz-demo-statistics.svg",
           "imageAlt": "Gráfica de barras sobre fruta favorita",
+          "textB": "El profe dice que Mango fue la fruta más elegida. Según la gráfica, esa afirmación se puede corregir porque la fruta con mayor frecuencia es...",
           "options": [
-            {
-              "id": "a",
-              "text": "Mora",
-              "correct": false
-            },
-            {
-              "id": "b",
-              "text": "Banano",
-              "correct": true
-            },
-            {
-              "id": "c",
-              "text": "Pera",
-              "correct": false
-            },
-            {
-              "id": "d",
-              "text": "Mango",
-              "correct": false
-            }
+            { "id": "a", "text": "Mora", "correct": false },
+            { "id": "b", "text": "Banano", "correct": true },
+            { "id": "c", "text": "Pera", "correct": false },
+            { "id": "d", "text": "Mango", "correct": false }
           ]
         },
         {
           "id": "q2",
           "type": "true_false",
           "prompt": "La frecuencia absoluta indica cuántas veces aparece un dato.",
+          "textA": "En una tabla de frecuencia, un estudiante escribió cuántas veces se repite cada respuesta de una encuesta.",
+          "textB": "Con esa información, se puede afirmar que la frecuencia absoluta indica cuántas veces aparece un dato.",
           "options": [
-            {
-              "id": "true",
-              "text": "Verdadero",
-              "correct": true
-            },
-            {
-              "id": "false",
-              "text": "Falso",
-              "correct": false
-            }
+            { "id": "true", "text": "Verdadero", "correct": true },
+            { "id": "false", "text": "Falso", "correct": false }
           ]
         },
         {
           "id": "q3",
           "type": "open",
-          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia."
+          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia.",
+          "textA": "Un docente recogió las respuestas de una encuesta y quiere organizarlas para entender mejor los datos.",
+          "textB": "Explica con tus palabras para qué sirve una tabla de frecuencia en una situación como esa."
         },
         {
           "id": "q4",
           "type": "match",
           "prompt": "Arrastra cada concepto hacia su definición.",
+          "textA": "Un grupo está revisando una tabla de frecuencia y necesita relacionar cada concepto con su significado.",
+          "textB": "Une cada concepto con la definición que le corresponde.",
           "pairs": [
-            {
-              "id": "fa",
-              "left": "Frecuencia absoluta",
-              "right": "Cantidad de veces"
-            },
-            {
-              "id": "fr",
-              "left": "Frecuencia relativa",
-              "right": "Parte del total"
-            },
-            {
-              "id": "moda",
-              "left": "Moda",
-              "right": "Dato más repetido"
-            }
+            { "id": "fa", "left": "Frecuencia absoluta", "right": "Cantidad de veces" },
+            { "id": "fr", "left": "Frecuencia relativa", "right": "Parte del total" },
+            { "id": "moda", "left": "Moda", "right": "Dato más repetido" }
           ]
         },
         {
           "id": "q5",
           "type": "fill_text",
           "prompt": "Completa el texto arrastrando las palabras correctas.",
-          "text": "Completa el texto arrastrando las palabras correctas.",
+          "textA": "Un estudiante explicó una tabla de frecuencia, pero dejó dos ideas incompletas.",
+          "textB": "Completa el texto con las palabras que hacen que la explicación tenga sentido.",
           "textParts": [
-            "Pepito se fue a la montaña y después vio un ",
-            ". Luego de eso se preguntó si debía ",
+            "En la tabla, el dato que más se repite se llama ",
+            ". Para comparar una parte con el total se usa la ",
             "."
           ],
           "blanks": [
-            {
-              "id": "b1",
-              "answerId": "condor"
-            },
-            {
-              "id": "b2",
-              "answerId": "explorar"
-            }
+            { "id": "b1", "answerId": "moda" },
+            { "id": "b2", "answerId": "frecuencia-relativa" }
           ],
           "options": [
-            {
-              "id": "condor",
-              "text": "cóndor"
-            },
-            {
-              "id": "explorar",
-              "text": "explorar"
-            },
-            {
-              "id": "cuaderno",
-              "text": "cuaderno"
-            },
-            {
-              "id": "correr",
-              "text": "correr"
-            },
-            {
-              "id": "rio",
-              "text": "río"
-            },
-            {
-              "id": "descansar",
-              "text": "descansar"
-            }
+            { "id": "moda", "text": "moda" },
+            { "id": "frecuencia-relativa", "text": "frecuencia relativa" },
+            { "id": "frecuencia-absoluta", "text": "frecuencia absoluta" },
+            { "id": "rango", "text": "rango" },
+            { "id": "promedio", "text": "promedio" },
+            { "id": "encuesta", "text": "encuesta" }
           ]
         },
         {
           "id": "q6",
           "type": "slider",
-          "prompt": "En una encuesta participaron 10 estudiantes. ¿Cuántos estudiantes participaron?",
+          "prompt": "¿Cuántos estudiantes participaron en la encuesta?",
+          "textA": "En la gráfica se registraron las respuestas de un curso sobre su fruta favorita.",
+          "textB": "Si se suman todas las frecuencias de la gráfica, ¿cuántos estudiantes participaron en la encuesta?",
           "min": 0,
           "max": 20,
           "step": 1,
