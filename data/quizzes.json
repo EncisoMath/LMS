@@ -1,6 +1,6 @@
 {
-  "version": "1.3",
-  "description": "Base de quizzes por asignatura y periodo. Soporta opcion multiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numerico.",
+  "version": "1.4",
+  "description": "Base de quizzes por asignatura y periodo. Todos los ítems demo soportan e incluyen imagen, además de opción múltiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numérico.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -20,10 +20,26 @@
           "imageAlt": "Gráfica de barras sobre fruta favorita",
           "textB": "El profe dice que Mango fue la fruta más elegida. Según la gráfica, esa afirmación se puede corregir porque la fruta con mayor frecuencia es...",
           "options": [
-            { "id": "a", "text": "Mora", "correct": false },
-            { "id": "b", "text": "Banano", "correct": true },
-            { "id": "c", "text": "Pera", "correct": false },
-            { "id": "d", "text": "Mango", "correct": false }
+            {
+              "id": "a",
+              "text": "Mora",
+              "correct": false
+            },
+            {
+              "id": "b",
+              "text": "Banano",
+              "correct": true
+            },
+            {
+              "id": "c",
+              "text": "Pera",
+              "correct": false
+            },
+            {
+              "id": "d",
+              "text": "Mango",
+              "correct": false
+            }
           ]
         },
         {
@@ -33,16 +49,28 @@
           "textA": "En una tabla de frecuencia, un estudiante escribió cuántas veces se repite cada respuesta de una encuesta.",
           "textB": "Con esa información, se puede afirmar que la frecuencia absoluta indica cuántas veces aparece un dato.",
           "options": [
-            { "id": "true", "text": "Verdadero", "correct": true },
-            { "id": "false", "text": "Falso", "correct": false }
-          ]
+            {
+              "id": "true",
+              "text": "Verdadero",
+              "correct": true
+            },
+            {
+              "id": "false",
+              "text": "Falso",
+              "correct": false
+            }
+          ],
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Recurso visual de apoyo para el ítem 2 del quiz"
         },
         {
           "id": "q3",
           "type": "open",
           "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia.",
           "textA": "Un docente recogió las respuestas de una encuesta y quiere organizarlas para entender mejor los datos.",
-          "textB": "Explica con tus palabras para qué sirve una tabla de frecuencia en una situación como esa."
+          "textB": "Explica con tus palabras para qué sirve una tabla de frecuencia en una situación como esa.",
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Recurso visual de apoyo para el ítem 3 del quiz"
         },
         {
           "id": "q4",
@@ -51,10 +79,24 @@
           "textA": "Un grupo está revisando una tabla de frecuencia y necesita relacionar cada concepto con su significado.",
           "textB": "Une cada concepto con la definición que le corresponde.",
           "pairs": [
-            { "id": "fa", "left": "Frecuencia absoluta", "right": "Cantidad de veces" },
-            { "id": "fr", "left": "Frecuencia relativa", "right": "Parte del total" },
-            { "id": "moda", "left": "Moda", "right": "Dato más repetido" }
-          ]
+            {
+              "id": "fa",
+              "left": "Frecuencia absoluta",
+              "right": "Cantidad de veces"
+            },
+            {
+              "id": "fr",
+              "left": "Frecuencia relativa",
+              "right": "Parte del total"
+            },
+            {
+              "id": "moda",
+              "left": "Moda",
+              "right": "Dato más repetido"
+            }
+          ],
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Recurso visual de apoyo para el ítem 4 del quiz"
         },
         {
           "id": "q5",
@@ -68,17 +110,43 @@
             "."
           ],
           "blanks": [
-            { "id": "b1", "answerId": "moda" },
-            { "id": "b2", "answerId": "frecuencia-relativa" }
+            {
+              "id": "b1",
+              "answerId": "moda"
+            },
+            {
+              "id": "b2",
+              "answerId": "frecuencia-relativa"
+            }
           ],
           "options": [
-            { "id": "moda", "text": "moda" },
-            { "id": "frecuencia-relativa", "text": "frecuencia relativa" },
-            { "id": "frecuencia-absoluta", "text": "frecuencia absoluta" },
-            { "id": "rango", "text": "rango" },
-            { "id": "promedio", "text": "promedio" },
-            { "id": "encuesta", "text": "encuesta" }
-          ]
+            {
+              "id": "moda",
+              "text": "moda"
+            },
+            {
+              "id": "frecuencia-relativa",
+              "text": "frecuencia relativa"
+            },
+            {
+              "id": "frecuencia-absoluta",
+              "text": "frecuencia absoluta"
+            },
+            {
+              "id": "rango",
+              "text": "rango"
+            },
+            {
+              "id": "promedio",
+              "text": "promedio"
+            },
+            {
+              "id": "encuesta",
+              "text": "encuesta"
+            }
+          ],
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Recurso visual de apoyo para el ítem 5 del quiz"
         },
         {
           "id": "q6",
@@ -92,7 +160,9 @@
           "initial": 7,
           "correct": 10,
           "tolerance": 0,
-          "unit": "estudiantes"
+          "unit": "estudiantes",
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Recurso visual de apoyo para el ítem 6 del quiz"
         }
       ]
     }

@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.52';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.52: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.55';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.55: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1340,13 +1340,14 @@
     const fullscreen = Boolean(options.fullscreen);
     const promptText = question.textA || question.prompt || '';
     const promptClass = quizPromptClass(promptText || '');
-    const calibratable = ['multiple_choice', 'true_false', 'open'].includes(question.type);
+    const calibratable = ['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <span class="quiz-timer-pill">Item ${index + 1}</span>
+            ${calibratable ? '<button class="quiz-tune-gear" type="button" data-quiz-layout-tune-open aria-label="Abrir ajustes de layout" title="Ajustar layout">⚙️</button>' : ''}
           </div>
         </div>
         <div class="quiz-question-content">
@@ -1428,27 +1429,66 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default') {
-    if (!['multiple_choice', 'true_false', 'open'].includes(type)) return '';
+    if (!['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(type)) return '';
     const tune = getQuizLayoutTune(type);
     return `
-      <section class="quiz-layout-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}">
-        <strong>Ajuste temporal de layout</strong>
-        <small>Mueve Texto A, imagen, Texto B y opciones. Los bordes verdes son referencias de calibración.</small>
-        ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
-          <label class="quiz-layout-tune-row">
-            <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
-            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
-          </label>
-        `).join('')}
-        <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
+      <section class="quiz-layout-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" hidden aria-hidden="true">
+        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajuste temporal de layout">
+          <div class="quiz-layout-tune-dialog-head">
+            <div>
+              <strong>Ajuste temporal de layout</strong>
+              <small>Mueve Texto A, imagen, Texto B y zona de respuesta. Los bordes verdes son referencias de calibración.</small>
+            </div>
+            <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
+          </div>
+          <div class="quiz-layout-tune-scroll">
+            ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
+              <label class="quiz-layout-tune-row">
+                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
+                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
+              </label>
+            `).join('')}
+          </div>
+          <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
+        </div>
       </section>
     `;
   }
 
   function bindQuizLayoutTunePanel() {
+    document.querySelectorAll('[data-quiz-layout-tune-open]').forEach((button) => {
+      if (button.dataset.boundLayoutTuneOpen === 'true') return;
+      button.dataset.boundLayoutTuneOpen = 'true';
+      button.addEventListener('click', () => {
+        const stage = button.closest('.quiz-stage');
+        const panel = stage?.querySelector('[data-quiz-layout-tune-panel]');
+        if (!panel) return;
+        panel.hidden = false;
+        panel.setAttribute('aria-hidden', 'false');
+        panel.classList.add('is-open');
+        const type = panel.dataset.quizLayoutType || 'default';
+        applyQuizLayoutTune(type, getQuizLayoutTune(type));
+      });
+    });
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
       const type = panel.dataset.quizLayoutType || 'default';
       applyQuizLayoutTune(type, getQuizLayoutTune(type));
+      const closePanel = () => {
+        panel.classList.remove('is-open');
+        panel.setAttribute('aria-hidden', 'true');
+        panel.hidden = true;
+      };
+      panel.querySelectorAll('[data-quiz-layout-tune-close]').forEach((button) => {
+        if (button.dataset.boundLayoutTuneClose === 'true') return;
+        button.dataset.boundLayoutTuneClose = 'true';
+        button.addEventListener('click', closePanel);
+      });
+      if (panel.dataset.boundLayoutTuneBackdrop !== 'true') {
+        panel.dataset.boundLayoutTuneBackdrop = 'true';
+        panel.addEventListener('click', (event) => {
+          if (event.target === panel) closePanel();
+        });
+      }
       panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
         if (input.dataset.boundLayoutTune === 'true') return;
         input.dataset.boundLayoutTune = 'true';
@@ -1473,7 +1513,7 @@
           const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
           if (output && field) output.textContent = `${QUIZ_LAYOUT_TUNE_DEFAULTS[key]}${field.unit}`;
         });
-      }, { once: true });
+      });
     });
   }
 
@@ -3852,7 +3892,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.52', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.55', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

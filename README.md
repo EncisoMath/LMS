@@ -608,3 +608,17 @@ python3 -m json.tool manifest.webmanifest
 python3 -m json.tool data/*.json
 unzip -t encisomath-pwa-v0.24.52.zip
 ```
+
+## v0.24.55
+
+- Se parte de `v0.24.54`.
+- En Quizzes, **todos los ítems de demostración ahora incluyen imagen**.
+- Se reforzó la base de datos demo (`data/quizzes.json`) para que todas las preguntas tengan `image` e `imageAlt`, manteniendo compatibilidad con **todos los tipos** de quiz actuales: opción múltiple, verdadero/falso, abierta, drag and drop, completar texto y slider.
+- Se actualizó la descripción/versionado de `quizzes.json` para dejar explícito que todos los ítems demo soportan e incluyen imagen.
+- Versiones/cache busting actualizados a `0.24.55`.
+
+## v0.24.53
+
+- Se amplió el modo temporal de calibración de Quizzes a todos los tipos de pregunta: opción múltiple, verdadero/falso, pregunta abierta, arrastrar para unir, completar texto y slider numérico.
+- Ahora `Drag and drop`, `Completar texto`, `Escribir respuesta` y `Slider` también muestran bordes verdes de referencia y sliders para ajustar posición X/Y, ancho y alto de Texto A, imagen, Texto B y zona de respuesta.
+- Se mantiene la protección de Quizzes desactivada temporalmente como en las versiones v0.24.48-v0.24.52.
