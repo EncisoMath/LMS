@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.23';
+  const APP_VERSION = '0.24.24';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1595,10 +1595,12 @@
     stage.classList.add('quiz-choice-revealed');
     stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
       const isCorrect = item.dataset.correct === 'true';
-      item.classList.remove('selected');
+      const unused = !isCorrect && !(item === selectedButton && !selectedCorrect);
+      item.classList.remove('selected', 'unused-reveal');
       item.classList.toggle('correct-reveal', isCorrect);
       item.classList.toggle('wrong-reveal', item === selectedButton && !selectedCorrect);
-      item.classList.toggle('is-dimmed', !isCorrect && !(item === selectedButton && !selectedCorrect));
+      item.classList.toggle('is-dimmed', unused);
+      item.classList.toggle('unused-reveal', unused);
     });
   }
 
@@ -2788,7 +2790,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.23', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.24', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

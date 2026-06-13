@@ -345,3 +345,14 @@ Ajustes en Quizzes:
 - Las transiciones entre ítems usan los mismos glows y fondo negro/neón de la pantalla de título para evitar saltos visuales.
 - En drag and drop, la revelación correcto/incorrecto es más fuerte: cada tarjeta se revela una por una, se sacude y cambia completamente a verde o rojo, incluida la opción colocada, sin mezcla con el color original.
 - Versión/cache busting actualizados a `0.24.23`.
+
+## v0.24.24
+
+Ajustes menores de Quizzes sobre `v0.24.23`.
+
+- En preguntas ABCD y Verdadero/Falso, el reveal de correcto/incorrecto ahora usa una animación más marcada tipo la de drag and drop: pop para correcta y sacudida para incorrecta.
+- Las opciones no usadas en ABCD y Verdadero/Falso quedan grises durante el reveal, en lugar de mantener su color Kahoot original.
+- Los íconos `✓` y `×` de las opciones se sacaron visualmente fuera de la tarjeta para que el círculo no se corte.
+- El feedback inferior `¡Correcto!` / `¡Incorrecto!` ahora se muestra como una banda inferior tipo Kahoot, fija al borde inferior de la pantalla, de extremo a extremo, con curva superior y color completo verde/rojo según resultado.
+- Versión/cache busting actualizados a `0.24.24`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
