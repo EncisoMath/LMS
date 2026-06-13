@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.20';
+  const APP_VERSION = '0.24.21';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -91,6 +91,8 @@
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
+    quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '' },
+    quizTimers: [],
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
@@ -1293,23 +1295,25 @@
     const index = Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1));
     const question = questions[index];
     const fullscreen = Boolean(options.fullscreen);
-    const isLast = index >= questions.length - 1;
+    const session = getQuizSession();
     return `
-      <section class="quiz-stage ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}">
+      <section class="quiz-stage ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
         <div class="quiz-stage-head">
           <div>
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <h3>${escapeHTML(question.prompt || '')}</h3>
           </div>
-          <span class="quiz-timer-pill">${fullscreen ? 'Pantalla completa' : 'Demo'}</span>
+          <span class="quiz-timer-pill">Item ${index + 1}</span>
         </div>
         ${question.image ? quizImageHTML(question) : ''}
         ${question.text ? `<p class="quiz-support-text">${escapeHTML(question.text)}</p>` : ''}
         ${quizQuestionBodyHTML(question)}
-        <div class="quiz-nav-row ${fullscreen ? 'quiz-nav-row-fullscreen' : ''}">
+        <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
+        ${!fullscreen ? `
+        <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
-          <button class="mini-btn quiz-next-main" data-quiz-next ${isLast ? 'disabled' : ''}>${isLast ? 'Quiz terminado' : 'Siguiente →'}</button>
-        </div>
+          <button class="mini-btn quiz-next-main" data-quiz-next>Continuar →</button>
+        </div>` : ''}
       </section>
     `;
   }
@@ -1348,6 +1352,7 @@
       <div class="kahoot-grid kahoot-grid-2x2" role="list">
         ${options.slice(0, 4).map((option, index) => `
           <button class="kahoot-option kahoot-${colors[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
+            <span class="kahoot-result-badge" aria-hidden="true"></span>
             <span class="kahoot-shape">${shapes[index]}</span>
             <span>${escapeHTML(option.text || '')}</span>
           </button>
@@ -1367,6 +1372,7 @@
       <div class="kahoot-grid kahoot-grid-two" role="list">
         ${options.slice(0, 2).map((option, index) => `
           <button class="kahoot-option kahoot-${palette[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
+            <span class="kahoot-result-badge" aria-hidden="true"></span>
             <span class="kahoot-shape">${shapes[index]}</span>
             <span>${escapeHTML(option.text || '')}</span>
           </button>
@@ -1415,6 +1421,41 @@
     `;
   }
 
+  function getQuizSession() {
+    if (!state.quizSession || typeof state.quizSession !== 'object') {
+      state.quizSession = { phase: 'idle', answers: [], locked: false, selectedAnswerId: '' };
+    }
+    if (!Array.isArray(state.quizSession.answers)) state.quizSession.answers = [];
+    return state.quizSession;
+  }
+
+  function resetQuizSession(phase = 'confirm') {
+    clearQuizTimers();
+    state.quizSession = {
+      phase,
+      answers: [],
+      locked: false,
+      selectedAnswerId: '',
+      feedback: null,
+      startedAt: Date.now()
+    };
+    return state.quizSession;
+  }
+
+  function clearQuizTimers() {
+    (state.quizTimers || []).forEach((timer) => window.clearTimeout(timer));
+    state.quizTimers = [];
+  }
+
+  function scheduleQuizTimer(callback, delay) {
+    const timer = window.setTimeout(() => {
+      state.quizTimers = (state.quizTimers || []).filter((item) => item !== timer);
+      callback();
+    }, delay);
+    state.quizTimers = [...(state.quizTimers || []), timer];
+    return timer;
+  }
+
   function bindQuizTabEvents() {
     document.querySelectorAll('[data-quiz-period]').forEach((button) => {
       button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
@@ -1426,6 +1467,15 @@
   }
 
   function bindQuizPlayerEvents() {
+    document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
+      button.addEventListener('click', beginQuizFromConfirm);
+    });
+    document.querySelectorAll('[data-quiz-result-target]').forEach((button) => {
+      button.addEventListener('click', () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
+    });
+    document.querySelectorAll('[data-quiz-restart]').forEach((button) => {
+      button.addEventListener('click', () => restartQuiz());
+    });
     document.querySelectorAll('[data-quiz-prev]').forEach((button) => {
       button.addEventListener('click', () => moveQuizQuestion(-1));
     });
@@ -1434,7 +1484,7 @@
     });
     document.querySelectorAll('[data-quiz-answer]').forEach((button) => {
       button.addEventListener('pointerdown', () => pressQuizAnswer(button), { passive: true });
-      button.addEventListener('click', () => markQuizAnswer(button));
+      button.addEventListener('click', () => handleQuizAnswer(button));
     });
     document.querySelectorAll('[data-quiz-image]').forEach((button) => {
       button.addEventListener('click', () => openQuizImageModal(button.dataset.quizImage, button.dataset.quizImageAlt));
@@ -1442,9 +1492,7 @@
     document.querySelectorAll('[data-quiz-open-form]').forEach((form) => {
       form.addEventListener('submit', (event) => {
         event.preventDefault();
-        const feedback = form.querySelector('[data-quiz-open-feedback]');
-        if (feedback) feedback.hidden = false;
-        pulseElement(form, 'text-pop');
+        handleOpenAnswer(form);
       });
     });
     bindQuizMatchEvents();
@@ -1470,11 +1518,12 @@
     const quiz = getActiveQuiz();
     if (!quiz || !Array.isArray(quiz.questions)) return;
     const max = quiz.questions.length - 1;
-    state.quizQuestionIndex = Math.max(0, Math.min(max, state.quizQuestionIndex + Number(delta)));
+    const nextIndex = Math.max(0, Math.min(max, state.quizQuestionIndex + Number(delta)));
     if (state.quizFullscreenActive) {
-      renderQuizFullscreen(quiz);
+      showQuizItemTransition(nextIndex);
       return;
     }
+    state.quizQuestionIndex = nextIndex;
     const player = document.getElementById('quizPlayer');
     if (!player) return;
     player.innerHTML = quizPlayerHTML(quiz);
@@ -1483,19 +1532,124 @@
   }
 
   function pressQuizAnswer(button) {
-    if (!button) return;
+    if (!button || getQuizSession().locked) return;
     button.classList.remove('is-pressing');
     void button.offsetWidth;
     button.classList.add('is-pressing');
-    window.setTimeout(() => button.classList.remove('is-pressing'), 180);
+    window.setTimeout(() => button.classList.remove('is-pressing'), 160);
   }
 
-  function markQuizAnswer(button) {
-    const stage = button.closest('.quiz-stage');
-    if (!stage) return;
-    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => item.classList.remove('selected', 'correct', 'wrong', 'is-pressing'));
-    const correct = button.dataset.correct === 'true';
-    button.classList.add('selected', correct ? 'correct' : 'wrong');
+  function getCurrentQuizQuestion() {
+    const quiz = getActiveQuiz();
+    if (!quiz || !Array.isArray(quiz.questions)) return null;
+    return quiz.questions[state.quizQuestionIndex] || null;
+  }
+
+  function handleQuizAnswer(button) {
+    const stage = button?.closest('.quiz-stage');
+    const question = getCurrentQuizQuestion();
+    const session = getQuizSession();
+    if (!button || !stage || !question || session.locked) return;
+
+    session.locked = true;
+    session.selectedAnswerId = button.dataset.quizAnswer || '';
+    stage.classList.add('quiz-choice-pending');
+    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
+      item.disabled = true;
+      item.classList.remove('correct', 'wrong', 'correct-reveal', 'wrong-reveal', 'selected', 'is-pressing');
+      item.classList.toggle('selected', item === button);
+      item.classList.toggle('is-dimmed', item !== button);
+    });
+
+    const selectedCorrect = button.dataset.correct === 'true';
+    scheduleQuizTimer(() => {
+      revealQuizAnswer(stage, button, selectedCorrect);
+      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
+      const feedback = stage.querySelector('[data-quiz-feedback]');
+      if (feedback) {
+        feedback.hidden = false;
+        feedback.innerHTML = quizAnswerFeedbackHTML(selectedCorrect);
+        feedback.className = `quiz-answer-feedback ${selectedCorrect ? 'is-correct' : 'is-wrong'}`;
+      }
+      scheduleQuizAdvance();
+    }, 1000);
+  }
+
+  function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
+    stage.classList.remove('quiz-choice-pending');
+    stage.classList.add('quiz-choice-revealed');
+    stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
+      const isCorrect = item.dataset.correct === 'true';
+      item.classList.remove('selected');
+      item.classList.toggle('correct-reveal', isCorrect);
+      item.classList.toggle('wrong-reveal', item === selectedButton && !selectedCorrect);
+      item.classList.toggle('is-dimmed', !isCorrect && !(item === selectedButton && !selectedCorrect));
+    });
+  }
+
+  function quizAnswerFeedbackHTML(correct, neutralText = '') {
+    const correctPhrases = [
+      'Esa neurona vino con turbo.',
+      'Respuesta nivel crack. Siga brillando.',
+      'Bien jugado. Punto para la mente matemática.'
+    ];
+    const wrongPhrases = [
+      'Sacúdete el polvo. La grandeza espera.',
+      'Casi, pero la opción correcta se escondió bien.',
+      'Error con estilo. Respira y vamos por la siguiente.'
+    ];
+    if (neutralText) {
+      return `<div class="quiz-feedback-card is-neutral"><span>✍️</span><strong>Respuesta enviada</strong><p>${escapeHTML(neutralText)}</p></div>`;
+    }
+    const phrase = correct
+      ? correctPhrases[state.quizQuestionIndex % correctPhrases.length]
+      : wrongPhrases[state.quizQuestionIndex % wrongPhrases.length];
+    return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${correct ? '✅' : '❌'}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
+  }
+
+  function recordQuizAnswer(question, correct, extra = {}) {
+    const session = getQuizSession();
+    const index = Number(state.quizQuestionIndex);
+    session.answers = session.answers.filter((answer) => Number(answer.index) !== index);
+    session.answers.push({
+      index,
+      questionId: question?.id || `q${index + 1}`,
+      type: question?.type || 'unknown',
+      correct,
+      ...extra
+    });
+  }
+
+  function scheduleQuizAdvance() {
+    scheduleQuizTimer(() => continueQuizAfterFeedback(), 4000);
+  }
+
+  function continueQuizAfterFeedback() {
+    const quiz = getActiveQuiz();
+    if (!quiz || !Array.isArray(quiz.questions)) return;
+    if (state.quizQuestionIndex >= quiz.questions.length - 1) {
+      showQuizResults();
+      return;
+    }
+    showQuizItemTransition(state.quizQuestionIndex + 1);
+  }
+
+  function handleOpenAnswer(form) {
+    const session = getQuizSession();
+    const question = getCurrentQuizQuestion();
+    if (!form || !question || session.locked) return;
+    const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
+    session.locked = true;
+    form.querySelectorAll('textarea, button').forEach((item) => { item.disabled = true; });
+    const feedback = form.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.innerHTML = quizAnswerFeedbackHTML(false, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.');
+      feedback.className = 'quiz-answer-feedback is-neutral';
+    }
+    recordQuizAnswer(question, null, { text: value });
+    pulseElement(form, 'text-pop');
+    scheduleQuizAdvance();
   }
 
   function startQuiz(quizId) {
@@ -1505,7 +1659,49 @@
     localStorage.setItem('encisomath:quizActiveId', quizId);
     const quiz = getActiveQuiz();
     if (!quiz) return;
+    resetQuizSession('confirm');
     lockQuizHistory();
+    renderQuizFullscreen(quiz);
+  }
+
+  function beginQuizFromConfirm() {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    clearQuizTimers();
+    const session = getQuizSession();
+    session.phase = 'intro';
+    session.locked = false;
+    renderQuizFullscreen(quiz);
+    scheduleQuizTimer(() => showQuizItemTransition(0), 2000);
+  }
+
+  function showQuizItemTransition(index = 0) {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    clearQuizTimers();
+    state.quizQuestionIndex = Math.max(0, Math.min((quiz.questions || []).length - 1, Number(index) || 0));
+    const session = getQuizSession();
+    session.phase = 'transition';
+    session.locked = true;
+    renderQuizFullscreen(quiz);
+    scheduleQuizTimer(() => {
+      const current = getQuizSession();
+      current.phase = 'question';
+      current.locked = false;
+      current.selectedAnswerId = '';
+      renderQuizFullscreen(quiz);
+    }, 1500);
+  }
+
+  function showQuizResults() {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    clearQuizTimers();
+    const session = getQuizSession();
+    session.phase = 'results';
+    session.locked = false;
+    state.quizFullscreenActive = false;
+    unlockQuizHistory();
     renderQuizFullscreen(quiz);
   }
 
@@ -1519,20 +1715,122 @@
       document.body.appendChild(layer);
     }
     document.body.classList.add('quiz-fullscreen-active');
+    const session = getQuizSession();
+    const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+    const phase = session.phase || 'question';
+    let content = '';
+    if (phase === 'confirm') content = quizStartGateHTML(quiz);
+    else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
+    else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length);
+    else if (phase === 'results') content = quizResultsHTML(quiz);
+    else content = quizPlayerHTML(quiz, { fullscreen: true });
+
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
-      <div class="quiz-fullscreen-top">
+      <div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
         <div>
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
-          <small>Modo quiz · sin salida durante la ejecución</small>
+          <small>${phase === 'results' ? 'Quiz finalizado' : 'Modo quiz · sin salida hasta finalizar'}</small>
         </div>
-        <span>${state.quizQuestionIndex + 1}/${Array.isArray(quiz.questions) ? quiz.questions.length : 0}</span>
+        <span>${phase === 'results' ? 'FIN' : `${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}`}</span>
       </div>
-      <div class="quiz-fullscreen-content">
-        ${quizPlayerHTML(quiz, { fullscreen: true })}
+      <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
+        ${content}
       </div>
     `;
     bindQuizPlayerEvents();
+  }
+
+  function quizStartGateHTML(quiz) {
+    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    return `
+      <section class="quiz-start-gate">
+        <div class="quiz-kahoot-mark" aria-hidden="true"><span>▲</span><span>◆</span><span>●</span><span>■</span></div>
+        <p class="section-kicker">Antes de empezar</p>
+        <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
+        <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
+        <div class="quiz-lock-warning">🔒 Cuando empieces, solo podrás salir al finalizar el quiz.</div>
+        <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
+        <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
+      </section>
+    `;
+  }
+
+  function quizIntroSplashHTML(quiz) {
+    return `
+      <section class="quiz-intro-splash">
+        <div class="quiz-intro-logo" aria-hidden="true">🎮</div>
+        <p class="section-kicker">Preparando reto</p>
+        <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
+        <p>${escapeHTML(quiz.description || quiz.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
+      </section>
+    `;
+  }
+
+  function quizItemTransitionHTML(item, total) {
+    return `
+      <section class="quiz-item-transition" aria-live="polite">
+        <div class="quiz-transition-ribbon"><span>Ítem ${item}</span></div>
+        <div class="quiz-transition-count">${item}<small>/${total}</small></div>
+        <div class="quiz-transition-progress"><span></span></div>
+      </section>
+    `;
+  }
+
+  function quizResultsHTML(quiz) {
+    const stats = getQuizStats(quiz);
+    const win = stats.scorable === 0 || stats.correct >= Math.ceil(stats.scorable * 0.6);
+    return `
+      <section class="quiz-results-screen ${win ? 'is-win' : 'is-try'}">
+        <div class="quiz-results-burst" aria-hidden="true"></div>
+        <div class="quiz-results-emoji">${win ? '🏆' : '💪'}</div>
+        <p class="section-kicker">Resultados</p>
+        <h2>${win ? '¡Quiz completado!' : 'Quiz terminado'}</h2>
+        <p>${win ? 'Buen trabajo. Esa mente vino en modo turbo.' : 'No pasa nada. La próxima ronda viene con revancha.'}</p>
+        <div class="quiz-score-board">
+          <strong>${stats.correct}<small>/${stats.scorable || stats.total}</small></strong>
+          <span>${stats.scorable ? 'respuestas correctas' : 'respuestas revisables'}</span>
+        </div>
+        <div class="quiz-results-actions">
+          <button class="primary-btn" type="button" data-quiz-result-target="quizzes">Volver a Quizzes</button>
+          <button class="mini-btn" type="button" data-quiz-result-target="classes">Ir a Clases</button>
+          <button class="mini-btn" type="button" data-quiz-result-target="rockstars">Ver Rockstars</button>
+          <button class="mini-btn" type="button" data-quiz-restart>Repetir quiz</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function getQuizStats(quiz) {
+    const answers = getQuizSession().answers || [];
+    const scorableAnswers = answers.filter((answer) => typeof answer.correct === 'boolean');
+    const correct = scorableAnswers.filter((answer) => answer.correct).length;
+    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    return { total, answered: answers.length, scorable: scorableAnswers.length, correct };
+  }
+
+  function closeQuizFullscreen(target = 'quizzes') {
+    clearQuizTimers();
+    unlockQuizHistory();
+    state.quizFullscreenActive = false;
+    resetQuizSession('idle');
+    const layer = document.getElementById('quizFullscreenLayer');
+    if (layer) layer.remove();
+    document.body.classList.remove('quiz-fullscreen-active');
+    if (target === 'classes') setSubjectTab('classes');
+    else if (target === 'rockstars') setSubjectTab('rockstars');
+    else setSubjectTab('quizzes');
+  }
+
+  function restartQuiz() {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    state.quizQuestionIndex = 0;
+    state.quizFullscreenActive = true;
+    resetQuizSession('intro');
+    lockQuizHistory();
+    renderQuizFullscreen(quiz);
+    scheduleQuizTimer(() => showQuizItemTransition(0), 2000);
   }
 
   function lockQuizHistory() {
@@ -1540,6 +1838,12 @@
     state.quizHistoryLocked = true;
     try { window.history.pushState({ encisomathQuizLock: true }, '', window.location.href); } catch (_) {}
     window.addEventListener('popstate', keepQuizFullscreenLocked);
+  }
+
+  function unlockQuizHistory() {
+    if (!state.quizHistoryLocked) return;
+    state.quizHistoryLocked = false;
+    window.removeEventListener('popstate', keepQuizFullscreenLocked);
   }
 
   function keepQuizFullscreenLocked() {
@@ -1568,18 +1872,18 @@
       };
 
       const placeCard = (card, drop) => {
-        if (!card || !drop) return;
+        if (getQuizSession().locked || !card || !drop) return;
         clearFeedback();
         const slot = drop.querySelector('[data-match-slot]');
         if (!slot) return;
         const previous = slot.querySelector('[data-match-left]');
         if (previous && previous !== card) returnCardToSource(previous);
         const oldSlot = card.closest('[data-match-slot]');
+        slot.innerHTML = '';
+        slot.appendChild(card);
         if (oldSlot && oldSlot !== slot && !oldSlot.querySelector('[data-match-left]')) {
           oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
         }
-        slot.innerHTML = '';
-        slot.appendChild(card);
         card.classList.remove('selected', 'dragging');
         drop.dataset.placedId = card.dataset.matchLeft || '';
         drop.dataset.matchEmpty = 'false';
@@ -1596,6 +1900,7 @@
 
       board.querySelectorAll('[data-match-left]').forEach((card) => {
         card.addEventListener('dragstart', (event) => {
+          if (getQuizSession().locked) { event.preventDefault(); return; }
           draggedId = card.dataset.matchLeft || '';
           selectedCard = card;
           event.dataTransfer?.setData('text/plain', draggedId);
@@ -1603,6 +1908,7 @@
         });
         card.addEventListener('dragend', () => card.classList.remove('dragging'));
         card.addEventListener('click', () => {
+          if (getQuizSession().locked) return;
           board.querySelectorAll('[data-match-left]').forEach((item) => item.classList.remove('selected'));
           selectedCard = card;
           card.classList.add('selected');
@@ -1611,11 +1917,13 @@
 
       board.querySelectorAll('[data-match-right]').forEach((drop) => {
         drop.addEventListener('dragover', (event) => {
+          if (getQuizSession().locked) return;
           event.preventDefault();
           drop.classList.add('over');
         });
         drop.addEventListener('dragleave', () => drop.classList.remove('over'));
         drop.addEventListener('drop', (event) => {
+          if (getQuizSession().locked) return;
           event.preventDefault();
           const id = event.dataTransfer?.getData('text/plain') || draggedId;
           const card = board.querySelector(`[data-match-left="${escapeSelector(id)}"]`);
@@ -1623,11 +1931,13 @@
           placeCard(card, drop);
         });
         drop.addEventListener('click', () => {
+          if (getQuizSession().locked) return;
           if (selectedCard) placeCard(selectedCard, drop);
         });
       });
 
       board.querySelector('[data-match-reset]')?.addEventListener('click', () => {
+        if (getQuizSession().locked) return;
         board.querySelectorAll('[data-match-left]').forEach((card) => returnCardToSource(card));
         board.querySelectorAll('.match-drop').forEach((drop) => {
           delete drop.dataset.placedId;
@@ -1640,6 +1950,9 @@
       });
 
       board.querySelector('[data-match-validate]')?.addEventListener('click', () => {
+        const session = getQuizSession();
+        if (session.locked) return;
+        session.locked = true;
         let total = 0;
         let correct = 0;
         board.querySelectorAll('.match-drop').forEach((drop) => {
@@ -1649,12 +1962,24 @@
           drop.classList.toggle('wrong', Boolean(drop.dataset.placedId) && !ok);
           if (ok) correct += 1;
         });
+        board.querySelectorAll('[data-match-left], [data-match-reset], [data-match-validate]').forEach((item) => { item.disabled = true; });
+        const allCorrect = correct === total;
         const feedback = board.querySelector('[data-match-feedback]');
         if (feedback) {
           feedback.hidden = false;
-          feedback.textContent = correct === total ? 'Perfecto: todas las uniones son correctas.' : `${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
-          feedback.className = `quiz-match-feedback ${correct === total ? 'ok' : 'check'}`;
+          feedback.innerHTML = allCorrect
+            ? '✅ Perfecto: todas las uniones son correctas.'
+            : `❌ ${correct}/${total} uniones correctas. Revisa las tarjetas marcadas.`;
+          feedback.className = `quiz-match-feedback ${allCorrect ? 'ok' : 'check'}`;
         }
+        const stageFeedback = board.closest('.quiz-stage')?.querySelector('[data-quiz-feedback]');
+        if (stageFeedback) {
+          stageFeedback.hidden = false;
+          stageFeedback.innerHTML = quizAnswerFeedbackHTML(allCorrect);
+          stageFeedback.className = `quiz-answer-feedback ${allCorrect ? 'is-correct' : 'is-wrong'}`;
+        }
+        recordQuizAnswer(getCurrentQuizQuestion(), allCorrect, { correctPairs: correct, totalPairs: total });
+        scheduleQuizAdvance();
       });
     });
   }
@@ -2309,7 +2634,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.20', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.21', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

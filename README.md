@@ -310,3 +310,15 @@ Ajustes visuales adicionales en Rockstars:
 - Rehecho el tipo de pregunta `match` / arrastrar para unir: las opciones azules se mueven realmente hacia los espacios rojos, desaparecen de la columna de opciones al soltarlas, permiten reemplazo, reinicio y validación con botón. También se agregó selección por toque como apoyo en móviles.
 - Los quizzes ahora se abren en una capa de pantalla completa dentro de la app, sin botón de salida ni regreso visible; se bloquea el back del navegador mientras el quiz está activo.
 - Actualizado cache busting a `0.24.20`.
+
+## v0.24.21
+
+- Se agregó pantalla previa antes de iniciar un quiz, avisando que solo se podrá salir al finalizar.
+- Al pulsar `Empezar quiz`, se muestra brevemente el título y descripción del quiz durante 2 segundos.
+- Antes de cada pregunta aparece una transición tipo concurso con etiqueta `Ítem N`, barrido lateral y barra de progreso de 1.5 segundos.
+- Las preguntas de opción múltiple y verdadero/falso ahora siguen una dinámica más cercana a Kahoot: al responder, las demás opciones se opacan, luego se revela la correcta en verde y la incorrecta seleccionada en rojo con íconos `✓` y `×`.
+- Se agregó feedback animado de correcto/incorrecto con frases de gamificación y permanencia de 4 segundos antes de pasar al siguiente ítem.
+- Al finalizar el último ítem se muestra una pantalla de resultados con acciones para volver a Quizzes, ir a Clases, ver Rockstars o repetir el quiz.
+- El bloqueo del botón atrás se mantiene durante la ejecución del quiz y se libera al llegar a resultados.
+- Se ajustó también la validación del tipo `match` para que al validar se registre el resultado, muestre feedback y avance automáticamente.
+- Actualizado cache busting a `0.24.21`.
