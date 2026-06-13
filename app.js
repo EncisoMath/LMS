@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.42';
+  const APP_VERSION = '0.24.43';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1578,18 +1578,7 @@
   }
 
   function getQuizSliderTune() {
-    const defaults = { userY: 34, userZoom: 61, correctY: 13, correctZoom: 118 };
-    try {
-      const saved = JSON.parse(localStorage.getItem('encisomath:quizSliderTune') || '{}');
-      return {
-        userY: Number.isFinite(Number(saved.userY)) ? Number(saved.userY) : defaults.userY,
-        userZoom: Number.isFinite(Number(saved.userZoom)) ? Number(saved.userZoom) : defaults.userZoom,
-        correctY: Number.isFinite(Number(saved.correctY)) ? Number(saved.correctY) : defaults.correctY,
-        correctZoom: Number.isFinite(Number(saved.correctZoom)) ? Number(saved.correctZoom) : defaults.correctZoom
-      };
-    } catch (error) {
-      return defaults;
-    }
+    return { userY: -15, userZoom: 61, correctY: 13, correctZoom: 118 };
   }
 
   function quizSliderTunePanelHTML(last = false) {
@@ -1634,7 +1623,6 @@
         </div>
         <div class="quiz-slider-limits"><span>${formatSliderNumber(min, step)}${unit ? ` ${unit}` : ''}</span><span>${formatSliderNumber(max, step)}${unit ? ` ${unit}` : ''}</span></div>
         <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
-        ${quizSliderTunePanelHTML(last)}
       </div>
     `;
   }
@@ -3467,7 +3455,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.42', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.43', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

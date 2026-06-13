@@ -9202,7 +9202,7 @@ body.quiz-fullscreen-active {
   transform: translateX(-50%) translateY(var(--slider-user-y, 34px)) scale(var(--slider-user-scale, .61)) !important;
 }
 
-/* v0.24.42 - Panel temporal para calibrar Y de la paleta azul del slider */
+/* v0.24.43 - Paleta azul del slider fijada en Y -15 y panel temporal retirado */
 .quiz-slider-tune-panel[data-slider-y-panel] {
   display: grid !important;
   pointer-events: auto !important;
@@ -9217,5 +9217,17 @@ body.quiz-fullscreen-active {
 }
 .quiz-slider-tune-panel[data-slider-y-panel] + .slider-tune-continue,
 .quiz-slider-tune-panel[data-slider-y-panel] .slider-tune-continue {
+  display: none !important;
+}
+
+
+/* v0.24.43 - Valor final de paleta azul del slider */
+.quiz-slider-shell[data-quiz-slider-board] {
+  --slider-user-y: -15px;
+  --slider-user-scale: .61;
+  --slider-correct-y: 13px;
+  --slider-correct-scale: 1.18;
+}
+.quiz-slider-tune-panel[data-slider-y-panel] {
   display: none !important;
 }

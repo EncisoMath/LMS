@@ -498,3 +498,11 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Se reactivó un panel de ajuste dentro del tipo `slider` para modificar en vivo únicamente la posición vertical Y de la paleta azul del usuario.
 - El valor se guarda en `localStorage` como `encisomath:quizSliderTune` y puede pasarse luego para fijarlo en una versión estable.
 - Cache busting actualizado a `0.24.42`.
+
+
+## v0.24.43
+
+- Se fijó el valor final de calibración vertical de la paleta azul del quiz tipo `slider`: Y `-15px`.
+- Se retiró el panel temporal de calibración del slider.
+- El valor final se aplica desde el código e ignora valores anteriores guardados en `localStorage` para evitar desfaces por calibraciones previas.
+- Cache busting actualizado a `0.24.43`.
