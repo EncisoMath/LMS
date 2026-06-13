@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.14';
+  const APP_VERSION = '0.24.15';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -876,7 +876,8 @@
           </div>
         </div>
         <div class="rockstar-title-block">
-          <div class="rockstar-title-neon" data-text="ROCKSTAR">ROCKSTAR</div>
+          <div class="rockstar-disco" aria-hidden="true"><span class="disco-ball-core"></span><span class="disco-spark disco-spark-a"></span><span class="disco-spark disco-spark-b"></span><span class="disco-spark disco-spark-c"></span></div>
+          <div class="rockstar-title-neon" data-text="ROCKSTARS">ROCKSTARS</div>
           <p>Participación · Periodo ${state.rockstarPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
         </div>
       </section>
@@ -966,11 +967,32 @@
 
   function flashRockstarButton(button, delta) {
     if (!button) return;
-    const className = Number(delta) > 0 ? 'rock-hit-plus' : 'rock-hit-minus';
+    const positive = Number(delta) > 0;
+    const className = positive ? 'rock-hit-plus' : 'rock-hit-minus';
+    const bg = positive
+      ? 'linear-gradient(135deg, rgba(88,204,2,.82), rgba(88,204,2,.34))'
+      : 'linear-gradient(135deg, rgba(239,68,68,.82), rgba(239,68,68,.34))';
+    const border = positive ? 'rgba(88,204,2,.98)' : 'rgba(239,68,68,.98)';
+    const glow = positive
+      ? '0 0 0 1px rgba(88,204,2,.22) inset, 0 0 34px rgba(88,204,2,.74), 0 10px 22px rgba(0,0,0,.30)'
+      : '0 0 0 1px rgba(239,68,68,.22) inset, 0 0 34px rgba(239,68,68,.74), 0 10px 22px rgba(0,0,0,.30)';
     button.classList.remove('rock-hit-plus', 'rock-hit-minus');
+    button.style.setProperty('background', bg, 'important');
+    button.style.setProperty('background-color', positive ? 'rgb(88,204,2)' : 'rgb(239,68,68)', 'important');
+    button.style.setProperty('border-color', border, 'important');
+    button.style.setProperty('box-shadow', glow, 'important');
+    button.style.setProperty('color', '#fff', 'important');
     void button.offsetWidth;
     button.classList.add(className);
-    window.setTimeout(() => button.classList.remove(className), 520);
+    button.blur();
+    window.setTimeout(() => {
+      button.classList.remove(className);
+      button.style.removeProperty('background');
+      button.style.removeProperty('background-color');
+      button.style.removeProperty('border-color');
+      button.style.removeProperty('box-shadow');
+      button.style.removeProperty('color');
+    }, 620);
   }
 
   function addRockstarDelta(studentId, delta) {
@@ -1019,7 +1041,6 @@
       score.className = `rockstar-score ${visual.className}`;
       pulseElement(score, 'text-pop');
     }
-    if (meta) meta.textContent = locked ? `Periodo ${state.rockstarPeriod} · No disponible por asistencia` : `Periodo ${state.rockstarPeriod} · ${tier.label}`;
     pulseElement(card, locked ? 'flash-excused' : (Number(delta) < 0 ? 'flash-absent' : 'flash-present'));
   }
 
@@ -1185,7 +1206,6 @@
             <div class="student-name">${escapeHTML(student.fullName)}</div>
             <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
             <div class="student-meta">📅 Asistencia: ${attendanceLabel}</div>
-            <div class="student-meta" data-rockstar-meta>Periodo ${state.rockstarPeriod} · ${locked ? 'No disponible por asistencia' : tier.label}</div>
           </div>
         </div>
         <div class="rockstar-score-box" aria-label="Puntos del estudiante">
@@ -1672,7 +1692,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.14', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.15', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

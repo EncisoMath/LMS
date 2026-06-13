@@ -258,3 +258,15 @@ Ajustes visuales en Rockstars:
 - Se elimina el exceso de capas neon internas para que el efecto quede mas parecido al estado visual de asistencia.
 - El texto `Asistencia hoy` cambia a `Asistencia`.
 - Se mantiene la proteccion para estudiantes con No asistio o Excusa: quedan bloqueados, grises y sin botones de puntos.
+
+## v0.24.15
+
+Ajustes visuales adicionales en Rockstars:
+
+- El texto principal del banner cambia a `ROCKSTARS`.
+- Se recupera un glow más fuerte en el título y se agrega animación de levitación suave.
+- Se agrega una bola de disco giratoria con destellos en el banner de Rockstars.
+- Se elimina la línea inferior de rango/periodo dentro de cada tarjeta Rockstar para compactar la lista.
+- Los botones `+1` y `-1` refuerzan su estado verde/rojo con estilos de alta prioridad y confirmación visual directa desde JavaScript, evitando que tomen el color del tema.
+- El total de puntos se agranda un poco más.
+- Se incrementa el resplandor exterior de las tarjetas para acercarlas al estilo de la pestaña Estudiantes.

@@ -4943,3 +4943,231 @@ html[data-bg-mode="black"] .student-card.rockstar-card.tier-skull,
   .rockstar-score { font-size: 2.45rem !important; }
   .rockstar-score-label { font-size: .84rem !important; margin-bottom: 2px !important; }
 }
+
+/* v0.24.15 - ajustes ROCKSTARS: titulo, bola disco, botones y tarjetas */
+.rockstar-hero {
+  position: relative !important;
+  overflow: hidden !important;
+}
+.rockstar-title-block {
+  position: relative !important;
+  z-index: 4 !important;
+  padding-right: 48px !important;
+}
+.rockstar-title-neon {
+  color: transparent !important;
+  background: linear-gradient(90deg, #ffffff 0%, #22d3ee 16%, #8b5cf6 30%, #ff2bd6 48%, #ffd60a 66%, #58cc02 82%, #ffffff 100%) !important;
+  background-size: 360% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-stroke: 1.05px rgba(255,255,255,.92) !important;
+  text-shadow:
+    0 0 7px rgba(255,255,255,.82),
+    0 0 18px rgba(34,211,238,.72),
+    0 0 32px rgba(255,43,214,.64),
+    0 0 58px rgba(139,92,246,.44) !important;
+  filter:
+    drop-shadow(0 0 9px rgba(34,211,238,.42))
+    drop-shadow(0 0 16px rgba(255,43,214,.34)) !important;
+  transform: translate3d(0,0,0) !important;
+  animation:
+    rockstarProNeonShift 2.55s linear infinite,
+    rockstarTitleFloatV15 3.1s ease-in-out infinite !important;
+}
+.rockstar-title-neon::before {
+  content: attr(data-text) !important;
+  -webkit-text-stroke: 4px rgba(255,43,214,.28) !important;
+  filter: blur(1px) !important;
+  opacity: .74 !important;
+}
+@keyframes rockstarTitleFloatV15 {
+  0%, 100% { transform: translate3d(0, 2px, 0) scale(1); }
+  50% { transform: translate3d(0, -5px, 0) scale(1.018); }
+}
+
+.rockstar-disco {
+  position: absolute !important;
+  top: 10px !important;
+  right: 13px !important;
+  width: 38px !important;
+  height: 48px !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+  display: grid !important;
+  place-items: center !important;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,.24)) drop-shadow(0 0 14px rgba(34,211,238,.22)) !important;
+}
+.rockstar-disco::before {
+  content: "" !important;
+  position: absolute !important;
+  top: -6px !important;
+  left: 50% !important;
+  width: 1px !important;
+  height: 15px !important;
+  background: linear-gradient(to bottom, rgba(255,255,255,.0), rgba(255,255,255,.58)) !important;
+  transform: translateX(-50%) !important;
+}
+.disco-ball-core {
+  width: 31px !important;
+  height: 31px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255,255,255,.70) !important;
+  background:
+    radial-gradient(circle at 32% 25%, rgba(255,255,255,.98), rgba(255,255,255,.18) 15%, transparent 25%),
+    repeating-conic-gradient(from 0deg, rgba(255,255,255,.95) 0deg 9deg, rgba(34,211,238,.72) 9deg 18deg, rgba(255,43,214,.62) 18deg 27deg, rgba(139,92,246,.70) 27deg 36deg),
+    repeating-linear-gradient(0deg, transparent 0 6px, rgba(0,0,0,.20) 6px 7px),
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(0,0,0,.20) 6px 7px) !important;
+  background-blend-mode: screen, normal, multiply, multiply !important;
+  box-shadow:
+    inset -7px -8px 12px rgba(0,0,0,.35),
+    inset 5px 4px 8px rgba(255,255,255,.25),
+    0 0 16px rgba(255,255,255,.32),
+    0 0 24px rgba(34,211,238,.24) !important;
+  animation: discoSpinV15 2.1s linear infinite, discoFloatV15 2.8s ease-in-out infinite !important;
+}
+.disco-spark {
+  position: absolute !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: 0 0 10px rgba(255,255,255,.95), 0 0 18px rgba(255,214,10,.45) !important;
+  opacity: 0 !important;
+  animation: discoSparkV15 1.45s ease-in-out infinite !important;
+}
+.disco-spark-a { top: 2px !important; left: 1px !important; animation-delay: -.15s !important; }
+.disco-spark-b { top: 18px !important; right: -2px !important; animation-delay: -.62s !important; }
+.disco-spark-c { bottom: 3px !important; left: 9px !important; animation-delay: -1.04s !important; }
+@keyframes discoSpinV15 {
+  from { transform: rotateY(0deg) rotateZ(-5deg); }
+  to { transform: rotateY(360deg) rotateZ(-5deg); }
+}
+@keyframes discoFloatV15 {
+  0%, 100% { translate: 0 1px; }
+  50% { translate: 0 -4px; }
+}
+@keyframes discoSparkV15 {
+  0%, 100% { opacity: 0; transform: scale(.5) rotate(0deg); }
+  38% { opacity: 1; transform: scale(1.45) rotate(45deg); }
+  62% { opacity: .42; transform: scale(.9) rotate(90deg); }
+}
+
+.rockstar-card .rockstar-buttons {
+  margin-top: 5px !important;
+  gap: 7px !important;
+}
+html[data-bg-mode="black"] .rockstar-card .rock-btn,
+.rockstar-card .rock-btn,
+button.rock-btn {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  color: #fff !important;
+  background-color: transparent !important;
+  border-radius: var(--radius) !important;
+  min-height: 35px !important;
+}
+html[data-bg-mode="black"] .rockstar-card .rock-btn.rock-plus,
+.rockstar-card .rock-btn.rock-plus,
+.rockstar-card .rock-btn.rock-plus:hover,
+.rockstar-card .rock-btn.rock-plus:focus,
+.rockstar-card .rock-btn.rock-plus:focus-visible,
+.rockstar-card .rock-btn.rock-plus:active,
+.rockstar-card .rock-btn.rock-plus.rock-hit-plus,
+button.rock-btn.rock-plus {
+  --rock-btn-color: #58cc02 !important;
+  -webkit-tap-highlight-color: rgba(88,204,2,.28) !important;
+  color: #fff !important;
+  outline: 3px solid rgba(88,204,2,.20) !important;
+  border-color: rgba(88,204,2,.92) !important;
+  background: linear-gradient(135deg, rgba(88,204,2,.54), rgba(88,204,2,.18)) !important;
+  box-shadow: 0 0 0 1px rgba(88,204,2,.18) inset, 0 0 24px rgba(88,204,2,.52), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+html[data-bg-mode="black"] .rockstar-card .rock-btn.rock-minus,
+.rockstar-card .rock-btn.rock-minus,
+.rockstar-card .rock-btn.rock-minus:hover,
+.rockstar-card .rock-btn.rock-minus:focus,
+.rockstar-card .rock-btn.rock-minus:focus-visible,
+.rockstar-card .rock-btn.rock-minus:active,
+.rockstar-card .rock-btn.rock-minus.rock-hit-minus,
+button.rock-btn.rock-minus {
+  --rock-btn-color: #ef4444 !important;
+  -webkit-tap-highlight-color: rgba(239,68,68,.28) !important;
+  color: #fff !important;
+  outline: 3px solid rgba(239,68,68,.20) !important;
+  border-color: rgba(239,68,68,.92) !important;
+  background: linear-gradient(135deg, rgba(239,68,68,.54), rgba(239,68,68,.18)) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.18) inset, 0 0 24px rgba(239,68,68,.52), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+.rockstar-card .rock-btn.rock-plus.rock-hit-plus,
+.rockstar-card .rock-btn.rock-plus:active {
+  background: linear-gradient(135deg, rgba(88,204,2,.88), rgba(88,204,2,.34)) !important;
+  box-shadow: 0 0 0 1px rgba(88,204,2,.26) inset, 0 0 38px rgba(88,204,2,.82), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+.rockstar-card .rock-btn.rock-minus.rock-hit-minus,
+.rockstar-card .rock-btn.rock-minus:active {
+  background: linear-gradient(135deg, rgba(239,68,68,.88), rgba(239,68,68,.34)) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.26) inset, 0 0 38px rgba(239,68,68,.82), 0 10px 22px rgba(0,0,0,.30) !important;
+}
+
+.rockstar-main {
+  padding-right: 126px !important;
+}
+.rockstar-score-box {
+  top: 1px !important;
+  right: 9px !important;
+  min-width: 116px !important;
+}
+.rockstar-score {
+  font-size: 3.32rem !important;
+  line-height: .84 !important;
+  letter-spacing: -.09em !important;
+}
+.rockstar-score-label {
+  font-size: 1.05rem !important;
+  margin-bottom: 2px !important;
+}
+.student-card.rockstar-card {
+  border-width: 1px !important;
+  overflow: visible !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-diamond,
+.student-card.rockstar-card.tier-diamond {
+  box-shadow: 0 0 0 1px rgba(34,211,238,.34), 0 0 52px rgba(34,211,238,.40), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-fire,
+.student-card.rockstar-card.tier-fire {
+  box-shadow: 0 0 0 1px rgba(255,176,0,.34), 0 0 52px rgba(255,111,0,.42), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-cool,
+.student-card.rockstar-card.tier-cool {
+  box-shadow: 0 0 0 1px rgba(56,189,248,.34), 0 0 52px rgba(2,136,209,.40), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-rocket,
+.student-card.rockstar-card.tier-rocket {
+  box-shadow: 0 0 0 1px rgba(255,43,214,.34), 0 0 52px rgba(255,43,214,.40), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-neutral,
+.student-card.rockstar-card.tier-neutral {
+  box-shadow: 0 0 0 1px rgba(88,204,2,.34), 0 0 50px rgba(88,204,2,.36), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-angry,
+.student-card.rockstar-card.tier-angry {
+  box-shadow: 0 0 0 1px rgba(239,68,68,.34), 0 0 52px rgba(239,68,68,.42), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-card.tier-skull,
+.student-card.rockstar-card.tier-skull {
+  box-shadow: 0 0 0 1px rgba(209,213,219,.30), 0 0 48px rgba(148,163,184,.36), 0 18px 38px rgba(0,0,0,.68), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+html[data-bg-mode="black"] .student-card.rockstar-disabled,
+.student-card.rockstar-disabled {
+  box-shadow: 0 0 0 1px rgba(148,163,184,.16), 0 0 18px rgba(148,163,184,.10), 0 12px 28px rgba(0,0,0,.56), inset 0 1px 0 rgba(255,255,255,.03) !important;
+}
+
+@media (max-width: 420px) {
+  .rockstar-title-block { padding-right: 42px !important; }
+  .rockstar-disco { right: 8px !important; top: 8px !important; transform: scale(.92) !important; transform-origin: top right !important; }
+  .rockstar-main { padding-right: 104px !important; }
+  .rockstar-score-box { min-width: 100px !important; right: 6px !important; }
+  .rockstar-score { font-size: 2.75rem !important; }
+  .rockstar-score-label { font-size: .90rem !important; }
+}
