@@ -11360,3 +11360,22 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
   font-size: calc(var(--quiz-text-font, 20px) * .55) !important;
 }
+
+
+/* v0.24.72 - Slider estable al validar: sin salto vertical */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-visual-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell.slider-wrong .quiz-slider-visual-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell.slider-correct .quiz-slider-visual-stage {
+  min-height: 180px !important;
+  transform: none !important;
+  transition: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider.quiz-feedback-visible .quiz-slider-shell,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider.quiz-feedback-visible .quiz-slider-visual-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider.quiz-feedback-visible .quiz-slider-widget {
+  transform: none !important;
+  transition: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell.slider-wrong .quiz-slider-visual-stage {
+  margin-top: -2px !important;
+}

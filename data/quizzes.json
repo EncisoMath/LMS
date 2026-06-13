@@ -1,6 +1,6 @@
 {
-  "version": "1.4",
-  "description": "Base de quizzes por asignatura y periodo. Todos los ítems demo soportan e incluyen imagen, además de opción múltiple, abierta, verdadero/falso, arrastrar para unir, completar texto y slider numérico.",
+  "version": "1.5",
+  "description": "Base de quizzes por asignatura y periodo. El quiz demo conserva opción múltiple, verdadero/falso, pregunta abierta y slider numérico; los tipos drag and drop y completar texto fueron retirados del demo.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -74,82 +74,6 @@
         },
         {
           "id": "q4",
-          "type": "match",
-          "prompt": "Arrastra cada concepto hacia su definición.",
-          "textA": "Un grupo está revisando una tabla de frecuencia y necesita relacionar cada concepto con su significado.",
-          "textB": "Une cada concepto con la definición que le corresponde.",
-          "pairs": [
-            {
-              "id": "fa",
-              "left": "Frecuencia absoluta",
-              "right": "Cantidad de veces"
-            },
-            {
-              "id": "fr",
-              "left": "Frecuencia relativa",
-              "right": "Parte del total"
-            },
-            {
-              "id": "moda",
-              "left": "Moda",
-              "right": "Dato más repetido"
-            }
-          ],
-          "image": "./assets/quiz-demo-statistics.svg",
-          "imageAlt": "Recurso visual de apoyo para el ítem 4 del quiz"
-        },
-        {
-          "id": "q5",
-          "type": "fill_text",
-          "prompt": "Completa el texto arrastrando las palabras correctas.",
-          "textA": "Un estudiante explicó una tabla de frecuencia, pero dejó dos ideas incompletas.",
-          "textB": "Completa el texto con las palabras que hacen que la explicación tenga sentido.",
-          "textParts": [
-            "En la tabla, el dato que más se repite se llama ",
-            ". Para comparar una parte con el total se usa la ",
-            "."
-          ],
-          "blanks": [
-            {
-              "id": "b1",
-              "answerId": "moda"
-            },
-            {
-              "id": "b2",
-              "answerId": "frecuencia-relativa"
-            }
-          ],
-          "options": [
-            {
-              "id": "moda",
-              "text": "moda"
-            },
-            {
-              "id": "frecuencia-relativa",
-              "text": "frecuencia relativa"
-            },
-            {
-              "id": "frecuencia-absoluta",
-              "text": "frecuencia absoluta"
-            },
-            {
-              "id": "rango",
-              "text": "rango"
-            },
-            {
-              "id": "promedio",
-              "text": "promedio"
-            },
-            {
-              "id": "encuesta",
-              "text": "encuesta"
-            }
-          ],
-          "image": "./assets/quiz-demo-statistics.svg",
-          "imageAlt": "Recurso visual de apoyo para el ítem 5 del quiz"
-        },
-        {
-          "id": "q6",
           "type": "slider",
           "prompt": "¿Cuántos estudiantes participaron en la encuesta?",
           "textA": "En la gráfica se registraron las respuestas de un curso sobre su fruta favorita.",

@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.71';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.71: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.72';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.72: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -3303,7 +3303,7 @@
         recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
         const stage = board.closest('.quiz-stage');
         board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
-        pulseElement(board, ok ? 'match-join-pop' : 'quiz-slider-wrong-pop');
+        if (!ok) pulseElement(board, 'quiz-slider-wrong-pop');
         showQuizFeedbackBandAfterDelay(stage, ok, question);
       });
     });
@@ -4027,7 +4027,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.71', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.72', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

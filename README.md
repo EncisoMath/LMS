@@ -765,3 +765,12 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se mantiene la reducción automática por longitud y el tamaño configurado desde la tuerca, pero el peso visual queda normal (`font-weight: 400`).
 - Versiones/cache busting actualizados a `0.24.70`.
 
+
+
+## v0.24.72
+
+- Se parte de `v0.24.71`.
+- Se retiraron del quiz demo los ítems de tipo `drag and drop` / `match` y `completar texto` / `fill_text`.
+- El quiz demo queda con ABCD, Verdadero/Falso, Pregunta abierta y Slider.
+- Se corrigió el salto vertical del slider al validar: el contenedor mantiene una altura estable antes y después de responder, incluso cuando la respuesta es incorrecta y aparece la marca correcta.
+- Versiones/cache busting actualizados a `0.24.72`.
