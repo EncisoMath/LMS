@@ -9188,3 +9188,16 @@ body.quiz-fullscreen-active {
   .quiz-slider-limits { margin-top: -16px !important; }
   .quiz-slider-shell.slider-wrong .quiz-slider-visual-stage { min-height: 180px !important; }
 }
+
+/* v0.24.40 - Slider quiz auto-advance fix */
+
+
+/* v0.24.41 - Ajuste vertical final de paleta azul del slider */
+.quiz-slider-bubble {
+  top: 0px !important;
+}
+.quiz-slider-shell.slider-wrong .quiz-slider-bubble,
+.quiz-slider-shell.slider-correct .quiz-slider-bubble,
+.quiz-slider-shell:not(.slider-wrong):not(.slider-correct) .quiz-slider-bubble {
+  transform: translateX(-50%) translateY(var(--slider-user-y, 34px)) scale(var(--slider-user-scale, .61)) !important;
+}

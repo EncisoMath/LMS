@@ -477,3 +477,16 @@ Ajustes al tipo de pregunta `slider` en Quizzes:
 - Se redujo el espacio interno, la altura del escenario visual, la separacion entre barritas, etiquetas y boton, manteniendo el area tactil invisible para arrastrar la paleta.
 - Cuando la respuesta es incorrecta, el bloque conserva un poco mas de altura solo para que la paleta correcta verde no se monte sobre las etiquetas.
 - Version/cache busting actualizados a `0.24.39`.
+
+### v0.24.40
+- Corrección en Quizzes tipo `slider`: después de validar y mostrar la banda inferior de feedback, el quiz vuelve a avanzar automáticamente.
+- Si la pregunta tipo slider es la última, ahora pasa correctamente a la pantalla de resultados.
+- La causa era que el flujo del slider había quedado sin llamar a `scheduleQuizAdvance()` después de retirar los paneles temporales de calibración.
+- Versión/cache busting actualizados a `0.24.40`.
+
+
+## v0.24.41
+
+- Corrección puntual en Quizzes tipo `slider`: se ajustó verticalmente la paleta superior del usuario después de la compactación del componente, evitando que quede demasiado arriba cuando se valida una respuesta incorrecta.
+- La paleta azul/roja conserva el zoom final `61%`, pero su Y interno pasa a `34px` para alinearse mejor con la barrita activa compactada.
+- Cache busting actualizado a `0.24.41`.

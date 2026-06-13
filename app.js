@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.39';
+  const APP_VERSION = '0.24.41';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1578,7 +1578,7 @@
   }
 
   function getQuizSliderTune() {
-    return { userY: 20, userZoom: 61, correctY: 13, correctZoom: 118 };
+    return { userY: 34, userZoom: 61, correctY: 13, correctZoom: 118 };
   }
 
   function quizSliderTunePanelHTML(last = false) {
@@ -2723,6 +2723,7 @@
         }
         board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
         pulseElement(board, ok ? 'match-join-pop' : 'quiz-slider-wrong-pop');
+        scheduleQuizAdvance();
       });
     });
   }
@@ -3445,7 +3446,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.39', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.41', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
