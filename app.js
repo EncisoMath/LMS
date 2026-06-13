@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.11.0';
+  const APP_VERSION = '0.12.0';
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -586,8 +586,8 @@
       <div class="modal-card danger-modal">
         <div class="danger-head">
           <div class="warning-icon warning-duo" aria-hidden="true">
-            <img class="warning-mark warning-mark-a" src="./assets/warn-exp1.png" alt="" />
-            <img class="warning-mark warning-mark-b" src="./assets/warn-exp2.png" alt="" />
+            <img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" />
+            <img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" />
           </div>
           <div>
             <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>

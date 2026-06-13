@@ -2111,3 +2111,211 @@ html[data-bg-mode="black"] .loading-screen {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* v0.12 — banner oscuro real, texto sin recuadro, flash en modo negro y warning centrado */
+:root {
+  --banner-corner-glow-a: color-mix(in srgb, var(--maincolor) 54%, transparent);
+  --banner-corner-glow-b: color-mix(in srgb, var(--maincolor) 36%, transparent);
+}
+
+/* El banner default vuelve a ser oscuro al centro, con glow solo en esquinas */
+.subject-banner.is-default-cover,
+.assignment-cover-mini.is-default-cover,
+.manager-preview-cover:not([style*="--cover-image"]) {
+  background:
+    radial-gradient(circle at 0% 0%, var(--banner-corner-glow-a) 0%, color-mix(in srgb, var(--maincolor) 22%, transparent) 18%, transparent 43%),
+    radial-gradient(circle at 100% 100%, var(--banner-corner-glow-b) 0%, color-mix(in srgb, var(--maincolor) 16%, transparent) 20%, transparent 46%),
+    radial-gradient(circle at 50% 48%, rgba(0,0,0,.96) 0%, rgba(1,8,15,.94) 42%, rgba(2,13,23,.88) 78%, rgba(3,18,31,.82) 100%),
+    linear-gradient(135deg, #04101c 0%, #000 52%, #061725 100%) !important;
+  background-size: 140% 140%, 140% 140%, 100% 100%, 100% 100% !important;
+  background-position: 0% 0%, 100% 100%, center, center !important;
+  background-repeat: no-repeat !important;
+  animation: bannerCornerBreath 7.2s ease-in-out infinite !important;
+}
+@keyframes bannerCornerBreath {
+  0%, 100% { background-position: 0% 0%, 100% 100%, center, center; filter: saturate(1) brightness(.92); }
+  50% { background-position: 4% 2%, 96% 98%, center, center; filter: saturate(1.18) brightness(1.04); }
+}
+
+/* Si el docente coloca portada personalizada, se conserva también en el home */
+.subject-banner.has-custom-cover,
+.assignment-cover-mini.has-custom-cover,
+.manager-preview-cover[style*="--cover-image"] {
+  background-image:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--maincolor) 34%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--maincolor) 22%, transparent) 0%, transparent 32%),
+    linear-gradient(135deg, rgba(0,0,0,.06), rgba(0,0,0,.16)),
+    var(--cover-image) !important;
+  background-size: 130% 130%, 130% 130%, 100% 100%, cover !important;
+  background-position: 0% 0%, 100% 100%, center, center !important;
+  background-repeat: no-repeat !important;
+  background-blend-mode: screen, screen, multiply, normal !important;
+  animation: customBannerBreath 8s ease-in-out infinite !important;
+}
+@keyframes customBannerBreath {
+  0%, 100% { filter: saturate(1.02) brightness(.96); background-position: 0% 0%, 100% 100%, center, center; }
+  50% { filter: saturate(1.14) brightness(1.04); background-position: 5% 3%, 95% 97%, center, center; }
+}
+.assignment-cover-mini.has-custom-cover::after,
+.subject-banner.has-custom-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--maincolor) 18%, transparent), transparent 34%), radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--maincolor) 13%, transparent), transparent 36%);
+}
+
+/* Información del banner sin recuadro ni fondo visible: solo sombra/halo del texto */
+.subject-banner {
+  height: clamp(116px, 30vw, 148px) !important;
+  min-height: 116px !important;
+  padding: 8px 12px !important;
+  align-items: center !important;
+}
+.subject-banner-content,
+html[data-bg-mode="black"] .subject-banner-content {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 46px 0 0 !important;
+}
+.subject-banner-content::before,
+.subject-banner-content::after {
+  display: none !important;
+  content: none !important;
+}
+.subject-banner .subject-copy,
+.subject-banner .subject-icon.xl {
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,.95)) drop-shadow(0 0 18px rgba(0,0,0,.95)) drop-shadow(0 0 34px rgba(0,0,0,.90));
+}
+.subject-banner .subject-kicker,
+.subject-banner h2,
+.subject-banner .subject-chips span {
+  text-shadow:
+    0 2px 3px #000,
+    0 0 8px #000,
+    0 0 18px #000,
+    0 0 34px #000;
+}
+.subject-banner .subject-chips.compact {
+  gap: 8px !important;
+}
+.subject-banner .subject-chips.compact span {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: rgba(255,255,255,.95) !important;
+  font-weight: 610 !important;
+}
+.subject-banner .subject-chips.compact span + span::before {
+  content: "·";
+  margin-right: 8px;
+  opacity: .85;
+}
+.subject-menu-btn {
+  top: 50% !important;
+  right: 10px !important;
+  transform: translateY(-50%) !important;
+  background: rgba(0,0,0,.55) !important;
+  border-color: rgba(255,255,255,.20) !important;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 0 22px color-mix(in srgb, var(--maincolor) 22%, transparent) !important;
+}
+.subject-menu-btn:active { transform: translateY(-50%) scale(.94) !important; }
+@media (max-width: 520px) {
+  .subject-banner { height: 106px !important; min-height: 106px !important; padding: 7px 10px !important; }
+  .subject-banner-content { grid-template-columns: 48px minmax(0, 1fr) !important; gap: 8px !important; max-width: calc(100% - 43px) !important; }
+  .subject-banner .subject-icon.xl { width: 42px !important; height: 42px !important; }
+  .subject-banner h2 { font-size: 1rem !important; margin-bottom: 4px !important; }
+  .subject-banner .subject-kicker { font-size: .66rem !important; }
+  .subject-banner .subject-chips.compact { gap: 6px !important; }
+  .subject-banner .subject-chips.compact span { font-size: .68rem !important; }
+  .subject-banner .subject-chips.compact span + span::before { margin-right: 6px; }
+}
+
+/* El destello de asistencia debe existir también en negro total */
+html[data-bg-mode="black"] .student-card.flash-present,
+.student-card.flash-present {
+  animation: illuminateGreenV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
+}
+html[data-bg-mode="black"] .student-card.flash-absent,
+.student-card.flash-absent {
+  animation: illuminateRedV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
+}
+html[data-bg-mode="black"] .student-card.flash-excused,
+.student-card.flash-excused {
+  animation: illuminateYellowV12 720ms cubic-bezier(.16, 1, .3, 1) !important;
+}
+@keyframes illuminateGreenV12 {
+  0% { box-shadow: 0 0 0 rgba(88,204,2,0), 0 12px 28px rgba(0,0,0,.55); filter: brightness(1); }
+  28% { box-shadow: 0 0 0 5px rgba(88,204,2,.26), 0 0 54px rgba(88,204,2,.58), 0 18px 34px rgba(0,0,0,.58); filter: brightness(1.18); }
+  100% { box-shadow: 0 0 0 1px rgba(88,204,2,.22), 0 0 28px rgba(88,204,2,.20), 0 14px 30px rgba(0,0,0,.60); filter: brightness(1); }
+}
+@keyframes illuminateRedV12 {
+  0% { box-shadow: 0 0 0 rgba(239,68,68,0), 0 12px 28px rgba(0,0,0,.55); filter: brightness(1); }
+  28% { box-shadow: 0 0 0 5px rgba(239,68,68,.28), 0 0 56px rgba(239,68,68,.60), 0 18px 34px rgba(0,0,0,.58); filter: brightness(1.18); }
+  100% { box-shadow: 0 0 0 1px rgba(239,68,68,.22), 0 0 28px rgba(239,68,68,.20), 0 14px 30px rgba(0,0,0,.60); filter: brightness(1); }
+}
+@keyframes illuminateYellowV12 {
+  0% { box-shadow: 0 0 0 rgba(245,158,11,0), 0 12px 28px rgba(0,0,0,.55); filter: brightness(1); }
+  28% { box-shadow: 0 0 0 5px rgba(245,158,11,.30), 0 0 56px rgba(245,158,11,.60), 0 18px 34px rgba(0,0,0,.58); filter: brightness(1.18); }
+  100% { box-shadow: 0 0 0 1px rgba(245,158,11,.24), 0 0 28px rgba(245,158,11,.22), 0 14px 30px rgba(0,0,0,.60); filter: brightness(1); }
+}
+
+/* Warning: centro real, marks en orden correcto y más grandes */
+.modal-layer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 18px !important;
+  overflow: hidden !important;
+}
+.danger-modal {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  width: min(92vw, 630px) !important;
+  max-width: 630px !important;
+  margin: auto !important;
+  transform-origin: center center !important;
+}
+.modal-layer.show .danger-modal {
+  transform: translate3d(0,0,0) scale(1) !important;
+}
+.danger-head {
+  grid-template-columns: 112px minmax(0, 1fr) 38px !important;
+  min-height: 154px !important;
+}
+.warning-icon.warning-duo {
+  width: 108px !important;
+  height: 122px !important;
+}
+.warning-mark {
+  width: 68px !important;
+  max-width: none !important;
+}
+.warning-mark-a {
+  left: 0 !important;
+  top: 26px !important;
+  z-index: 1 !important;
+}
+.warning-mark-b {
+  right: -4px !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+@media (max-width: 520px) {
+  .danger-modal { width: calc(100vw - 28px) !important; }
+  .danger-head { grid-template-columns: 92px minmax(0, 1fr) 34px !important; min-height: 138px !important; }
+  .warning-icon.warning-duo { width: 90px !important; height: 108px !important; }
+  .warning-mark { width: 58px !important; }
+  .warning-mark-a { top: 25px !important; }
+  .warning-mark-b { top: 0 !important; right: -3px !important; }
+  .danger-head h2 { font-size: 1.28rem !important; }
+  .danger-head p { font-size: .92rem !important; }
+}
