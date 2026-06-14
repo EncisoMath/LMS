@@ -776,7 +776,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Versiones/cache busting actualizados a `0.24.72`.
 
 
-## v0.24.106
+## v0.24.107
 
 - Preparado Montserrat local para quizzes usando `assets/fonts/Montserrat/`.
 - Quita dependencia de Google Fonts en `index.html`.
@@ -784,7 +784,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Mantiene `bindQuizTabEvents()` y el arranque de Quizzes corregido.
 
 
-## v0.24.106
+## v0.24.107
 - Limpieza parcial de quiz: retirados flujos JS/CSS legacy de match/fill_text no usados en el demo actual.
 - Nuevas opciones de rendimiento en Perfil y apariencia para desactivar animaciones, mallas/brillos, efectos de opciones y animación de banda.
 - Corrección de foco al cerrar la tuerquita para evitar advertencias aria-hidden.

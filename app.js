@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.106';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.106: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.107';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.107: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -17,6 +17,9 @@
     background: '#000000',
     effectsMotion: true,
     effectsMesh: true,
+    visualOptimized: true,
+    tabTransitions: true,
+    glassEffects: true,
     quizOptionEffects: true,
     quizFeedbackEffects: true
   };
@@ -456,6 +459,7 @@
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
       applySubjectInfoTune();
+      setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
       else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
@@ -534,7 +538,18 @@
     root.style.setProperty('--subject-chip-size', `${(0.68 * scale).toFixed(3)}rem`);
   }
 
+  function setActiveSubjectTabMeta(tab) {
+    state.activeSubjectTab = tab;
+    document.documentElement.dataset.activeSubjectTab = tab;
+    document.body.dataset.activeSubjectTab = tab;
+    const content = document.getElementById('tabContent');
+    if (content) content.dataset.activeTab = tab;
+  }
+
   function setSubjectTab(tab) {
+    const content = document.getElementById('tabContent');
+    if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
+    setActiveSubjectTabMeta(tab);
     document.getElementById('studentsTab')?.classList.toggle('active', tab === 'students');
     document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
     document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
@@ -619,11 +634,14 @@
         </div>
         <div class="settings-group settings-effects-group">
           <label class="settings-label">Rendimiento y efectos</label>
+          <label class="toggle-row" for="visualOptimizedToggle"><span>Visual optimizado sin modo plano</span><input id="visualOptimizedToggle" type="checkbox" ${booleanPrefChecked('visualOptimized')} /></label>
+          <label class="toggle-row" for="tabTransitionsToggle"><span>Transiciones entre pestañas</span><input id="tabTransitionsToggle" type="checkbox" ${booleanPrefChecked('tabTransitions')} /></label>
+          <label class="toggle-row" for="glassEffectsToggle"><span>Blur / vidrio</span><input id="glassEffectsToggle" type="checkbox" ${booleanPrefChecked('glassEffects')} /></label>
           <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
           <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
           <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
           <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
-          <p class="settings-help">Desactiva lo pesado en celulares lentos. La lógica del quiz no cambia.</p>
+          <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero usa animaciones más lentas, menos blur y menos capas pesadas.</p>
         </div>
         <div class="profile-menu-actions">
           <button class="ghost-btn" id="profileSoonBtn">🪪 Gestionar perfil</button>
@@ -656,6 +674,9 @@
       document.getElementById('accentResetBtn').addEventListener('click', () => commitAccent(DEFAULT_PREFS.accent));
       document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
       [
+        ['visualOptimizedToggle', 'visualOptimized'],
+        ['tabTransitionsToggle', 'tabTransitions'],
+        ['glassEffectsToggle', 'glassEffects'],
         ['effectsMotionToggle', 'effectsMotion'],
         ['effectsMeshToggle', 'effectsMesh'],
         ['quizOptionEffectsToggle', 'quizOptionEffects'],
@@ -676,6 +697,7 @@
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
     if (!$content) return;
+    setActiveSubjectTabMeta('students');
 
     $content.innerHTML = `
       <div class="date-card">
@@ -1027,6 +1049,7 @@
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
     if (!assignment || !$content) return;
+    setActiveSubjectTabMeta('rockstars');
 
     $content.innerHTML = `
       <section class="rockstar-hero" aria-label="Rockstars de participación">
@@ -1081,12 +1104,14 @@
     if (!assignment) return '';
     const attendance = getAttendance(assignment.id, todayISO());
     const query = normalizeSearch(state.studentSearch || '');
+    const period = Number(state.rockstarPeriod);
+    const pointMap = getRockstarPointMap(assignment.id, period);
     const students = getStudentsForAssignment(assignment).filter((student) => {
       if (!query) return true;
       return normalizeSearch(`${student.fullName} ${student.id} ${student.username || ''}`).includes(query);
     });
     return students.map((student) => {
-      const points = getRockstarPoints(assignment.id, student.id, state.rockstarPeriod);
+      const points = pointMap.get(student.id) || 0;
       return rockstarCardHTML(student, points, attendance[student.id]);
     }).join('') || `<div class="empty">${query ? 'No hay rockstars con ese filtro.' : 'Aún no hay estudiantes en este curso.'}</div>`;
   }
@@ -1289,6 +1314,7 @@
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
     if (!assignment || !$content) return;
+    setActiveSubjectTabMeta('quizzes');
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
     $content.innerHTML = `
@@ -3573,6 +3599,7 @@
   function renderClassesTab(options = {}) {
     const $content = document.getElementById('tabContent');
     if (!$content) return;
+    setActiveSubjectTabMeta('classes');
 
     $content.innerHTML = `
       <div class="period-tabs" id="periodTabs">
@@ -3928,6 +3955,15 @@
     ];
   }
 
+  function getRockstarPointMap(assignmentId, period) {
+    const selectedPeriod = Number(period);
+    return getRockstarEvents(assignmentId).reduce((scores, entry) => {
+      if (Number(entry.period) !== selectedPeriod) return scores;
+      scores.set(entry.studentId, (scores.get(entry.studentId) || 0) + Number(entry.delta || 0));
+      return scores;
+    }, new Map());
+  }
+
   function getRockstarPoints(assignmentId, studentId, period) {
     return getRockstarEvents(assignmentId)
       .filter((entry) => entry.studentId === studentId && Number(entry.period) === Number(period))
@@ -4060,6 +4096,9 @@
     const root = document.documentElement;
     root.dataset.effectsMotion = prefEnabled('effectsMotion') ? 'on' : 'off';
     root.dataset.effectsMesh = prefEnabled('effectsMesh') ? 'on' : 'off';
+    root.dataset.visualOptimized = prefEnabled('visualOptimized') ? 'on' : 'off';
+    root.dataset.tabTransitions = prefEnabled('tabTransitions') ? 'on' : 'off';
+    root.dataset.glassEffects = prefEnabled('glassEffects') ? 'on' : 'off';
     root.dataset.quizOptionEffects = prefEnabled('quizOptionEffects') ? 'on' : 'off';
     root.dataset.quizFeedbackEffects = prefEnabled('quizFeedbackEffects') ? 'on' : 'off';
     root.dataset.bgMode = blackMode ? 'black' : 'deep';
@@ -4199,6 +4238,13 @@
 
   function pulseElement(element, className) {
     if (!element) return;
+    if (!prefEnabled('effectsMotion')) return;
+    if (className === 'tab-enter') {
+      if (!prefEnabled('tabTransitions')) return;
+      element.classList.remove(className);
+      requestAnimationFrame(() => element.classList.add(className));
+      return;
+    }
     element.classList.remove(className);
     void element.offsetWidth;
     element.classList.add(className);
@@ -4213,7 +4259,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.106', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.107', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
