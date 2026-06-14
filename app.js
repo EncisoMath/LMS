@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.90';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.90: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.91';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.91: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1465,8 +1465,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.90';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.90';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.91';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.91';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2319,14 +2319,6 @@
         handleOpenAnswer(form);
       });
     });
-    document.querySelectorAll('.quiz-open-input').forEach((input) => {
-      input.addEventListener('focus', () => {
-        input.closest('.quiz-stage')?.classList.add('quiz-open-input-focused');
-      });
-      input.addEventListener('blur', () => {
-        input.closest('.quiz-stage')?.classList.remove('quiz-open-input-focused');
-      });
-    });
     bindQuizLayoutTunePanel();
     bindQuizMatchEvents();
     bindQuizFillTextEvents();
@@ -2668,11 +2660,16 @@
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     const feedback = stage?.querySelector('[data-quiz-feedback]');
     if (!feedback) return;
+    stage?.classList.remove('quiz-feedback-visible');
+    feedback.hidden = true;
+    feedback.innerHTML = '';
+    void feedback.offsetWidth;
     feedback.hidden = false;
     feedback.innerHTML = quizAnswerFeedbackHTML(correct, neutralText, question);
     feedback.className = neutralText
-      ? 'quiz-answer-feedback is-neutral'
-      : `quiz-answer-feedback ${correct ? 'is-correct' : 'is-wrong'}`;
+      ? 'quiz-answer-feedback is-neutral quiz-feedback-zooming'
+      : `quiz-answer-feedback ${correct ? 'is-correct' : 'is-wrong'} quiz-feedback-zooming`;
+    void feedback.offsetWidth;
     stage?.classList.add('quiz-feedback-visible');
   }
 
@@ -4199,7 +4196,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.90', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.91', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

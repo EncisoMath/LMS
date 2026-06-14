@@ -13269,8 +13269,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.90 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.90"; }
+/* ===== v0.24.91 cache-proof quiz bugfixes ===== */
+:root { --encisomath-build: "0.24.91"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13355,4 +13355,231 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   76% { opacity: 1; transform: rotate(-8deg) scale(.94); }
   90% { opacity: 1; transform: rotate(-8deg) scale(1.025); }
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+
+
+/* ===== v0.24.91 definitive quiz interaction bugfix ===== */
+:root { --encisomath-build: "0.24.91"; }
+
+/* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible {
+  padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-image-tune-box,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-text-a,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-answer-zone,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid-two,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid-2x2,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage {
+  transform: none !important;
+  translate: none !important;
+  margin-top: inherit;
+}
+
+/* 1) Pregunta abierta: eliminate all focus-driven movement. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused {
+  transform: none !important;
+  translate: none !important;
+  top: auto !important;
+  bottom: auto !important;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input:focus,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .input:focus {
+  transform: none !important;
+  translate: none !important;
+  scroll-margin: 0 !important;
+  outline-offset: 0 !important;
+}
+
+/* 2) ABCD/TF cards: fixed radius and no pending scale/movement. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option.selected,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option.is-dimmed,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option.unused-reveal,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option.correct-reveal,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option.wrong-reveal {
+  border-radius: 6px !important;
+  clip-path: none !important;
+  background-clip: padding-box !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-pending .kahoot-option,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-pending .kahoot-option.selected,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-pending .kahoot-option.is-dimmed {
+  transform: translateZ(0) !important;
+  scale: 1 !important;
+  translate: none !important;
+  rotate: none !important;
+  animation: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option::after {
+  border-radius: 6px !important;
+}
+
+/* 3) Correct/wrong reveal animations using individual transform properties so old transform:...!important cannot cancel them. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed .kahoot-option.correct-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed .kahoot-option.correct-reveal {
+  border-radius: 6px !important;
+  animation-name: quizOptionCorrectBounceV91 !important;
+  animation-duration: 620ms !important;
+  animation-timing-function: cubic-bezier(.16, 1, .3, 1) !important;
+  animation-fill-mode: both !important;
+  transform: translateZ(0) !important;
+  transform-origin: center center !important;
+  will-change: scale, translate, rotate !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed .kahoot-option.wrong-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed .kahoot-option.wrong-reveal {
+  border-radius: 6px !important;
+  animation-name: quizOptionWrongShakeV91 !important;
+  animation-duration: 620ms !important;
+  animation-timing-function: cubic-bezier(.36, .07, .19, .97) !important;
+  animation-fill-mode: both !important;
+  transform: translateZ(0) !important;
+  transform-origin: center center !important;
+  will-change: scale, translate, rotate !important;
+}
+@keyframes quizOptionCorrectBounceV91 {
+  0% { scale: 1; translate: 0 0; rotate: 0deg; }
+  28% { scale: 1.075; translate: 0 -1px; rotate: 0deg; }
+  56% { scale: .985; translate: 0 0; rotate: 0deg; }
+  78% { scale: 1.025; translate: 0 0; rotate: 0deg; }
+  100% { scale: 1; translate: 0 0; rotate: 0deg; }
+}
+@keyframes quizOptionWrongShakeV91 {
+  0%, 100% { scale: 1; translate: 0 0; rotate: 0deg; }
+  10% { scale: 1.01; translate: -9px 0; rotate: -1deg; }
+  20% { scale: 1.01; translate: 8px 0; rotate: 1deg; }
+  32% { scale: 1.01; translate: -7px 0; rotate: -.8deg; }
+  44% { scale: 1.01; translate: 6px 0; rotate: .8deg; }
+  58% { scale: 1.005; translate: -4px 0; rotate: -.5deg; }
+  72% { scale: 1.005; translate: 3px 0; rotate: .3deg; }
+  86% { scale: 1; translate: -2px 0; rotate: -.2deg; }
+}
+
+/* 4) Center feedback band: real 0-to-100 zoom bounce; no sheet, no gradient, no fade-only. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback {
+  position: fixed !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  z-index: 2147483600 !important;
+  animation: none !important;
+  opacity: 1 !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden] {
+  display: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card {
+  width: min(92vw, 720px) !important;
+  min-height: clamp(86px, 14dvh, 124px) !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  border: 0 !important;
+  padding: clamp(12px, 2.4dvh, 18px) clamp(18px, 4vw, 30px) !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-areas: "icon title" "icon text" !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px clamp(12px, 3vw, 18px) !important;
+  text-align: left !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: rotate(-8deg) !important;
+  transform-origin: center center !important;
+  scale: 0;
+  opacity: 0;
+  animation-name: quizFeedbackZoomBounceV91 !important;
+  animation-duration: 520ms !important;
+  animation-timing-function: cubic-bezier(.18, 1.18, .26, 1) !important;
+  animation-fill-mode: both !important;
+  will-change: scale, opacity !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after {
+  display: none !important;
+  content: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct {
+  background: #58cc02 !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong {
+  background: #e21b3c !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral {
+  background: #1368ce !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span {
+  grid-area: icon !important;
+  font-size: clamp(2rem, 8vw, 3.4rem) !important;
+  line-height: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  margin: 0 !important;
+  align-self: center !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong {
+  grid-area: title !important;
+  color: #fff !important;
+  font-size: clamp(1.25rem, 5.4vw, 2rem) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+  transform: none !important;
+  text-shadow: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p {
+  grid-area: text !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: clamp(.82rem, 3.2vw, 1.03rem) !important;
+  line-height: 1.12 !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  transform: none !important;
+  text-shadow: none !important;
+}
+@keyframes quizFeedbackZoomBounceV91 {
+  0% { opacity: 0; scale: 0; }
+  52% { opacity: 1; scale: 1.12; }
+  72% { opacity: 1; scale: .93; }
+  88% { opacity: 1; scale: 1.035; }
+  100% { opacity: 1; scale: 1; }
 }
