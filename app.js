@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.87';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.87: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.88';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.88: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1405,29 +1405,68 @@
   }
 
   const QUIZ_LAYOUT_TUNE_FIELDS = [
-    { key: 'image_y', label: 'Imagen Y %', min: -15, max: 15, step: 1, unit: '%' },
-    { key: 'image_h', label: 'Imagen alto %', min: 8, max: 45, step: 1, unit: '%' },
-    { key: 'textA_y', label: 'Texto Y %', min: -15, max: 15, step: 1, unit: '%' },
-    { key: 'textA_h', label: 'Texto alto %', min: 15, max: 70, step: 1, unit: '%' },
-    { key: 'answers_y', label: 'Opciones Y %', min: -15, max: 15, step: 1, unit: '%' },
-    { key: 'answers_h', label: 'Opciones alto %', min: 15, max: 60, step: 1, unit: '%' }
+    { key: 'image_h', label: 'Imagen alto %', min: 10, max: 70, step: 1, unit: '%' },
+    { key: 'textA_h', label: 'Texto alto %', min: 10, max: 75, step: 1, unit: '%' },
+    { key: 'answers_h', label: 'Opciones alto %', min: 10, max: 70, step: 1, unit: '%' }
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_y: 0, textA_h: 35, text_font: 20,
-    image_y: 0, image_h: 20,
-    answers_y: 0, answers_h: 45
+    textA_y: 0, textA_h: 40, text_font: 18,
+    image_y: 0, image_h: 30,
+    answers_y: 0, answers_h: 30
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
-    true_false: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
-    open: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
-    slider: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 }
+    multiple_choice: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    true_false: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    open: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    slider: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.87';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.87';
+  function rebalanceQuizLayoutTune(tune = {}, changedKey = 'image_h') {
+    const min = 10;
+    const max = 80;
+    const safe = {
+      image_h: Number.isFinite(Number(tune.image_h)) ? Number(tune.image_h) : 30,
+      textA_h: Number.isFinite(Number(tune.textA_h)) ? Number(tune.textA_h) : 40,
+      answers_h: Number.isFinite(Number(tune.answers_h)) ? Number(tune.answers_h) : 30
+    };
+    const clampPart = (value) => Math.max(min, Math.min(max, Math.round(Number(value) || min)));
+    safe.image_h = clampPart(safe.image_h);
+    safe.textA_h = clampPart(safe.textA_h);
+    safe.answers_h = clampPart(safe.answers_h);
+    if (changedKey === 'image_h') {
+      safe.image_h = clampPart(safe.image_h);
+      safe.answers_h = clampPart(safe.answers_h);
+      safe.textA_h = 100 - safe.image_h - safe.answers_h;
+      if (safe.textA_h < min) {
+        safe.textA_h = min;
+        safe.answers_h = Math.max(min, 100 - safe.image_h - safe.textA_h);
+      }
+    } else if (changedKey === 'answers_h') {
+      safe.answers_h = clampPart(safe.answers_h);
+      safe.image_h = clampPart(safe.image_h);
+      safe.textA_h = 100 - safe.image_h - safe.answers_h;
+      if (safe.textA_h < min) {
+        safe.textA_h = min;
+        safe.image_h = Math.max(min, 100 - safe.answers_h - safe.textA_h);
+      }
+    } else {
+      safe.textA_h = clampPart(safe.textA_h);
+      safe.image_h = clampPart(safe.image_h);
+      safe.answers_h = 100 - safe.image_h - safe.textA_h;
+      if (safe.answers_h < min) {
+        safe.answers_h = min;
+        safe.image_h = Math.max(min, 100 - safe.textA_h - safe.answers_h);
+      }
+    }
+    const total = safe.image_h + safe.textA_h + safe.answers_h;
+    if (total !== 100) safe.textA_h += 100 - total;
+    return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
+  }
+
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.88';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.88';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1485,13 +1524,12 @@
 
   function normalizeQuizLayoutTune(tune = {}, type = 'default') {
     const defaults = getQuizLayoutTuneDefaults(type);
-    const normalized = { ...defaults, text_font: 20 };
+    const normalized = { ...defaults, ...tune, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
     QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : defaults[field.key];
+      const raw = Number(normalized[field.key]);
+      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : defaults[field.key];
     });
-    normalized.text_font = 20;
-    return normalized;
+    return rebalanceQuizLayoutTune(normalized, 'image_h');
   }
 
   function saveQuizLayoutTune(type, tune) {
@@ -1618,7 +1656,6 @@
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
     if (!['multiple_choice', 'true_false', 'open', 'slider'].includes(type)) return '';
-    const cascadeTune = getQuizCascadeTune(type, hasImage);
     const layoutTune = getQuizLayoutTune(type);
     const layoutFields = QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => hasImage || !field.key.startsWith('image_'));
     return `
@@ -1627,49 +1664,29 @@
           <div class="quiz-layout-tune-dialog-head">
             <div>
               <strong>Ajustes temporales</strong>
-              <small>Layout responsive por examen y pestaña separada para animación de cascada.</small>
+              <small>Ajusta el porcentaje vertical. Los tres valores siempre suman 100%.</small>
             </div>
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
-          <div class="quiz-layout-tune-tabs" role="tablist" aria-label="Opciones de ajuste">
-            <button class="quiz-layout-tab is-active" type="button" role="tab" aria-selected="true" data-quiz-tune-tab="layout">Layout</button>
-            <button class="quiz-layout-tab" type="button" role="tab" aria-selected="false" data-quiz-tune-tab="cascade">Animación</button>
-          </div>
-          <div class="quiz-layout-tab-panel is-active" data-quiz-tune-panel="layout">
-            ${hasImage ? `
-            <div class="quiz-layout-image-preview-row">
-              <label class="quiz-layout-image-preview-toggle">
-                <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
-                <span>Mostrar imagen en vista previa</span>
+          ${hasImage ? `
+          <div class="quiz-layout-image-preview-row">
+            <label class="quiz-layout-image-preview-toggle">
+              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
+              <span>Mostrar imagen en vista previa</span>
+            </label>
+            <small>La imagen sigue siendo ampliable con toque.</small>
+          </div>` : ''}
+          <div class="quiz-layout-tune-scroll">
+            ${layoutFields.map((field) => `
+              <label class="quiz-layout-tune-row">
+                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
+                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
               </label>
-              <small>La imagen sigue siendo ampliable con toque.</small>
-            </div>` : ''}
-            <div class="quiz-layout-tune-scroll">
-              ${layoutFields.map((field) => `
-                <label class="quiz-layout-tune-row">
-                  <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
-                  <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
-                </label>
-              `).join('')}
-            </div>
-            <div class="quiz-cascade-tune-actions">
-              <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
-            </div>
+            `).join('')}
           </div>
-          <div class="quiz-layout-tab-panel" data-quiz-tune-panel="cascade" hidden>
-            <div class="quiz-layout-tune-scroll quiz-cascade-tune-scroll">
-              ${QUIZ_CASCADE_TUNE_FIELDS.map((field) => `
-                <label class="quiz-layout-tune-row quiz-cascade-tune-row">
-                  <span>${escapeHTML(field.label)} <b data-quiz-cascade-tune-value="${escapeAttr(field.key)}">${cascadeTune[field.key]}${field.unit}</b></span>
-                  <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${cascadeTune[field.key]}" data-quiz-cascade-tune="${escapeAttr(field.key)}" />
-                </label>
-              `).join('')}
-            </div>
-            <div class="quiz-cascade-tune-actions">
-              <button class="primary-btn small" type="button" data-quiz-cascade-replay>Reproducir animación</button>
-              <button class="btn ghost small" type="button" data-quiz-cascade-tune-reset>Restablecer cascada</button>
-            </div>
+          <div class="quiz-cascade-tune-actions">
+            <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer 30 / 40 / 30</button>
           </div>
         </div>
       </section>
@@ -1689,8 +1706,7 @@
         panel.classList.add('is-open');
         const type = panel.dataset.quizLayoutType || 'default';
         applyQuizLayoutTune(type, getQuizLayoutTune(type));
-        applyQuizCascadeTune(type, getQuizCascadeTune(type, stage.dataset.quizHasImage === 'true'), stage, stage.dataset.quizHasImage === 'true');
-      });
+          });
     });
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
       const type = panel.dataset.quizLayoutType || 'default';
@@ -1747,11 +1763,16 @@
           const current = getQuizLayoutTune(type);
           const key = input.dataset.quizLayoutTune;
           current[key] = Number(input.value);
-          saveQuizLayoutTune(type, current);
-          applyQuizLayoutTune(type, current);
-          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${current[key]}${field.unit}`;
+          const balanced = saveQuizLayoutTune(type, rebalanceQuizLayoutTune(current, key));
+          applyQuizLayoutTune(type, balanced);
+          panel.querySelectorAll('[data-quiz-layout-tune]').forEach((slider) => {
+            const sliderKey = slider.dataset.quizLayoutTune;
+            const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === sliderKey);
+            if (!field) return;
+            slider.value = balanced[sliderKey];
+            const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(sliderKey)}"]`);
+            if (output) output.textContent = `${balanced[sliderKey]}${field.unit}`;
+          });
         });
       });
       panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
@@ -1834,7 +1855,6 @@
     setBox('textA', 'textA');
     setBox('image', 'image');
     setBox('answers', 'answers');
-    applyQuizCascadeTune(type, getQuizCascadeTune(type, stage.dataset.quizHasImage === 'true'), stage, stage.dataset.quizHasImage === 'true');
   }
 
   function quizTypeLabel(type) {
@@ -4178,7 +4198,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.87', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.88', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
