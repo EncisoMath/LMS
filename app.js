@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.77';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.77: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.78';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.78: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1562,7 +1562,8 @@
   }
 
   function replayQuizCascadePreview(trigger = null) {
-    const stage = trigger?.closest('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage');
+    const panel = trigger?.closest('[data-quiz-layout-tune-panel]') || null;
+    const stage = panel?.closest('.quiz-stage') || trigger?.closest('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage');
     if (!stage) return;
     const feedback = stage.querySelector('[data-quiz-feedback]');
     if (quizCascadeReplayTimer) window.clearTimeout(quizCascadeReplayTimer);
@@ -1572,22 +1573,30 @@
       feedback.innerHTML = '';
       feedback.className = 'quiz-answer-feedback';
     }
-    void stage.offsetWidth;
-    if (feedback) {
-      feedback.hidden = false;
-      feedback.innerHTML = '<div class="quiz-feedback-card is-correct quiz-feedback-preview-card"><span>✨</span><strong>Prueba</strong><p>Vista previa de cascada</p></div>';
-      feedback.className = 'quiz-answer-feedback is-correct is-preview';
+    if (panel) {
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      panel.hidden = true;
     }
-    stage.classList.add('quiz-cascade-previewing', 'quiz-feedback-visible');
-    quizCascadeReplayTimer = window.setTimeout(() => {
-      stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
+    const playPreview = () => {
+      void stage.offsetWidth;
       if (feedback) {
-        feedback.hidden = true;
-        feedback.innerHTML = '';
-        feedback.className = 'quiz-answer-feedback';
+        feedback.hidden = false;
+        feedback.innerHTML = '<div class="quiz-feedback-card is-correct quiz-feedback-preview-card"><span>✨</span><strong>Prueba</strong><p>Vista previa de cascada</p></div>';
+        feedback.className = 'quiz-answer-feedback is-correct is-preview';
       }
-      quizCascadeReplayTimer = null;
-    }, 1800);
+      stage.classList.add('quiz-cascade-previewing', 'quiz-feedback-visible');
+      quizCascadeReplayTimer = window.setTimeout(() => {
+        stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
+        if (feedback) {
+          feedback.hidden = true;
+          feedback.innerHTML = '';
+          feedback.className = 'quiz-answer-feedback';
+        }
+        quizCascadeReplayTimer = null;
+      }, 1800);
+    };
+    quizCascadeReplayTimer = window.setTimeout(playPreview, panel ? 420 : 0);
   }
 
   function quizImagePreviewKey(type = 'default') {
@@ -4124,7 +4133,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.77', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.78', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
