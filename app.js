@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.143';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.143: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.144';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.144: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.143';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.144';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -1493,7 +1493,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.143';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.144';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1673,7 +1673,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.143';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.144';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2601,7 +2601,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.143</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.144</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3316,46 +3316,8 @@
     band.classList.remove('play-entry-exit');
     void band.offsetWidth;
     band.classList.add('play-entry-exit');
-    window.setTimeout(() => burstFeedbackConfetti(band), 250);
   }
 
-  function burstFeedbackConfetti(container) {
-    const overlay = container?.closest?.('[data-quiz-global-feedback]') || container;
-    if (!overlay || !container?.getBoundingClientRect) return;
-    const rect = container.getBoundingClientRect();
-    const originX = rect.left + rect.width / 2;
-    const originY = rect.top + rect.height / 2;
-    const colors = ['#FF4B4B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6B9D', '#C084FC'];
-    let layer = overlay.querySelector?.('[data-feedback-confetti-layer]');
-    if (!layer) {
-      layer = document.createElement('div');
-      layer.className = 'quiz-feedback-confetti-layer';
-      layer.dataset.feedbackConfettiLayer = 'true';
-      overlay.appendChild(layer);
-    }
-    for (let i = 0; i < 70; i += 1) {
-      const piece = document.createElement('div');
-      piece.className = 'confetti-piece';
-      const angle = (i / 70) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-      const dist = 130 + Math.random() * 220;
-      const x = Math.cos(angle) * dist;
-      const y = Math.sin(angle) * dist;
-      const rot = Math.random() * 720 - 360;
-      const delay = Math.random() * 80;
-      const size = 12 + (i % 3) * 5;
-      piece.style.left = `${originX}px`;
-      piece.style.top = `${originY}px`;
-      piece.style.width = `${size}px`;
-      piece.style.height = `${size}px`;
-      piece.style.background = colors[i % colors.length];
-      piece.style.setProperty('--x', `${x}px`);
-      piece.style.setProperty('--y', `${y}px`);
-      piece.style.setProperty('--rot', `${rot}deg`);
-      piece.style.animationDelay = `${delay}ms`;
-      layer.appendChild(piece);
-      piece.addEventListener('animationend', () => piece.remove(), { once: true });
-    }
-  }
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
@@ -4468,7 +4430,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.143', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.144', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
