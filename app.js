@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.121';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.121: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.122';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.122: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.121';
-  // v0.24.121: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.122';
+  // v0.24.122: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1391,7 +1391,7 @@
   }
 
   function isSupportedQuizQuestionType(type) {
-    return ['multiple_choice', 'true_false', 'open'].includes(String(type || ''));
+    return ['multiple_choice', 'true_false', 'open', 'order'].includes(String(type || ''));
   }
 
   function filterSupportedQuizQuestions(questions = []) {
@@ -1432,7 +1432,7 @@
     const promptText = promptSegments.join('\n\n');
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
-    const calibratable = ['multiple_choice', 'true_false', 'open'].includes(question.type);
+    const calibratable = ['multiple_choice', 'true_false', 'open', 'order'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
         <div class="quiz-stage-head">
@@ -1863,7 +1863,7 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
-    if (!['multiple_choice', 'true_false', 'open'].includes(type)) return '';
+    if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
     const layoutTune = getQuizLayoutTune(type);
     const typographyTune = getQuizTypographyTune();
     const isOrderTune = type === 'order';
@@ -2166,7 +2166,8 @@
       true_false: 'Verdadero / falso',
       open: 'Pregunta abierta',
       match: 'Arrastrar para unir',
-      fill_text: 'Completar texto'
+      fill_text: 'Completar texto',
+      order: 'Organizar tarjetas'
     };
     return labels[type] || 'Pregunta';
   }
@@ -2180,6 +2181,7 @@
   }
 
   function quizQuestionBodyHTML(question) {
+    if (question.type === 'order') return quizOrderHTML(question);
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
     return quizMultipleChoiceHTML(question);
@@ -2310,90 +2312,143 @@
         resizeTimer = window.setTimeout(() => fitQuizOrderCards(board), 120);
       });
 
-      const cards = () => Array.from(stack.querySelectorAll('[data-order-card]'));
+      const getCards = () => Array.from(stack.querySelectorAll('[data-order-card]'));
 
-      cards().forEach((card) => {
-        card.draggable = false;
-        card.addEventListener('dragstart', (event) => event.preventDefault());
-        card.addEventListener('pointerdown', (event) => {
-          if (board.classList.contains('order-locked') || event.button > 0) return;
-          event.preventDefault();
-          fitQuizOrderCards(board);
-
-          const rect = card.getBoundingClientRect();
-          const offsetX = event.clientX - rect.left;
-          const offsetY = event.clientY - rect.top;
-          const placeholder = document.createElement('div');
-          placeholder.className = 'quiz-order-placeholder';
-          placeholder.setAttribute('aria-hidden', 'true');
-          placeholder.style.height = `${rect.height}px`;
-          placeholder.style.flexBasis = `${rect.height}px`;
-
-          stack.insertBefore(placeholder, card);
-          card.classList.add('is-pointer-dragging');
-          card.style.position = 'fixed';
-          card.style.left = `${rect.left}px`;
-          card.style.top = `${rect.top}px`;
-          card.style.width = `${rect.width}px`;
-          card.style.height = `${rect.height}px`;
-          card.style.margin = '0';
-          card.style.zIndex = '2147483000';
-          card.style.pointerEvents = 'none';
-          card.style.opacity = '.8';
-          card.style.transform = 'translate3d(0,0,0) scale(1.01)';
-          card.style.transition = 'none';
-
-          stack.classList.add('is-reordering');
-          board.classList.add('order-dragging');
-          document.body.classList.add('quiz-order-drag-active');
-
-          const moveCard = (clientX, clientY) => {
-            card.style.left = `${clientX - offsetX}px`;
-            card.style.top = `${clientY - offsetY}px`;
-          };
-          moveCard(event.clientX, event.clientY);
-
-          let done = false;
-          let lastMoveY = event.clientY;
-          const cleanupDrag = (dropClientY = lastMoveY) => {
-            if (done) return;
-            done = true;
-            window.removeEventListener('pointermove', onMove);
-            window.removeEventListener('pointerup', onFinish);
-            window.removeEventListener('pointercancel', onCancel);
-            moveOrderPlaceholder(stack, placeholder, dropClientY, card);
-            const slotRect = placeholder.getBoundingClientRect();
-            card.style.transition = `left 180ms ${QUIZ_ORDER_EASE_EXPO}, top 180ms ${QUIZ_ORDER_EASE_EXPO}, transform 180ms ${QUIZ_ORDER_EASE_EXPO}, opacity 140ms ease`;
-            card.style.left = `${slotRect.left}px`;
-            card.style.top = `${slotRect.top}px`;
-            card.style.transform = 'translate3d(0,0,0) scale(1)';
-            card.style.opacity = '1';
-            window.setTimeout(() => {
-              stack.insertBefore(card, placeholder);
-              placeholder.remove();
-              card.classList.remove('is-pointer-dragging');
-              ['position','left','top','width','height','margin','z-index','pointer-events','opacity','transform','transition'].forEach((prop) => card.style.removeProperty(prop));
-              stack.classList.remove('is-reordering');
-              board.classList.remove('order-dragging');
-              document.body.classList.remove('quiz-order-drag-active');
-              updateQuizOrderNumbers(board);
-              fitQuizOrderCards(board);
-            }, 190);
-          };
-
-          const onMove = (moveEvent) => {
-            if (moveEvent.pointerId !== event.pointerId) return;
-            lastMoveY = moveEvent.clientY;
-            moveCard(moveEvent.clientX, moveEvent.clientY);
-            moveOrderPlaceholder(stack, placeholder, moveEvent.clientY, card);
-          };
-          const onFinish = (finishEvent) => cleanupDrag(finishEvent.clientY);
-          const onCancel = (cancelEvent) => cleanupDrag(cancelEvent.clientY || lastMoveY);
-
-          window.addEventListener('pointermove', onMove, { passive: false });
-          window.addEventListener('pointerup', onFinish, { once: true });
-          window.addEventListener('pointercancel', onCancel, { once: true });
+      function getPositions() {
+        const positions = new Map();
+        Array.from(stack.children).forEach((item) => {
+          positions.set(item, item.getBoundingClientRect());
         });
+        return positions;
+      }
+
+      function animateMove(oldPositions) {
+        Array.from(stack.children).forEach((item) => {
+          if (!oldPositions.has(item) || item.classList.contains('quiz-order-placeholder')) return;
+          const oldRect = oldPositions.get(item);
+          const newRect = item.getBoundingClientRect();
+          const deltaY = oldRect.top - newRect.top;
+          if (Math.abs(deltaY) < 0.5) return;
+          item.style.setProperty('transition', 'none', 'important');
+          item.style.setProperty('transform', `translateY(${deltaY}px)`, 'important');
+          item.getBoundingClientRect();
+          window.requestAnimationFrame(() => {
+            item.classList.add('order-moving');
+            item.style.setProperty('transition', `transform ${QUIZ_ORDER_SHIFT_MS}ms ${QUIZ_ORDER_EASE_EXPO}`, 'important');
+            item.style.setProperty('transform', 'translateY(0)', 'important');
+            window.setTimeout(() => {
+              item.classList.remove('order-moving');
+              item.style.removeProperty('transition');
+              item.style.removeProperty('transform');
+            }, QUIZ_ORDER_SHIFT_MS + 60);
+          });
+        });
+      }
+
+      stack.addEventListener('pointerdown', (event) => {
+        const card = event.target.closest('[data-order-card]');
+        if (!card || !stack.contains(card)) return;
+        if (board.classList.contains('order-locked') || event.button > 0) return;
+        event.preventDefault();
+        fitQuizOrderCards(board);
+
+        const rect = card.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const offsetY = event.clientY - rect.top;
+        const placeholder = document.createElement('div');
+        placeholder.className = 'quiz-order-placeholder';
+        placeholder.setAttribute('aria-hidden', 'true');
+        placeholder.style.height = `${rect.height}px`;
+        placeholder.style.flexBasis = `${rect.height}px`;
+
+        let draggingCard = card;
+        let lastClientX = event.clientX;
+        let lastClientY = event.clientY;
+        let finished = false;
+
+        stack.insertBefore(placeholder, card);
+        card.classList.add('is-pointer-dragging');
+        card.style.position = 'fixed';
+        card.style.left = `${rect.left}px`;
+        card.style.top = `${rect.top}px`;
+        card.style.width = `${rect.width}px`;
+        card.style.height = `${rect.height}px`;
+        card.style.margin = '0';
+        card.style.zIndex = '2147483000';
+        card.style.pointerEvents = 'none';
+        card.style.opacity = '.8';
+        card.style.transition = 'none';
+        card.style.transform = 'none';
+
+        document.body.appendChild(card);
+        stack.classList.add('is-reordering');
+        board.classList.add('order-dragging');
+        document.body.classList.add('quiz-order-drag-active');
+
+        function moveFloatingCard(clientX, clientY) {
+          card.style.left = `${clientX - offsetX}px`;
+          card.style.top = `${clientY - offsetY}px`;
+        }
+
+        function movePlaceholder(clientY) {
+          const oldPositions = getPositions();
+          const visibleCards = Array.from(stack.querySelectorAll('[data-order-card]'));
+          let placed = false;
+          for (const target of visibleCards) {
+            const targetRect = target.getBoundingClientRect();
+            const middle = targetRect.top + targetRect.height / 2;
+            if (clientY < middle) {
+              if (placeholder.nextSibling !== target) {
+                stack.insertBefore(placeholder, target);
+                animateMove(oldPositions);
+              }
+              placed = true;
+              break;
+            }
+          }
+          if (!placed && placeholder !== stack.lastElementChild) {
+            stack.appendChild(placeholder);
+            animateMove(oldPositions);
+          }
+        }
+
+        moveFloatingCard(event.clientX, event.clientY);
+
+        const onMove = (moveEvent) => {
+          if (!draggingCard || (moveEvent.pointerId !== undefined && event.pointerId !== undefined && moveEvent.pointerId !== event.pointerId)) return;
+          moveEvent.preventDefault();
+          lastClientX = moveEvent.clientX;
+          lastClientY = moveEvent.clientY;
+          moveFloatingCard(lastClientX, lastClientY);
+          movePlaceholder(lastClientY);
+        };
+
+        const finishDrag = () => {
+          if (finished || !draggingCard) return;
+          finished = true;
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onFinish);
+          window.removeEventListener('pointercancel', onCancel);
+
+          movePlaceholder(lastClientY);
+          card.classList.remove('is-pointer-dragging');
+          ['position', 'left', 'top', 'width', 'height', 'margin', 'z-index', 'pointer-events', 'opacity', 'transition', 'transform'].forEach((prop) => card.style.removeProperty(prop));
+          stack.insertBefore(card, placeholder);
+          placeholder.remove();
+          stack.classList.remove('is-reordering');
+          board.classList.remove('order-dragging');
+          document.body.classList.remove('quiz-order-drag-active');
+          draggingCard = null;
+          updateQuizOrderNumbers(board);
+          fitQuizOrderCards(board);
+        };
+
+        const onFinish = () => finishDrag();
+        const onCancel = () => finishDrag();
+
+        window.addEventListener('pointermove', onMove, { passive: false });
+        window.addEventListener('pointerup', onFinish, { once: true });
+        window.addEventListener('pointercancel', onCancel, { once: true });
       });
 
       board.querySelector('[data-order-validate]')?.addEventListener('click', () => {
@@ -2405,8 +2460,7 @@
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
         board.classList.add('order-locked', ok ? 'order-correct' : 'order-wrong');
-        const orderCards = cards();
-        orderCards.forEach((card) => { card.draggable = false; });
+        const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
         orderCards.forEach((card, index) => {
@@ -2421,6 +2475,7 @@
         if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), orderCards.length * 260 + 80);
         showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, orderCards.length * 260 + 620));
       });
+
       updateQuizOrderNumbers(board);
     });
   }
@@ -2673,7 +2728,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.121</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.122</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2825,6 +2880,7 @@
       });
     });
     bindQuizLayoutTunePanel();
+    bindQuizOrderEvents();
     bindQuizSliderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -3344,8 +3400,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.121: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.121 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.122: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.122 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4615,7 +4671,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.121', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.122', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

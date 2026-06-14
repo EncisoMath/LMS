@@ -1,6 +1,6 @@
 {
-  "version": "1.7",
-  "description": "Base de quizzes por asignatura y periodo. El quiz demo conserva únicamente opción múltiple, verdadero/falso y pregunta abierta. El tipo organizar tarjetas fue retirado del demo activo.",
+  "version": "1.8",
+  "description": "Base de quizzes por asignatura y periodo. El quiz demo reintroduce Organizar tarjetas como pregunta 1 y conserva opción múltiple, verdadero/falso y pregunta abierta.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -13,6 +13,47 @@
       "questions": [
         {
           "id": "q1",
+          "type": "order",
+          "prompt": "Organiza el proceso estadístico de arriba hacia abajo.",
+          "textA": "Arrastra las tarjetas de colores para ordenar los pasos de un proceso estadístico. Primero se recoge la información, luego se organiza, después se representa visualmente y al final se interpreta para sacar conclusiones.",
+          "textB": "",
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Gráfica de apoyo para ordenar el proceso estadístico",
+          "cards": [
+            {
+              "id": "table",
+              "text": "Organizar los datos en una tabla",
+              "order": 2,
+              "color": "red"
+            },
+            {
+              "id": "interpret",
+              "text": "Interpretar los resultados",
+              "order": 4,
+              "color": "yellow"
+            },
+            {
+              "id": "survey",
+              "text": "Recolectar las respuestas de la encuesta",
+              "order": 1,
+              "color": "blue"
+            },
+            {
+              "id": "graph",
+              "text": "Representar la información en una gráfica",
+              "order": 3,
+              "color": "green"
+            }
+          ],
+          "correctOrder": [
+            "survey",
+            "table",
+            "graph",
+            "interpret"
+          ]
+        },
+        {
+          "id": "q2",
           "type": "multiple_choice",
           "prompt": "Lee el enunciado y responde con base en la gráfica.",
           "textA": "Observa la gráfica de barras sobre la fruta favorita del curso. Compara con calma la altura de cada barra y recuerda que la frecuencia absoluta indica cuántos estudiantes eligieron cada opción. Antes de marcar una respuesta, revisa si la barra más alta corresponde realmente a la fruta mencionada en la afirmación inicial.\n\nEl docente dice que Mango fue la fruta más elegida, pero varios estudiantes sospechan que hay otra barra más alta. Usa la información visual de la gráfica, compara todas las categorías y selecciona la opción que corrige mejor la afirmación del docente.",
@@ -43,7 +84,7 @@
           ]
         },
         {
-          "id": "q2",
+          "id": "q3",
           "type": "true_false",
           "prompt": "Lee el enunciado y responde con base en la gráfica.",
           "textA": "Lee con atención la afirmación y relaciónala con la información de la gráfica. En estadística, la frecuencia absoluta se usa para contar cuántas veces aparece un dato o cuántas personas eligieron una respuesta dentro de una encuesta.\n\nSi en una tabla se registra que una fruta aparece con frecuencia 4, eso significa que cuatro estudiantes la escogieron. Decide si la afirmación presentada es verdadera o falsa según esta idea, no solo por intuición.",
@@ -64,7 +105,7 @@
           "imageAlt": "Recurso visual de apoyo para el ítem 2 del quiz"
         },
         {
-          "id": "q3",
+          "id": "q4",
           "type": "open",
           "prompt": "Lee el enunciado y responde con base en la gráfica.",
           "textA": "Un docente recogió las respuestas de una encuesta y necesita organizarlas para explicar los resultados al curso. La tabla de frecuencia permite resumir la información, comparar respuestas y ver cuáles datos aparecen más o menos veces.\n\nEscribe una explicación breve, pero completa, sobre para qué sirve una tabla de frecuencia. Puedes mencionar que ayuda a ordenar los datos, contar respuestas y tomar decisiones a partir de la información recogida.",
