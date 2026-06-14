@@ -1,6 +1,6 @@
 {
-  "version": "1.5",
-  "description": "Base de quizzes por asignatura y periodo. El quiz demo conserva opción múltiple, verdadero/falso, pregunta abierta y slider numérico; los tipos drag and drop y completar texto fueron retirados del demo.",
+  "version": "1.6",
+  "description": "Base de quizzes por asignatura y periodo. El quiz demo conserva opción múltiple, verdadero/falso, pregunta abierta y organizar tarjetas; el slider numérico fue retirado del demo.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -74,19 +74,40 @@
         },
         {
           "id": "q4",
-          "type": "slider",
-          "prompt": "Calcula el total usando la gráfica.",
-          "textA": "Observa la gráfica y piensa en el total de estudiantes que participaron en la encuesta. Para encontrar ese total, no debes escoger solo la barra más alta; necesitas sumar las frecuencias de todas las categorías que aparecen en el recurso visual.\n\nMueve el slider hasta el número que representa la suma de todas las respuestas registradas. Revisa la gráfica con cuidado antes de validar, porque una sola barra no representa el total del curso.",
+          "type": "order",
+          "prompt": "Organiza el proceso estadístico.",
+          "textA": "Ordena los pasos para trabajar una encuesta de forma correcta. Primero se recoge la información, luego se organiza en una tabla, después se representa con una gráfica y finalmente se interpretan los resultados para sacar conclusiones.",
           "textB": "",
-          "min": 0,
-          "max": 20,
-          "step": 1,
-          "initial": 7,
-          "correct": 10,
-          "tolerance": 0,
-          "unit": "estudiantes",
           "image": "./assets/quiz-demo-statistics.svg",
-          "imageAlt": "Recurso visual de apoyo para el ítem 6 del quiz"
+          "imageAlt": "Recurso visual de apoyo para ordenar pasos estadísticos",
+          "cards": [
+            {
+              "id": "table",
+              "text": "Organizar los datos en una tabla",
+              "order": 2
+            },
+            {
+              "id": "survey",
+              "text": "Recolectar las respuestas de la encuesta",
+              "order": 1
+            },
+            {
+              "id": "interpret",
+              "text": "Interpretar los resultados",
+              "order": 4
+            },
+            {
+              "id": "graph",
+              "text": "Representar la información en una gráfica",
+              "order": 3
+            }
+          ],
+          "correctOrder": [
+            "survey",
+            "table",
+            "graph",
+            "interpret"
+          ]
         }
       ]
     }

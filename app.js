@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.110';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.110: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.111';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.111: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -88,7 +88,8 @@
     titleSize: 29,
     textX: -1,
     textY: -25,
-    textSize: 16
+    textSize: 16,
+    bounceDuration: 920
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
@@ -109,7 +110,8 @@
     { key: 'titleSize', group: 'Titulo', label: 'Tamano titulo', min: 18, max: 54, step: 1, unit: 'px' },
     { key: 'textX', group: 'Subtitulo', label: 'Subtitulo X', min: -140, max: 140, step: 1, unit: 'px' },
     { key: 'textY', group: 'Subtitulo', label: 'Subtitulo Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' }
+    { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' },
+    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion bounce', min: 300, max: 1800, step: 20, unit: 'ms' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -157,17 +159,13 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_109_KEY = 'encisomath:perfDefaults:v0.24.110';
-  if (!localStorage.getItem(PERF_DEFAULTS_109_KEY)) {
-    state.prefs = {
-      ...state.prefs,
-      visualOptimized: true,
-      heroAnimations: false,
-      tabTransitions: false,
-      glassEffects: false
-    };
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.111';
+  // v0.24.111: la transición entre pestañas queda desactivada de forma fija;
+  // los demás efectos respetan la configuración normal del usuario.
+  state.prefs.tabTransitions = false;
+  if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
-    localStorage.setItem(PERF_DEFAULTS_109_KEY, '1');
+    localStorage.setItem(PERF_DEFAULTS_111_KEY, '1');
   }
 
   let firstPaint = true;
@@ -651,7 +649,6 @@
           <label class="settings-label">Rendimiento y efectos</label>
           <label class="toggle-row" for="visualOptimizedToggle"><span>Visual optimizado sin modo plano</span><input id="visualOptimizedToggle" type="checkbox" ${booleanPrefChecked('visualOptimized')} /></label>
           <label class="toggle-row" for="heroAnimationsToggle"><span>Animación viva de heroes Rockstars/Quizzes</span><input id="heroAnimationsToggle" type="checkbox" ${booleanPrefChecked('heroAnimations')} /></label>
-          <label class="toggle-row" for="tabTransitionsToggle"><span>Transiciones entre pestañas</span><input id="tabTransitionsToggle" type="checkbox" ${booleanPrefChecked('tabTransitions')} /></label>
           <label class="toggle-row" for="glassEffectsToggle"><span>Blur / vidrio</span><input id="glassEffectsToggle" type="checkbox" ${booleanPrefChecked('glassEffects')} /></label>
           <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
           <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
@@ -692,7 +689,6 @@
       [
         ['visualOptimizedToggle', 'visualOptimized'],
         ['heroAnimationsToggle', 'heroAnimations'],
-        ['tabTransitionsToggle', 'tabTransitions'],
         ['glassEffectsToggle', 'glassEffects'],
         ['effectsMotionToggle', 'effectsMotion'],
         ['effectsMeshToggle', 'effectsMesh'],
@@ -1093,9 +1089,8 @@
             <span class="spark spark-d"></span>
           </div>
         </div>
-        <div class="rockstar-title-block">
+        <div class="rockstar-title-block is-centered-title">
           <div class="rockstar-title-neon" data-text="ROCKSTARS">ROCKSTARS</div>
-          <p>Participación · Periodo ${state.rockstarPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
         </div>
       </section>
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
@@ -1227,11 +1222,6 @@
     pulseElement(next, 'period-shift');
     state.rockstarPeriod = Number(period);
     localStorage.setItem('encisomath:rockstarPeriod', String(state.rockstarPeriod));
-    const titleBlock = document.querySelector('.rockstar-title-block p');
-    if (titleBlock && state.assignment) {
-      titleBlock.textContent = `Participación · Periodo ${state.rockstarPeriod} · ${state.assignment.subject} ${state.assignment.grade}-${state.assignment.course}`;
-      pulseElement(titleBlock, 'text-pop');
-    }
     refreshRockstarList(true);
   }
 
@@ -1343,9 +1333,8 @@
           <span class="quiz-tile tile-yellow">●</span>
           <span class="quiz-tile tile-green">■</span>
         </div>
-        <div class="quiz-title-block">
+        <div class="quiz-title-block is-centered-title">
           <div class="quiz-title-neon" data-text="QUIZZES">QUIZZES</div>
-          <p>Retos interactivos · Periodo ${state.quizPeriod} · ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</p>
         </div>
       </section>
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
@@ -1354,7 +1343,7 @@
       <div class="quiz-library" id="quizLibrary">
         ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
-      ${activeQuiz ? `<div class="quiz-launch-note">Toca un quiz para ver el aviso de inicio.</div>` : ''}
+      <div class="quiz-launch-note" id="quizLaunchNote" ${activeQuiz ? '' : 'hidden'}>Toca un quiz para ver el aviso de inicio.</div>
     `;
     bindQuizTabEvents();
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -1431,7 +1420,7 @@
     const promptText = promptSegments.join('\n\n');
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
-    const calibratable = ['multiple_choice', 'true_false', 'open', 'slider'].includes(question.type);
+    const calibratable = ['multiple_choice', 'true_false', 'open', 'order'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
         <div class="quiz-stage-head">
@@ -1623,6 +1612,7 @@
     multiple_choice: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     true_false: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     open: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    order: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     slider: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 }
   };
 
@@ -1685,6 +1675,9 @@
 
   function getQuizCascadeTuneDefaults(type = 'default', hasImage = false) {
     if (type === 'slider') {
+      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
+    }
+    if (type === 'order') {
       return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
     }
     if (type === 'open') {
@@ -1858,7 +1851,7 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
-    if (!['multiple_choice', 'true_false', 'open', 'slider'].includes(type)) return '';
+    if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
     const layoutTune = getQuizLayoutTune(type);
     const typographyTune = getQuizTypographyTune();
     const layoutFields = QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => hasImage || !field.key.startsWith('image_'));
@@ -1902,6 +1895,7 @@
             </label>
             <button class="btn ghost small" type="button" data-quiz-typography-reset>Restablecer fuentes</button>
           </div>
+          ${quizFeedbackMiniTuneBoxHTML()}
           <div class="quiz-layout-tune-scroll">
             ${layoutFields.map((field) => `
               <label class="quiz-layout-tune-row">
@@ -2042,6 +2036,7 @@
           });
         });
       });
+      bindQuizFeedbackTunePanel();
       panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
         const defaults = saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
         applyQuizLayoutTune(type, defaults);
@@ -2133,7 +2128,7 @@
       open: 'Pregunta abierta',
       match: 'Arrastrar para unir',
       fill_text: 'Completar texto',
-      slider: 'Respuesta con slider'
+      order: 'Organizar tarjetas'
     };
     return labels[type] || 'Pregunta';
   }
@@ -2149,8 +2144,158 @@
   function quizQuestionBodyHTML(question) {
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
-    if (question.type === 'slider') return quizSliderHTML(question);
+    if (question.type === 'order') return quizOrderHTML(question);
     return quizMultipleChoiceHTML(question);
+  }
+
+  function quizOrderHTML(question) {
+    const cards = Array.isArray(question.cards) ? question.cards : (Array.isArray(question.options) ? question.options : []);
+    const correctOrder = Array.isArray(question.correctOrder)
+      ? question.correctOrder
+      : cards.slice().sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).map((card) => card.id);
+    return `
+      <div class="quiz-order-board" data-quiz-order-board data-correct-order="${escapeAttr(correctOrder.join('|'))}">
+        <div class="quiz-order-instruction">Arrastra las tarjetas y ordénalas de arriba hacia abajo.</div>
+        <div class="quiz-order-stack" data-quiz-order-stack>
+          ${cards.slice(0, 4).map((card, index) => `
+            <div class="quiz-order-card" draggable="true" data-order-card="${escapeAttr(card.id || String(index))}" role="button" tabindex="0" aria-label="Ordenar: ${escapeAttr(card.text || '')}">
+              <span class="quiz-order-grip">☰</span>
+              <span class="quiz-order-number">${index + 1}</span>
+              <strong>${escapeHTML(card.text || '')}</strong>
+            </div>
+          `).join('')}
+        </div>
+        <button class="primary-btn quiz-order-submit" type="button" data-order-validate>Validar orden</button>
+      </div>
+    `;
+  }
+
+  function updateQuizOrderNumbers(board) {
+    board?.querySelectorAll('[data-order-card]').forEach((card, index) => {
+      const number = card.querySelector('.quiz-order-number');
+      if (number) number.textContent = String(index + 1);
+    });
+  }
+
+  function getQuizOrderIds(board) {
+    return Array.from(board?.querySelectorAll('[data-order-card]') || []).map((card) => card.dataset.orderCard || '');
+  }
+
+  function placeOrderPlaceholder(board, y, draggingCard, placeholder) {
+    const cards = Array.from(board.querySelectorAll('[data-order-card]')).filter((card) => card !== draggingCard);
+    let placed = false;
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (y < rect.top + rect.height / 2) {
+        card.parentNode.insertBefore(placeholder, card);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) board.querySelector('[data-quiz-order-stack]')?.appendChild(placeholder);
+  }
+
+  function bindQuizOrderEvents() {
+    document.querySelectorAll('[data-quiz-order-board]').forEach((board) => {
+      if (board.dataset.boundOrder === 'true') return;
+      board.dataset.boundOrder = 'true';
+      const stack = board.querySelector('[data-quiz-order-stack]');
+      if (!stack) return;
+      let dragId = '';
+      stack.addEventListener('dragstart', (event) => {
+        const card = event.target.closest('[data-order-card]');
+        if (!card || board.classList.contains('order-locked')) return;
+        dragId = card.dataset.orderCard || '';
+        card.classList.add('is-dragging');
+        event.dataTransfer?.setData('text/plain', dragId);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      });
+      stack.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        const dragging = stack.querySelector('.is-dragging');
+        if (!dragging) return;
+        const target = event.target.closest('[data-order-card]');
+        if (!target || target === dragging) return;
+        const rect = target.getBoundingClientRect();
+        stack.insertBefore(dragging, event.clientY < rect.top + rect.height / 2 ? target : target.nextSibling);
+        updateQuizOrderNumbers(board);
+      });
+      stack.addEventListener('dragend', () => {
+        stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
+        updateQuizOrderNumbers(board);
+      });
+      stack.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dragId = '';
+        stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
+        updateQuizOrderNumbers(board);
+      });
+
+      stack.querySelectorAll('[data-order-card]').forEach((card) => {
+        card.addEventListener('pointerdown', (event) => {
+          if (board.classList.contains('order-locked') || event.button > 0) return;
+          const pointerId = event.pointerId;
+          const rect = card.getBoundingClientRect();
+          const offsetX = event.clientX - rect.left;
+          const offsetY = event.clientY - rect.top;
+          const placeholder = document.createElement('div');
+          placeholder.className = 'quiz-order-placeholder';
+          placeholder.style.height = `${rect.height}px`;
+          card.after(placeholder);
+          card.classList.add('is-pointer-dragging');
+          card.style.position = 'fixed';
+          card.style.left = `${rect.left}px`;
+          card.style.top = `${rect.top}px`;
+          card.style.width = `${rect.width}px`;
+          card.style.zIndex = '2147481000';
+          card.style.pointerEvents = 'none';
+          card.setPointerCapture?.(pointerId);
+          const move = (moveEvent) => {
+            card.style.left = `${moveEvent.clientX - offsetX}px`;
+            card.style.top = `${moveEvent.clientY - offsetY}px`;
+            placeOrderPlaceholder(board, moveEvent.clientY, card, placeholder);
+          };
+          const finish = () => {
+            placeholder.replaceWith(card);
+            card.classList.remove('is-pointer-dragging');
+            card.style.position = '';
+            card.style.left = '';
+            card.style.top = '';
+            card.style.width = '';
+            card.style.zIndex = '';
+            card.style.pointerEvents = '';
+            card.releasePointerCapture?.(pointerId);
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', finish);
+            window.removeEventListener('pointercancel', finish);
+            updateQuizOrderNumbers(board);
+          };
+          window.addEventListener('pointermove', move, { passive: true });
+          window.addEventListener('pointerup', finish, { once: true });
+          window.addEventListener('pointercancel', finish, { once: true });
+        });
+      });
+      board.querySelector('[data-order-validate]')?.addEventListener('click', () => {
+        const session = getQuizSession();
+        const question = getCurrentQuizQuestion();
+        if (!question || session.locked || board.classList.contains('order-locked')) return;
+        const selected = getQuizOrderIds(board);
+        const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
+        const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
+        session.locked = true;
+        board.classList.add('order-locked', ok ? 'order-correct' : 'order-wrong');
+        board.querySelectorAll('[data-order-card]').forEach((card, index) => {
+          card.draggable = false;
+          card.classList.add(selected[index] === correctOrder[index] ? 'matched' : 'wrong');
+        });
+        const button = board.querySelector('[data-order-validate]');
+        if (button) button.disabled = true;
+        recordQuizAnswer(question, ok, { order: selected, correctOrder });
+        if (!ok) pulseElement(board, 'quiz-slider-wrong-pop');
+        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
+      });
+      updateQuizOrderNumbers(board);
+    });
   }
 
   function quizMultipleChoiceHTML(question) {
@@ -2358,6 +2503,25 @@
   }
 
 
+  function quizFeedbackMiniTuneBoxHTML() {
+    const tune = getQuizFeedbackTune();
+    const allowed = new Set(['emojiX','emojiY','emojiZoom','titleX','titleY','titleSize','textX','textY','textSize','bounceDuration']);
+    const fields = QUIZ_FEEDBACK_TUNE_FIELDS.filter((field) => allowed.has(field.key));
+    return `
+      <div class="quiz-feedback-mini-tune-box">
+        <strong>Banda Correcto / Incorrecto</strong>
+        <small>Ajusta emoji, título, subtítulo y duración total del bounce.</small>
+        ${fields.map((field) => `
+          <label class="quiz-layout-tune-row quiz-feedback-mini-row">
+            <span>${escapeHTML(field.label)} <b data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
+            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
+          </label>
+        `).join('')}
+        <button class="btn ghost small" type="button" data-quiz-feedback-tune-reset>Restablecer banda</button>
+      </div>
+    `;
+  }
+
   function quizFeedbackTunePanelHTML(options = {}) {
     const tune = getQuizFeedbackTune();
     const groups = QUIZ_FEEDBACK_TUNE_FIELDS.reduce((acc, field) => {
@@ -2382,7 +2546,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.106</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.111</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2530,6 +2694,7 @@
       });
     });
     bindQuizLayoutTunePanel();
+    bindQuizOrderEvents();
     bindQuizSliderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -2730,11 +2895,30 @@
 
   function setQuizPeriod(period) {
     if (![1, 2, 3, 4].includes(Number(period))) return;
+    if (Number(state.quizPeriod) === Number(period)) return;
+    const previous = document.querySelector(`[data-quiz-period="${state.quizPeriod}"]`);
+    const next = document.querySelector(`[data-quiz-period="${period}"]`);
+    previous?.classList.remove('active');
+    next?.classList.add('active');
+    pulseElement(previous, 'period-shift');
+    pulseElement(next, 'period-shift');
     state.quizPeriod = Number(period);
     state.quizQuestionIndex = 0;
     state.quizActiveId = '';
     localStorage.setItem('encisomath:quizPeriod', String(state.quizPeriod));
-    renderQuizzesTab({ animate: true });
+    refreshQuizLibrary(true);
+  }
+
+  function refreshQuizLibrary(animate = false) {
+    const library = document.getElementById('quizLibrary');
+    if (!library) return;
+    const quizzes = getQuizzesForCurrentAssignment();
+    const activeQuiz = getActiveQuiz(quizzes);
+    library.innerHTML = quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`;
+    const note = document.getElementById('quizLaunchNote');
+    if (note) note.hidden = !activeQuiz;
+    bindQuizTabEvents();
+    if (animate) pulseElement(library, 'class-grid-update');
   }
 
   function setActiveQuiz(quizId) {
@@ -2926,9 +3110,13 @@
     const safe = getQuizFeedbackTune();
     const isCorrect = kind === 'correct';
     const isWrong = kind === 'wrong';
-    const bg = isCorrect ? '#58cc02' : isWrong ? '#e21b3c' : '#1368ce';
-    const meshColor = isCorrect ? 'rgba(210,255,191,.38)' : isWrong ? 'rgba(255,210,218,.36)' : 'rgba(219,234,254,.34)';
-    const meshGlow = isCorrect ? 'rgba(22,101,52,.28)' : isWrong ? 'rgba(127,29,29,.26)' : 'rgba(30,64,175,.24)';
+    const heroBg = isCorrect
+      ? 'radial-gradient(circle at 18% 25%, rgba(210,255,191,.34), transparent 32%), radial-gradient(circle at 82% 18%, rgba(22,163,74,.36), transparent 34%), linear-gradient(135deg, #58cc02 0%, #26890c 48%, #0f5f18 100%)'
+      : isWrong
+        ? 'radial-gradient(circle at 18% 25%, rgba(255,210,218,.35), transparent 32%), radial-gradient(circle at 82% 18%, rgba(226,27,60,.38), transparent 34%), linear-gradient(135deg, #ff375b 0%, #e21b3c 48%, #8f1230 100%)'
+        : 'radial-gradient(circle at 18% 25%, rgba(219,234,254,.30), transparent 32%), radial-gradient(circle at 82% 18%, rgba(19,104,206,.34), transparent 34%), linear-gradient(135deg, #1368ce 0%, #0b3d91 100%)';
+    const meshColor = isCorrect ? 'rgba(225,255,216,.42)' : isWrong ? 'rgba(255,225,231,.42)' : 'rgba(219,234,254,.34)';
+    const meshGlow = isCorrect ? 'rgba(187,247,208,.34)' : isWrong ? 'rgba(254,202,202,.32)' : 'rgba(30,64,175,.24)';
     const rotation = Number(safe.bandRotation) || 0;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
     band.dataset.feedbackKind = kind;
@@ -2955,9 +3143,9 @@
       'column-gap:clamp(12px,3.5vw,28px)',
       'row-gap:2px',
       'overflow:hidden',
-      'background:'+bg,
+      'background:'+heroBg,
       'color:#fff',
-      'box-shadow:none',
+      `box-shadow:0 0 0 1px rgba(255,255,255,.10) inset, 0 18px 42px ${isCorrect ? 'rgba(38,137,12,.32)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)'}`, 
       'filter:none',
       'text-shadow:none',
       'opacity:1',
@@ -3018,7 +3206,8 @@
       { opacity: 1, transform: t(1), offset: 1 }
     ];
     if (typeof band.animate === 'function') {
-      const anim = band.animate(frames, { duration: 920, easing: 'cubic-bezier(.18,.98,.22,1)', fill: 'forwards' });
+      const duration = Math.max(300, Math.min(1800, Number(getQuizFeedbackTune().bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 920));
+      const anim = band.animate(frames, { duration, easing: 'cubic-bezier(.18,.98,.22,1)', fill: 'forwards' });
       anim.onfinish = () => {
         band.style.opacity = '1';
         band.style.transform = t(1);
@@ -4277,7 +4466,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.110', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.111', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
