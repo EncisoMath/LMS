@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.120';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.120: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.121';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.121: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.120';
-  // v0.24.120: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.121';
+  // v0.24.121: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1390,18 +1390,26 @@
     });
   }
 
+  function isSupportedQuizQuestionType(type) {
+    return ['multiple_choice', 'true_false', 'open'].includes(String(type || ''));
+  }
+
+  function filterSupportedQuizQuestions(questions = []) {
+    return (Array.isArray(questions) ? questions : []).filter((question) => isSupportedQuizQuestionType(question?.type));
+  }
+
   function getActiveQuiz(quizzes = getQuizzesForCurrentAssignment()) {
     if (!quizzes.length) return null;
     const active = quizzes.find((quiz) => quiz.id === state.quizActiveId) || quizzes[0];
     state.quizActiveId = active.id;
     localStorage.setItem('encisomath:quizActiveId', active.id);
-    if (!Array.isArray(active.questions)) active.questions = [];
+    active.questions = filterSupportedQuizQuestions(active.questions);
     if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
     return active;
   }
 
   function quizCardButtonHTML(quiz, active) {
-    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    const total = filterSupportedQuizQuestions(quiz.questions).length;
     return `
       <button class="quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}">
         <span class="quiz-card-icon">${escapeHTML(quiz.emoji || '🎮')}</span>
@@ -1424,7 +1432,7 @@
     const promptText = promptSegments.join('\n\n');
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
-    const calibratable = ['multiple_choice', 'true_false', 'open', 'order'].includes(question.type);
+    const calibratable = ['multiple_choice', 'true_false', 'open'].includes(question.type);
     return `
       <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
         <div class="quiz-stage-head">
@@ -1855,7 +1863,7 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
-    if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
+    if (!['multiple_choice', 'true_false', 'open'].includes(type)) return '';
     const layoutTune = getQuizLayoutTune(type);
     const typographyTune = getQuizTypographyTune();
     const isOrderTune = type === 'order';
@@ -2158,8 +2166,7 @@
       true_false: 'Verdadero / falso',
       open: 'Pregunta abierta',
       match: 'Arrastrar para unir',
-      fill_text: 'Completar texto',
-      order: 'Organizar tarjetas'
+      fill_text: 'Completar texto'
     };
     return labels[type] || 'Pregunta';
   }
@@ -2175,7 +2182,6 @@
   function quizQuestionBodyHTML(question) {
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
-    if (question.type === 'order') return quizOrderHTML(question);
     return quizMultipleChoiceHTML(question);
   }
 
@@ -2667,7 +2673,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.120</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.121</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2819,7 +2825,6 @@
       });
     });
     bindQuizLayoutTunePanel();
-    bindQuizOrderEvents();
     bindQuizSliderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -3339,8 +3344,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.120: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.120 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.121: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.121 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4610,7 +4615,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.120', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.121', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
