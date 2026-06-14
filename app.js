@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.112';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.112: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.113';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.113: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -115,7 +115,7 @@
     { key: 'textY', group: 'Subtitulo', label: 'Subtitulo Y', min: -90, max: 90, step: 1, unit: 'px' },
     { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' },
     { key: 'textWidth', group: 'Subtitulo', label: 'Ancho contenedor subtitulo', min: 24, max: 120, step: 1, unit: 'vw' },
-    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion bounce', min: 300, max: 1800, step: 20, unit: 'ms' }
+    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion bounce', min: 500, max: 3000, step: 50, unit: 'ms' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.112';
-  // v0.24.112: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.113';
+  // v0.24.113: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -2554,7 +2554,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.112</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.113</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3207,22 +3207,27 @@
 
   function playInlineFeedbackBounce(band) {
     if (!band) return;
-    const rotation = Number(band.dataset.feedbackRotation || getQuizFeedbackTune().bandRotation || 0);
-    const zoom = Number(band.dataset.feedbackZoom || ((getQuizFeedbackTune().bandZoom || 100) / 100));
+    const tune = getQuizFeedbackTune();
+    const rotation = Number(band.dataset.feedbackRotation || tune.bandRotation || 0);
+    const zoom = Number(band.dataset.feedbackZoom || ((tune.bandZoom || 100) / 100));
     const t = (scale) => `translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${scale * zoom})`;
     try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
+
+    // v0.24.113: bounce mas elastico y distribuido.
+    // Antes la banda subia de 0.01 a 1.18 muy temprano, por eso alargar
+    // la duracion hacia que durara mas, pero el salto fuerte seguia rapido.
     const frames = [
-      { opacity: 0, transform: t(0.01), offset: 0 },
-      { opacity: 1, transform: t(0.34), offset: 0.13 },
-      { opacity: 1, transform: t(1.18), offset: 0.36 },
-      { opacity: 1, transform: t(0.86), offset: 0.53 },
-      { opacity: 1, transform: t(1.08), offset: 0.70 },
-      { opacity: 1, transform: t(0.97), offset: 0.84 },
+      { opacity: 0, transform: t(0.58), offset: 0, easing: 'cubic-bezier(.16,.62,.24,1)' },
+      { opacity: 0.86, transform: t(0.78), offset: 0.20, easing: 'cubic-bezier(.18,.72,.25,1)' },
+      { opacity: 1, transform: t(0.98), offset: 0.40, easing: 'cubic-bezier(.20,.82,.28,1)' },
+      { opacity: 1, transform: t(1.075), offset: 0.55, easing: 'cubic-bezier(.26,.70,.32,1)' },
+      { opacity: 1, transform: t(0.965), offset: 0.70, easing: 'cubic-bezier(.28,.72,.34,1)' },
+      { opacity: 1, transform: t(1.018), offset: 0.84, easing: 'cubic-bezier(.24,.76,.30,1)' },
       { opacity: 1, transform: t(1), offset: 1 }
     ];
     if (typeof band.animate === 'function') {
-      const duration = Math.max(300, Math.min(1800, Number(getQuizFeedbackTune().bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 920));
-      const anim = band.animate(frames, { duration, easing: 'cubic-bezier(.18,.98,.22,1)', fill: 'forwards' });
+      const duration = Math.max(500, Math.min(3000, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 920));
+      const anim = band.animate(frames, { duration, easing: 'linear', fill: 'forwards' });
       anim.onfinish = () => {
         band.style.opacity = '1';
         band.style.transform = t(1);
@@ -4481,7 +4486,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.112', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.113', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
