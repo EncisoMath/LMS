@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.85';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.85: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.86';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.86: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1414,20 +1414,20 @@
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_y: 0, textA_h: 42, text_font: 20,
-    image_y: 0, image_h: 22,
-    answers_y: 0, answers_h: 36
+    textA_y: 0, textA_h: 35, text_font: 20,
+    image_y: 0, image_h: 20,
+    answers_y: 0, answers_h: 45
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 38, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 39 },
-    true_false: { textA_y: 0, textA_h: 52, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 25 },
-    open: { textA_y: 0, textA_h: 44, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 33 },
+    multiple_choice: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
+    true_false: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
+    open: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 },
     slider: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.85';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.85';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.86';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.86';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -4178,7 +4178,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.85', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.86', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

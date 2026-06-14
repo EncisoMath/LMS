@@ -12434,3 +12434,67 @@ body.quiz-fullscreen-active,
     font-size: clamp(12px, 3.5vw, 16px) !important;
   }
 }
+
+/* ===== v0.24.86 - Imagen/texto estándar tipo Slider para los 4 tipos ===== */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider {
+  --quiz-fit-image-fr: 20fr !important;
+  --quiz-fit-text-fr: 35fr !important;
+  --quiz-fit-answer-fr: 45fr !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-image-fr)) minmax(0, var(--quiz-fit-text-fr)) minmax(0, var(--quiz-fit-answer-fr)) !important;
+  gap: clamp(6px, 1dvh, 9px) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen:not([data-quiz-has-image="true"]) .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-text-fr)) minmax(0, var(--quiz-fit-answer-fr)) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-image-tune-box {
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-image-card {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-image-card img {
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a {
+  display: block !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  place-content: start !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 2px 6px 0 0 !important;
+  margin: 0 !important;
+  font-size: 20px !important;
+  line-height: 1.18 !important;
+  font-weight: 700 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-zone {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-open-form,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+}

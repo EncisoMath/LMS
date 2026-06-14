@@ -14,8 +14,8 @@
         {
           "id": "q1",
           "type": "multiple_choice",
-          "prompt": "Lee el contexto completo y decide cuál fruta tiene la mayor frecuencia.",
-          "textA": "Un profe hizo una consulta sobre la fruta favorita del curso y registró los datos en la gráfica. Antes de responder, observa con cuidado la altura de cada barra y compara las categorías una por una. Recuerda que la frecuencia absoluta representa cuántas veces aparece una respuesta en la encuesta; por eso, la barra más alta indica la fruta que fue elegida por más estudiantes.\n\nEl profe afirma inicialmente que Mango fue la fruta más elegida, pero un estudiante revisa la gráfica y nota que esa afirmación puede estar equivocada. Con base en la información visual, identifica cuál fruta tiene la mayor frecuencia y elige la opción que corrige adecuadamente la afirmación del profe.",
+          "prompt": "Lee el enunciado y responde con base en la gráfica.",
+          "textA": "Observa la gráfica de barras sobre la fruta favorita del curso. Compara con calma la altura de cada barra y recuerda que la frecuencia absoluta indica cuántos estudiantes eligieron cada opción. Antes de marcar una respuesta, revisa si la barra más alta corresponde realmente a la fruta mencionada en la afirmación inicial.\n\nEl docente dice que Mango fue la fruta más elegida, pero varios estudiantes sospechan que hay otra barra más alta. Usa la información visual de la gráfica, compara todas las categorías y selecciona la opción que corrige mejor la afirmación del docente.",
           "image": "./assets/quiz-demo-statistics.svg",
           "imageAlt": "Gráfica de barras sobre fruta favorita",
           "textB": "",
@@ -45,9 +45,9 @@
         {
           "id": "q2",
           "type": "true_false",
-          "prompt": "La frecuencia absoluta indica cuántas veces aparece un dato.",
-          "textA": "En una tabla de frecuencia, un estudiante escribió cuántas veces se repite cada respuesta de una encuesta.",
-          "textB": "Con esa información, se puede afirmar que la frecuencia absoluta indica cuántas veces aparece un dato.",
+          "prompt": "Lee el enunciado y responde con base en la gráfica.",
+          "textA": "Lee con atención la afirmación y relaciónala con la información de la gráfica. En estadística, la frecuencia absoluta se usa para contar cuántas veces aparece un dato o cuántas personas eligieron una respuesta dentro de una encuesta.\n\nSi en una tabla se registra que una fruta aparece con frecuencia 4, eso significa que cuatro estudiantes la escogieron. Decide si la afirmación presentada es verdadera o falsa según esta idea, no solo por intuición.",
+          "textB": "",
           "options": [
             {
               "id": "true",
@@ -66,18 +66,18 @@
         {
           "id": "q3",
           "type": "open",
-          "prompt": "Explica con tus palabras para qué sirve una tabla de frecuencia.",
-          "textA": "Un docente recogió las respuestas de una encuesta y quiere organizarlas para entender mejor los datos.",
-          "textB": "Explica con tus palabras para qué sirve una tabla de frecuencia en una situación como esa.",
+          "prompt": "Lee el enunciado y responde con base en la gráfica.",
+          "textA": "Un docente recogió las respuestas de una encuesta y necesita organizarlas para explicar los resultados al curso. La tabla de frecuencia permite resumir la información, comparar respuestas y ver cuáles datos aparecen más o menos veces.\n\nEscribe una explicación breve, pero completa, sobre para qué sirve una tabla de frecuencia. Puedes mencionar que ayuda a ordenar los datos, contar respuestas y tomar decisiones a partir de la información recogida.",
+          "textB": "",
           "image": "./assets/quiz-demo-statistics.svg",
           "imageAlt": "Recurso visual de apoyo para el ítem 3 del quiz"
         },
         {
           "id": "q4",
           "type": "slider",
-          "prompt": "¿Cuántos estudiantes participaron en la encuesta?",
-          "textA": "En la gráfica se registraron las respuestas de un curso sobre su fruta favorita.",
-          "textB": "Si se suman todas las frecuencias de la gráfica, ¿cuántos estudiantes participaron en la encuesta?",
+          "prompt": "Calcula el total usando la gráfica.",
+          "textA": "Observa la gráfica y piensa en el total de estudiantes que participaron en la encuesta. Para encontrar ese total, no debes escoger solo la barra más alta; necesitas sumar las frecuencias de todas las categorías que aparecen en el recurso visual.\n\nMueve el slider hasta el número que representa la suma de todas las respuestas registradas. Revisa la gráfica con cuidado antes de validar, porque una sola barra no representa el total del curso.",
+          "textB": "",
           "min": 0,
           "max": 20,
           "step": 1,
