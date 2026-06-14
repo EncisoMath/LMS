@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.72';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.72: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.74';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.74: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -75,7 +75,10 @@
     textY: -18,
     textZoom: 83
   };
-  const QUIZ_FEEDBACK_BAND_DELAY_MS = 300;
+  const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
+  const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
+  const QUIZ_FEEDBACK_AFTER_SLIDER_REVEAL_MS = 360;
+  const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'curve', group: 'Banda', label: 'Curva superior', min: 0, max: 70, step: 1, unit: 'px' },
     { key: 'spread', group: 'Banda', label: 'Ancho de curva', min: 0, max: 22, step: 1, unit: 'vw' },
@@ -1420,7 +1423,7 @@
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, text_font: 20,
+    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, text_font: 17,
     image_x: 0, image_y: 0, image_w: 100, image_h: 0,
     textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0,
     answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
@@ -1428,44 +1431,44 @@
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
     multiple_choice: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 20,
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 17,
       image_x: 0, image_y: 30, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
       answers_x: -11, answers_y: 30, answers_w: 106, answers_h: 90
     },
     true_false: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 20,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 17,
       image_x: 0, image_y: 0, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 1, textB_w: 100, textB_h: 85,
       answers_x: -11, answers_y: 0, answers_w: 106, answers_h: 90
     },
     open: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 20,
+      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 17,
       image_x: 0, image_y: 30, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
       answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
     },
     match: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 20,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 17,
       image_x: 0, image_y: 10, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 20, textB_w: 100, textB_h: 80,
       answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
     },
     fill_text: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 20,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 17,
       image_x: 0, image_y: 0, image_w: 100, image_h: 180,
       textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 80,
       answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
     },
     slider: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 20,
+      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 17,
       image_x: 0, image_y: 0, image_w: 100, image_h: 200,
       textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 100,
       answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
     }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.71';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.74';
 
   function getQuizLayoutTuneDefaults(type = 'default') {
     return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
@@ -2438,7 +2441,7 @@
     scheduleQuizTimer(() => {
       revealQuizAnswer(stage, button, selectedCorrect);
       recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
-      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question);
+      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
     }, 1000);
   }
 
@@ -2506,11 +2509,13 @@
     stage?.classList.add('quiz-feedback-visible');
   }
 
-  function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '') {
+  function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
+    const fallbackDelay = neutralText ? QUIZ_FEEDBACK_NEUTRAL_DELAY_MS : QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS;
+    const effectiveDelay = Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : fallbackDelay;
     scheduleQuizTimer(() => {
       showQuizFeedbackBand(stage, correct, question, neutralText);
       scheduleQuizAdvance();
-    }, QUIZ_FEEDBACK_BAND_DELAY_MS);
+    }, effectiveDelay);
   }
 
   function recordQuizAnswer(question, correct, extra = {}) {
@@ -2562,7 +2567,7 @@
     const stage = form.closest('.quiz-stage');
     recordQuizAnswer(question, null, { text: value });
     pulseElement(form, 'text-pop');
-    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.');
+    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', QUIZ_FEEDBACK_NEUTRAL_DELAY_MS);
   }
 
   function startQuiz(quizId) {
@@ -3304,7 +3309,7 @@
         const stage = board.closest('.quiz-stage');
         board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
         if (!ok) pulseElement(board, 'quiz-slider-wrong-pop');
-        showQuizFeedbackBandAfterDelay(stage, ok, question);
+        showQuizFeedbackBandAfterDelay(stage, ok, question, '', QUIZ_FEEDBACK_AFTER_SLIDER_REVEAL_MS);
       });
     });
   }
@@ -4027,7 +4032,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.72', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.74', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
