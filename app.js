@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.74';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.74: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.75';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.75: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1468,7 +1468,7 @@
     }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.74';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.75';
 
   function getQuizLayoutTuneDefaults(type = 'default') {
     return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
@@ -4032,7 +4032,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.74', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.75', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

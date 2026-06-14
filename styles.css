@@ -11444,3 +11444,43 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider.quiz-feedback-visible .quiz-slider-phone-stage {
   transform: none !important;
 }
+
+
+/* v0.24.75 - Cascada experimental más marcada: arrastre desigual */
+:root {
+  --quiz-feedback-cascade-answer-shift: 34px;
+  --quiz-feedback-cascade-text-b-shift: 28px;
+  --quiz-feedback-cascade-image-shift: 22px;
+  --quiz-feedback-cascade-text-a-shift: 16px;
+  --quiz-feedback-cascade-step: 70ms;
+  --quiz-feedback-cascade-duration: 460ms;
+  --quiz-feedback-cascade-ease: cubic-bezier(.18, .92, .18, 1);
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-multiple_choice .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-true_false .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-open .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-slider .quiz-answer-zone {
+  transform: translate(var(--quiz-tune-x, 0px), calc(var(--quiz-tune-y, 0px) - var(--quiz-feedback-cascade-answer-shift))) !important;
+  transition-delay: 0ms !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-multiple_choice .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-true_false .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-open .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-slider .quiz-text-b {
+  transform: translate(var(--quiz-tune-x, 0px), calc(var(--quiz-tune-y, 0px) - var(--quiz-feedback-cascade-text-b-shift))) !important;
+  transition-delay: calc(var(--quiz-feedback-cascade-step) * 1) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-multiple_choice .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-true_false .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-open .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-slider .quiz-image-tune-box {
+  transform: translate(var(--quiz-tune-x, 0px), calc(var(--quiz-tune-y, 0px) - var(--quiz-feedback-cascade-image-shift))) !important;
+  transition-delay: calc(var(--quiz-feedback-cascade-step) * 2) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-multiple_choice .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-true_false .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-open .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-slider .quiz-text-a {
+  transform: translate(var(--quiz-tune-x, 0px), calc(var(--quiz-tune-y, 0px) - var(--quiz-feedback-cascade-text-a-shift))) !important;
+  transition-delay: calc(var(--quiz-feedback-cascade-step) * 3) !important;
+}
