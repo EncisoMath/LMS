@@ -774,3 +774,11 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - El quiz demo queda con ABCD, Verdadero/Falso, Pregunta abierta y Slider.
 - Se corrigió el salto vertical del slider al validar: el contenedor mantiene una altura estable antes y después de responder, incluso cuando la respuesta es incorrecta y aparece la marca correcta.
 - Versiones/cache busting actualizados a `0.24.72`.
+
+
+## v0.24.102
+
+- Preparado Montserrat local para quizzes usando `assets/fonts/Montserrat/`.
+- Quita dependencia de Google Fonts en `index.html`.
+- No se incluyen archivos `.ttf/.woff2` en este ZIP; copiarlos desde `Montserrat.zip` a la carpeta indicada.
+- Mantiene `bindQuizTabEvents()` y el arranque de Quizzes corregido.
