@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.99';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.99: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.100';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.100: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,7 +55,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.99';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.100';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -8,
     bandX: 0,
@@ -1478,8 +1478,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.99';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.99';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.100';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.100';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2192,7 +2192,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.99</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.100</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2209,14 +2209,16 @@
     document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
       if (input.dataset.boundTune === 'true') return;
       input.dataset.boundTune = 'true';
-      input.addEventListener('input', () => {
+      const updateFeedbackTuneFromInput = () => {
         const current = getQuizFeedbackTune();
         const key = input.dataset.quizFeedbackTune;
         current[key] = Number(input.value);
         saveQuizFeedbackTune(current);
         applyQuizFeedbackTune(current);
         updateQuizFeedbackTuneOutput(key, current[key]);
-      });
+      };
+      input.addEventListener('input', updateFeedbackTuneFromInput);
+      input.addEventListener('change', updateFeedbackTuneFromInput);
     });
     document.querySelectorAll('[data-quiz-feedback-tune-reset]').forEach((button) => {
       if (button.dataset.boundTuneReset === 'true') return;
@@ -2689,7 +2691,7 @@
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.99: the feedback overlay uses inline styles and Web Animations.
+    // v0.24.100: the feedback overlay uses inline styles and Web Animations.
     // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
@@ -2829,7 +2831,7 @@
     overlay.dataset.quizGlobalFeedback = 'true';
     overlay.setAttribute('aria-live', 'assertive');
     overlay.style.cssText = [
-      'position:fixed', 'inset:0', 'width:100vw', 'height:100dvh', 'z-index:2147482500', 'pointer-events:none', 'display:block', 'overflow:visible', 'background:transparent', 'contain:none', 'isolation:isolate', "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+      'position:fixed', 'inset:0', 'width:100vw', 'height:100dvh', 'z-index:2147482500', 'pointer-events:auto', 'display:block', 'overflow:visible', 'background:transparent', 'contain:none', 'isolation:isolate', "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
     ].join(';') + ';';
     const band = document.createElement('div');
     band.className = 'enciso-quiz-feedback-band-v99 ' + parts.kind;
@@ -2840,7 +2842,7 @@
     overlay.appendChild(band);
     const panelWrap = document.createElement('div');
     panelWrap.style.cssText = [
-      'position:fixed','left:50%','top:max(8px,env(safe-area-inset-top))','transform:translateX(-50%)','z-index:2147483647','pointer-events:auto','width:min(94vw,560px)','max-height:46dvh','overflow:visible',"font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+      'position:fixed','left:50%','top:max(8px,env(safe-area-inset-top))','transform:translateX(-50%)','z-index:2147483647','pointer-events:auto','touch-action:auto','width:min(94vw,560px)','max-height:58dvh','overflow:visible',"font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
     ].join(';') + ';';
     panelWrap.innerHTML = quizFeedbackTunePanelHTML({ live: true, last });
     overlay.appendChild(panelWrap);
@@ -4380,7 +4382,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.99', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.100', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
