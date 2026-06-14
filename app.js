@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.94';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.94: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.95';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.95: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1465,8 +1465,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.94';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.94';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.95';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.95';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2666,104 +2666,13 @@
       window.clearTimeout(window.__encisomathQuizFeedbackTimer);
       window.__encisomathQuizFeedbackTimer = null;
     }
-    document.querySelectorAll('[data-quiz-global-feedback]').forEach((node) => node.remove());
+    document.querySelectorAll('[data-quiz-global-feedback], .enciso-quiz-feedback-overlay-v95').forEach((node) => node.remove());
     document.querySelectorAll('.quiz-stage.quiz-feedback-visible').forEach((stage) => stage.classList.remove('quiz-feedback-visible'));
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    if (document.getElementById('encisomathQuizFeedbackStyleV94')) return;
-    const style = document.createElement('style');
-    style.id = 'encisomathQuizFeedbackStyleV94';
-    style.textContent = `
-      [data-quiz-global-feedback].enciso-feedback-v94 {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100vw !important;
-        height: 100dvh !important;
-        z-index: 2147483647 !important;
-        pointer-events: none !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        overflow: visible !important;
-        background: transparent !important;
-        contain: none !important;
-      }
-      .enciso-feedback-v94 .enciso-feedback-band-v94 {
-        width: 180vw !important;
-        max-width: none !important;
-        min-height: clamp(92px, 15dvh, 136px) !important;
-        box-sizing: border-box !important;
-        border-radius: 6px !important;
-        border: 0 !important;
-        padding: clamp(12px, 2.4dvh, 18px) 0 !important;
-        display: grid !important;
-        grid-template-columns: auto minmax(0, min(76vw, 680px)) !important;
-        grid-template-areas: "icon title" "icon phrase" !important;
-        align-items: center !important;
-        justify-content: center !important;
-        column-gap: clamp(12px, 3.6vw, 26px) !important;
-        row-gap: 5px !important;
-        overflow: visible !important;
-        opacity: 0 !important;
-        transform-origin: center center !important;
-        transform: rotate(-8deg) scale(.001) !important;
-        animation: encisoFeedbackBounceV94 900ms cubic-bezier(.17,.95,.18,1) both !important;
-        box-shadow: none !important;
-        filter: none !important;
-        background-image: none !important;
-        will-change: transform, opacity !important;
-      }
-      .enciso-feedback-v94 .enciso-feedback-band-v94.correct { background: #58cc02 !important; color: #fff !important; }
-      .enciso-feedback-v94 .enciso-feedback-band-v94.wrong { background: #e21b3c !important; color: #fff !important; }
-      .enciso-feedback-v94 .enciso-feedback-band-v94.neutral { background: #1368ce !important; color: #fff !important; }
-      .enciso-feedback-v94 .enciso-feedback-emoji-v94 {
-        grid-area: icon !important;
-        font-size: clamp(2rem, 8vw, 3.8rem) !important;
-        line-height: 1 !important;
-        margin: 0 !important;
-        transform: none !important;
-      }
-      .enciso-feedback-v94 .enciso-feedback-title-v94 {
-        grid-area: title !important;
-        color: #fff !important;
-        font-size: clamp(1.28rem, 5.4vw, 2.12rem) !important;
-        line-height: 1 !important;
-        font-weight: 900 !important;
-        white-space: nowrap !important;
-        margin: 0 !important;
-        transform: none !important;
-      }
-      .enciso-feedback-v94 .enciso-feedback-phrase-v94 {
-        grid-area: phrase !important;
-        color: rgba(255,255,255,.95) !important;
-        font-size: clamp(.82rem, 3.2vw, 1.04rem) !important;
-        line-height: 1.13 !important;
-        font-weight: 400 !important;
-        margin: 0 !important;
-        max-width: min(76vw, 680px) !important;
-        white-space: normal !important;
-        overflow-wrap: anywhere !important;
-        transform: none !important;
-      }
-      @keyframes encisoFeedbackBounceV94 {
-        0% { opacity: 0; transform: rotate(-8deg) scale(.001); }
-        12% { opacity: 1; transform: rotate(-8deg) scale(.46); }
-        28% { opacity: 1; transform: rotate(-8deg) scale(1.22); }
-        42% { opacity: 1; transform: rotate(-8deg) scale(.86); }
-        56% { opacity: 1; transform: rotate(-8deg) scale(1.12); }
-        69% { opacity: 1; transform: rotate(-8deg) scale(.96); }
-        82% { opacity: 1; transform: rotate(-8deg) scale(1.035); }
-        100% { opacity: 1; transform: rotate(-8deg) scale(1); }
-      }
-      @media (max-height: 620px) {
-        .enciso-feedback-v94 .enciso-feedback-band-v94 { min-height: clamp(76px, 16dvh, 106px) !important; padding-top: 9px !important; padding-bottom: 9px !important; }
-        .enciso-feedback-v94 .enciso-feedback-emoji-v94 { font-size: clamp(1.65rem, 7vw, 2.7rem) !important; }
-        .enciso-feedback-v94 .enciso-feedback-title-v94 { font-size: clamp(1.05rem, 4.5vw, 1.55rem) !important; }
-        .enciso-feedback-v94 .enciso-feedback-phrase-v94 { font-size: clamp(.72rem, 3vw, .92rem) !important; }
-      }
-    `;
-    document.head.appendChild(style);
+    // v0.24.95: the feedback overlay uses inline styles and Web Animations.
+    // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
   function quizFeedbackParts(correct, neutralText = '', question = null) {
@@ -2796,30 +2705,116 @@
   function quizGlobalFeedbackHTML(correct, neutralText = '', question = null) {
     const parts = quizFeedbackParts(correct, neutralText, question);
     return `
-      <div class="enciso-feedback-band-v94 ${parts.kind}" role="status">
-        <span class="enciso-feedback-emoji-v94">${parts.emoji}</span>
-        <strong class="enciso-feedback-title-v94">${escapeHTML(parts.title)}</strong>
-        <p class="enciso-feedback-phrase-v94">${escapeHTML(parts.phrase)}</p>
-      </div>
+      <span class="enciso-quiz-feedback-emoji-v95">${parts.emoji}</span>
+      <strong class="enciso-quiz-feedback-title-v95">${escapeHTML(parts.title)}</strong>
+      <p class="enciso-quiz-feedback-phrase-v95">${escapeHTML(parts.phrase)}</p>
     `;
+  }
+
+  function applyInlineFeedbackBandStyles(band, kind = 'neutral') {
+    const bg = kind === 'correct' ? '#58cc02' : kind === 'wrong' ? '#e21b3c' : '#1368ce';
+    band.style.cssText = [
+      'position:fixed',
+      'left:50%',
+      'top:50%',
+      'width:190vw',
+      'max-width:none',
+      'min-width:190vw',
+      'min-height:clamp(90px,15dvh,138px)',
+      'box-sizing:border-box',
+      'border-radius:6px',
+      'border:0',
+      'padding:clamp(12px,2.4dvh,18px) 0',
+      'display:grid',
+      'grid-template-columns:auto minmax(0,min(76vw,700px))',
+      'grid-template-areas:"icon title" "icon phrase"',
+      'align-items:center',
+      'justify-content:center',
+      'column-gap:clamp(12px,3.7vw,26px)',
+      'row-gap:5px',
+      'overflow:visible',
+      'background:'+bg,
+      'background-image:none',
+      'color:#fff',
+      'box-shadow:none',
+      'filter:none',
+      'text-shadow:none',
+      'opacity:0',
+      'transform:translate3d(-50%,-50%,0) rotate(-8deg) scale(0.02)',
+      'transform-origin:center center',
+      'will-change:transform,opacity',
+      'pointer-events:none',
+      'z-index:2147483647'
+    ].join(';') + ';';
+    const emoji = band.querySelector('.enciso-quiz-feedback-emoji-v95');
+    if (emoji) emoji.style.cssText = 'grid-area:icon;font-size:clamp(2rem,8.4vw,3.8rem);line-height:1;margin:0;filter:none;transform:none;';
+    const title = band.querySelector('.enciso-quiz-feedback-title-v95');
+    if (title) title.style.cssText = 'grid-area:title;color:#fff;font-size:clamp(1.28rem,5.4vw,2.12rem);line-height:1;font-weight:900;margin:0;white-space:nowrap;text-shadow:none;transform:none;';
+    const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v95');
+    if (phrase) phrase.style.cssText = 'grid-area:phrase;color:rgba(255,255,255,.95);font-size:clamp(.82rem,3.2vw,1.04rem);line-height:1.13;font-weight:400;margin:0;max-width:min(76vw,700px);white-space:normal;overflow-wrap:anywhere;text-shadow:none;transform:none;';
+  }
+
+  function playInlineFeedbackBounce(band) {
+    const frames = [
+      { opacity: 0, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.02)', offset: 0 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.52)', offset: 0.12 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.20)', offset: 0.30 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.88)', offset: 0.46 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.10)', offset: 0.62 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.97)', offset: 0.78 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.025)', offset: 0.90 },
+      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1)', offset: 1 }
+    ];
+    if (typeof band.animate === 'function') {
+      const anim = band.animate(frames, { duration: 950, easing: 'cubic-bezier(.16,.98,.18,1)', fill: 'forwards' });
+      anim.onfinish = () => {
+        band.style.opacity = '1';
+        band.style.transform = 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1)';
+      };
+      return;
+    }
+    let step = 0;
+    const fallback = () => {
+      const frame = frames[Math.min(step, frames.length - 1)];
+      band.style.opacity = String(frame.opacity);
+      band.style.transform = frame.transform;
+      step += 1;
+      if (step < frames.length) window.setTimeout(fallback, 95);
+    };
+    fallback();
   }
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
     ensureQuizGlobalFeedbackStyles();
+    const parts = quizFeedbackParts(correct, neutralText, question);
     const overlay = document.createElement('div');
-    overlay.className = 'enciso-feedback-v94';
+    overlay.className = 'enciso-quiz-feedback-overlay-v95';
     overlay.dataset.quizGlobalFeedback = 'true';
     overlay.setAttribute('aria-live', 'assertive');
-    overlay.innerHTML = quizGlobalFeedbackHTML(correct, neutralText, question);
-    const target = document.getElementById('quizFullscreenLayer') || document.body;
-    target.appendChild(overlay);
-    const band = overlay.querySelector('.enciso-feedback-band-v94');
-    if (band) {
-      band.style.animation = 'none';
-      void band.offsetWidth;
-      band.style.animation = 'encisoFeedbackBounceV94 900ms cubic-bezier(.17,.95,.18,1) both';
-    }
+    overlay.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'width:100vw',
+      'height:100dvh',
+      'z-index:2147483647',
+      'pointer-events:none',
+      'display:block',
+      'overflow:visible',
+      'background:transparent',
+      'contain:none',
+      'isolation:isolate'
+    ].join(';') + ';';
+    const band = document.createElement('div');
+    band.className = 'enciso-quiz-feedback-band-v95 ' + parts.kind;
+    band.setAttribute('role', 'status');
+    band.innerHTML = quizGlobalFeedbackHTML(correct, neutralText, question);
+    overlay.appendChild(band);
+    document.body.appendChild(overlay);
+    applyInlineFeedbackBandStyles(band, parts.kind);
+    document.documentElement.dataset.encisoLastFeedback = String(Date.now());
+    window.__encisomathLastFeedbackV95 = (window.__encisomathLastFeedbackV95 || 0) + 1;
+    requestAnimationFrame(() => requestAnimationFrame(() => playInlineFeedbackBounce(band)));
     window.__encisomathQuizFeedbackTimer = window.setTimeout(removeQuizGlobalFeedback, 3900);
   }
 
@@ -4351,7 +4346,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.94', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.95', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
