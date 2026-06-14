@@ -1,8 +1,0 @@
-Copia aqui el contenido de Montserrat.zip sin cambiar nombres.
-Estructura esperada:
-- Montserrat-VariableFont_wght.ttf
-- Montserrat-Italic-VariableFont_wght.ttf
-- static/Montserrat-Regular.ttf
-- static/Montserrat-Bold.ttf
-- static/Montserrat-ExtraBold.ttf
-- y los demas pesos de la carpeta static.
