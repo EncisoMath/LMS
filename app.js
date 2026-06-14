@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.81';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.81: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.82';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.82: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1406,11 +1406,11 @@
 
   const QUIZ_LAYOUT_TUNE_FIELDS = [
     { key: 'image_y', label: 'Imagen Y', min: -80, max: 160, step: 1, unit: 'px' },
-    { key: 'image_h', label: 'Imagen alto', min: 100, max: 360, step: 1, unit: 'px' },
+    { key: 'image_h', label: 'Imagen alto', min: 70, max: 220, step: 1, unit: 'px' },
     { key: 'textA_y', label: 'Texto Y', min: -80, max: 180, step: 1, unit: 'px' },
     { key: 'textA_h', label: 'Texto alto', min: 70, max: 320, step: 1, unit: 'px' },
     { key: 'answers_y', label: 'Opciones Y', min: -80, max: 180, step: 1, unit: 'px' },
-    { key: 'answers_h', label: 'Opciones alto', min: 90, max: 420, step: 1, unit: 'px' }
+    { key: 'answers_h', label: 'Opciones alto', min: 70, max: 280, step: 1, unit: 'px' }
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
@@ -1420,14 +1420,14 @@
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 220 },
-    true_false: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 170 },
-    open: { textA_y: 0, textA_h: 130, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 170 },
-    slider: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 260 }
+    multiple_choice: { textA_y: 0, textA_h: 135, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 146 },
+    true_false: { textA_y: 0, textA_h: 145, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 104 },
+    open: { textA_y: 0, textA_h: 150, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 142 },
+    slider: { textA_y: 0, textA_h: 140, text_font: 20, image_y: 0, image_h: 118, answers_y: 0, answers_h: 198 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.81';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.81';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.82';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.82';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -4176,7 +4176,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.81', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.82', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
