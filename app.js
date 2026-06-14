@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.95';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.95: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.96';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.96: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,48 +55,44 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.96';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
-    curve: 12,
-    spread: 18,
-    height: 122,
-    lift: 0,
-    bounce: 22,
+    bandRotation: -8,
     bandX: 0,
-    bandY: 13,
-    bandZoom: 110,
-    emojiX: 25,
-    emojiY: -11,
+    bandY: 0,
+    bandWidth: 190,
+    bandHeight: 122,
+    bandZoom: 100,
+    emojiX: 0,
+    emojiY: 0,
     emojiZoom: 132,
-    titleX: 30,
+    titleX: 0,
     titleY: 0,
-    titleZoom: 138,
-    textX: 30,
-    textY: -18,
-    textZoom: 83
+    titleSize: 34,
+    textX: 0,
+    textY: 0,
+    textSize: 16
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
   const QUIZ_FEEDBACK_AFTER_SLIDER_REVEAL_MS = 360;
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
-    { key: 'curve', group: 'Banda', label: 'Curva superior', min: 0, max: 70, step: 1, unit: 'px' },
-    { key: 'spread', group: 'Banda', label: 'Ancho de curva', min: 0, max: 22, step: 1, unit: 'vw' },
-    { key: 'height', group: 'Banda', label: 'Alto de banda', min: 72, max: 180, step: 1, unit: 'px' },
-    { key: 'lift', group: 'Banda', label: 'Subir contenido (desactivado)', min: 0, max: 0, step: 1, unit: 'px' },
-    { key: 'bounce', group: 'Banda', label: 'Rebote entrada', min: 0, max: 28, step: 1, unit: 'px' },
-    { key: 'bandX', group: 'Banda', label: 'Mover banda X', min: -80, max: 80, step: 1, unit: 'px' },
-    { key: 'bandY', group: 'Banda', label: 'Mover banda Y', min: -60, max: 60, step: 1, unit: 'px' },
-    { key: 'bandZoom', group: 'Banda', label: 'Zoom banda', min: 70, max: 130, step: 1, unit: '%' },
-    { key: 'emojiX', group: 'Emoji', label: 'Mover emoji X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'emojiY', group: 'Emoji', label: 'Mover emoji Y', min: -56, max: 56, step: 1, unit: 'px' },
-    { key: 'emojiZoom', group: 'Emoji', label: 'Zoom emoji', min: 50, max: 160, step: 1, unit: '%' },
-    { key: 'titleX', group: 'Titulo', label: 'Mover titulo X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'titleY', group: 'Titulo', label: 'Mover titulo Y', min: -56, max: 56, step: 1, unit: 'px' },
-    { key: 'titleZoom', group: 'Titulo', label: 'Zoom titulo', min: 70, max: 150, step: 1, unit: '%' },
-    { key: 'textX', group: 'Frase', label: 'Mover frase X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'textY', group: 'Frase', label: 'Mover frase Y', min: -56, max: 56, step: 1, unit: 'px' },
-    { key: 'textZoom', group: 'Frase', label: 'Zoom frase', min: 70, max: 150, step: 1, unit: '%' }
+    { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
+    { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -120, max: 120, step: 1, unit: 'px' },
+    { key: 'bandY', group: 'Banda', label: 'Posicion Y banda', min: -140, max: 140, step: 1, unit: 'px' },
+    { key: 'bandWidth', group: 'Banda', label: 'Ancho banda', min: 110, max: 240, step: 1, unit: 'vw' },
+    { key: 'bandHeight', group: 'Banda', label: 'Alto banda', min: 70, max: 190, step: 1, unit: 'px' },
+    { key: 'bandZoom', group: 'Banda', label: 'Zoom banda', min: 70, max: 140, step: 1, unit: '%' },
+    { key: 'emojiX', group: 'Emoji', label: 'Emoji X', min: -140, max: 140, step: 1, unit: 'px' },
+    { key: 'emojiY', group: 'Emoji', label: 'Emoji Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'emojiZoom', group: 'Emoji', label: 'Zoom emoji', min: 50, max: 190, step: 1, unit: '%' },
+    { key: 'titleX', group: 'Titulo', label: 'Titulo X', min: -140, max: 140, step: 1, unit: 'px' },
+    { key: 'titleY', group: 'Titulo', label: 'Titulo Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'titleSize', group: 'Titulo', label: 'Tamano titulo', min: 18, max: 54, step: 1, unit: 'px' },
+    { key: 'textX', group: 'Subtitulo', label: 'Subtitulo X', min: -140, max: 140, step: 1, unit: 'px' },
+    { key: 'textY', group: 'Subtitulo', label: 'Subtitulo Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -1465,8 +1461,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.95';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.95';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.96';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.96';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2180,10 +2176,11 @@
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
         <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz</div>
-        <div class="quiz-feedback-tune-help">Avance automático desactivado. Ajusta banda, emoji y textos; luego pásame los valores.</div>
-        ${rows}
+        <div class="quiz-feedback-tune-help">La banda esta pausada. Ajusta sin mover el quiz, repite la animacion o continua.</div>
+        <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
           <button class="btn ghost small quiz-feedback-tune-reset" type="button" data-quiz-feedback-tune-reset>Restablecer banda</button>
+          <button class="btn ghost small" type="button" data-quiz-feedback-replay>Repetir animacion</button>
           <button class="primary-btn small" type="button" data-quiz-feedback-continue>${options.last ? 'Ver resultados' : 'Continuar'}</button>
         </div>
       </section>
@@ -2199,22 +2196,30 @@
         const current = getQuizFeedbackTune();
         const key = input.dataset.quizFeedbackTune;
         current[key] = Number(input.value);
-        saveQuizFeedbackTune(current);
-        applyQuizFeedbackTune(current);
-        updateQuizFeedbackTuneOutput(key, current[key]);
+        const saved = saveQuizFeedbackTune(current);
+        applyQuizFeedbackTune(saved);
+        updateQuizFeedbackTuneOutput(key, saved[key]);
       });
     });
     document.querySelectorAll('[data-quiz-feedback-tune-reset]').forEach((button) => {
       if (button.dataset.boundTuneReset === 'true') return;
       button.dataset.boundTuneReset = 'true';
       button.addEventListener('click', () => {
-        saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
-        applyQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+        const defaults = saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
+        applyQuizFeedbackTune(defaults);
         document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
           const key = input.dataset.quizFeedbackTune;
-          input.value = QUIZ_FEEDBACK_TUNE_DEFAULTS[key];
-          updateQuizFeedbackTuneOutput(key, QUIZ_FEEDBACK_TUNE_DEFAULTS[key]);
+          input.value = defaults[key];
+          updateQuizFeedbackTuneOutput(key, defaults[key]);
         });
+      });
+    });
+    document.querySelectorAll('[data-quiz-feedback-replay]').forEach((button) => {
+      if (button.dataset.boundReplay === 'true') return;
+      button.dataset.boundReplay = 'true';
+      button.addEventListener('click', () => {
+        const band = document.querySelector('[data-quiz-global-feedback-band]');
+        if (band) playInlineFeedbackBounce(band);
       });
     });
     document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
@@ -2229,7 +2234,11 @@
   }
 
   function readQuizFeedbackTune() {
-    return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
+    try {
+      return normalizeQuizFeedbackTune(JSON.parse(localStorage.getItem(QUIZ_FEEDBACK_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
+    }
   }
 
   function normalizeQuizFeedbackTune(tune = {}) {
@@ -2242,7 +2251,9 @@
   }
 
   function saveQuizFeedbackTune(tune) {
-    return normalizeQuizFeedbackTune(tune);
+    const normalized = normalizeQuizFeedbackTune(tune);
+    try { localStorage.setItem(QUIZ_FEEDBACK_TUNE_KEY, JSON.stringify(normalized)); } catch (_) {}
+    return normalized;
   }
 
   function updateQuizFeedbackTuneOutput(key, value) {
@@ -2254,34 +2265,24 @@
   function applyQuizFeedbackTune(tune = getQuizFeedbackTune()) {
     const root = document.documentElement;
     const safe = normalizeQuizFeedbackTune(tune);
-    root.style.setProperty('--quiz-feedback-curve', `${Number(safe.curve) || QUIZ_FEEDBACK_TUNE_DEFAULTS.curve}px`);
-    root.style.setProperty('--quiz-feedback-spread', `${Number(safe.spread) || 0}vw`);
-    root.style.setProperty('--quiz-feedback-height', `${Number(safe.height) || QUIZ_FEEDBACK_TUNE_DEFAULTS.height}px`);
-    root.style.setProperty('--quiz-feedback-lift', `${Number(safe.lift) || 0}px`);
-    root.style.setProperty('--quiz-feedback-bounce', `${Number(safe.bounce) || 0}px`);
-    root.style.setProperty('--quiz-feedback-band-x', `${Number(safe.bandX) || 0}px`);
-    root.style.setProperty('--quiz-feedback-band-y', `${Number(safe.bandY) || 0}px`);
-    root.style.setProperty('--quiz-feedback-band-scale', `${(Number(safe.bandZoom) || 100) / 100}`);
-    root.style.setProperty('--quiz-feedback-emoji-x', `${Number(safe.emojiX) || 0}px`);
-    root.style.setProperty('--quiz-feedback-emoji-y', `${Number(safe.emojiY) || 0}px`);
-    root.style.setProperty('--quiz-feedback-emoji-scale', `${(Number(safe.emojiZoom) || 100) / 100}`);
-    root.style.setProperty('--quiz-feedback-title-x', `${Number(safe.titleX) || 0}px`);
-    root.style.setProperty('--quiz-feedback-title-y', `${Number(safe.titleY) || 0}px`);
-    root.style.setProperty('--quiz-feedback-title-scale', `${(Number(safe.titleZoom) || 100) / 100}`);
-    root.style.setProperty('--quiz-feedback-text-x', `${Number(safe.textX) || 0}px`);
-    root.style.setProperty('--quiz-feedback-text-y', `${Number(safe.textY) || 0}px`);
-    root.style.setProperty('--quiz-feedback-text-scale', `${(Number(safe.textZoom) || 100) / 100}`);
-  }
-
-  function bindQuizTabEvents() {
-    bindQuizFeedbackTunePanel();
-    document.querySelectorAll('[data-quiz-period]').forEach((button) => {
-      button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
+    root.style.setProperty('--quiz-feedback-band-rotation', `${safe.bandRotation}deg`);
+    root.style.setProperty('--quiz-feedback-band-x', `${safe.bandX}px`);
+    root.style.setProperty('--quiz-feedback-band-y', `${safe.bandY}px`);
+    root.style.setProperty('--quiz-feedback-band-width', `${safe.bandWidth}vw`);
+    root.style.setProperty('--quiz-feedback-band-height', `${safe.bandHeight}px`);
+    root.style.setProperty('--quiz-feedback-band-scale', `${safe.bandZoom / 100}`);
+    root.style.setProperty('--quiz-feedback-emoji-x', `${safe.emojiX}px`);
+    root.style.setProperty('--quiz-feedback-emoji-y', `${safe.emojiY}px`);
+    root.style.setProperty('--quiz-feedback-emoji-scale', `${safe.emojiZoom / 100}`);
+    root.style.setProperty('--quiz-feedback-title-x', `${safe.titleX}px`);
+    root.style.setProperty('--quiz-feedback-title-y', `${safe.titleY}px`);
+    root.style.setProperty('--quiz-feedback-title-size', `${safe.titleSize}px`);
+    root.style.setProperty('--quiz-feedback-text-x', `${safe.textX}px`);
+    root.style.setProperty('--quiz-feedback-text-y', `${safe.textY}px`);
+    root.style.setProperty('--quiz-feedback-text-size', `${safe.textSize}px`);
+    document.querySelectorAll('[data-quiz-global-feedback-band]').forEach((band) => {
+      applyInlineFeedbackBandStyles(band, band.dataset.feedbackKind || 'neutral');
     });
-    document.querySelectorAll('[data-quiz-id]').forEach((button) => {
-      button.addEventListener('click', () => startQuiz(button.dataset.quizId));
-    });
-    bindQuizPlayerEvents();
   }
 
   function bindQuizPlayerEvents() {
@@ -2666,12 +2667,12 @@
       window.clearTimeout(window.__encisomathQuizFeedbackTimer);
       window.__encisomathQuizFeedbackTimer = null;
     }
-    document.querySelectorAll('[data-quiz-global-feedback], .enciso-quiz-feedback-overlay-v95').forEach((node) => node.remove());
+    document.querySelectorAll('[data-quiz-global-feedback], .enciso-quiz-feedback-overlay-v96, .enciso-quiz-feedback-overlay-v96').forEach((node) => node.remove());
     document.querySelectorAll('.quiz-stage.quiz-feedback-visible').forEach((stage) => stage.classList.remove('quiz-feedback-visible'));
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.95: the feedback overlay uses inline styles and Web Animations.
+    // v0.24.96: the feedback overlay uses inline styles and Web Animations.
     // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
@@ -2705,33 +2706,41 @@
   function quizGlobalFeedbackHTML(correct, neutralText = '', question = null) {
     const parts = quizFeedbackParts(correct, neutralText, question);
     return `
-      <span class="enciso-quiz-feedback-emoji-v95">${parts.emoji}</span>
-      <strong class="enciso-quiz-feedback-title-v95">${escapeHTML(parts.title)}</strong>
-      <p class="enciso-quiz-feedback-phrase-v95">${escapeHTML(parts.phrase)}</p>
+      <span class="enciso-quiz-feedback-emoji-v96">${parts.emoji}</span>
+      <strong class="enciso-quiz-feedback-title-v96">${escapeHTML(parts.title)}</strong>
+      <p class="enciso-quiz-feedback-phrase-v96">${escapeHTML(parts.phrase)}</p>
     `;
   }
 
   function applyInlineFeedbackBandStyles(band, kind = 'neutral') {
+    if (!band) return;
+    const safe = getQuizFeedbackTune();
     const bg = kind === 'correct' ? '#58cc02' : kind === 'wrong' ? '#e21b3c' : '#1368ce';
+    const rotation = Number(safe.bandRotation) || 0;
+    const zoom = (Number(safe.bandZoom) || 100) / 100;
+    band.dataset.feedbackKind = kind;
+    band.dataset.feedbackRotation = String(rotation);
+    band.dataset.feedbackZoom = String(zoom);
     band.style.cssText = [
       'position:fixed',
-      'left:50%',
-      'top:50%',
-      'width:190vw',
+      `left:calc(50% + ${Number(safe.bandX) || 0}px)`,
+      `top:calc(50% + ${Number(safe.bandY) || 0}px)`,
+      `width:${Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth}vw`,
       'max-width:none',
-      'min-width:190vw',
-      'min-height:clamp(90px,15dvh,138px)',
+      `min-width:${Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth}vw`,
+      `height:${Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight}px`,
+      `min-height:${Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight}px`,
       'box-sizing:border-box',
       'border-radius:6px',
       'border:0',
-      'padding:clamp(12px,2.4dvh,18px) 0',
+      'padding:0',
       'display:grid',
-      'grid-template-columns:auto minmax(0,min(76vw,700px))',
+      'grid-template-columns:auto minmax(0,min(74vw,760px))',
       'grid-template-areas:"icon title" "icon phrase"',
       'align-items:center',
       'justify-content:center',
-      'column-gap:clamp(12px,3.7vw,26px)',
-      'row-gap:5px',
+      'column-gap:clamp(12px,3.5vw,28px)',
+      'row-gap:2px',
       'overflow:visible',
       'background:'+bg,
       'background-image:none',
@@ -2739,57 +2748,93 @@
       'box-shadow:none',
       'filter:none',
       'text-shadow:none',
-      'opacity:0',
-      'transform:translate3d(-50%,-50%,0) rotate(-8deg) scale(0.02)',
+      'opacity:1',
+      `transform:translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${zoom})`,
       'transform-origin:center center',
       'will-change:transform,opacity',
       'pointer-events:none',
-      'z-index:2147483647'
+      'z-index:2147483000',
+      "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
     ].join(';') + ';';
-    const emoji = band.querySelector('.enciso-quiz-feedback-emoji-v95');
-    if (emoji) emoji.style.cssText = 'grid-area:icon;font-size:clamp(2rem,8.4vw,3.8rem);line-height:1;margin:0;filter:none;transform:none;';
-    const title = band.querySelector('.enciso-quiz-feedback-title-v95');
-    if (title) title.style.cssText = 'grid-area:title;color:#fff;font-size:clamp(1.28rem,5.4vw,2.12rem);line-height:1;font-weight:900;margin:0;white-space:nowrap;text-shadow:none;transform:none;';
-    const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v95');
-    if (phrase) phrase.style.cssText = 'grid-area:phrase;color:rgba(255,255,255,.95);font-size:clamp(.82rem,3.2vw,1.04rem);line-height:1.13;font-weight:400;margin:0;max-width:min(76vw,700px);white-space:normal;overflow-wrap:anywhere;text-shadow:none;transform:none;';
+    const emoji = band.querySelector('.enciso-quiz-feedback-emoji-v96');
+    if (emoji) emoji.style.cssText = [
+      'grid-area:icon',
+      'display:block',
+      `font-size:calc(3.1rem * ${(Number(safe.emojiZoom) || 100) / 100})`,
+      'line-height:1',
+      'margin:0',
+      'filter:none',
+      `transform:translate(${Number(safe.emojiX) || 0}px, ${Number(safe.emojiY) || 0}px)`,
+      'transform-origin:center center'
+    ].join(';') + ';';
+    const title = band.querySelector('.enciso-quiz-feedback-title-v96');
+    if (title) title.style.cssText = [
+      'grid-area:title',
+      'display:block',
+      'color:#fff',
+      `font-size:${Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize}px`,
+      'line-height:1',
+      'font-weight:900',
+      'margin:0',
+      'white-space:nowrap',
+      'text-shadow:none',
+      `transform:translate(${Number(safe.titleX) || 0}px, ${Number(safe.titleY) || 0}px)`,
+      'transform-origin:center center'
+    ].join(';') + ';';
+    const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v96');
+    if (phrase) phrase.style.cssText = [
+      'grid-area:phrase',
+      'display:block',
+      'color:rgba(255,255,255,.96)',
+      `font-size:${Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize}px`,
+      'line-height:1.12',
+      'font-weight:400',
+      'margin:0',
+      'max-width:min(74vw,760px)',
+      'white-space:normal',
+      'overflow-wrap:anywhere',
+      'text-shadow:none',
+      `transform:translate(${Number(safe.textX) || 0}px, ${Number(safe.textY) || 0}px)`,
+      'transform-origin:center center'
+    ].join(';') + ';';
   }
 
   function playInlineFeedbackBounce(band) {
+    if (!band) return;
+    const rotation = Number(band.dataset.feedbackRotation || getQuizFeedbackTune().bandRotation || 0);
+    const zoom = Number(band.dataset.feedbackZoom || ((getQuizFeedbackTune().bandZoom || 100) / 100));
+    const t = (scale) => `translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${scale * zoom})`;
+    try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     const frames = [
-      { opacity: 0, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.02)', offset: 0 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.52)', offset: 0.12 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.20)', offset: 0.30 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.88)', offset: 0.46 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.10)', offset: 0.62 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(0.97)', offset: 0.78 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1.025)', offset: 0.90 },
-      { opacity: 1, transform: 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1)', offset: 1 }
+      { opacity: 0, transform: t(0.01), offset: 0 },
+      { opacity: 1, transform: t(0.34), offset: 0.13 },
+      { opacity: 1, transform: t(1.18), offset: 0.36 },
+      { opacity: 1, transform: t(0.86), offset: 0.53 },
+      { opacity: 1, transform: t(1.08), offset: 0.70 },
+      { opacity: 1, transform: t(0.97), offset: 0.84 },
+      { opacity: 1, transform: t(1), offset: 1 }
     ];
     if (typeof band.animate === 'function') {
-      const anim = band.animate(frames, { duration: 950, easing: 'cubic-bezier(.16,.98,.18,1)', fill: 'forwards' });
+      const anim = band.animate(frames, { duration: 920, easing: 'cubic-bezier(.18,.98,.22,1)', fill: 'forwards' });
       anim.onfinish = () => {
         band.style.opacity = '1';
-        band.style.transform = 'translate3d(-50%,-50%,0) rotate(-8deg) scale(1)';
+        band.style.transform = t(1);
       };
       return;
     }
-    let step = 0;
-    const fallback = () => {
-      const frame = frames[Math.min(step, frames.length - 1)];
-      band.style.opacity = String(frame.opacity);
-      band.style.transform = frame.transform;
-      step += 1;
-      if (step < frames.length) window.setTimeout(fallback, 95);
-    };
-    fallback();
+    band.style.opacity = '1';
+    band.style.transform = t(1);
   }
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
     ensureQuizGlobalFeedbackStyles();
     const parts = quizFeedbackParts(correct, neutralText, question);
+    const quiz = getActiveQuiz();
+    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+    const last = state.quizQuestionIndex >= total - 1;
     const overlay = document.createElement('div');
-    overlay.className = 'enciso-quiz-feedback-overlay-v95';
+    overlay.className = 'enciso-quiz-feedback-overlay-v96';
     overlay.dataset.quizGlobalFeedback = 'true';
     overlay.setAttribute('aria-live', 'assertive');
     overlay.style.cssText = [
@@ -2797,7 +2842,7 @@
       'inset:0',
       'width:100vw',
       'height:100dvh',
-      'z-index:2147483647',
+      'z-index:2147482500',
       'pointer-events:none',
       'display:block',
       'overflow:visible',
@@ -2806,16 +2851,22 @@
       'isolation:isolate'
     ].join(';') + ';';
     const band = document.createElement('div');
-    band.className = 'enciso-quiz-feedback-band-v95 ' + parts.kind;
+    band.className = 'enciso-quiz-feedback-band-v96 ' + parts.kind;
+    band.dataset.quizGlobalFeedbackBand = 'true';
+    band.dataset.feedbackKind = parts.kind;
     band.setAttribute('role', 'status');
     band.innerHTML = quizGlobalFeedbackHTML(correct, neutralText, question);
     overlay.appendChild(band);
+    const panelWrap = document.createElement('div');
+    panelWrap.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:2147483647;pointer-events:auto;width:min(94vw,520px);max-height:42dvh;overflow:visible;';
+    panelWrap.innerHTML = quizFeedbackTunePanelHTML({ live: true, last });
+    overlay.appendChild(panelWrap);
     document.body.appendChild(overlay);
     applyInlineFeedbackBandStyles(band, parts.kind);
+    bindQuizFeedbackTunePanel();
     document.documentElement.dataset.encisoLastFeedback = String(Date.now());
-    window.__encisomathLastFeedbackV95 = (window.__encisomathLastFeedbackV95 || 0) + 1;
+    window.__encisomathLastFeedbackV96 = (window.__encisomathLastFeedbackV96 || 0) + 1;
     requestAnimationFrame(() => requestAnimationFrame(() => playInlineFeedbackBounce(band)));
-    window.__encisomathQuizFeedbackTimer = window.setTimeout(removeQuizGlobalFeedback, 3900);
   }
 
   function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
@@ -2825,7 +2876,6 @@
     window.__encisomathQuizFeedbackShowTimer = window.setTimeout(() => {
       window.__encisomathQuizFeedbackShowTimer = null;
       showQuizFeedbackBand(stage, correct, question, neutralText);
-      scheduleQuizAdvance();
     }, effectiveDelay);
   }
 
@@ -2858,6 +2908,7 @@
   }
 
   function continueQuizAfterFeedback() {
+    removeQuizGlobalFeedback();
     document.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
     const quiz = getActiveQuiz();
     if (!quiz || !Array.isArray(quiz.questions)) return;
@@ -4346,7 +4397,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.95', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.96', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

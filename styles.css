@@ -13270,7 +13270,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.95"; }
+:root { --encisomath-build: "0.24.96"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13359,7 +13359,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.95"; }
+:root { --encisomath-build: "0.24.96"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13585,7 +13585,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.95"; }
+:root { --encisomath-build: "0.24.96"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13789,8 +13789,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.95 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.95"; }
+/* ===== v0.24.96 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.96"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -13911,8 +13911,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.95 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.95"; }
+/* ===== v0.24.96 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.96"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -13932,4 +13932,121 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   translate: none !important;
   scale: 1 !important;
   rotate: none !important;
+}
+
+
+/* ===== v0.24.96 quiz font + live feedback tune overlay ===== */
+:root { --encisomath-build: "0.24.96"; }
+.quiz-stage,
+.quiz-stage *,
+.quiz-fullscreen-layer,
+.quiz-fullscreen-layer * {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+.enciso-quiz-feedback-overlay-v96,
+.enciso-quiz-feedback-overlay-v96 * {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-panel,
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-panel.is-live {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 42dvh !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  background: rgba(8, 10, 18, .94) !important;
+  box-shadow: none !important;
+  color: #fff !important;
+  pointer-events: auto !important;
+  z-index: 2147483647 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-title {
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-help {
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  color: rgba(255,255,255,.76) !important;
+  margin: 0 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-scroll {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-right: 4px !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-scroll::-webkit-scrollbar { width: 8px !important; }
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.24) !important; border-radius: 99px !important; }
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-group {
+  display: grid !important;
+  gap: 7px !important;
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-group h4 {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+  margin: 0 !important;
+  color: rgba(255,255,255,.72) !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-row {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-head strong,
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-head output {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-row input {
+  width: 100% !important;
+  accent-color: var(--maincolor) !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin: 0 !important;
+}
+.enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-actions button {
+  min-height: 34px !important;
+  padding: 7px 8px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  line-height: 1.05 !important;
+  white-space: normal !important;
+}
+@media (max-height: 640px) {
+  .enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-panel,
+  .enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-panel.is-live {
+    max-height: 45dvh !important;
+    padding: 8px 10px !important;
+  }
+  .enciso-quiz-feedback-overlay-v96 .quiz-feedback-tune-actions {
+    grid-template-columns: 1fr !important;
+  }
 }
