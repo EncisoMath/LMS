@@ -14,11 +14,11 @@
         {
           "id": "q1",
           "type": "multiple_choice",
-          "prompt": "Según la gráfica, ¿qué conclusión es correcta?",
-          "textA": "Un profe hizo una consulta sobre la fruta favorita del curso y registró los datos como se ve en la siguiente gráfica:",
+          "prompt": "Lee el contexto completo y decide cuál fruta tiene la mayor frecuencia.",
+          "textA": "Un profe hizo una consulta sobre la fruta favorita del curso y registró los datos en la gráfica. Antes de responder, observa con cuidado la altura de cada barra y compara las categorías una por una. Recuerda que la frecuencia absoluta representa cuántas veces aparece una respuesta en la encuesta; por eso, la barra más alta indica la fruta que fue elegida por más estudiantes.\n\nEl profe afirma inicialmente que Mango fue la fruta más elegida, pero un estudiante revisa la gráfica y nota que esa afirmación puede estar equivocada. Con base en la información visual, identifica cuál fruta tiene la mayor frecuencia y elige la opción que corrige adecuadamente la afirmación del profe.",
           "image": "./assets/quiz-demo-statistics.svg",
           "imageAlt": "Gráfica de barras sobre fruta favorita",
-          "textB": "El profe dice que Mango fue la fruta más elegida. Según la gráfica, esa afirmación se puede corregir porque la fruta con mayor frecuencia es...",
+          "textB": "",
           "options": [
             {
               "id": "a",
