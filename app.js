@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.140';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.140: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.141';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.141: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.140';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.141';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: 7,
     bandX: 0,
@@ -1492,7 +1492,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.140';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.141';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1672,7 +1672,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.140';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.141';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2585,9 +2585,14 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.140</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.141</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
+          <div class="quiz-feedback-tune-group">
+            <h4>Banda</h4>
+            ${quizFeedbackTuneRangeRowHTML('bandZoom')}
+            ${quizFeedbackTuneRangeRowHTML('bandRotation')}
+          </div>
           <div class="quiz-feedback-tune-group">
             <h4>Título</h4>
             <label class="quiz-feedback-tune-row">
@@ -3248,7 +3253,7 @@
     const title = band.querySelector('.enciso-quiz-feedback-title-v102');
     if (title) title.style.cssText = [
       'grid-area:title', 'display:block', 'position:relative', 'z-index:1', 'color:#fff',
-      `font-size:clamp(28px, 7.2vw, ${Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize}px)`,
+      `font-size:${Math.max(18, Math.min(54, Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize))}px`,
       'line-height:1', `font-weight:${titlePreset.weight}`, `font-style:${titlePreset.style}`, 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
       'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
       `transform:translate3d(0, ${Number(safe.titleY) || 0}px, 0)`, 'transform-origin:center center'
@@ -3256,7 +3261,7 @@
     const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v102');
     if (phrase) phrase.style.cssText = [
       'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', 'color:rgba(255,255,255,.94)',
-      `font-size:clamp(13px, 3.8vw, ${Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize}px)`,
+      `font-size:${Math.max(11, Math.min(30, Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize))}px`,
       'line-height:1.1', `font-weight:${textPreset.weight}`, `font-style:${textPreset.style}`, 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
       `transform:translate3d(0, ${Number(safe.textY) || 0}px, 0)`, 'transform-origin:center center'
     ].join(';') + ';';
@@ -4394,7 +4399,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.140', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.141', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

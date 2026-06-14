@@ -11742,3 +11742,64 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   background: #08101f !important;
   color: #fff !important;
 }
+
+/* ===== v0.24.141 feedback tune fixes: working text size + scrollable panel ===== */
+.enciso-quiz-feedback-mesh-v102 {
+  animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
+  will-change: transform !important;
+}
+.quiz-feedback-tune-panel[data-quiz-feedback-tune-live="true"],
+.quiz-feedback-tune-panel.is-live {
+  position: fixed !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+  width: auto !important;
+  max-height: min(68dvh, 560px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 10px !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  touch-action: auto !important;
+  border-radius: 6px !important;
+  background: rgba(6, 8, 16, .96) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+}
+.quiz-feedback-tune-panel .quiz-feedback-tune-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-right: 5px !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+.quiz-feedback-tune-panel .quiz-feedback-tune-actions {
+  flex: 0 0 auto !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  background: linear-gradient(180deg, rgba(6,8,16,0), rgba(6,8,16,.98) 18%, rgba(6,8,16,.98) 100%) !important;
+  z-index: 2 !important;
+}
+.quiz-feedback-tune-panel .quiz-feedback-tune-actions button {
+  width: 100% !important;
+  min-height: 42px !important;
+  border-radius: 6px !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+@media (max-height: 680px) {
+  .quiz-feedback-tune-panel[data-quiz-feedback-tune-live="true"],
+  .quiz-feedback-tune-panel.is-live {
+    max-height: 78dvh !important;
+    padding: 8px !important;
+  }
+}
