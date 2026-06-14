@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.75';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.75: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.77';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.77: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1468,7 +1468,22 @@
     }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.75';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.76';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.76';
+  const QUIZ_CASCADE_TUNE_FIELDS = [
+    { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
+    { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
+    { key: 'textB_y', label: 'Texto B subir Y', min: 0, max: 90, step: 1, unit: 'px' },
+    { key: 'answers_y', label: 'Opciones / respuesta subir Y', min: 0, max: 90, step: 1, unit: 'px' }
+  ];
+  const QUIZ_CASCADE_TUNE_DEFAULTS = {
+    textA_y: 16,
+    image_y: 22,
+    textB_y: 28,
+    answers_y: 34
+  };
+
+  let quizCascadeReplayTimer = null;
 
   function getQuizLayoutTuneDefaults(type = 'default') {
     return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
@@ -1507,6 +1522,72 @@
     const normalized = normalizeQuizLayoutTune(tune, type);
     try { localStorage.setItem(quizLayoutTuneKey(type), JSON.stringify(normalized)); } catch (_) {}
     return normalized;
+  }
+
+  function quizCascadeTuneKey(type = 'default') {
+    return `encisomath:quizCascadeTune:${QUIZ_CASCADE_TUNE_STORAGE_VERSION}:${type || 'default'}`;
+  }
+
+  function normalizeQuizCascadeTune(tune = {}) {
+    const normalized = { ...QUIZ_CASCADE_TUNE_DEFAULTS };
+    QUIZ_CASCADE_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : normalized[field.key];
+    });
+    return normalized;
+  }
+
+  function getQuizCascadeTune(type = 'default') {
+    try {
+      return normalizeQuizCascadeTune(JSON.parse(localStorage.getItem(quizCascadeTuneKey(type)) || '{}'));
+    } catch (_) {
+      return normalizeQuizCascadeTune({});
+    }
+  }
+
+  function saveQuizCascadeTune(type, tune) {
+    const normalized = normalizeQuizCascadeTune(tune);
+    try { localStorage.setItem(quizCascadeTuneKey(type), JSON.stringify(normalized)); } catch (_) {}
+    return normalized;
+  }
+
+  function applyQuizCascadeTune(type = 'default', tune = getQuizCascadeTune(type)) {
+    const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector(`.quiz-stage.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
+    if (!stage) return;
+    const safe = normalizeQuizCascadeTune(tune);
+    stage.style.setProperty('--quiz-feedback-cascade-text-a-shift', `${safe.textA_y}px`);
+    stage.style.setProperty('--quiz-feedback-cascade-image-shift', `${safe.image_y}px`);
+    stage.style.setProperty('--quiz-feedback-cascade-text-b-shift', `${safe.textB_y}px`);
+    stage.style.setProperty('--quiz-feedback-cascade-answer-shift', `${safe.answers_y}px`);
+  }
+
+  function replayQuizCascadePreview(trigger = null) {
+    const stage = trigger?.closest('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage');
+    if (!stage) return;
+    const feedback = stage.querySelector('[data-quiz-feedback]');
+    if (quizCascadeReplayTimer) window.clearTimeout(quizCascadeReplayTimer);
+    stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
+    if (feedback) {
+      feedback.hidden = true;
+      feedback.innerHTML = '';
+      feedback.className = 'quiz-answer-feedback';
+    }
+    void stage.offsetWidth;
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.innerHTML = '<div class="quiz-feedback-card is-correct quiz-feedback-preview-card"><span>✨</span><strong>Prueba</strong><p>Vista previa de cascada</p></div>';
+      feedback.className = 'quiz-answer-feedback is-correct is-preview';
+    }
+    stage.classList.add('quiz-cascade-previewing', 'quiz-feedback-visible');
+    quizCascadeReplayTimer = window.setTimeout(() => {
+      stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
+      if (feedback) {
+        feedback.hidden = true;
+        feedback.innerHTML = '';
+        feedback.className = 'quiz-answer-feedback';
+      }
+      quizCascadeReplayTimer = null;
+    }, 1800);
   }
 
   function quizImagePreviewKey(type = 'default') {
@@ -1549,15 +1630,15 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
-    if (!['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(type)) return '';
-    const tune = getQuizLayoutTune(type);
+    if (!['multiple_choice', 'true_false', 'open', 'slider'].includes(type)) return '';
+    const cascadeTune = getQuizCascadeTune(type);
     return `
-      <section class="quiz-layout-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" hidden aria-hidden="true">
-        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajuste temporal de layout">
+      <section class="quiz-layout-tune-panel quiz-cascade-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" hidden aria-hidden="true">
+        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajuste temporal de cascada">
           <div class="quiz-layout-tune-dialog-head">
             <div>
-              <strong>Ajuste temporal de layout</strong>
-              <small>Mueve Texto A, imagen, Texto B y zona de respuesta. Los bordes verdes son referencias de calibración.</small>
+              <strong>Ajuste temporal de cascada</strong>
+              <small>Calibra cuánto suben en Y los elementos cuando aparece Correcto / Incorrecto.</small>
             </div>
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
@@ -1570,15 +1651,18 @@
             </label>
             <small>Solo oculta/muestra la imagen para revisar cómo se ve el ítem.</small>
           </div>` : ''}
-          <div class="quiz-layout-tune-scroll">
-            ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
-              <label class="quiz-layout-tune-row">
-                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
-                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
+          <div class="quiz-layout-tune-scroll quiz-cascade-tune-scroll">
+            ${QUIZ_CASCADE_TUNE_FIELDS.map((field) => `
+              <label class="quiz-layout-tune-row quiz-cascade-tune-row">
+                <span>${escapeHTML(field.label)} <b data-quiz-cascade-tune-value="${escapeAttr(field.key)}">${cascadeTune[field.key]}${field.unit}</b></span>
+                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${cascadeTune[field.key]}" data-quiz-cascade-tune="${escapeAttr(field.key)}" />
               </label>
             `).join('')}
           </div>
-          <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
+          <div class="quiz-cascade-tune-actions">
+            <button class="primary-btn small" type="button" data-quiz-cascade-replay>Reproducir animación</button>
+            <button class="btn ghost small" type="button" data-quiz-cascade-tune-reset>Restablecer cascada</button>
+          </div>
         </div>
       </section>
     `;
@@ -1597,11 +1681,13 @@
         panel.classList.add('is-open');
         const type = panel.dataset.quizLayoutType || 'default';
         applyQuizLayoutTune(type, getQuizLayoutTune(type));
+        applyQuizCascadeTune(type, getQuizCascadeTune(type));
       });
     });
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
       const type = panel.dataset.quizLayoutType || 'default';
       applyQuizLayoutTune(type, getQuizLayoutTune(type));
+      applyQuizCascadeTune(type, getQuizCascadeTune(type));
       const closePanel = () => {
         panel.classList.remove('is-open');
         panel.setAttribute('aria-hidden', 'true');
@@ -1627,29 +1713,34 @@
           applyQuizLayoutTune(type, getQuizLayoutTune(type));
         });
       }
-      panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
-        if (input.dataset.boundLayoutTune === 'true') return;
-        input.dataset.boundLayoutTune = 'true';
+      panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
+        if (input.dataset.boundCascadeTune === 'true') return;
+        input.dataset.boundCascadeTune = 'true';
         input.addEventListener('input', () => {
-          const current = getQuizLayoutTune(type);
-          const key = input.dataset.quizLayoutTune;
+          const current = getQuizCascadeTune(type);
+          const key = input.dataset.quizCascadeTune;
           current[key] = Number(input.value);
-          saveQuizLayoutTune(type, current);
-          applyQuizLayoutTune(type, current);
-          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
+          saveQuizCascadeTune(type, current);
+          applyQuizCascadeTune(type, current);
+          const field = QUIZ_CASCADE_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-cascade-tune-value="${escapeSelector(key)}"]`);
           if (output && field) output.textContent = `${current[key]}${field.unit}`;
         });
       });
-      panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
-        saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
-        applyQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
-        panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
-          const key = input.dataset.quizLayoutTune;
-          input.value = getQuizLayoutTuneDefaults(type)[key];
-          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${getQuizLayoutTuneDefaults(type)[key]}${field.unit}`;
+      const replayButton = panel.querySelector('[data-quiz-cascade-replay]');
+      if (replayButton && replayButton.dataset.boundCascadeReplay !== 'true') {
+        replayButton.dataset.boundCascadeReplay = 'true';
+        replayButton.addEventListener('click', () => replayQuizCascadePreview(replayButton));
+      }
+      panel.querySelector('[data-quiz-cascade-tune-reset]')?.addEventListener('click', () => {
+        const defaults = saveQuizCascadeTune(type, QUIZ_CASCADE_TUNE_DEFAULTS);
+        applyQuizCascadeTune(type, defaults);
+        panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
+          const key = input.dataset.quizCascadeTune;
+          input.value = defaults[key];
+          const field = QUIZ_CASCADE_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-cascade-tune-value="${escapeSelector(key)}"]`);
+          if (output && field) output.textContent = `${defaults[key]}${field.unit}`;
         });
       });
     });
@@ -1690,6 +1781,7 @@
     setBox('image', 'image');
     setBox('textB', 'textB');
     setBox('answers', 'answers');
+    applyQuizCascadeTune(type, getQuizCascadeTune(type));
   }
 
   function quizTypeLabel(type) {
@@ -4032,7 +4124,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.75', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.77', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

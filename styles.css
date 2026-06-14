@@ -11446,7 +11446,7 @@ body.quiz-fullscreen-active,
 }
 
 
-/* v0.24.75 - Cascada experimental más marcada: arrastre desigual */
+/* v0.24.76 - Cascada experimental más marcada: arrastre desigual */
 :root {
   --quiz-feedback-cascade-answer-shift: 34px;
   --quiz-feedback-cascade-text-b-shift: 28px;
@@ -11483,4 +11483,40 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible.quiz-type-slider .quiz-text-a {
   transform: translate(var(--quiz-tune-x, 0px), calc(var(--quiz-tune-y, 0px) - var(--quiz-feedback-cascade-text-a-shift))) !important;
   transition-delay: calc(var(--quiz-feedback-cascade-step) * 3) !important;
+}
+
+
+/* v0.24.76 - Tuerca convertida a calibrador de cascada */
+.quiz-cascade-tune-panel .quiz-layout-tune-dialog-head small {
+  color: rgba(255,255,255,.72) !important;
+  font-weight: 500 !important;
+}
+.quiz-cascade-tune-scroll {
+  gap: 12px !important;
+}
+.quiz-cascade-tune-row span {
+  font-weight: 800 !important;
+}
+.quiz-cascade-tune-row b {
+  color: #fff !important;
+}
+
+
+/* v0.24.77 - Botón de prueba para reproducir la cascada desde la tuerca */
+.quiz-cascade-tune-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.quiz-cascade-tune-actions button {
+  width: 100%;
+}
+.quiz-feedback-card.quiz-feedback-preview-card p {
+  font-weight: 400 !important;
+}
+@media (max-width: 430px) {
+  .quiz-cascade-tune-actions {
+    grid-template-columns: 1fr;
+  }
 }
