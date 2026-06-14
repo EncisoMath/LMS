@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.122';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.122: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.123';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.123: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.122';
-  // v0.24.122: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.123';
+  // v0.24.123: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1624,7 +1624,7 @@
     multiple_choice: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     true_false: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     open: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    order: { textA_y: 0, textA_h: 30, text_font: 18, image_y: 0, image_h: 24, answers_y: 0, answers_h: 46 },
+    order: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     slider: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 }
   };
 
@@ -1671,6 +1671,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.123';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1718,7 +1719,8 @@
   }
 
   function quizLayoutTuneKey(type = 'default') {
-    return `encisomath:quizLayoutTune:${QUIZ_LAYOUT_TUNE_STORAGE_VERSION}:${type || 'default'}`;
+    const version = type === 'order' ? QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION : QUIZ_LAYOUT_TUNE_STORAGE_VERSION;
+    return `encisomath:quizLayoutTune:${version}:${type || 'default'}`;
   }
 
   function getQuizLayoutTune(type = 'default') {
@@ -2226,7 +2228,7 @@
   }
 
   const QUIZ_ORDER_EASE_EXPO = 'cubic-bezier(0.87, 0, 0.13, 1)';
-  const QUIZ_ORDER_SHIFT_MS = 600;
+  const QUIZ_ORDER_SHIFT_MS = 420;
 
   function getQuizOrderGapPx(stack) {
     if (!stack) return 6;
@@ -2469,11 +2471,11 @@
             card.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
             void card.offsetWidth;
             card.classList.add(matched ? 'matched' : 'wrong', matched ? 'order-reveal-correct' : 'order-reveal-wrong');
-          }, index * 260);
+          }, index * 240);
         });
         recordQuizAnswer(question, ok, { order: selected, correctOrder });
-        if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), orderCards.length * 260 + 80);
-        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, orderCards.length * 260 + 620));
+        if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), orderCards.length * 240 + 80);
+        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, orderCards.length * 240 + 620));
       });
 
       updateQuizOrderNumbers(board);
@@ -2728,7 +2730,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.122</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.123</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3400,8 +3402,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.122: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.122 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.123: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.123 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4671,7 +4673,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.122', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.123', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

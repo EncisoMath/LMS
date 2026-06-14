@@ -1,6 +1,6 @@
 {
-  "version": "1.8",
-  "description": "Base de quizzes por asignatura y periodo. El quiz demo reintroduce Organizar tarjetas como pregunta 1 y conserva opción múltiple, verdadero/falso y pregunta abierta.",
+  "version": "1.9",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.123 ajusta Organizar tarjetas como pregunta 1 con layout 30/40/30, reordenamiento más ágil y validación secuencial con bounce/shake.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
