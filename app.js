@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.126';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.126: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.127';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.127: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -95,7 +95,6 @@
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
-  const QUIZ_FEEDBACK_AFTER_SLIDER_REVEAL_MS = 360;
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
@@ -1569,7 +1568,6 @@
       node.style.setProperty('--quiz-text-font', `${safe.textSize}px`);
       node.style.setProperty('--quiz-text-a-font', `${safe.textSize}px`);
       node.style.setProperty('--quiz-text-b-font', `${safe.textSize}px`);
-      node.style.setProperty('--quiz-fill-font', `${safe.textSize}px`);
       node.style.setProperty('--quiz-global-option-weight', String(optionPreset.weight));
       node.style.setProperty('--quiz-global-option-style', optionPreset.style);
       node.style.setProperty('--quiz-global-option-size', `${safe.optionSize}px`);
@@ -1592,16 +1590,12 @@
       '.quiz-stage-fullscreen .quiz-text-a',
       '.quiz-stage-fullscreen .quiz-text-b',
       '.quiz-open-input',
-      '.quiz-open-feedback',
-      '.quiz-slider-labels',
-      '.quiz-slider-caption',
-      '.quiz-slider-question'
+      '.quiz-open-feedback'
     ].join(','), textPreset, safe.textSize);
     applyInline([
       '.kahoot-option',
       '.kahoot-answer-text',
       '.quiz-submit-btn',
-      '.quiz-slider-submit',
     ].join(','), optionPreset, safe.optionSize);
     document.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
     document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
@@ -1624,8 +1618,7 @@
     multiple_choice: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     true_false: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     open: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    order: { textA_y: 0, textA_h: 30, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 },
-    slider: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 }
+    order: { textA_y: 0, textA_h: 30, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
   };
 
   function rebalanceQuizLayoutTune(tune = {}, changedKey = 'image_h') {
@@ -1671,7 +1664,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.126';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.127';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1687,9 +1680,6 @@
   };
 
   function getQuizCascadeTuneDefaults(type = 'default', hasImage = false) {
-    if (type === 'slider') {
-      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
-    }
     if (type === 'order') {
       return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
     }
@@ -2127,13 +2117,11 @@
     stage.style.setProperty('--quiz-text-font', unifiedFont);
     stage.style.setProperty('--quiz-text-a-font', unifiedFont);
     stage.style.setProperty('--quiz-text-b-font', unifiedFont);
-    stage.style.setProperty('--quiz-fill-font', unifiedFont);
     const answerZone = stage.querySelector('[data-quiz-tune-target="answers"]');
     if (answerZone) {
       answerZone.style.setProperty('--quiz-text-font', unifiedFont);
       answerZone.style.setProperty('--quiz-text-a-font', unifiedFont);
       answerZone.style.setProperty('--quiz-text-b-font', unifiedFont);
-      answerZone.style.setProperty('--quiz-fill-font', unifiedFont);
     }
     const hasStageImage = stage.dataset.quizHasImage === 'true';
     const imageFr = Math.max(0, Number(safe.image_h) || 0);
@@ -2172,8 +2160,6 @@
       multiple_choice: 'Opción múltiple',
       true_false: 'Verdadero / falso',
       open: 'Pregunta abierta',
-      match: 'Arrastrar para unir',
-      fill_text: 'Completar texto',
       order: 'Organizar tarjetas'
     };
     return labels[type] || 'Pregunta';
@@ -2620,125 +2606,6 @@
 
 
 
-  function sliderDecimals(value) {
-    const text = String(value ?? '');
-    if (text.includes('e-')) return Math.max(0, Number(text.split('e-')[1]) || 0);
-    const point = text.split('.')[1] || '';
-    return point.length;
-  }
-
-  function formatSliderNumber(value, step = 1) {
-    const decimals = Math.min(6, Math.max(sliderDecimals(step), sliderDecimals(value)));
-    const fixed = Number(value).toFixed(decimals);
-    return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
-  }
-
-  function snapSliderValue(value, min = 0, step = 1) {
-    const safeStep = Math.abs(Number(step)) || 1;
-    const safeMin = Number(min) || 0;
-    const raw = Number(value);
-    const snapped = safeMin + Math.round((raw - safeMin) / safeStep) * safeStep;
-    return Number(formatSliderNumber(snapped, safeStep));
-  }
-
-  function quizSliderRange(question) {
-    const step = Math.abs(Number(question.step)) || 1;
-    const correctRaw = Number.isFinite(Number(question.correct)) ? Number(question.correct) : 0;
-    const correct = snapSliderValue(correctRaw, 0, step);
-    const hasMin = Number.isFinite(Number(question.min));
-    const hasMax = Number.isFinite(Number(question.max));
-    const originalMin = hasMin ? snapSliderValue(Number(question.min), 0, step) : snapSliderValue(correct - (step * 5), 0, step);
-    const originalMax = hasMax ? snapSliderValue(Number(question.max), 0, step) : snapSliderValue(originalMin + (step * 9), 0, step);
-    const maxValues = Math.max(2, Math.min(10, Number(question.rangeSteps) || 10));
-    const maxIntervals = Math.max(1, maxValues - 1);
-    const span = maxIntervals * step;
-    let min = originalMin;
-    let max = originalMax;
-    const originalValues = Math.round(Math.abs((originalMax - originalMin) / step)) + 1;
-    if (question.randomRange !== false || originalValues > maxValues) {
-      const lowerBound = hasMin ? originalMin : snapSliderValue(correct - span, 0, step);
-      const upperBound = hasMax ? originalMax : snapSliderValue(correct + span, 0, step);
-      let minStart = Math.max(lowerBound, snapSliderValue(correct - span, 0, step));
-      let maxStart = Math.min(correct, snapSliderValue(upperBound - span, 0, step));
-      if (maxStart < minStart) {
-        minStart = snapSliderValue(correct - span, 0, step);
-        maxStart = correct;
-      }
-      const possibleStarts = Math.max(0, Math.round((maxStart - minStart) / step));
-      const leftSteps = Math.floor(Math.random() * (possibleStarts + 1));
-      min = snapSliderValue(minStart + (leftSteps * step), 0, step);
-      max = snapSliderValue(min + span, 0, step);
-    }
-    if (max <= min) max = snapSliderValue(min + span, 0, step);
-    if (correct < min) {
-      min = correct;
-      max = snapSliderValue(min + span, 0, step);
-    }
-    if (correct > max) {
-      max = correct;
-      min = snapSliderValue(max - span, 0, step);
-    }
-    const valueCount = Math.max(2, Math.min(maxValues, Math.round(Math.abs((max - min) / step)) + 1));
-    max = snapSliderValue(min + ((valueCount - 1) * step), 0, step);
-    if (correct > max) {
-      max = correct;
-      min = snapSliderValue(max - ((valueCount - 1) * step), 0, step);
-    }
-    let initial = Number.isFinite(Number(question.initial)) ? snapSliderValue(Number(question.initial), min, step) : snapSliderValue(min + (Math.floor((valueCount - 1) / 2) * step), min, step);
-    if (initial < min || initial > max) initial = snapSliderValue(min + (Math.floor((valueCount - 1) / 2) * step), min, step);
-    return { min, max, step, correct, initial, tickCount: valueCount };
-  }
-
-  function getQuizSliderTune() {
-    return { userY: -15, userZoom: 61, correctY: 13, correctZoom: 118 };
-  }
-
-  function quizSliderTunePanelHTML(last = false) {
-    const tune = getQuizSliderTune();
-    return `
-      <div class="quiz-slider-tune-panel" data-slider-y-panel>
-        <strong>Ajuste temporal slider</strong>
-        <small>Mueve la paleta azul hasta que quede arriba del bullet. Pásame el valor final.</small>
-        <label class="slider-tune-row">
-          <span>Mover paleta azul Y <b data-slider-tune-value="userY">${tune.userY}px</b></span>
-          <input type="range" min="-40" max="80" step="1" value="${tune.userY}" data-slider-tune="userY" data-unit="px" />
-        </label>
-      </div>
-    `;
-  }
-
-  function quizSliderHTML(question) {
-    const range = quizSliderRange(question);
-    const min = range.min;
-    const max = range.max;
-    const step = range.step;
-    const correct = range.correct;
-    const initial = range.initial;
-    const tolerance = Number.isFinite(Number(question.tolerance)) ? Number(question.tolerance) : 0;
-    const unit = escapeHTML(question.unit || '');
-    const tickCount = range.tickCount;
-    const sliderTicks = Array.from({ length: tickCount }, (_, index) => `<span data-slider-tick="${index}"></span>`).join('');
-    const quiz = getActiveQuiz();
-    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
-    const last = state.quizQuestionIndex >= total - 1;
-    return `
-      <div class="quiz-slider-shell" data-quiz-slider-board data-slider-correct="${correct}" data-slider-tolerance="${tolerance}" data-slider-tick-count="${tickCount}" data-slider-step="${step}">
-        <div class="quiz-slider-visual-stage">
-          <div class="quiz-slider-widget" aria-label="Respuesta numérica tipo slider">
-            <div class="quiz-slider-bubble" data-slider-bubble>
-              <span data-slider-value>${formatSliderNumber(initial, step)}</span>
-            </div>
-            <div class="quiz-slider-ticks" data-slider-ticks>${sliderTicks}</div>
-            <div class="slider-correct-bubble" data-slider-correct-bubble hidden><span>${formatSliderNumber(correct, step)}</span></div>
-            <input class="quiz-phone-range" type="range" min="${min}" max="${max}" step="${step}" value="${initial}" aria-label="Selecciona tu respuesta" data-quiz-slider />
-          </div>
-        </div>
-        <div class="quiz-slider-limits"><span>${formatSliderNumber(min, step)}${unit ? ` ${unit}` : ''}</span><span>${formatSliderNumber(max, step)}${unit ? ` ${unit}` : ''}</span></div>
-        <button class="primary-btn quiz-slider-submit" type="button" data-slider-validate>Validar número</button>
-      </div>
-    `;
-  }
-
   function getQuizSession() {
     if (!state.quizSession || typeof state.quizSession !== 'object') {
       state.quizSession = { phase: 'idle', answers: [], locked: false, selectedAnswerId: '' };
@@ -2823,7 +2690,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.126</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.127</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2976,7 +2843,6 @@
     });
     bindQuizLayoutTunePanel();
     bindQuizOrderEvents();
-    bindQuizSliderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
 
@@ -3883,147 +3749,6 @@
 
 
 
-  function bindQuizSliderEvents() {
-    document.querySelectorAll('[data-quiz-slider-board]').forEach((board) => {
-      const slider = board.querySelector('[data-quiz-slider]');
-      const valueLabel = board.querySelector('[data-slider-value]');
-      const validate = board.querySelector('[data-slider-validate]');
-      const correctBubble = board.querySelector('[data-slider-correct-bubble]');
-      const applyTune = () => {
-        const tune = getQuizSliderTune();
-        board.style.setProperty('--slider-user-y', `${tune.userY}px`);
-        board.style.setProperty('--slider-user-scale', `${tune.userZoom / 100}`);
-        board.style.setProperty('--slider-correct-y', `${tune.correctY}px`);
-        board.style.setProperty('--slider-correct-scale', `${tune.correctZoom / 100}`);
-        board.querySelectorAll('[data-slider-tune]').forEach((input) => {
-          if (tune[input.dataset.sliderTune] !== undefined && String(input.value) !== String(tune[input.dataset.sliderTune])) {
-            input.value = tune[input.dataset.sliderTune];
-          }
-        });
-        board.querySelectorAll('[data-slider-tune-value]').forEach((label) => {
-          const key = label.dataset.sliderTuneValue;
-          const input = board.querySelector(`[data-slider-tune="${escapeSelector(key)}"]`);
-          const unit = input?.dataset.unit || '';
-          if (tune[key] !== undefined) label.textContent = `${tune[key]}${unit}`;
-        });
-      };
-      const tuneInputs = Array.from(board.querySelectorAll('[data-slider-tune]'));
-      tuneInputs.forEach((input) => {
-        input.addEventListener('input', () => {
-          const current = getQuizSliderTune();
-          const next = { ...current, [input.dataset.sliderTune]: Number(input.value) };
-          localStorage.setItem('encisomath:quizSliderTune', JSON.stringify(next));
-          applyTune();
-        });
-      });
-      board.querySelector('[data-slider-tune-continue]')?.addEventListener('click', () => {
-        continueQuizAfterFeedback();
-      });
-      const getSliderMetrics = () => {
-        const min = Number(slider?.min || 0);
-        const max = Number(slider?.max || 100);
-        const step = Math.abs(Number(slider?.step || board.dataset.sliderStep || 1)) || 1;
-        const ticks = Array.from(board.querySelectorAll('[data-slider-tick]'));
-        const tickMax = Math.max(1, ticks.length - 1);
-        return { min, max, step, ticks, tickMax };
-      };
-      const valueToIndex = (value, min, step, tickMax) => {
-        return Math.max(0, Math.min(tickMax, Math.round((Number(value) - min) / step)));
-      };
-      const indexToValue = (index, min, step) => snapSliderValue(min + (index * step), min, step);
-      const getTickCenter = (ticks, index) => {
-        const tick = ticks[index];
-        const holder = board.querySelector('[data-slider-ticks]');
-        if (!tick || !holder) return null;
-        const widget = tick.closest('.quiz-slider-widget');
-        const widgetBox = widget?.getBoundingClientRect();
-        const tickBox = tick.getBoundingClientRect();
-        if (!widgetBox || !tickBox || !tickBox.width) return null;
-        return (tickBox.left - widgetBox.left) + (tickBox.width / 2);
-      };
-      const setSliderFromPointer = (event) => {
-        if (!slider || slider.disabled) return;
-        const { min, step, ticks, tickMax } = getSliderMetrics();
-        const first = ticks[0]?.getBoundingClientRect();
-        const last = ticks[tickMax]?.getBoundingClientRect();
-        if (!first || !last) return;
-        const firstCenter = first.left + first.width / 2;
-        const lastCenter = last.left + last.width / 2;
-        const clientX = event.clientX ?? event.touches?.[0]?.clientX;
-        if (!Number.isFinite(clientX)) return;
-        const pct = (clientX - firstCenter) / Math.max(1, lastCenter - firstCenter);
-        const index = Math.max(0, Math.min(tickMax, Math.round(pct * tickMax)));
-        slider.value = formatSliderNumber(indexToValue(index, min, step), step);
-        update();
-      };
-      const update = () => {
-        if (!slider) return;
-        const { min, max, step, ticks, tickMax } = getSliderMetrics();
-        const snapped = Math.max(min, Math.min(max, snapSliderValue(slider.value, min, step)));
-        const tickIndex = valueToIndex(snapped, min, step, tickMax);
-        const exactValue = indexToValue(tickIndex, min, step);
-        const formatted = formatSliderNumber(exactValue, step);
-        if (formatSliderNumber(slider.value, step) !== formatted) slider.value = formatted;
-        if (valueLabel) valueLabel.textContent = formatted;
-        const visualPct = ticks.length > 1 ? (tickIndex / tickMax) * 100 : 0;
-        const tickCenter = getTickCenter(ticks, tickIndex);
-        const bubbleX = tickCenter == null ? `${visualPct}%` : `${tickCenter}px`;
-        slider.style.setProperty('--slider-progress', `${visualPct}%`);
-        slider.style.setProperty('--slider-visual-progress', `${visualPct}%`);
-        board.style.setProperty('--slider-progress', `${visualPct}%`);
-        board.style.setProperty('--slider-visual-progress', `${visualPct}%`);
-        board.style.setProperty('--slider-bubble-x', bubbleX);
-        board.dataset.sliderVisualIndex = String(tickIndex);
-        ticks.forEach((tick, index) => {
-          tick.classList.toggle('active', index === tickIndex);
-          tick.classList.toggle('before-active', index < tickIndex);
-          tick.classList.toggle('after-active', index > tickIndex);
-        });
-      };
-      slider?.addEventListener('input', update);
-      slider?.addEventListener('change', update);
-      slider?.addEventListener('pointerdown', (event) => { setSliderFromPointer(event); slider.setPointerCapture?.(event.pointerId); });
-      slider?.addEventListener('pointermove', (event) => { if (event.buttons || slider.matches(':active')) setSliderFromPointer(event); });
-      slider?.addEventListener('touchstart', (event) => setSliderFromPointer(event), { passive: true });
-      slider?.addEventListener('touchmove', (event) => setSliderFromPointer(event), { passive: true });
-      applyTune();
-      update();
-      setTimeout(update, 80);
-      window.addEventListener('resize', update, { passive: true });
-      validate?.addEventListener('click', () => {
-        const session = getQuizSession();
-        const question = getCurrentQuizQuestion();
-        if (!slider || !question || session.locked) return;
-        session.locked = true;
-        update();
-        slider.disabled = true;
-        validate.disabled = true;
-        const selected = Number(slider.value);
-        const correctValue = Number(board.dataset.sliderCorrect || question.correct || 0);
-        const tolerance = Math.max(0, Number(board.dataset.sliderTolerance || question.tolerance || 0));
-        const ok = Math.abs(selected - correctValue) <= tolerance;
-        board.classList.add(ok ? 'slider-correct' : 'slider-wrong');
-        const { min: sliderMin, step: sliderStep, ticks: correctTicks, tickMax: correctTickMax } = getSliderMetrics();
-        const correctTickIndex = valueToIndex(correctValue, sliderMin, sliderStep, correctTickMax);
-        const correctVisualPct = correctTicks.length > 1 ? (correctTickIndex / correctTickMax) * 100 : 0;
-        const correctCenter = getTickCenter(correctTicks, correctTickIndex);
-        board.style.setProperty('--slider-correct-progress', correctCenter == null ? `${correctVisualPct}%` : `${correctCenter}px`);
-        board.dataset.sliderCorrectVisualIndex = String(correctTickIndex);
-        correctTicks.forEach((tick, index) => tick.classList.toggle('correct-answer', !ok && index === correctTickIndex));
-        if (correctBubble) {
-          correctBubble.hidden = ok;
-          const correctBubbleText = correctBubble.querySelector('span');
-          if (correctBubbleText) correctBubbleText.textContent = formatSliderNumber(correctValue, Math.abs(Number(slider.step || 1)) || 1);
-        }
-        recordQuizAnswer(question, ok, { value: selected, correctValue, tolerance });
-        const stage = board.closest('.quiz-stage');
-        board.querySelector('[data-slider-tune-continue]')?.removeAttribute('hidden');
-        if (!ok) pulseElement(board, 'quiz-slider-wrong-pop');
-        showQuizFeedbackBandAfterDelay(stage, ok, question, '', QUIZ_FEEDBACK_AFTER_SLIDER_REVEAL_MS);
-      });
-    });
-  }
-
   function openQuizImageModal(src, alt = '') {
     openModal(`
       <div class="modal-card quiz-image-modal quiz-image-zoom-modal">
@@ -4766,7 +4491,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.126', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.127', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
