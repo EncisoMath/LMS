@@ -11743,7 +11743,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   color: #fff !important;
 }
 
-/* ===== v0.24.141 feedback tune fixes: working text size + scrollable panel ===== */
+/* ===== v0.24.142 feedback tune fixes: working text size + scrollable panel ===== */
 .enciso-quiz-feedback-mesh-v102 {
   animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
   will-change: transform !important;
@@ -11802,4 +11802,23 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
     max-height: 78dvh !important;
     padding: 8px !important;
   }
+}
+
+/* ===== v0.24.142 final feedback band: simple continue only, no tuning panel ===== */
+.quiz-feedback-continue-control {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483200 !important;
+  display: flex !important;
+  justify-content: center !important;
+  pointer-events: auto !important;
+}
+.quiz-feedback-continue-control .primary-btn,
+.quiz-feedback-continue-control button {
+  min-width: min(72vw, 260px) !important;
+  border-radius: 6px !important;
+  font-family: 'Montserrat', system-ui, sans-serif !important;
+  font-weight: 800 !important;
 }

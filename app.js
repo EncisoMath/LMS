@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.141';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.141: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.142';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.142: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,9 +72,9 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.141';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.142';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
-    bandRotation: 7,
+    bandRotation: -2,
     bandX: 0,
     bandY: 0,
     bandWidth: 132,
@@ -85,14 +85,14 @@
     emojiZoom: 100,
     titleX: 0,
     titleY: 0,
-    titleSize: 31,
+    titleSize: 45,
     titleWidth: 92,
     titlePreset: '900|normal',
     textX: 0,
     textY: 0,
     textSize: 15,
     textWidth: 92,
-    textPreset: '700|normal',
+    textPreset: '500|normal',
     bounceDuration: 0
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
@@ -1492,7 +1492,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.141';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.142';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1672,7 +1672,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.141';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.142';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2581,11 +2581,26 @@
     `;
   }
 
+  function quizFeedbackContinueControlHTML(last = false) {
+    return `
+      <div class="quiz-feedback-continue-control" data-quiz-feedback-simple-continue>
+        <button class="primary-btn small" type="button" data-quiz-feedback-continue>${last ? 'Ver resultados' : 'Continuar'}</button>
+      </div>`;
+  }
+
+  function bindQuizFeedbackContinueControl() {
+    document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
+      if (button.dataset.boundContinue === 'true') return;
+      button.dataset.boundContinue = 'true';
+      button.addEventListener('click', continueQuizAfterFeedback);
+    });
+  }
+
   function quizFeedbackTunePanelHTML(options = {}) {
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.141</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.142</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3317,8 +3332,8 @@
     document.documentElement.dataset.encisoLastFeedback = String(Date.now());
     window.__encisomathLastFeedbackV102 = (window.__encisomathLastFeedbackV102 || 0) + 1;
     playInlineFeedbackBounce(band);
-    overlay.insertAdjacentHTML('beforeend', quizFeedbackTunePanelHTML({ live: true, last }));
-    bindQuizFeedbackTunePanel();
+    overlay.insertAdjacentHTML('beforeend', quizFeedbackContinueControlHTML(last));
+    bindQuizFeedbackContinueControl();
   }
 
   function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
@@ -4399,7 +4414,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.141', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.142', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
