@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.128';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.128: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.129';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.129: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1664,7 +1664,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.128';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.129';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2467,9 +2467,11 @@
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
-        const revealGap = 140;
-        const revealDuration = 900;
+        const revealGap = 105;
+        const revealDuration = 585;
+        const stage = board.closest('.quiz-stage-fullscreen, .quiz-stage');
         board.classList.add('order-validating');
+        stage?.classList.add('order-reveal-active');
         orderCards.forEach((card) => {
           if (typeof card.getAnimations === 'function') {
             card.getAnimations().forEach((animation) => animation.cancel());
@@ -2513,16 +2515,14 @@
           runOrderCardRevealMotion(card, matched);
         };
 
-        const revealTotal = orderCards.length ? (orderCards.length * (revealDuration + revealGap)) : 0;
-        const revealSequentially = (index = 0) => {
-          if (index >= orderCards.length) {
-            window.setTimeout(() => board.classList.remove('order-validating'), 120);
-            return;
-          }
-          revealOneCard(orderCards[index], index);
-          window.setTimeout(() => revealSequentially(index + 1), revealDuration + revealGap);
-        };
-        revealSequentially(0);
+        const revealTotal = orderCards.length ? ((orderCards.length - 1) * revealGap + revealDuration) : 0;
+        orderCards.forEach((card, index) => {
+          window.setTimeout(() => revealOneCard(card, index), index * revealGap);
+        });
+        window.setTimeout(() => {
+          board.classList.remove('order-validating');
+          stage?.classList.remove('order-reveal-active');
+        }, revealTotal + 120);
         recordQuizAnswer(question, ok, { order: selected, correctOrder });
         showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
       });
@@ -2660,7 +2660,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.128</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.129</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4461,7 +4461,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.128', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.129', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
