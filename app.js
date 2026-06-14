@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.105';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.105: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.106';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.106: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -14,8 +14,21 @@
 
   const DEFAULT_PREFS = {
     accent: '#1976D2',
-    background: '#000000'
+    background: '#000000',
+    effectsMotion: true,
+    effectsMesh: true,
+    quizOptionEffects: true,
+    quizFeedbackEffects: true
   };
+
+
+  function prefEnabled(key) {
+    return state?.prefs?.[key] !== false;
+  }
+
+  function booleanPrefChecked(key) {
+    return prefEnabled(key) ? 'checked' : '';
+  }
 
   const WARNING_GAP_KEY = 'encisomath:warningBangGap';
   const WARNING_TUNE_KEY = 'encisomath:warningTune';
@@ -55,7 +68,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.105';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.106';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -8,
     bandX: 7,
@@ -604,6 +617,14 @@
             ${BACKGROUND_OPTIONS.map((item) => `<option value="${escapeAttr(item.value)}" ${state.prefs.background === item.value ? 'selected' : ''}>${escapeHTML(item.label)}</option>`).join('')}
           </select>
         </div>
+        <div class="settings-group settings-effects-group">
+          <label class="settings-label">Rendimiento y efectos</label>
+          <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
+          <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
+          <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
+          <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
+          <p class="settings-help">Desactiva lo pesado en celulares lentos. La lógica del quiz no cambia.</p>
+        </div>
         <div class="profile-menu-actions">
           <button class="ghost-btn" id="profileSoonBtn">🪪 Gestionar perfil</button>
           <button class="ghost-btn" id="notifyMenuBtn">🔔 Probar notificación</button>
@@ -634,6 +655,14 @@
       accentHex.addEventListener('change', (event) => commitAccent(event.target.value));
       document.getElementById('accentResetBtn').addEventListener('click', () => commitAccent(DEFAULT_PREFS.accent));
       document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
+      [
+        ['effectsMotionToggle', 'effectsMotion'],
+        ['effectsMeshToggle', 'effectsMesh'],
+        ['quizOptionEffectsToggle', 'quizOptionEffects'],
+        ['quizFeedbackEffectsToggle', 'quizFeedbackEffects']
+      ].forEach(([id, key]) => {
+        document.getElementById(id)?.addEventListener('change', (event) => updatePreference(key, event.target.checked));
+      });
       document.getElementById('profileSoonBtn').addEventListener('click', () => toast('Gestión completa de perfil queda para la siguiente fase.'));
       document.getElementById('notifyMenuBtn').addEventListener('click', requestNotificationTest);
       document.getElementById('logoutMenuBtn').addEventListener('click', () => {
@@ -1417,7 +1446,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.105';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.106';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1520,10 +1549,6 @@
       '.quiz-stage-fullscreen .quiz-text-b',
       '.quiz-open-input',
       '.quiz-open-feedback',
-      '.quiz-fill-text',
-      '.quiz-match-column',
-      '.quiz-match-column strong',
-      '.match-drop-label',
       '.quiz-slider-labels',
       '.quiz-slider-caption',
       '.quiz-slider-question'
@@ -1533,10 +1558,6 @@
       '.kahoot-answer-text',
       '.quiz-submit-btn',
       '.quiz-slider-submit',
-      '.quiz-match-validate',
-      '.quiz-match-reset',
-      '.fill-option',
-      '.match-card'
     ].join(','), optionPreset, safe.optionSize);
     document.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
     document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
@@ -1604,8 +1625,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.105';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.105';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1876,9 +1897,12 @@
       applyQuizLayoutTune(type, getQuizLayoutTune(type));
       applyQuizCascadeTune(type, getQuizCascadeTune(type, panelHasImage), panelStage, panelHasImage);
       const closePanel = () => {
+        const active = document.activeElement;
+        if (active && panel.contains(active)) active.blur();
         panel.classList.remove('is-open');
         panel.setAttribute('aria-hidden', 'true');
         panel.hidden = true;
+        panelStage?.querySelector('[data-quiz-layout-tune-open]')?.focus?.({ preventScroll: true });
       };
       panel.querySelectorAll('[data-quiz-layout-tune-close]').forEach((button) => {
         if (button.dataset.boundLayoutTuneClose === 'true') return;
@@ -2082,8 +2106,6 @@
   function quizQuestionBodyHTML(question) {
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
-    if (question.type === 'match') return quizMatchHTML(question);
-    if (question.type === 'fill_text') return quizFillTextHTML(question);
     if (question.type === 'slider') return quizSliderHTML(question);
     return quizMultipleChoiceHTML(question);
   }
@@ -2130,72 +2152,8 @@
     `;
   }
 
-  function quizMatchHTML(question) {
-    const pairs = Array.isArray(question.pairs) ? question.pairs : [];
-    const palette = ['red', 'blue', 'yellow', 'green'];
-    const colorHex = { red: '#e21b3c', blue: '#1368ce', yellow: '#d89e00', green: '#26890c' };
-    return `
-      <div class="quiz-match-shell" data-quiz-match-board>
-        <div class="quiz-match-board">
-          <div class="quiz-match-column match-source-column">
-            <strong>Opciones</strong>
-            <div class="match-source" data-match-source>
-              ${pairs.map((pair, index) => {
-                const color = palette[index % palette.length];
-                return `<button class="match-card match-${color}" style="--match-color:${colorHex[color]}" type="button" draggable="true" data-match-color="${color}" data-match-left="${escapeAttr(pair.id)}">${escapeHTML(pair.left)}</button>`;
-              }).join('')}
-            </div>
-          </div>
-          <div class="quiz-match-column">
-            <strong>Une aquí</strong>
-            ${pairs.map((pair) => `
-              <div class="match-drop match-empty" data-match-right="${escapeAttr(pair.id)}" data-match-empty="true">
-                <span class="match-drop-label">${escapeHTML(pair.right)}</span>
-                <div class="match-slot" data-match-slot><small>Suelta o toca una opción</small></div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="quiz-match-actions">
-          <button class="mini-btn quiz-match-reset" type="button" data-match-reset>Reiniciar</button>
-          <button class="primary-btn quiz-match-validate" type="button" data-match-validate>Validar uniones</button>
-        </div>
-        <p class="quiz-match-feedback" data-match-feedback hidden></p>
-      </div>
-    `;
-  }
 
 
-  function quizFillTextHTML(question) {
-    const blanks = Array.isArray(question.blanks) ? question.blanks : [];
-    const textParts = Array.isArray(question.textParts) ? question.textParts : [];
-    const options = Array.isArray(question.options) ? question.options : [];
-    const palette = ['red', 'blue', 'yellow', 'green', 'purple', 'orange', 'cyan', 'pink'];
-    const colorHex = {
-      red: '#e21b3c', blue: '#1368ce', yellow: '#d89e00', green: '#26890c',
-      purple: '#7b2ff7', orange: '#f57c00', cyan: '#00bcd4', pink: '#e91e63'
-    };
-    const fillText = blanks.map((blank, index) => {
-      const before = textParts[index] || '';
-      return `${escapeHTML(before)}<span class="fill-drop fill-empty" data-fill-blank="${escapeAttr(blank.id || `blank${index + 1}`)}" data-fill-answer="${escapeAttr(blank.answerId || blank.correctOptionId || '')}" data-fill-empty="true"><span class="fill-slot" data-fill-slot><small>Arrastra aquí</small></span></span>`;
-    }).join('') + escapeHTML(textParts[blanks.length] || '');
-    return `
-      <div class="quiz-fill-shell" data-quiz-fill-board>
-        <div class="quiz-fill-text" data-fill-text>${fillText}</div>
-        <div class="quiz-fill-options" data-fill-source>
-          ${options.slice(0, 6).map((option, index) => {
-            const color = palette[index % palette.length];
-            return `<button class="fill-option fill-${color}" style="--fill-color:${colorHex[color]}" type="button" draggable="true" data-fill-color="${color}" data-fill-option="${escapeAttr(option.id || String(index))}">${escapeHTML(option.text || '')}</button>`;
-          }).join('')}
-        </div>
-        <div class="quiz-fill-actions">
-          <button class="mini-btn quiz-fill-reset" type="button" data-fill-reset>Reiniciar</button>
-          <button class="primary-btn quiz-fill-validate" type="button" data-fill-validate>Validar texto</button>
-        </div>
-        <p class="quiz-match-feedback quiz-fill-feedback" data-fill-feedback hidden></p>
-      </div>
-    `;
-  }
 
   function sliderDecimals(value) {
     const text = String(value ?? '');
@@ -2381,7 +2339,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.105</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.106</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2529,8 +2487,6 @@
       });
     });
     bindQuizLayoutTunePanel();
-    bindQuizMatchEvents();
-    bindQuizFillTextEvents();
     bindQuizSliderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -2881,7 +2837,7 @@
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.105: the feedback overlay uses inline styles and Web Animations.
+    // v0.24.106: the feedback overlay uses inline styles and Web Animations.
     // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
@@ -3392,340 +3348,8 @@
     if (quiz && !getQuizSession().securityWarningOpen) renderQuizFullscreen(quiz);
   }
 
-  function bindQuizMatchEvents() {
-    document.querySelectorAll('[data-quiz-match-board]').forEach((board) => {
-      const source = board.querySelector('[data-match-source]');
-      let selectedCard = null;
-      let draggedId = '';
-
-      const resetDropColor = (drop) => {
-        if (!drop) return;
-        ['red', 'blue', 'yellow', 'green'].forEach((color) => drop.classList.remove(`match-color-${color}`));
-        drop.style.removeProperty('--match-color');
-        drop.classList.remove('match-filled', 'matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
-        drop.classList.add('match-empty');
-        delete drop.dataset.matchColor;
-        delete drop.dataset.resultMark;
-      };
-
-      const clearFeedback = () => {
-        board.querySelectorAll('.match-drop').forEach((drop) => {
-          drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
-          drop.querySelectorAll('[data-match-left]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
-          delete drop.dataset.resultMark;
-        });
-        const feedback = board.querySelector('[data-match-feedback]');
-        if (feedback) { feedback.hidden = true; feedback.textContent = ''; feedback.className = 'quiz-match-feedback'; }
-      };
-
-      const returnCardToSource = (card) => {
-        if (!card || !source) return;
-        const oldDrop = card.closest('.match-drop');
-        card.classList.remove('selected', 'dragging');
-        source.appendChild(card);
-        if (oldDrop && !oldDrop.querySelector('[data-match-left]')) {
-          delete oldDrop.dataset.placedId;
-          oldDrop.dataset.matchEmpty = 'true';
-          resetDropColor(oldDrop);
-          const oldSlot = oldDrop.querySelector('[data-match-slot]');
-          if (oldSlot) oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
-        }
-      };
-
-      const applyDropColor = (drop, card) => {
-        const color = card?.dataset.matchColor || 'blue';
-        const value = card?.style.getPropertyValue('--match-color') || '';
-        ['red', 'blue', 'yellow', 'green'].forEach((item) => drop.classList.remove(`match-color-${item}`));
-        drop.classList.remove('match-empty');
-        drop.classList.add('match-filled', `match-color-${color}`);
-        drop.dataset.matchColor = color;
-        if (value) drop.style.setProperty('--match-color', value.trim());
-      };
-
-      const placeCard = (card, drop) => {
-        if (getQuizSession().locked || !card || !drop) return;
-        clearFeedback();
-        const slot = drop.querySelector('[data-match-slot]');
-        if (!slot) return;
-        const previous = slot.querySelector('[data-match-left]');
-        if (previous && previous !== card) returnCardToSource(previous);
-        const oldDrop = card.closest('.match-drop');
-        slot.innerHTML = '';
-        slot.appendChild(card);
-        if (oldDrop && oldDrop !== drop) {
-          delete oldDrop.dataset.placedId;
-          oldDrop.dataset.matchEmpty = 'true';
-          resetDropColor(oldDrop);
-          const oldSlot = oldDrop.querySelector('[data-match-slot]');
-          if (oldSlot && !oldSlot.querySelector('[data-match-left]')) oldSlot.innerHTML = '<small>Suelta o toca una opción</small>';
-        }
-        card.classList.remove('selected', 'dragging');
-        drop.dataset.placedId = card.dataset.matchLeft || '';
-        drop.dataset.matchEmpty = 'false';
-        applyDropColor(drop, card);
-        pulseElement(drop, 'match-join-pop');
-      };
-
-      board.querySelectorAll('[data-match-left]').forEach((card) => {
-        card.addEventListener('dragstart', (event) => {
-          if (getQuizSession().locked) { event.preventDefault(); return; }
-          draggedId = card.dataset.matchLeft || '';
-          selectedCard = card;
-          event.dataTransfer?.setData('text/plain', draggedId);
-          card.classList.add('dragging');
-        });
-        card.addEventListener('dragend', () => card.classList.remove('dragging'));
-        card.addEventListener('click', () => {
-          if (getQuizSession().locked) return;
-          board.querySelectorAll('[data-match-left]').forEach((item) => item.classList.remove('selected'));
-          selectedCard = card;
-          card.classList.add('selected');
-        });
-      });
-
-      board.querySelectorAll('[data-match-right]').forEach((drop) => {
-        drop.addEventListener('dragover', (event) => {
-          if (getQuizSession().locked) return;
-          event.preventDefault();
-          drop.classList.add('over');
-        });
-        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-        drop.addEventListener('drop', (event) => {
-          if (getQuizSession().locked) return;
-          event.preventDefault();
-          const id = event.dataTransfer?.getData('text/plain') || draggedId;
-          const card = board.querySelector(`[data-match-left="${escapeSelector(id)}"]`);
-          drop.classList.remove('over');
-          placeCard(card, drop);
-        });
-        drop.addEventListener('click', () => {
-          if (getQuizSession().locked) return;
-          if (selectedCard) placeCard(selectedCard, drop);
-        });
-      });
-
-      board.querySelector('[data-match-reset]')?.addEventListener('click', () => {
-        if (getQuizSession().locked) return;
-        board.querySelectorAll('[data-match-left]').forEach((card) => returnCardToSource(card));
-        board.querySelectorAll('.match-drop').forEach((drop) => {
-          delete drop.dataset.placedId;
-          drop.dataset.matchEmpty = 'true';
-          drop.classList.remove('over');
-          resetDropColor(drop);
-          const slot = drop.querySelector('[data-match-slot]');
-          if (slot) slot.innerHTML = '<small>Suelta o toca una opción</small>';
-        });
-        clearFeedback();
-      });
-
-      board.querySelector('[data-match-validate]')?.addEventListener('click', () => {
-        const session = getQuizSession();
-        if (session.locked) return;
-        session.locked = true;
-        const drops = Array.from(board.querySelectorAll('.match-drop'));
-        const total = drops.length;
-        let correct = 0;
-        board.querySelectorAll('[data-match-left], [data-match-reset], [data-match-validate]').forEach((item) => { item.disabled = true; });
-        drops.forEach((drop) => {
-          drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
-          drop.querySelectorAll('[data-match-left]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
-          delete drop.dataset.resultMark;
-          drop.classList.add('match-reveal-pending');
-        });
-        drops.forEach((drop, index) => {
-          scheduleQuizTimer(() => {
-            const ok = Boolean(drop.dataset.placedId) && drop.dataset.placedId === drop.dataset.matchRight;
-            if (ok) correct += 1;
-            drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
-            drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
-            const placedCard = drop.querySelector('[data-match-left]');
-            if (placedCard) {
-              placedCard.classList.remove('matched', 'wrong', 'match-reveal-pop');
-              placedCard.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
-            }
-            drop.dataset.resultMark = ok ? '✓' : '×';
-          }, 333 * (index + 1));
-        });
-        scheduleQuizTimer(() => {
-          const allCorrect = correct === total;
-          const currentQuestion = getCurrentQuizQuestion();
-          recordQuizAnswer(currentQuestion, allCorrect, { correctPairs: correct, totalPairs: total });
-          const feedback = board.querySelector('[data-match-feedback]');
-          if (feedback) {
-            feedback.hidden = true;
-            feedback.innerHTML = '';
-            feedback.className = 'quiz-match-feedback';
-          }
-          const stage = board.closest('.quiz-stage');
-          showQuizFeedbackBandAfterDelay(stage, allCorrect, currentQuestion);
-        }, (333 * total));
-      });
-    });
-  }
 
 
-  function bindQuizFillTextEvents() {
-    document.querySelectorAll('[data-quiz-fill-board]').forEach((board) => {
-      const source = board.querySelector('[data-fill-source]');
-      let selectedCard = null;
-      let draggedId = '';
-      const colors = ['red', 'blue', 'yellow', 'green', 'purple', 'orange', 'cyan', 'pink'];
-      const resetDropColor = (drop) => {
-        if (!drop) return;
-        colors.forEach((color) => drop.classList.remove(`fill-color-${color}`));
-        drop.style.removeProperty('--fill-color');
-        drop.classList.remove('fill-filled', 'matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
-        drop.classList.add('fill-empty');
-        delete drop.dataset.fillColor;
-        delete drop.dataset.resultMark;
-      };
-      const returnCardToSource = (card) => {
-        if (!card || !source) return;
-        const oldDrop = card.closest('.fill-drop');
-        card.classList.remove('selected', 'dragging');
-        source.appendChild(card);
-        if (oldDrop && !oldDrop.querySelector('[data-fill-option]')) {
-          delete oldDrop.dataset.placedId;
-          oldDrop.dataset.fillEmpty = 'true';
-          resetDropColor(oldDrop);
-          const slot = oldDrop.querySelector('[data-fill-slot]');
-          if (slot) slot.innerHTML = '<small>Arrastra aquí</small>';
-        }
-      };
-      const clearFeedback = () => {
-        board.querySelectorAll('.fill-drop').forEach((drop) => {
-          drop.classList.remove('matched', 'wrong', 'match-reveal-pending', 'match-reveal-pop');
-          drop.querySelectorAll('[data-fill-option]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
-          delete drop.dataset.resultMark;
-        });
-        const feedback = board.querySelector('[data-fill-feedback]');
-        if (feedback) { feedback.hidden = true; feedback.textContent = ''; feedback.className = 'quiz-match-feedback quiz-fill-feedback'; }
-      };
-      const applyDropColor = (drop, card) => {
-        const color = card?.dataset.fillColor || 'blue';
-        const value = card?.style.getPropertyValue('--fill-color') || '';
-        colors.forEach((item) => drop.classList.remove(`fill-color-${item}`));
-        drop.classList.remove('fill-empty');
-        drop.classList.add('fill-filled', `fill-color-${color}`);
-        drop.dataset.fillColor = color;
-        if (value) drop.style.setProperty('--fill-color', value.trim());
-      };
-      const placeCard = (card, drop) => {
-        if (getQuizSession().locked || !card || !drop) return;
-        clearFeedback();
-        const slot = drop.querySelector('[data-fill-slot]');
-        if (!slot) return;
-        const previous = slot.querySelector('[data-fill-option]');
-        if (previous && previous !== card) returnCardToSource(previous);
-        const oldDrop = card.closest('.fill-drop');
-        slot.innerHTML = '';
-        slot.appendChild(card);
-        if (oldDrop && oldDrop !== drop) {
-          delete oldDrop.dataset.placedId;
-          oldDrop.dataset.fillEmpty = 'true';
-          resetDropColor(oldDrop);
-          const oldSlot = oldDrop.querySelector('[data-fill-slot]');
-          if (oldSlot && !oldSlot.querySelector('[data-fill-option]')) oldSlot.innerHTML = '<small>Arrastra aquí</small>';
-        }
-        card.classList.remove('selected', 'dragging');
-        drop.dataset.placedId = card.dataset.fillOption || '';
-        drop.dataset.fillEmpty = 'false';
-        applyDropColor(drop, card);
-        pulseElement(drop, 'match-join-pop');
-      };
-      board.querySelectorAll('[data-fill-option]').forEach((card) => {
-        card.addEventListener('dragstart', (event) => {
-          if (getQuizSession().locked) { event.preventDefault(); return; }
-          draggedId = card.dataset.fillOption || '';
-          selectedCard = card;
-          event.dataTransfer?.setData('text/plain', draggedId);
-          card.classList.add('dragging');
-        });
-        card.addEventListener('dragend', () => card.classList.remove('dragging'));
-        card.addEventListener('click', () => {
-          if (getQuizSession().locked) return;
-          board.querySelectorAll('[data-fill-option]').forEach((item) => item.classList.remove('selected'));
-          selectedCard = card;
-          card.classList.add('selected');
-        });
-      });
-      board.querySelectorAll('[data-fill-blank]').forEach((drop) => {
-        drop.addEventListener('dragover', (event) => {
-          if (getQuizSession().locked) return;
-          event.preventDefault();
-          drop.classList.add('over');
-        });
-        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-        drop.addEventListener('drop', (event) => {
-          if (getQuizSession().locked) return;
-          event.preventDefault();
-          const id = event.dataTransfer?.getData('text/plain') || draggedId;
-          const card = board.querySelector(`[data-fill-option="${escapeSelector(id)}"]`);
-          drop.classList.remove('over');
-          placeCard(card, drop);
-        });
-        drop.addEventListener('click', () => {
-          if (getQuizSession().locked) return;
-          if (selectedCard) placeCard(selectedCard, drop);
-        });
-      });
-      board.querySelector('[data-fill-reset]')?.addEventListener('click', () => {
-        if (getQuizSession().locked) return;
-        board.querySelectorAll('[data-fill-option]').forEach((card) => returnCardToSource(card));
-        board.querySelectorAll('.fill-drop').forEach((drop) => {
-          delete drop.dataset.placedId;
-          drop.dataset.fillEmpty = 'true';
-          drop.classList.remove('over');
-          resetDropColor(drop);
-          const slot = drop.querySelector('[data-fill-slot]');
-          if (slot) slot.innerHTML = '<small>Arrastra aquí</small>';
-        });
-        clearFeedback();
-      });
-      board.querySelector('[data-fill-validate]')?.addEventListener('click', () => {
-        const session = getQuizSession();
-        if (session.locked) return;
-        session.locked = true;
-        const drops = Array.from(board.querySelectorAll('.fill-drop'));
-        const total = drops.length;
-        let correct = 0;
-        board.querySelectorAll('[data-fill-option], [data-fill-reset], [data-fill-validate]').forEach((item) => { item.disabled = true; });
-        drops.forEach((drop) => {
-          drop.classList.remove('matched', 'wrong', 'match-reveal-pop');
-          drop.querySelectorAll('[data-fill-option]').forEach((card) => card.classList.remove('matched', 'wrong', 'match-reveal-pop'));
-          delete drop.dataset.resultMark;
-          drop.classList.add('match-reveal-pending');
-        });
-        drops.forEach((drop, index) => {
-          scheduleQuizTimer(() => {
-            const ok = Boolean(drop.dataset.placedId) && drop.dataset.placedId === drop.dataset.fillAnswer;
-            if (ok) correct += 1;
-            drop.classList.remove('match-reveal-pending', 'matched', 'wrong', 'match-reveal-pop');
-            drop.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
-            const placedCard = drop.querySelector('[data-fill-option]');
-            if (placedCard) {
-              placedCard.classList.remove('matched', 'wrong', 'match-reveal-pop');
-              placedCard.classList.add(ok ? 'matched' : 'wrong', 'match-reveal-pop');
-            }
-            drop.dataset.resultMark = ok ? '✓' : '×';
-          }, 333 * (index + 1));
-        });
-        scheduleQuizTimer(() => {
-          const allCorrect = correct === total;
-          const currentQuestion = getCurrentQuizQuestion();
-          recordQuizAnswer(currentQuestion, allCorrect, { correctBlanks: correct, totalBlanks: total });
-          const feedback = board.querySelector('[data-fill-feedback]');
-          if (feedback) {
-            feedback.hidden = true;
-            feedback.innerHTML = '';
-            feedback.className = 'quiz-match-feedback quiz-fill-feedback';
-          }
-          const stage = board.closest('.quiz-stage');
-          showQuizFeedbackBandAfterDelay(stage, allCorrect, currentQuestion);
-        }, (333 * total));
-      });
-    });
-  }
 
   function bindQuizSliderEvents() {
     document.querySelectorAll('[data-quiz-slider-board]').forEach((board) => {
@@ -4431,10 +4055,13 @@
     const safeAccent = requestedAccent && isAllowedAccentColor(requestedAccent) ? requestedAccent : DEFAULT_PREFS.accent;
     const safeBackground = BACKGROUND_OPTIONS.some((item) => item.value === state.prefs.background) ? state.prefs.background : DEFAULT_PREFS.background;
     const blackMode = safeBackground === '#000000';
-    state.prefs.accent = safeAccent;
-    state.prefs.background = safeBackground;
+    state.prefs = { ...DEFAULT_PREFS, ...state.prefs, accent: safeAccent, background: safeBackground };
 
     const root = document.documentElement;
+    root.dataset.effectsMotion = prefEnabled('effectsMotion') ? 'on' : 'off';
+    root.dataset.effectsMesh = prefEnabled('effectsMesh') ? 'on' : 'off';
+    root.dataset.quizOptionEffects = prefEnabled('quizOptionEffects') ? 'on' : 'off';
+    root.dataset.quizFeedbackEffects = prefEnabled('quizFeedbackEffects') ? 'on' : 'off';
     root.dataset.bgMode = blackMode ? 'black' : 'deep';
     root.style.setProperty('--maincolor', safeAccent);
     root.style.setProperty('--app-bg', safeBackground);
@@ -4586,7 +4213,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.105', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.106', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

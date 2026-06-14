@@ -1,4 +1,4 @@
-/* ===== v0.24.105 Montserrat local para quizzes =====
+/* ===== v0.24.106 Montserrat local para quizzes =====
    Rutas compatibles con la carpeta plana mostrada por el usuario:
    assets/fonts/Montserrat/Montserrat-*.ttf
    Se usan fuentes variables para cubrir todos los pesos y se dejan pesos
@@ -5760,46 +5760,6 @@ button.rock-btn {
   color: #58cc02;
   font-weight: 800;
 }
-.quiz-match-board {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 8px;
-}
-.quiz-match-column {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-.quiz-match-column strong {
-  color: rgba(255,255,255,.72);
-  font-size: .8rem;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
-.match-card,
-.match-drop {
-  min-height: 58px;
-  border-radius: var(--radius);
-  padding: 10px;
-  color: #fff;
-  font-weight: 900;
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 8px 18px rgba(0,0,0,.24);
-}
-.match-card { cursor: grab; }
-.match-card.dragging { opacity: .65; transform: scale(.98); }
-.match-blue { background: #1368ce; }
-.match-red { background: #e21b3c; }
-.match-drop {
-  display: grid;
-  gap: 3px;
-  background: rgba(226,27,60,.82);
-}
-.match-drop small { color: rgba(255,255,255,.72); font-size: .72rem; }
-.match-drop.over { outline: 3px solid rgba(255,255,255,.78); }
-.match-drop.matched { background: #26890c; }
-.match-drop.wrong { background: #b91c1c; }
 .quiz-nav-row {
   display: flex;
   align-items: center;
@@ -6017,118 +5977,6 @@ body.quiz-fullscreen-active {
     0 0 24px rgba(239,68,68,.44),
     0 13px 26px rgba(0,0,0,.35) !important;
   animation: quizWrongNudge 180ms ease;
-}
-.quiz-match-shell {
-  display: grid;
-  gap: 10px;
-  margin-top: 8px;
-}
-.quiz-match-shell .quiz-match-board {
-  grid-template-columns: minmax(118px, .82fr) minmax(0, 1.18fr);
-  gap: 10px;
-}
-.match-source {
-  display: grid;
-  gap: 8px;
-  min-height: 74px;
-  border-radius: var(--radius);
-  padding: 8px;
-  border: 1px dashed rgba(19,104,206,.34);
-  background: rgba(19,104,206,.08);
-}
-.match-card,
-.match-drop {
-  border-radius: var(--radius) !important;
-}
-.match-card {
-  min-height: 52px;
-  touch-action: none;
-  cursor: grab;
-  user-select: none;
-  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
-}
-.match-card:active,
-.match-card.selected {
-  transform: scale(.98);
-  box-shadow: 0 0 0 2px rgba(255,255,255,.22) inset, 0 0 22px rgba(19,104,206,.48), 0 10px 18px rgba(0,0,0,.28);
-}
-.match-card.dragging {
-  opacity: .92 !important;
-  transform: scale(.94) rotate(-1deg) !important;
-  filter: brightness(1.12) saturate(1.14);
-}
-.match-drop {
-  min-height: 92px;
-  display: grid;
-  grid-template-rows: auto minmax(42px, 1fr);
-  gap: 7px;
-  background: linear-gradient(135deg, rgba(226,27,60,.90), rgba(151,13,34,.90)) !important;
-}
-.match-drop-label {
-  font-size: .88rem;
-  line-height: 1.12;
-}
-.match-slot {
-  min-height: 44px;
-  display: grid;
-  align-items: center;
-  border-radius: var(--radius);
-  padding: 5px;
-  border: 1px dashed rgba(255,255,255,.34);
-  background: rgba(0,0,0,.16);
-}
-.match-slot .match-card {
-  width: 100%;
-  min-height: 42px;
-  padding: 8px;
-  box-shadow: 0 7px 14px rgba(0,0,0,.24), 0 0 0 1px rgba(255,255,255,.13) inset;
-}
-.match-slot small {
-  color: rgba(255,255,255,.75);
-  font-size: .7rem;
-  font-weight: 800;
-  text-align: center;
-}
-.match-drop.over {
-  outline: 0 !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.24), 0 0 28px rgba(226,27,60,.46), 0 10px 18px rgba(0,0,0,.28);
-  transform: translateY(-1px);
-}
-.match-drop.matched {
-  background: linear-gradient(135deg, rgba(38,137,12,.94), rgba(21,96,28,.92)) !important;
-  box-shadow: 0 0 0 2px rgba(88,204,2,.28) inset, 0 0 22px rgba(88,204,2,.36), 0 10px 18px rgba(0,0,0,.28);
-}
-.match-drop.wrong {
-  background: linear-gradient(135deg, rgba(226,27,60,.96), rgba(105,10,26,.96)) !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 22px rgba(226,27,60,.42), 0 10px 18px rgba(0,0,0,.28);
-  animation: quizWrongNudge 180ms ease;
-}
-.match-join-pop { animation: matchJoinPop 220ms cubic-bezier(.16,1,.3,1); }
-.quiz-match-actions {
-  display: grid;
-  grid-template-columns: .8fr 1.2fr;
-  gap: 8px;
-}
-.quiz-match-validate,
-.quiz-match-reset {
-  min-height: 42px;
-}
-.quiz-match-feedback {
-  margin: 0;
-  border-radius: var(--radius);
-  padding: 9px 10px;
-  font-weight: 900;
-  font-size: .86rem;
-}
-.quiz-match-feedback.ok {
-  color: #d9ffd1;
-  background: rgba(88,204,2,.12);
-  box-shadow: 0 0 0 1px rgba(88,204,2,.24) inset;
-}
-.quiz-match-feedback.check {
-  color: #ffe2e7;
-  background: rgba(226,27,60,.12);
-  box-shadow: 0 0 0 1px rgba(226,27,60,.24) inset;
 }
 @keyframes quizWrongNudge {
   0%, 100% { transform: translateX(0); }
@@ -6435,14 +6283,6 @@ body.quiz-fullscreen-active {
   gap: 8px;
 }
 .quiz-results-actions .primary-btn { grid-column: 1 / -1; }
-.match-drop.matched::after,
-.match-drop.wrong::after {
-  content: attr(data-result-mark);
-}
-.match-drop.matched .match-slot::after,
-.match-drop.wrong .match-slot::after {
-  display: none;
-}
 @keyframes quizRibbonSweep {
   0% { left: -80%; opacity: 0; }
   16% { opacity: 1; }
@@ -6699,69 +6539,6 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen .quiz-stage-head h3.quiz-prompt-sm { font-size: clamp(.84rem, 3.8vw, 1.1rem) !important; }
 .quiz-stage-fullscreen .quiz-stage-head h3.quiz-prompt-xs { font-size: clamp(.76rem, 3.25vw, .96rem) !important; }
 .quiz-timer-pill { white-space: nowrap; }
-
-.quiz-match-shell .match-card.match-red { background: #e21b3c !important; }
-.quiz-match-shell .match-card.match-blue { background: #1368ce !important; }
-.quiz-match-shell .match-card.match-yellow { background: #d89e00 !important; }
-.quiz-match-shell .match-card.match-green { background: #26890c !important; }
-.quiz-match-shell .match-source {
-  border-color: rgba(255,255,255,.16) !important;
-  background: rgba(255,255,255,.055) !important;
-}
-.quiz-match-shell .match-drop {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(67,75,89,.86), rgba(32,39,52,.92)) !important;
-  border-color: rgba(255,255,255,.16) !important;
-  transition: transform .18s ease, opacity .22s ease, background .22s ease, box-shadow .22s ease, filter .22s ease;
-}
-.quiz-match-shell .match-drop.match-filled {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--match-color) 70%, #02040a), color-mix(in srgb, var(--match-color) 42%, #02040a)) !important;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--match-color) 36%, transparent) inset, 0 0 22px color-mix(in srgb, var(--match-color) 24%, transparent), 0 10px 18px rgba(0,0,0,.28) !important;
-}
-.quiz-match-shell .match-drop.match-color-red { --match-color: #e21b3c; }
-.quiz-match-shell .match-drop.match-color-blue { --match-color: #1368ce; }
-.quiz-match-shell .match-drop.match-color-yellow { --match-color: #d89e00; }
-.quiz-match-shell .match-drop.match-color-green { --match-color: #26890c; }
-.quiz-match-shell .match-drop.match-reveal-pending {
-  opacity: .34 !important;
-  filter: grayscale(.15) saturate(.62) brightness(1.12) !important;
-  transform: scale(.985);
-}
-.quiz-match-shell .match-drop.matched {
-  opacity: 1 !important;
-  background: linear-gradient(135deg, rgba(88,204,2,.96), rgba(21,96,28,.96)) !important;
-  box-shadow: 0 0 0 2px rgba(88,204,2,.38) inset, 0 0 28px rgba(88,204,2,.44), 0 10px 18px rgba(0,0,0,.32) !important;
-}
-.quiz-match-shell .match-drop.wrong {
-  opacity: 1 !important;
-  background: linear-gradient(135deg, rgba(226,27,60,.98), rgba(105,10,26,.98)) !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 28px rgba(226,27,60,.46), 0 10px 18px rgba(0,0,0,.32) !important;
-}
-.quiz-match-shell .match-drop.match-reveal-pop {
-  animation: quizMatchRevealOne 333ms cubic-bezier(.16,1,.3,1) both, quizWrongNudge 160ms ease 82ms;
-}
-.quiz-match-shell .match-drop.matched.match-reveal-pop { animation: quizMatchRevealOne 333ms cubic-bezier(.16,1,.3,1) both; }
-.quiz-match-shell .match-drop.matched::after,
-.quiz-match-shell .match-drop.wrong::after {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: #fff;
-  font-weight: 1000;
-  font-size: 1.2rem;
-  background: currentColor;
-  box-shadow: 0 0 0 3px rgba(255,255,255,.22) inset, 0 8px 18px rgba(0,0,0,.28);
-  color: #fff;
-  z-index: 5;
-}
-.quiz-match-shell .match-drop.matched::after { background: #58cc02; }
-.quiz-match-shell .match-drop.wrong::after { background: #e21b3c; }
 @keyframes quizMatchRevealOne {
   0% { transform: scale(.96); filter: brightness(1.2); }
   62% { transform: scale(1.035); }
@@ -6979,55 +6756,6 @@ body.quiz-fullscreen-active {
   28% { opacity: 1; transform: scale(1.035) translateY(0); }
   74% { opacity: 1; transform: scale(1); }
   100% { opacity: .96; transform: scale(.99); }
-}
-.quiz-match-shell .match-drop.match-reveal-pending {
-  opacity: .28 !important;
-  filter: grayscale(.18) saturate(.52) brightness(1.14) !important;
-  transform: scale(.976);
-}
-.quiz-match-shell .match-drop.matched,
-.quiz-match-shell .match-drop.wrong {
-  opacity: 1 !important;
-  filter: none !important;
-}
-.quiz-match-shell .match-drop.matched {
-  background: linear-gradient(135deg, #58cc02, #26890c 62%, #145f1e) !important;
-  border-color: rgba(198,255,176,.46) !important;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,.18) inset,
-    0 0 34px rgba(88,204,2,.56),
-    0 12px 24px rgba(0,0,0,.34) !important;
-}
-.quiz-match-shell .match-drop.wrong {
-  background: linear-gradient(135deg, #ff3357, #e21b3c 62%, #7d0b20) !important;
-  border-color: rgba(255,210,216,.48) !important;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,.16) inset,
-    0 0 34px rgba(226,27,60,.60),
-    0 12px 24px rgba(0,0,0,.34) !important;
-}
-.quiz-match-shell .match-drop.matched .match-slot,
-.quiz-match-shell .match-drop.wrong .match-slot {
-  background: rgba(0,0,0,.16) !important;
-  border-color: rgba(255,255,255,.34) !important;
-}
-.quiz-match-shell .match-drop.matched .match-card {
-  background: #58cc02 !important;
-  color: #fff !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.20) inset, 0 0 22px rgba(88,204,2,.44) !important;
-}
-.quiz-match-shell .match-drop.wrong .match-card {
-  background: #e21b3c !important;
-  color: #fff !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 22px rgba(226,27,60,.44) !important;
-}
-.quiz-match-shell .match-drop.match-reveal-pop,
-.quiz-match-shell .match-drop.match-reveal-pop .match-card {
-  animation: quizMatchRevealShake 333ms cubic-bezier(.16,1,.3,1) both !important;
-}
-.quiz-match-shell .match-drop.matched.match-reveal-pop,
-.quiz-match-shell .match-drop.matched.match-reveal-pop .match-card {
-  animation: quizMatchCorrectPop 333ms cubic-bezier(.16,1,.3,1) both !important;
 }
 @keyframes quizMatchRevealShake {
   0% { transform: scale(.96) translateX(0) rotate(0deg); }
@@ -7278,12 +7006,6 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen.quiz-feedback-visible {
   padding-bottom: 190px !important;
 }
-.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
-  transform: translateY(-18px);
-  transition: transform .32s cubic-bezier(.16,1,.3,1);
-}
 .quiz-stage-fullscreen .quiz-answer-feedback {
   overflow: visible !important;
   background: transparent !important;
@@ -7478,12 +7200,6 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen.quiz-feedback-visible {
   padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 42px) !important;
 }
-.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
-  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
-  transition: transform .32s cubic-bezier(.16,1,.3,1) !important;
-}
 .quiz-stage-fullscreen .quiz-answer-feedback {
   bottom: 0 !important;
   left: 0 !important;
@@ -7561,12 +7277,6 @@ body.quiz-fullscreen-active {
 }
 .quiz-stage-fullscreen.quiz-feedback-visible {
   padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 42px) !important;
-}
-.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
-  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
-  transition: transform .32s cubic-bezier(.16,1,.3,1) !important;
 }
 .quiz-stage-fullscreen .quiz-answer-feedback {
   bottom: calc(-1 * var(--quiz-feedback-bounce)) !important;
@@ -7770,12 +7480,6 @@ body.quiz-fullscreen-active {
 .quiz-stage-fullscreen.quiz-feedback-visible {
   padding-bottom: calc(var(--quiz-feedback-height) + var(--quiz-feedback-curve) + 56px) !important;
 }
-.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form {
-  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
-  transition: transform .28s cubic-bezier(.16,1,.3,1) !important;
-}
 .quiz-stage-fullscreen .quiz-answer-feedback {
   bottom: -52px !important;
   animation: quizFeedbackSheetBounceZoomV30 520ms cubic-bezier(.2, 1.15, .32, 1) both !important;
@@ -7813,172 +7517,6 @@ body.quiz-fullscreen-active {
     transform: translateY(0) scale(1);
   }
 }
-
-/* v0.24.31 - nuevos tipos de quiz: completar texto y slider numérico */
-.quiz-fill-shell,
-.quiz-slider-shell {
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
-}
-.quiz-fill-text {
-  padding: 14px;
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
-  border: 1px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.92);
-  font-weight: 850;
-  font-size: clamp(.96rem, 4vw, 1.16rem);
-  line-height: 1.7;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 12px 24px rgba(0,0,0,.24);
-}
-.fill-drop {
-  position: relative;
-  display: inline-flex;
-  vertical-align: middle;
-  min-width: min(38vw, 158px);
-  min-height: 42px;
-  margin: 0 4px;
-  padding: 4px;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, #4b5563, #262d38) !important;
-  border: 1px dashed rgba(255,255,255,.30);
-  color: #fff;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 16px rgba(0,0,0,.24), 0 0 0 1px rgba(255,255,255,.08) inset;
-  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, opacity .16s ease;
-}
-.fill-drop small { color: rgba(255,255,255,.62); font-weight: 900; letter-spacing: .02em; }
-.fill-drop.over,
-.fill-drop.fill-filled {
-  border-style: solid;
-  outline: 2px solid rgba(255,255,255,.26);
-}
-.fill-drop.fill-filled {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--fill-color, #1368ce) 54%, #08111d), color-mix(in srgb, var(--fill-color, #1368ce) 34%, #020611)) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset, 0 0 22px color-mix(in srgb, var(--fill-color, #1368ce) 35%, transparent), 0 10px 20px rgba(0,0,0,.28);
-}
-.fill-slot {
-  display: inline-flex;
-  min-width: 100%;
-  min-height: 32px;
-  align-items: center;
-  justify-content: center;
-}
-.quiz-fill-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px;
-  border-radius: var(--radius);
-  background: rgba(0,0,0,.20);
-  border: 1px solid rgba(255,255,255,.08);
-}
-.fill-option {
-  min-height: 48px;
-  border: 0;
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  color: #fff;
-  font-weight: 1000;
-  font-size: .9rem;
-  text-align: center;
-  cursor: grab;
-  touch-action: manipulation;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 9px 18px rgba(0,0,0,.26), 0 0 20px color-mix(in srgb, var(--fill-color, #1368ce) 26%, transparent);
-  transition: transform .14s ease, box-shadow .14s ease, opacity .14s ease, filter .14s ease;
-  background: var(--fill-color, #1368ce);
-}
-.fill-option:active,
-.fill-option.selected { transform: scale(.965); filter: brightness(1.08) saturate(1.15); }
-.fill-option.selected { outline: 3px solid rgba(255,255,255,.72); }
-.fill-option.dragging { opacity: .64; transform: scale(.97); }
-.fill-red { --fill-color: #e21b3c; }
-.fill-blue { --fill-color: #1368ce; }
-.fill-yellow { --fill-color: #d89e00; }
-.fill-green { --fill-color: #26890c; }
-.fill-purple { --fill-color: #7b2ff7; }
-.fill-orange { --fill-color: #f57c00; }
-.fill-cyan { --fill-color: #00bcd4; }
-.fill-pink { --fill-color: #e91e63; }
-.fill-color-red { --fill-color: #e21b3c; }
-.fill-color-blue { --fill-color: #1368ce; }
-.fill-color-yellow { --fill-color: #d89e00; }
-.fill-color-green { --fill-color: #26890c; }
-.fill-color-purple { --fill-color: #7b2ff7; }
-.fill-color-orange { --fill-color: #f57c00; }
-.fill-color-cyan { --fill-color: #00bcd4; }
-.fill-color-pink { --fill-color: #e91e63; }
-.fill-slot .fill-option {
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 9px;
-  font-size: .84rem;
-  cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset, 0 0 15px color-mix(in srgb, var(--fill-color, #1368ce) 24%, transparent) !important;
-}
-.quiz-fill-actions {
-  display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: 8px;
-}
-.quiz-fill-feedback { margin-top: 0 !important; }
-.quiz-fill-shell .fill-drop.match-reveal-pending {
-  opacity: .28 !important;
-  filter: grayscale(.18) saturate(.52) brightness(1.14) !important;
-  transform: scale(.976);
-}
-.quiz-fill-shell .fill-drop.matched,
-.quiz-fill-shell .fill-drop.wrong {
-  opacity: 1 !important;
-  filter: none !important;
-}
-.quiz-fill-shell .fill-drop.matched {
-  background: linear-gradient(135deg, #58cc02, #26890c 62%, #145f1e) !important;
-  border-color: rgba(198,255,176,.46) !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 34px rgba(88,204,2,.56), 0 12px 24px rgba(0,0,0,.34) !important;
-}
-.quiz-fill-shell .fill-drop.wrong {
-  background: linear-gradient(135deg, #ff3357, #e21b3c 62%, #7d0b20) !important;
-  border-color: rgba(255,210,216,.48) !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.16) inset, 0 0 34px rgba(226,27,60,.60), 0 12px 24px rgba(0,0,0,.34) !important;
-}
-.quiz-fill-shell .fill-drop.matched .fill-option {
-  background: #58cc02 !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.20) inset, 0 0 22px rgba(88,204,2,.44) !important;
-}
-.quiz-fill-shell .fill-drop.wrong .fill-option {
-  background: #e21b3c !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset, 0 0 22px rgba(226,27,60,.44) !important;
-}
-.quiz-fill-shell .fill-drop.match-reveal-pop,
-.quiz-fill-shell .fill-drop.match-reveal-pop .fill-option {
-  animation: quizMatchRevealShake 333ms cubic-bezier(.16,1,.3,1) both !important;
-}
-.quiz-fill-shell .fill-drop.matched.match-reveal-pop,
-.quiz-fill-shell .fill-drop.matched.match-reveal-pop .fill-option {
-  animation: quizMatchCorrectPop 333ms cubic-bezier(.16,1,.3,1) both !important;
-}
-.quiz-fill-shell .fill-drop.matched::after,
-.quiz-fill-shell .fill-drop.wrong::after {
-  content: attr(data-result-mark);
-  position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: #fff;
-  font-weight: 1000;
-  border: 2px solid rgba(255,255,255,.78);
-  z-index: 20;
-  box-shadow: 0 8px 18px rgba(0,0,0,.36), 0 0 0 3px rgba(255,255,255,.18) inset;
-}
-.quiz-fill-shell .fill-drop.matched::after { background: #58cc02; }
-.quiz-fill-shell .fill-drop.wrong::after { background: #e21b3c; }
 
 .quiz-slider-shell {
   padding: 14px;
@@ -8085,12 +7623,6 @@ body.quiz-fullscreen-active {
   100% { transform: translateX(0); }
 }
 .quiz-slider-wrong-pop { animation: quizSliderWrongPop 333ms cubic-bezier(.16,1,.3,1) both; }
-
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-fill-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell {
-  transform: translateY(calc(-1 * var(--quiz-feedback-lift))) !important;
-  transition: transform .28s cubic-bezier(.16,1,.3,1) !important;
-}
 
 @media (max-width: 520px) {
   .quiz-fill-text { padding: 12px; font-size: .96rem; line-height: 1.62; }
@@ -9056,39 +8588,6 @@ body.quiz-fullscreen-active {
 }
 .slider-tune-row input { width: 100%; margin-top: 7px; }
 .slider-tune-continue[hidden] { display: none !important; }
-
-.quiz-fullscreen-layer,
-.quiz-fullscreen-content,
-.quiz-stage,
-.quiz-stage-fullscreen,
-.quiz-match-shell,
-.quiz-match-board,
-.quiz-match-column,
-.quiz-fill-shell,
-.quiz-fill-text,
-.quiz-fill-options {
-  overflow: visible !important;
-}
-.quiz-match-shell .match-drop,
-.quiz-fill-shell .fill-drop {
-  overflow: visible !important;
-  z-index: 1;
-}
-.quiz-match-shell .match-drop.matched,
-.quiz-match-shell .match-drop.wrong,
-.quiz-fill-shell .fill-drop.matched,
-.quiz-fill-shell .fill-drop.wrong {
-  z-index: 12 !important;
-}
-.quiz-match-shell .match-drop.matched::after,
-.quiz-match-shell .match-drop.wrong::after,
-.quiz-fill-shell .fill-drop.matched::after,
-.quiz-fill-shell .fill-drop.wrong::after {
-  top: -16px !important;
-  right: -16px !important;
-  z-index: 60 !important;
-  pointer-events: none !important;
-}
 @media (max-width: 520px) {
   .quiz-slider-visual-stage { min-height: 238px !important; }
   .quiz-slider-widget { width: min(88vw, 304px) !important; min-height: 214px !important; }
@@ -9128,34 +8627,6 @@ body.quiz-fullscreen-active {
 }
 .quiz-slider-shell.slider-wrong .slider-correct-bubble::before {
   background: #58cc02 !important;
-}
-.quiz-fullscreen-layer,
-.quiz-fullscreen-content,
-.quiz-stage,
-.quiz-stage-fullscreen,
-.quiz-stage-head,
-.quiz-stage-body,
-.quiz-match-shell,
-.quiz-match-board,
-.quiz-match-column,
-.quiz-match-row,
-.match-drop,
-.match-card,
-.quiz-fill-shell,
-.quiz-fill-text,
-.fill-drop,
-.fill-slot,
-.fill-option {
-  overflow: visible !important;
-}
-.quiz-match-shell .match-drop.matched::after,
-.quiz-match-shell .match-drop.wrong::after,
-.quiz-fill-shell .fill-drop.matched::after,
-.quiz-fill-shell .fill-drop.wrong::after {
-  top: -18px !important;
-  right: -18px !important;
-  z-index: 999 !important;
-  clip-path: none !important;
 }
 @media (min-width: 720px) {
   .quiz-stage-fullscreen .quiz-feedback-card {
@@ -9383,35 +8854,10 @@ body.quiz-fullscreen-active {
   border-color: rgba(255,255,255,.12) !important;
 }
 
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-image-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-support-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-form,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-feedback,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-source,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-options,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-shell {
-  background: #0b1020 !important;
-  border-color: rgba(255,255,255,.14) !important;
-}
-
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-open-input,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) textarea.quiz-open-input {
   background: #101727 !important;
   border-color: rgba(255,255,255,.16) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-start-confirm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-next-main,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions button {
-  box-shadow: none !important;
-  background-image: none !important;
 }
 
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option {
@@ -9435,41 +8881,6 @@ body.quiz-fullscreen-active {
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-result-badge {
   box-shadow: none !important;
   border: 2px solid rgba(255,255,255,.75) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-red,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-red { background: #e21b3c !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-blue,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-blue { background: #1368ce !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-yellow,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-yellow { background: #d89e00 !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.match-green,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.fill-green { background: #26890c !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop {
-  background: #374151 !important;
-  border-color: rgba(255,255,255,.16) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-red,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-red { background: #7f1d1d !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-blue,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-blue { background: #123c7a !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-yellow,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-yellow { background: #7a5300 !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.match-color-green,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-color-green { background: #14532d !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched { background: #58cc02 !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong { background: #e21b3c !important; }
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot {
-  background: #111827 !important;
-  border-color: rgba(255,255,255,.18) !important;
 }
 
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-widget,
@@ -9536,169 +8947,9 @@ body.quiz-fullscreen-active {
     0 12px 24px rgba(0,0,0,.34) !important;
 }
 
-/* v0.24.46 - Correcciones de botones planos, drag/drop y reveal tras optimizacion */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions button,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-next-main {
-  background: var(--maincolor) !important;
-  background-image: none !important;
-  color: #fff !important;
-  border-color: color-mix(in srgb, var(--maincolor) 72%, #ffffff 12%) !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-results-actions .mini-btn {
-  background: color-mix(in srgb, var(--maincolor) 72%, #111827) !important;
-  color: #fff !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn:disabled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate:disabled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset:disabled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate:disabled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset:disabled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit:disabled {
-  opacity: .58 !important;
-  background: color-mix(in srgb, var(--maincolor) 46%, #1f2937) !important;
-  color: rgba(255,255,255,.78) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  outline: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-option {
-  box-shadow: none !important;
-  outline: 0 !important;
-  border-color: rgba(255,255,255,.18) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched {
-  background: #58cc02 !important;
-  border-color: rgba(255,255,255,.22) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong {
-  background: #e21b3c !important;
-  border-color: rgba(255,255,255,.22) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-slot {
-  background: rgba(0,0,0,.12) !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option {
-  background: #58cc02 !important;
-  color: #fff !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option {
-  background: #e21b3c !important;
-  color: #fff !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-reveal-pending,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.match-reveal-pending {
-  opacity: .35 !important;
-  background: #4b5563 !important;
-  filter: none !important;
-}
-
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
   background: var(--maincolor) !important;
   color: #fff !important;
-}
-
-/* v0.24.47 - Correccion final de colores solidos en drag/drop, completar texto y elevacion del slider */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched {
-  background: #58cc02 !important;
-  background-color: #58cc02 !important;
-  background-image: none !important;
-  border-color: rgba(255,255,255,.24) !important;
-  opacity: 1 !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong {
-  background: #e21b3c !important;
-  background-color: #e21b3c !important;
-  background-image: none !important;
-  border-color: rgba(255,255,255,.24) !important;
-  opacity: 1 !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled .match-slot {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched {
-  background: #58cc02 !important;
-  background-color: #58cc02 !important;
-  background-image: none !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong {
-  background: #e21b3c !important;
-  background-color: #e21b3c !important;
-  background-image: none !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
-  outline: 0 !important;
-  box-shadow: none !important;
 }
 .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell {
   transform: translateY(0) !important;
@@ -9719,20 +8970,6 @@ body.quiz-fullscreen-active,
 }
 .quiz-security-watermark {
   display: none !important;
-}
-
-/* v0.24.49 - Limpieza fina de Quizzes: ayudas fuera, open mejorado, badges fuera y estados planos */
-.quiz-support-text,
-.quiz-image-card span,
-.kahoot-result-badge,
-.quiz-match-shell .match-drop::after,
-.quiz-fill-shell .fill-drop::after,
-.match-drop.matched::after,
-.match-drop.wrong::after,
-.fill-drop.matched::after,
-.fill-drop.wrong::after {
-  display: none !important;
-  content: none !important;
 }
 
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-image-card {
@@ -9814,134 +9051,6 @@ body.quiz-fullscreen-active,
   font-weight: 760 !important;
 }
 .quiz-open-input::placeholder { color: rgba(255,255,255,.42) !important; }
-
-/* Completar texto: espacios limpios, grises, con borde punteado fino. */
-.fill-drop {
-  min-width: min(42vw, 170px) !important;
-  min-height: 42px !important;
-  padding: 4px !important;
-  background: #293241 !important;
-  background-color: #293241 !important;
-  background-image: none !important;
-  border: 1px dashed rgba(255,255,255,.34) !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-.fill-drop small {
-  color: rgba(255,255,255,.58) !important;
-  font-size: .66rem !important;
-  font-weight: 850 !important;
-  letter-spacing: .01em !important;
-}
-.fill-drop.over {
-  border-color: rgba(255,255,255,.62) !important;
-  background: #334155 !important;
-  outline: 0 !important;
-}
-.fill-drop.fill-filled,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled {
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  background-color: transparent !important;
-}
-.fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled .fill-slot {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-.fill-slot .fill-option {
-  min-height: 38px !important;
-  border: 0 !important;
-  outline: 0 !important;
-  color: #fff !important;
-  text-shadow: none !important;
-}
-
-/* Drag/drop y completar texto: validación totalmente roja o verde, sin mezcla con el color original. */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.matched {
-  background: #58cc02 !important;
-  background-color: #58cc02 !important;
-  background-image: none !important;
-  border-color: transparent !important;
-  color: #fff !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.match-filled.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.fill-filled.wrong {
-  background: #e21b3c !important;
-  background-color: #e21b3c !important;
-  background-image: none !important;
-  border-color: transparent !important;
-  color: #fff !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched *,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong *,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched *,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong * {
-  color: #fff !important;
-  opacity: 1 !important;
-  text-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.matched .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.matched,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.matched .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.matched {
-  background: #58cc02 !important;
-  background-color: #58cc02 !important;
-  background-image: none !important;
-  color: #fff !important;
-  border: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-drop.wrong .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-card.wrong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-drop.wrong .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-option.wrong {
-  background: #e21b3c !important;
-  background-color: #e21b3c !important;
-  background-image: none !important;
-  color: #fff !important;
-  border: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .match-slot .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .fill-slot .fill-option {
-  color: #fff !important;
-}
-
-/* Sin ayudas locales de conteo debajo de drag/drop y completar texto. */
-.quiz-match-feedback,
-.quiz-fill-feedback {
-  display: none !important;
-}
-
-/* Botones internos del quiz siempre con color del tema, planos. */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
-  background: var(--maincolor) !important;
-  background-color: var(--maincolor) !important;
-  background-image: none !important;
-  color: #fff !important;
-  border-color: color-mix(in srgb, var(--maincolor) 70%, #ffffff 10%) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset {
-  background: color-mix(in srgb, var(--maincolor) 72%, #0b1020) !important;
-}
 
 /* v0.24.50 - Ajustes de composición vertical y limpieza fina de Quizzes */
 .quiz-fullscreen-layer:not(.quiz-phase-transition) {
@@ -10038,111 +9147,6 @@ body.quiz-fullscreen-active,
 }
 .quiz-stage-fullscreen.quiz-type-open .quiz-submit-btn {
   min-height: 52px !important;
-}
-
-/* Completar texto: máximo visual de 6 opciones, contenedor estable, sin fondo azul oscuro ni resize brusco. */
-.quiz-fill-options {
-  min-height: 142px !important;
-  align-content: start !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  filter: none !important;
-  padding: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-options {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-.quiz-fill-shell {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-.quiz-fill-text {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-.quiz-fill-shell .fill-drop {
-  background: #2f3947 !important;
-  background-color: #2f3947 !important;
-  border: 1px dashed rgba(255,255,255,.32) !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-.quiz-fill-shell .fill-drop small {
-  color: rgba(255,255,255,.62) !important;
-  font-size: .64rem !important;
-}
-.quiz-fill-shell .fill-drop.fill-filled {
-  background: transparent !important;
-  background-color: transparent !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-.quiz-fill-shell .fill-drop.fill-filled .fill-slot,
-.quiz-fill-shell .fill-drop.fill-filled .fill-option {
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Drag/drop: cuando aparece la banda, no subir el tablero hasta montarlo sobre el título. */
-.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible {
-  padding-bottom: 168px !important;
-}
-.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-match-board {
-  transform: none !important;
-  margin-top: 0 !important;
-}
-
-/* Botones internos conservan color de tema plano. */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-submit-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-slider-submit {
-  background: var(--maincolor) !important;
-  background-color: var(--maincolor) !important;
-  color: #fff !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fill-reset {
-  background: color-mix(in srgb, var(--maincolor) 76%, #0b1020) !important;
-  color: #fff !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-
-/* v0.24.51 - Drag and drop: quitar fondo azul oscuro bajo Opciones / Une aquí */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-board,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-column,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source-column {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source {
-  border: 0 !important;
-  outline: 0 !important;
-  padding: 0 !important;
-  min-height: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-board {
-  padding: 0 !important;
-  border: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-column strong {
-  background: transparent !important;
-  box-shadow: none !important;
 }
 
 /* v0.24.52 - Calibracion de layout en Quizzes, navegacion rapida y limpieza de completar texto */
@@ -10356,39 +9360,6 @@ body.quiz-fullscreen-active,
 .quiz-layout-tune-row input { width: 100%; }
 .quiz-layout-tune-panel .btn { width: 100%; }
 
-/* Completar texto: quitar fondo azul oscuro tambien del contenedor de opciones y columna interna. */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text [data-fill-source],
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options {
-  border: 0 !important;
-  outline: 0 !important;
-  padding: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop.fill-empty {
-  background: #3d4755 !important;
-  border: 1px dashed rgba(255,255,255,.38) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop.fill-filled {
-  background: transparent !important;
-  border: 0 !important;
-  outline: 0 !important;
-}
-
-/* Drag/drop: evitar que el tablero suba y se monte sobre el texto al aparecer la banda. */
-.quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-question-content,
-.quiz-stage-fullscreen.quiz-type-fill_text.quiz-feedback-visible .quiz-question-content {
-  transform: none !important;
-  padding-bottom: 138px !important;
-}
-
 @media (max-width: 520px) {
   .quiz-layout-tune-dialog { max-height: 88vh; }
   .quiz-layout-tune-scroll { max-height: 60vh; }
@@ -10468,121 +9439,6 @@ body.quiz-fullscreen-active,
   color: #fff !important;
   border-color: color-mix(in srgb, var(--maincolor) 75%, #ffffff 14%) !important;
 }
-
-
-/* v0.24.57 - Drag and drop compacto para que el tablero quepa verticalmente en pantalla */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
-  gap: 4px !important;
-  padding-top: calc(8px + env(safe-area-inset-top)) !important;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom)) !important;
-  justify-content: flex-start !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-stage-head {
-  padding: 2px 2px 3px !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-question-content {
-  justify-content: flex-start !important;
-  gap: clamp(4px, .75vh, 8px) !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a {
-  font-size: calc(var(--quiz-text-a-font, 17px) * .78) !important;
-  line-height: 1.08 !important;
-  letter-spacing: -.018em !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
-  font-size: calc(var(--quiz-text-b-font, 17px) * .80) !important;
-  line-height: 1.11 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-card {
-  width: min(100%, 390px) !important;
-  margin: 0 auto !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-card img,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card img {
-  max-height: min(15vh, 112px) !important;
-  object-fit: contain !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-answer-zone {
-  min-height: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-shell {
-  gap: 5px !important;
-  margin-top: 0 !important;
-  min-height: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-board {
-  grid-template-columns: minmax(102px, .72fr) minmax(0, 1.28fr) !important;
-  gap: 6px !important;
-  margin-top: 0 !important;
-  min-height: 0 !important;
-  align-items: start !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-column {
-  gap: 5px !important;
-  min-height: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-column strong {
-  font-size: .64rem !important;
-  line-height: 1 !important;
-  letter-spacing: .035em !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source {
-  gap: 5px !important;
-  padding: 0 !important;
-  min-height: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop {
-  min-height: 38px !important;
-  padding: 7px !important;
-  font-size: .76rem !important;
-  line-height: 1.04 !important;
-  box-shadow: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop {
-  min-height: 63px !important;
-  grid-template-rows: auto minmax(28px, 1fr) !important;
-  gap: 4px !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop-label {
-  font-size: .72rem !important;
-  line-height: 1.05 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot {
-  min-height: 30px !important;
-  padding: 3px !important;
-  gap: 2px !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card {
-  min-height: 30px !important;
-  padding: 5px !important;
-  font-size: .72rem !important;
-  line-height: 1.02 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot small {
-  font-size: .58rem !important;
-  line-height: 1 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-actions {
-  gap: 6px !important;
-  margin-top: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-reset {
-  min-height: 34px !important;
-  padding: 7px 8px !important;
-  font-size: .76rem !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible {
-  padding-bottom: calc(128px + env(safe-area-inset-bottom)) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-question-content {
-  padding-bottom: 0 !important;
-  transform: scale(.96) !important;
-  transform-origin: top center !important;
-}
 @media (max-width: 520px) {
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
     padding-top: calc(6px + env(safe-area-inset-top)) !important;
@@ -10614,117 +9470,6 @@ body.quiz-fullscreen-active,
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop {
     min-height: 56px !important;
   }
-}
-
-/* v0.24.58 - Unificar estilo de Texto A y Texto B en todos los tipos de quiz */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a {
-  font-family: inherit !important;
-  font-size: var(--quiz-text-a-font, 17px) !important;
-  line-height: 1.13 !important;
-  letter-spacing: -.025em !important;
-  font-weight: 900 !important;
-  text-align: center !important;
-  color: #ffffff !important;
-  margin: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
-  font-family: inherit !important;
-  font-size: var(--quiz-text-b-font, 17px) !important;
-  line-height: 1.22 !important;
-  letter-spacing: -.01em !important;
-  font-weight: 760 !important;
-  text-align: center !important;
-  color: rgba(255,255,255,.88) !important;
-  margin: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-md {
-  font-size: calc(var(--quiz-text-a-font, 17px) * .92) !important;
-  line-height: 1.14 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-sm {
-  font-size: calc(var(--quiz-text-a-font, 17px) * .84) !important;
-  line-height: 1.16 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-xs {
-  font-size: calc(var(--quiz-text-a-font, 17px) * .76) !important;
-  line-height: 1.18 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-md {
-  font-size: calc(var(--quiz-text-b-font, 17px) * .92) !important;
-  line-height: 1.23 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-sm {
-  font-size: calc(var(--quiz-text-b-font, 17px) * .84) !important;
-  line-height: 1.25 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-xs {
-  font-size: calc(var(--quiz-text-b-font, 17px) * .76) !important;
-  line-height: 1.28 !important;
-}
-
-
-/* v0.24.59 - Texto A y Texto B realmente iguales: mismo tamaño base, fuente, peso, color y reducción automática */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
-  font-family: inherit !important;
-  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 17px)) !important;
-  line-height: 1.13 !important;
-  letter-spacing: -.025em !important;
-  font-weight: 900 !important;
-  text-align: center !important;
-  color: #ffffff !important;
-  margin: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-md {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .92) !important;
-  line-height: 1.14 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-sm {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .84) !important;
-  line-height: 1.16 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-xs {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .76) !important;
-  line-height: 1.18 !important;
 }
 @media (max-width: 520px) {
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
@@ -10766,47 +9511,6 @@ body.quiz-fullscreen-active,
 .quiz-stage.quiz-hide-image-preview .quiz-image-tune-box {
   display: none !important;
 }
-.quiz-stage .quiz-text-a,
-.quiz-stage .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
-  text-align: left !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-}
-.quiz-stage .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a {
-  justify-content: flex-end !important;
-}
-.quiz-stage .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
-  justify-content: flex-start !important;
-}
 
 
 /* v0.24.61 - Feedback sin lift: la banda aparece sin mover el contenido del ítem */
@@ -10816,122 +9520,6 @@ body.quiz-fullscreen-active,
 .quiz-stage-fullscreen.quiz-feedback-visible {
   --quiz-feedback-lift: 0px !important;
 }
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
-.quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-match-board,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-fill-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage,
-.quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-phone-stage {
-  transform: none !important;
-  transition: none !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-question-content,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text.quiz-feedback-visible .quiz-question-content {
-  transform: none !important;
-  padding-bottom: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match.quiz-feedback-visible .quiz-match-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text.quiz-feedback-visible .quiz-fill-shell {
-  transform: none !important;
-}
-
-
-/* v0.24.62 - Ajustes finos Drag and drop: imagen completa, alturas estables y texto A/B uniforme */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  height: var(--quiz-tune-h, auto) !important;
-  min-height: var(--quiz-tune-h, min(18vh, 150px)) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: inherit !important;
-  max-height: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  margin: 0 auto !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card img,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-card img {
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  display: block !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
-  --match-option-slot-h: 38px;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card {
-  min-height: var(--match-option-slot-h) !important;
-  height: var(--match-option-slot-h) !important;
-  max-height: var(--match-option-slot-h) !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-source .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card {
-  width: 100% !important;
-  font-size: .74rem !important;
-  line-height: 1.05 !important;
-  white-space: normal !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop {
-  grid-template-rows: auto var(--match-option-slot-h) !important;
-  min-height: calc(var(--match-option-slot-h) + 26px) !important;
-  height: calc(var(--match-option-slot-h) + 26px) !important;
-  max-height: calc(var(--match-option-slot-h) + 26px) !important;
-  overflow: hidden !important;
-  align-content: start !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot small {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
-  line-height: 1 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
-  font-family: inherit !important;
-  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 17px)) !important;
-  line-height: 1.12 !important;
-  letter-spacing: -.012em !important;
-  font-weight: 760 !important;
-  color: #fff !important;
-  text-align: left !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-md {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .92) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-sm {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .84) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-xs {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .76) !important;
-}
 @media (max-height: 720px) {
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match {
     --match-option-slot-h: 34px;
@@ -10940,74 +9528,6 @@ body.quiz-fullscreen-active,
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
     font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .82) !important;
   }
-}
-
-/* v0.24.63 - Completar texto drag and drop: tipografía y alturas alineadas con Texto A/B y Drag and drop */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
-  --fill-option-slot-h: var(--match-option-slot-h, 38px);
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text *:not(.fill-option) {
-  font-family: inherit !important;
-  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 17px)) !important;
-  line-height: 1.13 !important;
-  letter-spacing: -.012em !important;
-  font-weight: 760 !important;
-  color: #fff !important;
-  text-align: left !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
-  padding: 8px 10px !important;
-  display: block !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  min-height: var(--fill-option-slot-h) !important;
-  height: var(--fill-option-slot-h) !important;
-  max-height: var(--fill-option-slot-h) !important;
-  box-sizing: border-box !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  width: 100% !important;
-  padding: 0 10px !important;
-  font-family: inherit !important;
-  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 17px)) !important;
-  line-height: 1.05 !important;
-  letter-spacing: -.012em !important;
-  font-weight: 760 !important;
-  color: #fff !important;
-  text-align: center !important;
-  white-space: normal !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop {
-  min-width: min(43vw, 176px) !important;
-  margin: 2px 4px !important;
-  padding: 0 6px !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
-  font-family: inherit !important;
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .62) !important;
-  line-height: 1 !important;
-  font-weight: 760 !important;
-  color: rgba(255,255,255,.72) !important;
-  letter-spacing: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options {
-  gap: 8px !important;
-  min-height: calc((var(--fill-option-slot-h) * 3) + 16px) !important;
-  grid-auto-rows: var(--fill-option-slot-h) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-actions .primary-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-actions .mini-btn {
-  min-height: var(--fill-option-slot-h) !important;
 }
 @media (max-height: 720px) {
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
@@ -11021,142 +9541,10 @@ body.quiz-fullscreen-active,
     line-height: 1.05 !important;
   }
 }
-
-
-/* v0.24.64 - Completar texto drag and drop: tipografia unificada real con Texto A/B */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
-  --fill-option-slot-h: var(--match-option-slot-h, 38px);
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text span,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text strong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text em,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  font-family: inherit !important;
-  font-size: var(--quiz-fill-font, var(--quiz-text-font, var(--quiz-text-a-font, 17px))) !important;
-  line-height: 1.08 !important;
-  letter-spacing: -.012em !important;
-  font-weight: 760 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
-  color: #fff !important;
-  text-align: left !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  min-height: var(--fill-option-slot-h) !important;
-  height: var(--fill-option-slot-h) !important;
-  max-height: var(--fill-option-slot-h) !important;
-  box-sizing: border-box !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  display: flex !important;
-  width: 100% !important;
-  padding: 0 10px !important;
-  color: #fff !important;
-  text-align: center !important;
-  white-space: normal !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
-  color: rgba(255,255,255,.76) !important;
-}
 @media (max-height: 720px) {
   .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
     --fill-option-slot-h: var(--match-option-slot-h, 34px);
   }
-}
-
-
-/* v0.24.65 - Drag and drop: Texto A y Texto B comparten el mismo modificador/tamaño real */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b {
-  font-size: var(--quiz-text-font, var(--quiz-text-a-font, 17px)) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-md,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-md {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .92) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-sm,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-sm {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .84) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a.quiz-prompt-xs,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b.quiz-text-b-xs {
-  font-size: calc(var(--quiz-text-font, var(--quiz-text-a-font, 17px)) * .76) !important;
-}
-
-
-/* v0.24.66 - Completar texto drag and drop: espacios inline compactos y sin padding lateral extra */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text {
-  --fill-inline-slot-h: clamp(26px, calc(var(--quiz-fill-font, var(--quiz-text-font, var(--quiz-text-a-font, 17px))) * 1.32), 34px);
-  --fill-inline-slot-w: min(34vw, 150px);
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-answer-zone,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-shell,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text {
-  line-height: 1.22 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text span:not(.fill-drop):not(.fill-slot):not(.fill-option),
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text strong,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text em {
-  line-height: 1.22 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-slot .fill-option {
-  min-height: var(--fill-inline-slot-h) !important;
-  height: var(--fill-inline-slot-h) !important;
-  max-height: var(--fill-inline-slot-h) !important;
-  line-height: 1 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-drop {
-  min-width: var(--fill-inline-slot-w) !important;
-  width: var(--fill-inline-slot-w) !important;
-  max-width: var(--fill-inline-slot-w) !important;
-  margin: 1px 3px !important;
-  padding: 0 3px !important;
-  vertical-align: middle !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-slot {
-  padding: 0 !important;
-  min-width: 100% !important;
-  width: 100% !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-drop small {
-  font-size: calc(var(--quiz-fill-font, var(--quiz-text-font, var(--quiz-text-a-font, 17px))) * .55) !important;
-  line-height: 1 !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text .fill-slot .fill-option {
-  padding: 0 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-options {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
 }
 
 
@@ -11174,53 +9562,6 @@ body.quiz-fullscreen-active,
 .quiz-calibration-mode.quiz-type-true_false .quiz-tune-box::after,
 .quiz-calibration-mode.quiz-type-open .quiz-tune-box::after {
   display: none !important;
-}
-
-
-/* v0.24.68 - Defaults finales Match/Fill/Slider, sin contornos verdes y adaptación a pantallas cortas */
-.quiz-calibration-mode.quiz-type-match .quiz-tune-box,
-.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box,
-.quiz-calibration-mode.quiz-type-slider .quiz-tune-box {
-  outline: none !important;
-  outline-offset: 0 !important;
-}
-.quiz-calibration-mode.quiz-type-match .quiz-tune-box::before,
-.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box::before,
-.quiz-calibration-mode.quiz-type-slider .quiz-tune-box::before,
-.quiz-calibration-mode.quiz-type-match .quiz-tune-box::after,
-.quiz-calibration-mode.quiz-type-fill_text .quiz-tune-box::after,
-.quiz-calibration-mode.quiz-type-slider .quiz-tune-box::after {
-  display: none !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  height: var(--quiz-tune-h, auto) !important;
-  min-height: var(--quiz-tune-h, min(18vh, 150px)) !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box .quiz-image-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box .quiz-image-card {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: none !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-}
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-image-tune-box .quiz-image-card img,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-image-tune-box .quiz-image-card img,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-image-tune-box .quiz-image-card img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
 }
 
 /* La calibración enviada queda como base, pero se compacta suavemente en pantallas 9:16, 10:16 y móviles más bajos. */
@@ -11297,48 +9638,6 @@ body.quiz-fullscreen-active,
   }
 }
 
-/* v0.24.69 - Drag and drop / completar texto: Texto A, Texto B y textos internos sin negrita */
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b {
-  font-weight: 400 !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text span,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option {
-  font-weight: 400 !important;
-}
-
-/* v0.24.70 - Texto A/B sin negrita en todos los tipos de quiz */
-.quiz-stage .quiz-text-a,
-.quiz-stage .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-text-b {
-  font-weight: 400 !important;
-}
-
 
 /* v0.24.73 - Fuente base 17px para Texto A, Texto B y opciones/respuestas en quizzes activos */
 .quiz-stage,
@@ -11367,36 +9666,6 @@ body.quiz-fullscreen-active,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-xs,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-xs {
   font-size: calc(var(--quiz-text-font, 17px) * .76) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-answer-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-answer-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open textarea.quiz-open-input,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-submit-btn,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-drop-label,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot .match-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .quiz-match-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot .fill-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-reset,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .quiz-fill-validate,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-submit {
-  font-size: var(--quiz-text-font, 17px) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot {
-  font-size: var(--quiz-fill-font, var(--quiz-text-font, 17px)) !important;
-}
-
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-match .match-slot small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-drop small,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-fill_text .fill-slot small {
-  font-size: calc(var(--quiz-text-font, 17px) * .55) !important;
 }
 
 
@@ -13308,7 +11577,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.105"; }
+:root { --encisomath-build: "0.24.106"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13397,7 +11666,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.105"; }
+:root { --encisomath-build: "0.24.106"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13623,7 +11892,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.105"; }
+:root { --encisomath-build: "0.24.106"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13827,8 +12096,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.105 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.105"; }
+/* ===== v0.24.106 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.106"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -13949,8 +12218,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.105 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.105"; }
+/* ===== v0.24.106 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.106"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -13973,7 +12242,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.105 quiz font and feedback tuning overlay ===== */
+/* ===== v0.24.106 quiz font and feedback tuning overlay ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage-fullscreen,
@@ -14015,7 +12284,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.105 Montserrat + visible feedback tune panel ===== */
+/* ===== v0.24.106 Montserrat + visible feedback tune panel ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage *,
@@ -14102,7 +12371,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.105 Montserrat + interactive feedback sliders ===== */
+/* ===== v0.24.106 Montserrat + interactive feedback sliders ===== */
 :root { --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .quiz-fullscreen-layer,
 .quiz-fullscreen-layer *,
@@ -14162,7 +12431,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-feedback-tune-panel .quiz-feedback-tune-scroll { max-height: 42dvh !important; }
 }
 
-/* ===== v0.24.105 global quiz typography controls ===== */
+/* ===== v0.24.106 global quiz typography controls ===== */
 :root {
   --quiz-global-font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --quiz-global-text-weight: 700;
@@ -14180,35 +12449,6 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 .enciso-feedback-v95,
 .enciso-feedback-v99 {
   font-family: var(--quiz-global-font-family) !important;
-}
-.quiz-stage-fullscreen .quiz-text-a,
-.quiz-stage-fullscreen .quiz-text-b,
-.quiz-stage .quiz-text-a,
-.quiz-stage .quiz-text-b,
-.quiz-open-input,
-.quiz-fill-text,
-.quiz-match-column,
-.quiz-slider-labels,
-.quiz-slider-shell {
-  font-family: var(--quiz-global-font-family) !important;
-  font-weight: var(--quiz-global-text-weight) !important;
-  font-style: var(--quiz-global-text-style) !important;
-  font-size: var(--quiz-global-text-size) !important;
-}
-.quiz-stage-fullscreen .kahoot-option,
-.quiz-stage-fullscreen .kahoot-answer-text,
-.quiz-stage .kahoot-option,
-.quiz-stage .kahoot-answer-text,
-.quiz-submit-btn,
-.quiz-slider-submit,
-.quiz-match-validate,
-.quiz-match-reset,
-.fill-option,
-.match-card {
-  font-family: var(--quiz-global-font-family) !important;
-  font-weight: var(--quiz-global-option-weight) !important;
-  font-style: var(--quiz-global-option-style) !important;
-  font-size: var(--quiz-global-option-size) !important;
 }
 .quiz-typography-tune-box {
   border: 1px solid rgba(255,255,255,.14) !important;
@@ -14244,49 +12484,73 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.105 forced quiz typography controls ===== */
+/* ===== v0.24.106 forced quiz typography controls ===== */
 :root {
-  --encisomath-build: "0.24.105";
+  --encisomath-build: "0.24.106";
   --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
-.quiz-stage .quiz-text-a,
-.quiz-stage .quiz-text-b,
-.quiz-open-input,
-.quiz-open-feedback,
-.quiz-fill-text,
-.quiz-match-column,
-.quiz-match-column strong,
-.match-drop-label,
-.quiz-slider-labels,
-.quiz-slider-caption,
-.quiz-slider-question {
-  font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
-  font-weight: var(--quiz-global-text-weight, 700) !important;
-  font-style: var(--quiz-global-text-style, normal) !important;
-  font-size: var(--quiz-global-text-size, 18px) !important;
-}
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
-.quiz-stage .kahoot-option,
-.quiz-stage .kahoot-answer-text,
-.quiz-submit-btn,
-.quiz-slider-submit,
-.quiz-match-validate,
-.quiz-match-reset,
-.fill-option,
-.match-card {
-  font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
-  font-weight: var(--quiz-global-option-weight, 800) !important;
-  font-style: var(--quiz-global-option-style, normal) !important;
-  font-size: var(--quiz-global-option-size, 17px) !important;
 }
 .quiz-layout-tune-panel,
 .quiz-layout-tune-panel * {
   font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
+}
+
+
+/* ===== v0.24.106 cleanup and performance toggles ===== */
+:root {
+  --effects-motion-enabled: 1;
+}
+:root[data-effects-motion="off"] *,
+:root[data-effects-motion="off"] *::before,
+:root[data-effects-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+:root[data-effects-mesh="off"] .quiz-stage-meta-card::before,
+:root[data-effects-mesh="off"] .quiz-stage-meta-card::after,
+:root[data-effects-mesh="off"] .enciso-feedback-mesh,
+:root[data-effects-mesh="off"] .animated-cover::before,
+:root[data-effects-mesh="off"] .animated-cover::after,
+:root[data-effects-mesh="off"] .subject-banner::before,
+:root[data-effects-mesh="off"] .subject-banner::after,
+:root[data-effects-mesh="off"] .quiz-intro-shapes,
+:root[data-effects-mesh="off"] .quiz-transition-shapes {
+  display: none !important;
+  animation: none !important;
+}
+:root[data-quiz-option-effects="off"] .kahoot-option,
+:root[data-quiz-option-effects="off"] .kahoot-option.correct-reveal,
+:root[data-quiz-option-effects="off"] .kahoot-option.wrong-reveal,
+:root[data-quiz-option-effects="off"] .kahoot-option.selected,
+:root[data-quiz-option-effects="off"] .kahoot-option.pressed,
+:root[data-quiz-option-effects="off"] .quiz-slider-shell,
+:root[data-quiz-option-effects="off"] .quiz-open-form {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  scale: 1 !important;
+  translate: 0 0 !important;
+  rotate: 0deg !important;
+}
+:root[data-quiz-feedback-effects="off"] .enciso-quiz-feedback-overlay-v95,
+:root[data-quiz-feedback-effects="off"] .enciso-feedback-v95,
+:root[data-quiz-feedback-effects="off"] .enciso-feedback-v99,
+:root[data-quiz-feedback-effects="off"] [data-quiz-global-feedback-band] {
+  animation: none !important;
+  transition: none !important;
+}
+.settings-effects-group .toggle-row {
+  margin-top: 8px;
+  border-radius: 6px;
+}
+/* keep quiz tune panel accessible and scrollable */
+.quiz-layout-tune-panel.is-open {
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+}
+.quiz-layout-tune-dialog {
+  max-height: min(88vh, 720px) !important;
+  overflow-y: auto !important;
 }
