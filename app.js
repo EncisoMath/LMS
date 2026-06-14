@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.139';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.139: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.140';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.140: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,12 +72,12 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.139';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.140';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
-    bandRotation: 0,
+    bandRotation: 7,
     bandX: 0,
     bandY: 0,
-    bandWidth: 106,
+    bandWidth: 132,
     bandHeight: 126,
     bandZoom: 100,
     emojiX: 0,
@@ -87,10 +87,12 @@
     titleY: 0,
     titleSize: 31,
     titleWidth: 92,
+    titlePreset: '900|normal',
     textX: 0,
     textY: 0,
     textSize: 15,
     textWidth: 92,
+    textPreset: '700|normal',
     bounceDuration: 0
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
@@ -100,7 +102,7 @@
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
     { key: 'bandY', group: 'Banda', label: 'Posicion Y banda', min: -160, max: 160, step: 1, unit: 'px' },
-    { key: 'bandWidth', group: 'Banda', label: 'Ancho banda', min: 120, max: 240, step: 1, unit: 'vw' },
+    { key: 'bandWidth', group: 'Banda', label: 'Ancho banda', min: 110, max: 180, step: 1, unit: 'vw' },
     { key: 'bandHeight', group: 'Banda', label: 'Alto banda', min: 70, max: 190, step: 1, unit: 'px' },
     { key: 'bandZoom', group: 'Banda', label: 'Zoom banda', min: 70, max: 140, step: 1, unit: '%' },
     { key: 'emojiX', group: 'Emoji', label: 'Emoji X', min: -140, max: 140, step: 1, unit: 'px' },
@@ -1490,7 +1492,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.139';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.140';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1670,7 +1672,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.139';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.140';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2566,36 +2568,46 @@
     `;
   }
 
+  function quizFeedbackTuneRangeRowHTML(fieldKey) {
+    const tune = getQuizFeedbackTune();
+    const field = QUIZ_FEEDBACK_TUNE_FIELDS.find((item) => item.key === fieldKey);
+    if (!field) return '';
+    const value = tune[field.key];
+    return `
+      <label class="quiz-feedback-tune-row">
+        <span class="quiz-feedback-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
+        <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
+      </label>
+    `;
+  }
+
   function quizFeedbackTunePanelHTML(options = {}) {
     const tune = getQuizFeedbackTune();
-    const groups = QUIZ_FEEDBACK_TUNE_FIELDS.reduce((acc, field) => {
-      const group = field.group || 'Ajustes';
-      if (!acc[group]) acc[group] = [];
-      acc[group].push(field);
-      return acc;
-    }, {});
-    const rows = Object.entries(groups).map(([group, fields]) => `
-      <div class="quiz-feedback-tune-group">
-        <h4>${escapeHTML(group)}</h4>
-        ${fields.map((field) => {
-          const value = tune[field.key];
-          return `
-            <label class="quiz-feedback-tune-row">
-              <span class="quiz-feedback-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
-              <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
-            </label>
-          `;
-        }).join('')}
-      </div>
-    `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.139</div>
-        <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
-        <div class="quiz-feedback-tune-scroll">${rows}</div>
-        <div class="quiz-feedback-tune-actions">
-          <button class="btn ghost small quiz-feedback-tune-reset" type="button" data-quiz-feedback-tune-reset>Restablecer banda</button>
-          <button class="btn ghost small" type="button" data-quiz-feedback-replay>Repetir animación</button>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.140</div>
+        <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
+        <div class="quiz-feedback-tune-scroll">
+          <div class="quiz-feedback-tune-group">
+            <h4>Título</h4>
+            <label class="quiz-feedback-tune-row">
+              <span class="quiz-feedback-tune-head"><strong>Fuente título</strong></span>
+              <select class="quiz-feedback-font-select" data-quiz-feedback-font="titlePreset">${quizFontPresetOptionsHTML(tune.titlePreset)}</select>
+            </label>
+            ${quizFeedbackTuneRangeRowHTML('titleSize')}
+            ${quizFeedbackTuneRangeRowHTML('titleY')}
+          </div>
+          <div class="quiz-feedback-tune-group">
+            <h4>Subtítulo</h4>
+            <label class="quiz-feedback-tune-row">
+              <span class="quiz-feedback-tune-head"><strong>Fuente subtítulo</strong></span>
+              <select class="quiz-feedback-font-select" data-quiz-feedback-font="textPreset">${quizFontPresetOptionsHTML(tune.textPreset)}</select>
+            </label>
+            ${quizFeedbackTuneRangeRowHTML('textSize')}
+            ${quizFeedbackTuneRangeRowHTML('textY')}
+          </div>
+        </div>
+        <div class="quiz-feedback-tune-actions one-button">
           <button class="primary-btn small" type="button" data-quiz-feedback-continue>${options.last ? 'Ver resultados' : 'Continuar'}</button>
         </div>
       </section>
@@ -2618,6 +2630,17 @@
       input.addEventListener('input', updateFeedbackTuneFromInput);
       input.addEventListener('change', updateFeedbackTuneFromInput);
     });
+    document.querySelectorAll('[data-quiz-feedback-font]').forEach((select) => {
+      if (select.dataset.boundFeedbackFont === 'true') return;
+      select.dataset.boundFeedbackFont = 'true';
+      select.addEventListener('change', () => {
+        const current = getQuizFeedbackTune();
+        const key = select.dataset.quizFeedbackFont;
+        current[key] = select.value;
+        saveQuizFeedbackTune(current);
+        applyQuizFeedbackTune(current);
+      });
+    });
     document.querySelectorAll('[data-quiz-feedback-tune-reset]').forEach((button) => {
       if (button.dataset.boundTuneReset === 'true') return;
       button.dataset.boundTuneReset = 'true';
@@ -2628,6 +2651,10 @@
           const key = input.dataset.quizFeedbackTune;
           input.value = defaults[key];
           updateQuizFeedbackTuneOutput(key, defaults[key]);
+        });
+        document.querySelectorAll('[data-quiz-feedback-font]').forEach((select) => {
+          const key = select.dataset.quizFeedbackFont;
+          select.value = defaults[key];
         });
       });
     });
@@ -2664,6 +2691,9 @@
       const raw = Number(tune[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_FEEDBACK_TUNE_DEFAULTS[field.key];
     });
+    const presetValues = new Set(QUIZ_FONT_PRESETS.map((item) => item.value));
+    normalized.titlePreset = presetValues.has(String(tune.titlePreset || '')) ? String(tune.titlePreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.titlePreset;
+    normalized.textPreset = presetValues.has(String(tune.textPreset || '')) ? String(tune.textPreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset;
     return normalized;
   }
 
@@ -3158,9 +3188,9 @@
     const glow = isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
     const line = isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
     const shine = isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
-    const rotation = 0;
+    const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
-    const bandWidth = Math.max(84, Math.min(118, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
+    const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
     const bandHeight = Math.max(92, Math.min(156, Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight));
     band.dataset.feedbackKind = kind;
     band.dataset.feedbackRotation = String(rotation);
@@ -3170,8 +3200,8 @@
       `left:calc(50% + ${Number(safe.bandX) || 0}px)`,
       `top:calc(50% + ${Number(safe.bandY) || 0}px)`,
       `width:${bandWidth}vw`,
-      'max-width:1120px',
-      'min-width:min(92vw,720px)',
+      'max-width:1320px',
+      'min-width:min(96vw,760px)',
       `height:${bandHeight}px`,
       `min-height:${bandHeight}px`,
       'box-sizing:border-box',
@@ -3213,20 +3243,22 @@
       ].join(';') + ';';
       try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     }
+    const titlePreset = quizPresetParts(safe.titlePreset || QUIZ_FEEDBACK_TUNE_DEFAULTS.titlePreset);
+    const textPreset = quizPresetParts(safe.textPreset || QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset);
     const title = band.querySelector('.enciso-quiz-feedback-title-v102');
     if (title) title.style.cssText = [
       'grid-area:title', 'display:block', 'position:relative', 'z-index:1', 'color:#fff',
       `font-size:clamp(28px, 7.2vw, ${Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize}px)`,
-      'line-height:1', 'font-weight:950', 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
+      'line-height:1', `font-weight:${titlePreset.weight}`, `font-style:${titlePreset.style}`, 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
       'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
-      'transform:none', 'transform-origin:center center'
+      `transform:translate3d(0, ${Number(safe.titleY) || 0}px, 0)`, 'transform-origin:center center'
     ].join(';') + ';';
     const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v102');
     if (phrase) phrase.style.cssText = [
       'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', 'color:rgba(255,255,255,.94)',
       `font-size:clamp(13px, 3.8vw, ${Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize}px)`,
-      'line-height:1.1', 'font-weight:700', 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
-      'transform:none', 'transform-origin:center center'
+      'line-height:1.1', `font-weight:${textPreset.weight}`, `font-style:${textPreset.style}`, 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
+      `transform:translate3d(0, ${Number(safe.textY) || 0}px, 0)`, 'transform-origin:center center'
     ].join(';') + ';';
   }
 
@@ -3235,7 +3267,15 @@
     try { mesh?.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     if (mesh) {
       mesh.style.transform = 'translate3d(0,0,0)';
-      mesh.style.willChange = 'auto';
+      mesh.style.willChange = 'transform';
+      try {
+        mesh.animate([
+          { transform: 'translate3d(0,0,0)' },
+          { transform: 'translate3d(-42px,-42px,0)' }
+        ], { duration: 9000, iterations: Infinity, easing: 'linear' });
+      } catch (_) {
+        mesh.style.animation = 'encisoFeedbackMeshDrift140 9s linear infinite';
+      }
     }
   }
 
@@ -3272,7 +3312,8 @@
     document.documentElement.dataset.encisoLastFeedback = String(Date.now());
     window.__encisomathLastFeedbackV102 = (window.__encisomathLastFeedbackV102 || 0) + 1;
     playInlineFeedbackBounce(band);
-    scheduleQuizAdvance();
+    overlay.insertAdjacentHTML('beforeend', quizFeedbackTunePanelHTML({ live: true, last }));
+    bindQuizFeedbackTunePanel();
   }
 
   function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
@@ -4353,7 +4394,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.139', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.140', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
