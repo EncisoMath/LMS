@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.93';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.93: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.94';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.94: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1465,8 +1465,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.93';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.93';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.94';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.94';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2658,6 +2658,10 @@
   }
 
   function removeQuizGlobalFeedback() {
+    if (window.__encisomathQuizFeedbackShowTimer) {
+      window.clearTimeout(window.__encisomathQuizFeedbackShowTimer);
+      window.__encisomathQuizFeedbackShowTimer = null;
+    }
     if (window.__encisomathQuizFeedbackTimer) {
       window.clearTimeout(window.__encisomathQuizFeedbackTimer);
       window.__encisomathQuizFeedbackTimer = null;
@@ -2666,29 +2670,165 @@
     document.querySelectorAll('.quiz-stage.quiz-feedback-visible').forEach((stage) => stage.classList.remove('quiz-feedback-visible'));
   }
 
+  function ensureQuizGlobalFeedbackStyles() {
+    if (document.getElementById('encisomathQuizFeedbackStyleV94')) return;
+    const style = document.createElement('style');
+    style.id = 'encisomathQuizFeedbackStyleV94';
+    style.textContent = `
+      [data-quiz-global-feedback].enciso-feedback-v94 {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        z-index: 2147483647 !important;
+        pointer-events: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: visible !important;
+        background: transparent !important;
+        contain: none !important;
+      }
+      .enciso-feedback-v94 .enciso-feedback-band-v94 {
+        width: 180vw !important;
+        max-width: none !important;
+        min-height: clamp(92px, 15dvh, 136px) !important;
+        box-sizing: border-box !important;
+        border-radius: 6px !important;
+        border: 0 !important;
+        padding: clamp(12px, 2.4dvh, 18px) 0 !important;
+        display: grid !important;
+        grid-template-columns: auto minmax(0, min(76vw, 680px)) !important;
+        grid-template-areas: "icon title" "icon phrase" !important;
+        align-items: center !important;
+        justify-content: center !important;
+        column-gap: clamp(12px, 3.6vw, 26px) !important;
+        row-gap: 5px !important;
+        overflow: visible !important;
+        opacity: 0 !important;
+        transform-origin: center center !important;
+        transform: rotate(-8deg) scale(.001) !important;
+        animation: encisoFeedbackBounceV94 900ms cubic-bezier(.17,.95,.18,1) both !important;
+        box-shadow: none !important;
+        filter: none !important;
+        background-image: none !important;
+        will-change: transform, opacity !important;
+      }
+      .enciso-feedback-v94 .enciso-feedback-band-v94.correct { background: #58cc02 !important; color: #fff !important; }
+      .enciso-feedback-v94 .enciso-feedback-band-v94.wrong { background: #e21b3c !important; color: #fff !important; }
+      .enciso-feedback-v94 .enciso-feedback-band-v94.neutral { background: #1368ce !important; color: #fff !important; }
+      .enciso-feedback-v94 .enciso-feedback-emoji-v94 {
+        grid-area: icon !important;
+        font-size: clamp(2rem, 8vw, 3.8rem) !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        transform: none !important;
+      }
+      .enciso-feedback-v94 .enciso-feedback-title-v94 {
+        grid-area: title !important;
+        color: #fff !important;
+        font-size: clamp(1.28rem, 5.4vw, 2.12rem) !important;
+        line-height: 1 !important;
+        font-weight: 900 !important;
+        white-space: nowrap !important;
+        margin: 0 !important;
+        transform: none !important;
+      }
+      .enciso-feedback-v94 .enciso-feedback-phrase-v94 {
+        grid-area: phrase !important;
+        color: rgba(255,255,255,.95) !important;
+        font-size: clamp(.82rem, 3.2vw, 1.04rem) !important;
+        line-height: 1.13 !important;
+        font-weight: 400 !important;
+        margin: 0 !important;
+        max-width: min(76vw, 680px) !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+        transform: none !important;
+      }
+      @keyframes encisoFeedbackBounceV94 {
+        0% { opacity: 0; transform: rotate(-8deg) scale(.001); }
+        12% { opacity: 1; transform: rotate(-8deg) scale(.46); }
+        28% { opacity: 1; transform: rotate(-8deg) scale(1.22); }
+        42% { opacity: 1; transform: rotate(-8deg) scale(.86); }
+        56% { opacity: 1; transform: rotate(-8deg) scale(1.12); }
+        69% { opacity: 1; transform: rotate(-8deg) scale(.96); }
+        82% { opacity: 1; transform: rotate(-8deg) scale(1.035); }
+        100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+      }
+      @media (max-height: 620px) {
+        .enciso-feedback-v94 .enciso-feedback-band-v94 { min-height: clamp(76px, 16dvh, 106px) !important; padding-top: 9px !important; padding-bottom: 9px !important; }
+        .enciso-feedback-v94 .enciso-feedback-emoji-v94 { font-size: clamp(1.65rem, 7vw, 2.7rem) !important; }
+        .enciso-feedback-v94 .enciso-feedback-title-v94 { font-size: clamp(1.05rem, 4.5vw, 1.55rem) !important; }
+        .enciso-feedback-v94 .enciso-feedback-phrase-v94 { font-size: clamp(.72rem, 3vw, .92rem) !important; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function quizFeedbackParts(correct, neutralText = '', question = null) {
+    if (neutralText) return { kind: 'neutral', emoji: '✍️', title: 'Respuesta enviada', phrase: neutralText };
+    const correctPhrases = [
+      'Esa neurona vino con turbo.',
+      'Respuesta nivel crack. Siga brillando.',
+      'Bien jugado. Punto para la mente matemática.',
+      'Así se responde, sin despeinarse.',
+      'Modo leyenda activado.'
+    ];
+    const wrongPhrases = [
+      'Sacúdete el polvo. La grandeza espera.',
+      'Casi, pero la opción correcta se escondió bien.',
+      'Error con estilo. Respira y vamos por la siguiente.',
+      'La respuesta se fue por la tangente.',
+      'Ups, el cálculo pidió revisión.'
+    ];
+    const session = getQuizSession();
+    const correctCount = session.answers.filter((answer) => answer.correct === true).length;
+    const wrongCount = session.answers.filter((answer) => answer.correct === false).length;
+    const correctEmoji = correctCount >= 5 ? '😎' : ['🫡', '😃', '😏', '🤩'][Math.max(0, correctCount - 1)] || '🫡';
+    let wrongEmoji = wrongCount >= 5 ? '☠️' : ['😬', '😕', '😨', '🥶'][Math.max(0, wrongCount - 1)] || '😬';
+    if (question?.type === 'true_false' && correct === false) wrongEmoji = '😒';
+    return correct
+      ? { kind: 'correct', emoji: correctEmoji, title: '¡Correcto!', phrase: correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length] }
+      : { kind: 'wrong', emoji: wrongEmoji, title: '¡Incorrecto!', phrase: wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length] };
+  }
+
+  function quizGlobalFeedbackHTML(correct, neutralText = '', question = null) {
+    const parts = quizFeedbackParts(correct, neutralText, question);
+    return `
+      <div class="enciso-feedback-band-v94 ${parts.kind}" role="status">
+        <span class="enciso-feedback-emoji-v94">${parts.emoji}</span>
+        <strong class="enciso-feedback-title-v94">${escapeHTML(parts.title)}</strong>
+        <p class="enciso-feedback-phrase-v94">${escapeHTML(parts.phrase)}</p>
+      </div>
+    `;
+  }
+
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
+    ensureQuizGlobalFeedbackStyles();
     const overlay = document.createElement('div');
-    overlay.className = neutralText
-      ? 'quiz-global-feedback-overlay is-neutral'
-      : `quiz-global-feedback-overlay ${correct ? 'is-correct' : 'is-wrong'}`;
+    overlay.className = 'enciso-feedback-v94';
     overlay.dataset.quizGlobalFeedback = 'true';
-    overlay.setAttribute('aria-live', 'polite');
-    overlay.innerHTML = quizAnswerFeedbackHTML(correct, neutralText, question);
-    document.body.appendChild(overlay);
-    const card = overlay.querySelector('.quiz-feedback-card');
-    if (card) {
-      card.style.animation = 'none';
-      void card.offsetWidth;
-      card.style.animation = '';
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.innerHTML = quizGlobalFeedbackHTML(correct, neutralText, question);
+    const target = document.getElementById('quizFullscreenLayer') || document.body;
+    target.appendChild(overlay);
+    const band = overlay.querySelector('.enciso-feedback-band-v94');
+    if (band) {
+      band.style.animation = 'none';
+      void band.offsetWidth;
+      band.style.animation = 'encisoFeedbackBounceV94 900ms cubic-bezier(.17,.95,.18,1) both';
     }
-    window.__encisomathQuizFeedbackTimer = window.setTimeout(removeQuizGlobalFeedback, 3820);
+    window.__encisomathQuizFeedbackTimer = window.setTimeout(removeQuizGlobalFeedback, 3900);
   }
 
   function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
     const fallbackDelay = neutralText ? QUIZ_FEEDBACK_NEUTRAL_DELAY_MS : QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS;
     const effectiveDelay = Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : fallbackDelay;
-    scheduleQuizTimer(() => {
+    if (window.__encisomathQuizFeedbackShowTimer) window.clearTimeout(window.__encisomathQuizFeedbackShowTimer);
+    window.__encisomathQuizFeedbackShowTimer = window.setTimeout(() => {
+      window.__encisomathQuizFeedbackShowTimer = null;
       showQuizFeedbackBand(stage, correct, question, neutralText);
       scheduleQuizAdvance();
     }, effectiveDelay);
@@ -4211,7 +4351,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.93', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.94', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
