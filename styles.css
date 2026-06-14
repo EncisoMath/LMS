@@ -11743,7 +11743,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   color: #fff !important;
 }
 
-/* ===== v0.24.142 feedback tune fixes: working text size + scrollable panel ===== */
+/* ===== v0.24.143 feedback tune fixes: working text size + scrollable panel ===== */
 .enciso-quiz-feedback-mesh-v102 {
   animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
   will-change: transform !important;
@@ -11804,7 +11804,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   }
 }
 
-/* ===== v0.24.142 final feedback band: simple continue only, no tuning panel ===== */
+/* ===== v0.24.143 final feedback band: simple continue only, no tuning panel ===== */
 .quiz-feedback-continue-control {
   position: fixed !important;
   left: 50% !important;
@@ -11821,4 +11821,84 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   border-radius: 6px !important;
   font-family: 'Montserrat', system-ui, sans-serif !important;
   font-weight: 800 !important;
+}
+
+
+/* ===== v0.24.143 feedback band 3D slide + center confetti ===== */
+.enciso-quiz-feedback-overlay-v102.quiz-feedback-stage {
+  perspective: 350px !important;
+  perspective-origin: center !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+.enciso-quiz-feedback-band-v102.quiz-feedback-band {
+  transform-style: preserve-3d !important;
+  backface-visibility: hidden !important;
+}
+
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.play-entry-exit {
+  animation:
+    feedback-enter-card .7s cubic-bezier(.25, .46, .45, .94) forwards,
+    feedback-exit-card .7s cubic-bezier(.25, .46, .45, .94) forwards 2.7s !important;
+}
+
+@keyframes feedback-enter-card {
+  0% {
+    transform: translate3d(-50%, -50%, 600px) rotate(var(--quiz-feedback-band-rotation, -2deg)) scale(calc(var(--quiz-feedback-band-scale, 1) * 2.2));
+    opacity: 0;
+  }
+
+  100% {
+    transform: translate3d(-50%, -50%, 0) rotate(var(--quiz-feedback-band-rotation, -2deg)) scale(var(--quiz-feedback-band-scale, 1));
+    opacity: 1;
+  }
+}
+
+@keyframes feedback-exit-card {
+  0% {
+    transform: translate3d(-50%, -50%, 0) rotate(var(--quiz-feedback-band-rotation, -2deg)) scale(var(--quiz-feedback-band-scale, 1));
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(-50%, -50%, 600px) rotate(var(--quiz-feedback-band-rotation, -2deg)) scale(calc(var(--quiz-feedback-band-scale, 1) * 2.2));
+    opacity: 0;
+  }
+}
+
+.quiz-feedback-confetti-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483600 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  contain: none !important;
+}
+
+.enciso-quiz-feedback-overlay-v102 .confetti-piece {
+  position: absolute !important;
+  margin-left: -4px !important;
+  margin-top: -4px !important;
+  border-radius: 1px !important;
+  pointer-events: none !important;
+  z-index: 2147483601 !important;
+  animation: confetti-burst 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity !important;
+}
+
+@keyframes confetti-burst {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--x), var(--y)) rotate(var(--rot)) scale(0.2);
+    opacity: 0;
+  }
 }
