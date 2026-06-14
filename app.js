@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.84';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.84: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.85';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.85: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1405,29 +1405,29 @@
   }
 
   const QUIZ_LAYOUT_TUNE_FIELDS = [
-    { key: 'image_y', label: 'Imagen Y', min: -80, max: 160, step: 1, unit: 'px' },
-    { key: 'image_h', label: 'Imagen alto', min: 70, max: 220, step: 1, unit: 'px' },
-    { key: 'textA_y', label: 'Texto Y', min: -80, max: 180, step: 1, unit: 'px' },
-    { key: 'textA_h', label: 'Texto alto', min: 70, max: 320, step: 1, unit: 'px' },
-    { key: 'answers_y', label: 'Opciones Y', min: -80, max: 180, step: 1, unit: 'px' },
-    { key: 'answers_h', label: 'Opciones alto', min: 70, max: 280, step: 1, unit: 'px' }
+    { key: 'image_y', label: 'Imagen Y %', min: -15, max: 15, step: 1, unit: '%' },
+    { key: 'image_h', label: 'Imagen alto %', min: 8, max: 45, step: 1, unit: '%' },
+    { key: 'textA_y', label: 'Texto Y %', min: -15, max: 15, step: 1, unit: '%' },
+    { key: 'textA_h', label: 'Texto alto %', min: 15, max: 70, step: 1, unit: '%' },
+    { key: 'answers_y', label: 'Opciones Y %', min: -15, max: 15, step: 1, unit: '%' },
+    { key: 'answers_h', label: 'Opciones alto %', min: 15, max: 60, step: 1, unit: '%' }
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_y: 0, textA_h: 120, text_font: 20,
-    image_y: 0, image_h: 210,
-    answers_y: 0, answers_h: 200
+    textA_y: 0, textA_h: 42, text_font: 20,
+    image_y: 0, image_h: 22,
+    answers_y: 0, answers_h: 36
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 135, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 146 },
-    true_false: { textA_y: 0, textA_h: 145, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 104 },
-    open: { textA_y: 0, textA_h: 150, text_font: 20, image_y: 0, image_h: 126, answers_y: 0, answers_h: 142 },
-    slider: { textA_y: 0, textA_h: 140, text_font: 20, image_y: 0, image_h: 118, answers_y: 0, answers_h: 198 }
+    multiple_choice: { textA_y: 0, textA_h: 38, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 39 },
+    true_false: { textA_y: 0, textA_h: 52, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 25 },
+    open: { textA_y: 0, textA_h: 44, text_font: 20, image_y: 0, image_h: 23, answers_y: 0, answers_h: 33 },
+    slider: { textA_y: 0, textA_h: 35, text_font: 20, image_y: 0, image_h: 20, answers_y: 0, answers_h: 45 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.84';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.84';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.85';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.85';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1815,14 +1815,16 @@
       answerZone.style.setProperty('--quiz-text-b-font', unifiedFont);
       answerZone.style.setProperty('--quiz-fill-font', unifiedFont);
     }
+    stage.style.setProperty('--quiz-fit-image-fr', `${Math.max(0, Number(safe.image_h) || 0)}fr`);
+    stage.style.setProperty('--quiz-fit-text-fr', `${Math.max(1, Number(safe.textA_h) || 1)}fr`);
+    stage.style.setProperty('--quiz-fit-answer-fr', `${Math.max(1, Number(safe.answers_h) || 1)}fr`);
     const setBox = (name, prefix) => {
       const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
       if (!box) return;
       box.style.removeProperty('--quiz-tune-x');
       box.style.removeProperty('--quiz-tune-w');
-      box.style.setProperty('--quiz-tune-y', `${safe[`${prefix}_y`] || 0}px`);
-      if (Number(safe[`${prefix}_h`]) > 0) box.style.setProperty('--quiz-tune-h', `${safe[`${prefix}_h`]}px`);
-      else box.style.removeProperty('--quiz-tune-h');
+      box.style.removeProperty('--quiz-tune-h');
+      box.style.setProperty('--quiz-tune-y', `${Number(safe[`${prefix}_y`]) || 0}%`);
       if (prefix === 'textA') {
         box.style.setProperty('--quiz-text-font', `${safe.text_font}px`);
         box.style.setProperty('--quiz-text-a-font', `${safe.text_font}px`);
@@ -4176,7 +4178,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.84', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.85', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
