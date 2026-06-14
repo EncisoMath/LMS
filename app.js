@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.113';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.113: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.115';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.115: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -115,7 +115,7 @@
     { key: 'textY', group: 'Subtitulo', label: 'Subtitulo Y', min: -90, max: 90, step: 1, unit: 'px' },
     { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' },
     { key: 'textWidth', group: 'Subtitulo', label: 'Ancho contenedor subtitulo', min: 24, max: 120, step: 1, unit: 'vw' },
-    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion bounce', min: 500, max: 3000, step: 50, unit: 'ms' }
+    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion entrada banda', min: 260, max: 1600, step: 20, unit: 'ms' }
   ];
 
   const ACCENT_OPTIONS = [
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.113';
-  // v0.24.113: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.115';
+  // v0.24.115: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -2165,13 +2165,18 @@
       <div class="quiz-order-board" data-quiz-order-board data-correct-order="${escapeAttr(correctOrder.join('|'))}">
         <div class="quiz-order-instruction">Arrastra las tarjetas y ordénalas de arriba hacia abajo.</div>
         <div class="quiz-order-stack" data-quiz-order-stack>
-          ${cards.slice(0, 4).map((card, index) => `
-            <div class="quiz-order-card" draggable="true" data-order-card="${escapeAttr(card.id || String(index))}" role="button" tabindex="0" aria-label="Ordenar: ${escapeAttr(card.text || '')}">
-              <span class="quiz-order-grip">☰</span>
-              <span class="quiz-order-number">${index + 1}</span>
-              <strong>${escapeHTML(card.text || '')}</strong>
-            </div>
-          `).join('')}
+          ${cards.slice(0, 4).map((card, index) => {
+            const orderColors = ['red', 'blue', 'yellow', 'green'];
+            const color = String(card.color || orderColors[index % orderColors.length] || 'blue').toLowerCase();
+            const safeColor = ['red', 'blue', 'yellow', 'green'].includes(color) ? color : orderColors[index % orderColors.length];
+            return `
+              <div class="quiz-order-card quiz-order-${safeColor}" draggable="true" data-order-card="${escapeAttr(card.id || String(index))}" data-order-color="${escapeAttr(safeColor)}" role="button" tabindex="0" aria-label="Ordenar: ${escapeAttr(card.text || '')}">
+                <span class="quiz-order-grip">☰</span>
+                <span class="quiz-order-number">${index + 1}</span>
+                <strong>${escapeHTML(card.text || '')}</strong>
+              </div>
+            `;
+          }).join('')}
         </div>
         <button class="primary-btn quiz-order-submit" type="button" data-order-validate>Validar orden</button>
       </div>
@@ -2215,6 +2220,7 @@
         if (!card || board.classList.contains('order-locked')) return;
         dragId = card.dataset.orderCard || '';
         card.classList.add('is-dragging');
+        stack.classList.add('is-reordering');
         event.dataTransfer?.setData('text/plain', dragId);
         if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
       });
@@ -2230,18 +2236,22 @@
       });
       stack.addEventListener('dragend', () => {
         stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
+        stack.classList.remove('is-reordering');
         updateQuizOrderNumbers(board);
       });
       stack.addEventListener('drop', (event) => {
         event.preventDefault();
         dragId = '';
         stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
+        stack.classList.remove('is-reordering');
         updateQuizOrderNumbers(board);
       });
 
       stack.querySelectorAll('[data-order-card]').forEach((card) => {
         card.addEventListener('pointerdown', (event) => {
           if (board.classList.contains('order-locked') || event.button > 0) return;
+          event.preventDefault();
+          stack.classList.add('is-reordering');
           const pointerId = event.pointerId;
           const rect = card.getBoundingClientRect();
           const offsetX = event.clientX - rect.left;
@@ -2266,6 +2276,7 @@
           const finish = () => {
             placeholder.replaceWith(card);
             card.classList.remove('is-pointer-dragging');
+            stack.classList.remove('is-reordering');
             card.style.position = '';
             card.style.left = '';
             card.style.top = '';
@@ -2554,7 +2565,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.113</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.115</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3174,19 +3185,14 @@
     const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
     if (mesh) {
       mesh.style.cssText = [
-        'position:absolute', 'inset:-60%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.78',
+        'position:absolute', 'inset:-18%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.78',
         `background-image:linear-gradient(90deg, ${meshColor} 1px, transparent 1px), linear-gradient(0deg, ${meshColor} 1px, transparent 1px), radial-gradient(circle at 18% 30%, ${meshGlow}, transparent 32%), radial-gradient(circle at 82% 70%, ${meshGlow}, transparent 34%)`,
         'background-size:42px 42px, 42px 42px, 100% 100%, 100% 100%',
-        'transform:translate3d(0,0,0) rotate(0.001deg)',
-        'will-change:transform'
+        'transform:translate3d(0,0,0)',
+        'backface-visibility:hidden',
+        'will-change:auto'
       ].join(';') + ';';
       try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-      if (typeof mesh.animate === 'function') {
-        mesh.animate([
-          { transform: 'translate3d(-42px,-22px,0)' },
-          { transform: 'translate3d(42px,22px,0)' }
-        ], { duration: 5200, iterations: Infinity, easing: 'linear' });
-      }
     }
     const emoji = band.querySelector('.enciso-quiz-feedback-emoji-v102');
     if (emoji) emoji.style.cssText = [
@@ -3205,6 +3211,18 @@
     ].join(';') + ';';
   }
 
+  function startFeedbackMeshDrift(band) {
+    const mesh = band?.querySelector?.('.enciso-quiz-feedback-mesh-v102');
+    if (!mesh || typeof mesh.animate !== 'function') return;
+    if (prefEnabled && !prefEnabled('animatedBackgrounds')) return;
+    try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
+    mesh.style.willChange = 'transform';
+    mesh.animate([
+      { transform: 'translate3d(-18px,-10px,0)' },
+      { transform: 'translate3d(18px,10px,0)' }
+    ], { duration: 6800, iterations: Infinity, easing: 'linear' });
+  }
+
   function playInlineFeedbackBounce(band) {
     if (!band) return;
     const tune = getQuizFeedbackTune();
@@ -3212,30 +3230,34 @@
     const zoom = Number(band.dataset.feedbackZoom || ((tune.bandZoom || 100) / 100));
     const t = (scale) => `translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${scale * zoom})`;
     try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
+    const mesh = band.querySelector?.('.enciso-quiz-feedback-mesh-v102');
+    try { mesh?.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
+    if (mesh) {
+      mesh.style.transform = 'translate3d(0,0,0)';
+      mesh.style.willChange = 'auto';
+    }
 
-    // v0.24.113: bounce mas elastico y distribuido.
-    // Antes la banda subia de 0.01 a 1.18 muy temprano, por eso alargar
-    // la duracion hacia que durara mas, pero el salto fuerte seguia rapido.
+    // v0.24.115: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.115 porque al alargarlo parecia lag/FPS bajo.
+    // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
+    const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
-      { opacity: 0, transform: t(0.58), offset: 0, easing: 'cubic-bezier(.16,.62,.24,1)' },
-      { opacity: 0.86, transform: t(0.78), offset: 0.20, easing: 'cubic-bezier(.18,.72,.25,1)' },
-      { opacity: 1, transform: t(0.98), offset: 0.40, easing: 'cubic-bezier(.20,.82,.28,1)' },
-      { opacity: 1, transform: t(1.075), offset: 0.55, easing: 'cubic-bezier(.26,.70,.32,1)' },
-      { opacity: 1, transform: t(0.965), offset: 0.70, easing: 'cubic-bezier(.28,.72,.34,1)' },
-      { opacity: 1, transform: t(1.018), offset: 0.84, easing: 'cubic-bezier(.24,.76,.30,1)' },
+      { opacity: 0, transform: t(0.88), offset: 0 },
+      { opacity: 1, transform: t(1.045), offset: 0.72 },
       { opacity: 1, transform: t(1), offset: 1 }
     ];
     if (typeof band.animate === 'function') {
-      const duration = Math.max(500, Math.min(3000, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 920));
-      const anim = band.animate(frames, { duration, easing: 'linear', fill: 'forwards' });
+      const anim = band.animate(frames, { duration, easing: 'cubic-bezier(.18,.92,.22,1)', fill: 'forwards' });
       anim.onfinish = () => {
         band.style.opacity = '1';
         band.style.transform = t(1);
+        startFeedbackMeshDrift(band);
       };
       return;
     }
     band.style.opacity = '1';
     band.style.transform = t(1);
+    startFeedbackMeshDrift(band);
   }
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
@@ -4486,7 +4508,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.113', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.115', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
