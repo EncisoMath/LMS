@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.80';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.80: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.81';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.81: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1426,8 +1426,8 @@
     slider: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 260 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.80';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.80';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.81';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.81';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -4176,7 +4176,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.80', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.81', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
