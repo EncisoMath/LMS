@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.92';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.92: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.93';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.93: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1465,8 +1465,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.92';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.92';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.93';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.93';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2657,20 +2657,32 @@
     return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${emoji}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
   }
 
+  function removeQuizGlobalFeedback() {
+    if (window.__encisomathQuizFeedbackTimer) {
+      window.clearTimeout(window.__encisomathQuizFeedbackTimer);
+      window.__encisomathQuizFeedbackTimer = null;
+    }
+    document.querySelectorAll('[data-quiz-global-feedback]').forEach((node) => node.remove());
+    document.querySelectorAll('.quiz-stage.quiz-feedback-visible').forEach((stage) => stage.classList.remove('quiz-feedback-visible'));
+  }
+
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
-    const feedback = stage?.querySelector('[data-quiz-feedback]');
-    if (!feedback) return;
-    stage?.classList.remove('quiz-feedback-visible');
-    feedback.hidden = true;
-    feedback.innerHTML = '';
-    void feedback.offsetWidth;
-    feedback.hidden = false;
-    feedback.innerHTML = quizAnswerFeedbackHTML(correct, neutralText, question);
-    feedback.className = neutralText
-      ? 'quiz-answer-feedback is-neutral quiz-feedback-zooming'
-      : `quiz-answer-feedback ${correct ? 'is-correct' : 'is-wrong'} quiz-feedback-zooming`;
-    void feedback.offsetWidth;
-    stage?.classList.add('quiz-feedback-visible');
+    removeQuizGlobalFeedback();
+    const overlay = document.createElement('div');
+    overlay.className = neutralText
+      ? 'quiz-global-feedback-overlay is-neutral'
+      : `quiz-global-feedback-overlay ${correct ? 'is-correct' : 'is-wrong'}`;
+    overlay.dataset.quizGlobalFeedback = 'true';
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = quizAnswerFeedbackHTML(correct, neutralText, question);
+    document.body.appendChild(overlay);
+    const card = overlay.querySelector('.quiz-feedback-card');
+    if (card) {
+      card.style.animation = 'none';
+      void card.offsetWidth;
+      card.style.animation = '';
+    }
+    window.__encisomathQuizFeedbackTimer = window.setTimeout(removeQuizGlobalFeedback, 3820);
   }
 
   function showQuizFeedbackBandAfterDelay(stage, correct, question = null, neutralText = '', delayMs = null) {
@@ -2785,6 +2797,7 @@
   }
 
   function showQuizResults() {
+    removeQuizGlobalFeedback();
     const quiz = getActiveQuiz();
     if (!quiz) return;
     clearQuizTimers();
@@ -2806,6 +2819,7 @@
   }
 
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
+    removeQuizGlobalFeedback();
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
     if (!layer) {
@@ -2949,6 +2963,7 @@
   }
 
   function closeQuizFullscreen(target = 'quizzes') {
+    removeQuizGlobalFeedback();
     clearQuizTimers();
     unlockQuizHistory();
     state.quizFullscreenActive = false;
@@ -4196,7 +4211,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.92', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.93', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

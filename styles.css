@@ -13270,7 +13270,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.92"; }
+:root { --encisomath-build: "0.24.93"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13359,7 +13359,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.92"; }
+:root { --encisomath-build: "0.24.93"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13585,7 +13585,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.92"; }
+:root { --encisomath-build: "0.24.93"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13787,4 +13787,125 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   76% { opacity: 1; transform: rotate(-8deg) scale(.965); }
   88% { opacity: 1; transform: rotate(-8deg) scale(1.025); }
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+
+/* ===== v0.24.93 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.93"; }
+.quiz-stage-fullscreen > .quiz-answer-feedback,
+.quiz-stage-fullscreen [data-quiz-feedback] {
+  display: none !important;
+}
+body > .quiz-global-feedback-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 2147483647 !important;
+  contain: none !important;
+  isolation: isolate !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card {
+  width: 168vw !important;
+  max-width: none !important;
+  min-width: 168vw !important;
+  min-height: clamp(90px, 15dvh, 132px) !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  padding: clamp(13px, 2.5dvh, 19px) 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, min(72vw, 640px)) !important;
+  grid-template-areas: "icon title" "icon phrase" !important;
+  justify-content: center !important;
+  align-items: center !important;
+  column-gap: clamp(12px, 3.8vw, 24px) !important;
+  row-gap: 5px !important;
+  text-align: left !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  filter: none !important;
+  background-image: none !important;
+  transform-origin: center center !important;
+  transform: rotate(-8deg) scale(0) !important;
+  opacity: 0 !important;
+  animation: quizGlobalFeedbackZoomBounceV93 760ms cubic-bezier(.18, .98, .18, 1) both !important;
+  will-change: transform, opacity !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card::before,
+body > .quiz-global-feedback-overlay .quiz-feedback-card::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card.is-correct {
+  background: #58cc02 !important;
+  color: #fff !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card.is-wrong {
+  background: #e21b3c !important;
+  color: #fff !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card.is-neutral {
+  background: #1368ce !important;
+  color: #fff !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card > span {
+  grid-area: icon !important;
+  font-size: clamp(2.05rem, 8.5vw, 3.7rem) !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  filter: none !important;
+  transform: none !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card strong {
+  grid-area: title !important;
+  color: #fff !important;
+  font-size: clamp(1.32rem, 5.7vw, 2.15rem) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  text-shadow: none !important;
+  transform: none !important;
+}
+body > .quiz-global-feedback-overlay .quiz-feedback-card p {
+  grid-area: phrase !important;
+  color: rgba(255,255,255,.95) !important;
+  font-size: clamp(.84rem, 3.3vw, 1.06rem) !important;
+  line-height: 1.12 !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  max-width: min(72vw, 640px) !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-shadow: none !important;
+  transform: none !important;
+}
+@keyframes quizGlobalFeedbackZoomBounceV93 {
+  0% { opacity: 0; transform: rotate(-8deg) scale(0); }
+  18% { opacity: 1; transform: rotate(-8deg) scale(.72); }
+  34% { opacity: 1; transform: rotate(-8deg) scale(1.18); }
+  48% { opacity: 1; transform: rotate(-8deg) scale(.91); }
+  62% { opacity: 1; transform: rotate(-8deg) scale(1.08); }
+  74% { opacity: 1; transform: rotate(-8deg) scale(.98); }
+  87% { opacity: 1; transform: rotate(-8deg) scale(1.025); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+@media (max-height: 620px) {
+  body > .quiz-global-feedback-overlay .quiz-feedback-card {
+    min-height: clamp(78px, 16dvh, 106px) !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  body > .quiz-global-feedback-overlay .quiz-feedback-card > span { font-size: clamp(1.7rem, 7vw, 2.7rem) !important; }
+  body > .quiz-global-feedback-overlay .quiz-feedback-card strong { font-size: clamp(1.08rem, 4.6vw, 1.55rem) !important; }
+  body > .quiz-global-feedback-overlay .quiz-feedback-card p { font-size: clamp(.74rem, 3vw, .92rem) !important; }
 }
