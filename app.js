@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.97';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.97: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.98';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.98: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,7 +55,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.97';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.98';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -8,
     bandX: 0,
@@ -1288,6 +1288,23 @@
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
+  function bindQuizTabEvents() {
+    document.querySelectorAll('[data-quiz-period]').forEach((button) => {
+      if (button.dataset.boundQuizPeriod === 'true') return;
+      button.dataset.boundQuizPeriod = 'true';
+      button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
+    });
+    document.querySelectorAll('[data-quiz-id]').forEach((button) => {
+      if (button.dataset.boundQuizCard === 'true') return;
+      button.dataset.boundQuizCard = 'true';
+      button.addEventListener('click', () => {
+        const quizId = button.dataset.quizId || '';
+        if (!quizId) return;
+        startQuiz(quizId);
+      });
+    });
+  }
+
   function getBaseQuizzes() {
     const source = state.data.quizzes;
     if (Array.isArray(source)) return source;
@@ -1461,8 +1478,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.97';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.97';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.98';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.98';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2672,7 +2689,7 @@
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.97: the feedback overlay uses inline styles and Web Animations.
+    // v0.24.98: the feedback overlay uses inline styles and Web Animations.
     // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
@@ -4361,7 +4378,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.97', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.98', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
