@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.127';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.127: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.128';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.128: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1664,7 +1664,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.127';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.128';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2468,7 +2468,7 @@
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
         const revealGap = 140;
-        const revealDuration = 620;
+        const revealDuration = 900;
         board.classList.add('order-validating');
         orderCards.forEach((card) => {
           if (typeof card.getAnimations === 'function') {
@@ -2484,44 +2484,15 @@
         });
 
         const runOrderCardRevealMotion = (card, matched) => {
-          const frames = matched
-            ? [
-                { transform: 'translate3d(0, 0, 0) scale(1)', offset: 0 },
-                { transform: 'translate3d(0, -6px, 0) scale(1.035)', offset: 0.28 },
-                { transform: 'translate3d(0, 2px, 0) scale(0.996)', offset: 0.56 },
-                { transform: 'translate3d(0, -1px, 0) scale(1.01)', offset: 0.78 },
-                { transform: 'translate3d(0, 0, 0) scale(1)', offset: 1 }
-              ]
-            : [
-                { transform: 'translate3d(0, 0, 0) rotate(0deg)', offset: 0 },
-                { transform: 'translate3d(-8px, 0, 0) rotate(-1deg)', offset: 0.16 },
-                { transform: 'translate3d(8px, 0, 0) rotate(1deg)', offset: 0.32 },
-                { transform: 'translate3d(-6px, 0, 0) rotate(-0.8deg)', offset: 0.50 },
-                { transform: 'translate3d(5px, 0, 0) rotate(0.6deg)', offset: 0.68 },
-                { transform: 'translate3d(-2px, 0, 0) rotate(-0.25deg)', offset: 0.84 },
-                { transform: 'translate3d(0, 0, 0) rotate(0deg)', offset: 1 }
-              ];
-          if (typeof card.animate === 'function') {
-            const motion = card.animate(frames, {
-              duration: matched ? revealDuration : 560,
-              easing: matched ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'cubic-bezier(.36,.07,.19,.97)',
-              fill: 'both'
-            });
-            motion.onfinish = () => {
-              motion.cancel();
-              card.style.removeProperty('transform');
-              card.classList.remove('order-js-revealing');
-            };
-            return;
-          }
-          card.style.setProperty(
-            'animation',
-            matched
-              ? 'quizOrderCorrectBounce126 620ms cubic-bezier(0.34, 1.56, 0.64, 1) both'
-              : 'quizOrderWrongShake126 560ms cubic-bezier(.36,.07,.19,.97) both',
-            'important'
-          );
+          const revealClass = matched ? 'order-reveal-correct' : 'order-reveal-wrong';
+          card.classList.remove('order-reveal-correct', 'order-reveal-wrong');
+          card.style.removeProperty('animation');
+          void card.offsetWidth;
+          window.requestAnimationFrame(() => {
+            card.classList.add(revealClass);
+          });
         };
+
 
         const revealOneCard = (card, index) => {
           const matched = selected[index] === correctOrder[index];
@@ -2539,7 +2510,6 @@
           card.classList.add('order-js-revealing');
           card.style.setProperty('transition', 'background 420ms cubic-bezier(0.87, 0, 0.13, 1), box-shadow 180ms ease', 'important');
           card.classList.add(matched ? 'matched' : 'wrong');
-          card.classList.add(matched ? 'order-reveal-correct' : 'order-reveal-wrong');
           runOrderCardRevealMotion(card, matched);
         };
 
@@ -2690,7 +2660,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.127</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.128</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4491,7 +4461,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.127', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.128', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -1,6 +1,6 @@
 {
   "version": "1.10",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.127 limpia código legacy de tipos retirados y consolida el CSS de Organizar tarjetas.",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.128 cambia el reveal de Organizar tarjetas a jello-horizontal/wobble-hor-bottom.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
