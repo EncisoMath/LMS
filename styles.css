@@ -1,4 +1,4 @@
-/* ===== v0.24.108 Montserrat local para quizzes =====
+/* ===== v0.24.109 Montserrat local para quizzes =====
    Rutas compatibles con la carpeta plana mostrada por el usuario:
    assets/fonts/Montserrat/Montserrat-*.ttf
    Se usan fuentes variables para cubrir todos los pesos y se dejan pesos
@@ -11577,7 +11577,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.108"; }
+:root { --encisomath-build: "0.24.109"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -11666,7 +11666,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.108"; }
+:root { --encisomath-build: "0.24.109"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -11892,7 +11892,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.108"; }
+:root { --encisomath-build: "0.24.109"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -12096,8 +12096,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.108 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.108"; }
+/* ===== v0.24.109 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.109"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -12218,8 +12218,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.108 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.108"; }
+/* ===== v0.24.109 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.109"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -12242,7 +12242,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.108 quiz font and feedback tuning overlay ===== */
+/* ===== v0.24.109 quiz font and feedback tuning overlay ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage-fullscreen,
@@ -12284,7 +12284,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.108 Montserrat + visible feedback tune panel ===== */
+/* ===== v0.24.109 Montserrat + visible feedback tune panel ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage *,
@@ -12371,7 +12371,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.108 Montserrat + interactive feedback sliders ===== */
+/* ===== v0.24.109 Montserrat + interactive feedback sliders ===== */
 :root { --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .quiz-fullscreen-layer,
 .quiz-fullscreen-layer *,
@@ -12431,7 +12431,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-feedback-tune-panel .quiz-feedback-tune-scroll { max-height: 42dvh !important; }
 }
 
-/* ===== v0.24.108 global quiz typography controls ===== */
+/* ===== v0.24.109 global quiz typography controls ===== */
 :root {
   --quiz-global-font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --quiz-global-text-weight: 700;
@@ -12484,9 +12484,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.108 forced quiz typography controls ===== */
+/* ===== v0.24.109 forced quiz typography controls ===== */
 :root {
-  --encisomath-build: "0.24.108";
+  --encisomath-build: "0.24.109";
   --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .quiz-layout-tune-panel,
@@ -12495,7 +12495,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.108 cleanup and performance toggles ===== */
+/* ===== v0.24.109 cleanup and performance toggles ===== */
 :root {
   --effects-motion-enabled: 1;
 }
@@ -12555,9 +12555,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   overflow-y: auto !important;
 }
 
-/* ===== v0.24.108 visual performance without flat mode ===== */
+/* ===== v0.24.109 visual performance without flat mode ===== */
 :root {
-  --encisomath-build: "0.24.108";
+  --encisomath-build: "0.24.109";
 }
 @keyframes tabIn {
   0% { opacity: 0; transform: translate3d(0, 6px, 0); }
@@ -12726,9 +12726,9 @@ body.modal-open .quiz-tile {
 }
 
 
-/* ===== v0.24.108 hero performance tuning: rich static instead of flat ===== */
+/* ===== v0.24.109 hero performance tuning: rich static instead of flat ===== */
 :root {
-  --encisomath-build: "0.24.108";
+  --encisomath-build: "0.24.109";
 }
 :root[data-visual-optimized="on"] #app,
 :root[data-visual-optimized="on"] #app.is-leaving,
@@ -12867,4 +12867,166 @@ body.modal-open .quiz-tile {
   :root[data-visual-optimized="on"] .quiz-title-neon {
     animation: none !important;
   }
+}
+
+
+/* ===== v0.24.109 unified light entrance motion ===== */
+:root {
+  --encisomath-build: "0.24.109";
+  --enciso-flow-distance: 7px;
+  --enciso-flow-duration: 210ms;
+  --enciso-flow-ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+/* Replaces the old heavy per-card blur entrance. */
+@keyframes itemIn {
+  0% { opacity: 0; transform: translate3d(0, var(--enciso-flow-distance), 0); filter: none; }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: none; }
+}
+@keyframes encisoFlowIn {
+  0% { opacity: 0; transform: translate3d(0, var(--enciso-flow-distance), 0); filter: none; }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: none; }
+}
+@keyframes encisoFlowListIn {
+  0% { opacity: 0; transform: translate3d(0, 8px, 0); filter: none; }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: none; }
+}
+
+/* HOME: cover, info, buttons, teacher panel, filters, and assignment grid items. */
+.home-screen .profile-cover,
+.home-screen .profile-avatar,
+.home-screen .profile-copy,
+.home-screen .profile-action-row .round-action,
+.home-screen .logout-pill,
+.home-screen .section-head,
+.home-screen .filter-row,
+.home-screen .bottom-nav,
+.subject-screen .sticky-tabs .tab-btn,
+.tab-section[data-active-tab="students"] .date-card,
+.tab-section[data-active-tab="students"] .student-tools .search-wrap,
+.tab-section[data-active-tab="students"] .student-tools #openAddStudentBtn,
+.tab-section[data-active-tab="rockstars"] .rockstar-period-tabs,
+.tab-section[data-active-tab="rockstars"] .rockstar-tools .search-wrap,
+.tab-section[data-active-tab="quizzes"] .quiz-period-tabs,
+.tab-section[data-active-tab="classes"] .period-tabs,
+.tab-section[data-active-tab="classes"] .view-row,
+.tab-section[data-active-tab="classes"] #periodLabel {
+  animation: encisoFlowIn var(--enciso-flow-duration) var(--enciso-flow-ease) both;
+  will-change: transform, opacity;
+}
+
+.home-screen .profile-cover { animation-delay: 0ms; }
+.home-screen .profile-avatar { animation-delay: 15ms; }
+.home-screen .profile-copy { animation-delay: 35ms; }
+.home-screen .profile-action-row .round-action { animation-delay: 55ms; }
+.home-screen .logout-pill { animation-delay: 70ms; }
+.home-screen .section-head { animation-delay: 90ms; }
+.home-screen .filter-row { animation-delay: 110ms; }
+.home-screen .bottom-nav { animation-delay: 120ms; }
+
+.home-screen .assignment-card {
+  animation: encisoFlowIn 210ms var(--enciso-flow-ease) both !important;
+  filter: none !important;
+}
+.home-screen .assignment-card:nth-child(1) { animation-delay: 120ms !important; }
+.home-screen .assignment-card:nth-child(2) { animation-delay: 145ms !important; }
+.home-screen .assignment-card:nth-child(3) { animation-delay: 170ms !important; }
+.home-screen .assignment-card:nth-child(4) { animation-delay: 195ms !important; }
+.home-screen .assignment-card:nth-child(5) { animation-delay: 220ms !important; }
+.home-screen .assignment-card:nth-child(6) { animation-delay: 245ms !important; }
+.home-screen .assignment-card:nth-child(n+7) { animation-delay: 260ms !important; }
+
+/* Subject tab buttons when opening an assignment. */
+.subject-screen .sticky-tabs .tab-btn:nth-child(1) { animation-delay: 20ms; }
+.subject-screen .sticky-tabs .tab-btn:nth-child(2) { animation-delay: 45ms; }
+.subject-screen .sticky-tabs .tab-btn:nth-child(3) { animation-delay: 70ms; }
+.subject-screen .sticky-tabs .tab-btn:nth-child(4) { animation-delay: 95ms; }
+
+/* Students: animate blocks, not every student card. */
+.tab-section[data-active-tab="students"] .date-card { animation-delay: 0ms; }
+.tab-section[data-active-tab="students"] .student-tools .search-wrap { animation-delay: 35ms; }
+.tab-section[data-active-tab="students"] .student-tools #openAddStudentBtn { animation-delay: 55ms; }
+.tab-section[data-active-tab="students"] #studentList {
+  animation: encisoFlowListIn 220ms var(--enciso-flow-ease) 75ms both;
+  will-change: transform, opacity;
+}
+.tab-section[data-active-tab="students"] #studentList .student-card {
+  animation: none !important;
+}
+
+/* Rockstars: animate period controls/search/list as blocks. */
+.tab-section[data-active-tab="rockstars"] .rockstar-period-tabs { animation-delay: 0ms; }
+.tab-section[data-active-tab="rockstars"] .rockstar-tools .search-wrap { animation-delay: 35ms; }
+.tab-section[data-active-tab="rockstars"] #rockstarList {
+  animation: encisoFlowListIn 220ms var(--enciso-flow-ease) 65ms both;
+  will-change: transform, opacity;
+}
+.tab-section[data-active-tab="rockstars"] #rockstarList .student-card {
+  animation: none !important;
+}
+
+/* Quizzes: animate period controls and quiz list as blocks. */
+.tab-section[data-active-tab="quizzes"] .quiz-period-tabs { animation-delay: 0ms; }
+.tab-section[data-active-tab="quizzes"] #quizLibrary {
+  animation: encisoFlowListIn 220ms var(--enciso-flow-ease) 45ms both;
+  will-change: transform, opacity;
+}
+.tab-section[data-active-tab="quizzes"] #quizLibrary .quiz-card {
+  animation: none !important;
+}
+
+/* Classes: remove remaining blur and keep per-class animation because there are few lessons. */
+.tab-section[data-active-tab="classes"] .period-tabs { animation-delay: 0ms; }
+.tab-section[data-active-tab="classes"] .view-row { animation-delay: 35ms; }
+.tab-section[data-active-tab="classes"] #periodLabel { animation-delay: 50ms; }
+.tab-section[data-active-tab="classes"] #classGrid .class-card,
+.tab-section[data-active-tab="classes"] #classGrid .empty {
+  animation: encisoFlowIn 210ms var(--enciso-flow-ease) both !important;
+  filter: none !important;
+}
+.tab-section[data-active-tab="classes"] #classGrid .class-card:nth-child(1) { animation-delay: 70ms !important; }
+.tab-section[data-active-tab="classes"] #classGrid .class-card:nth-child(2) { animation-delay: 95ms !important; }
+.tab-section[data-active-tab="classes"] #classGrid .class-card:nth-child(3) { animation-delay: 120ms !important; }
+.tab-section[data-active-tab="classes"] #classGrid .class-card:nth-child(4) { animation-delay: 145ms !important; }
+.tab-section[data-active-tab="classes"] #classGrid .class-card:nth-child(n+5) { animation-delay: 160ms !important; }
+
+/* When class period changes, reuse the same light motion without blur. */
+.class-grid-update .class-card,
+.class-grid-update .empty {
+  animation-name: encisoFlowIn !important;
+  animation-duration: 190ms !important;
+  animation-timing-function: var(--enciso-flow-ease) !important;
+  filter: none !important;
+}
+
+/* Respect the user performance switch. */
+:root[data-effects-motion="off"] .home-screen .profile-cover,
+:root[data-effects-motion="off"] .home-screen .profile-avatar,
+:root[data-effects-motion="off"] .home-screen .profile-copy,
+:root[data-effects-motion="off"] .home-screen .profile-action-row .round-action,
+:root[data-effects-motion="off"] .home-screen .logout-pill,
+:root[data-effects-motion="off"] .home-screen .section-head,
+:root[data-effects-motion="off"] .home-screen .filter-row,
+:root[data-effects-motion="off"] .home-screen .bottom-nav,
+:root[data-effects-motion="off"] .home-screen .assignment-card,
+:root[data-effects-motion="off"] .subject-screen .sticky-tabs .tab-btn,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="students"] .date-card,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="students"] .student-tools .search-wrap,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="students"] .student-tools #openAddStudentBtn,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="students"] #studentList,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="rockstars"] .rockstar-period-tabs,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="rockstars"] .rockstar-tools .search-wrap,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="rockstars"] #rockstarList,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="quizzes"] .quiz-period-tabs,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="quizzes"] #quizLibrary,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="classes"] .period-tabs,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="classes"] .view-row,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="classes"] #periodLabel,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="classes"] #classGrid .class-card,
+:root[data-effects-motion="off"] .tab-section[data-active-tab="classes"] #classGrid .empty {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  will-change: auto !important;
 }

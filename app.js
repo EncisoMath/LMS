@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.108';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.108: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.109';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.109: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -157,8 +157,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_108_KEY = 'encisomath:perfDefaults:v0.24.108';
-  if (!localStorage.getItem(PERF_DEFAULTS_108_KEY)) {
+  const PERF_DEFAULTS_109_KEY = 'encisomath:perfDefaults:v0.24.109';
+  if (!localStorage.getItem(PERF_DEFAULTS_109_KEY)) {
     state.prefs = {
       ...state.prefs,
       visualOptimized: true,
@@ -167,7 +167,7 @@
       glassEffects: false
     };
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
-    localStorage.setItem(PERF_DEFAULTS_108_KEY, '1');
+    localStorage.setItem(PERF_DEFAULTS_109_KEY, '1');
   }
 
   let firstPaint = true;
@@ -4277,7 +4277,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.108', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.109', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
