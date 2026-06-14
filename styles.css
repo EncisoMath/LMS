@@ -12966,3 +12966,305 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 .quiz-cascade-tune-actions {
   grid-template-columns: 1fr !important;
 }
+
+/* ===== v0.24.89 - fixes tarjetas, slider pequeno, input y banda feedback ===== */
+/* 1) Mantener radios de opciones en todos los estados */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option:active,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.selected,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.correct-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.wrong-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option.unused-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-revealed .kahoot-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-pending .kahoot-option {
+  border-radius: 6px !important;
+  overflow: visible !important;
+  clip-path: none !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .kahoot-option::after {
+  border-radius: 6px !important;
+}
+
+/* 2) Restaurar animaciones de seleccion correcta/incorrecta */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-revealed .kahoot-option.correct-reveal.kahoot-reveal-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-revealed .kahoot-option.correct-reveal {
+  animation: quizKahootCorrectPopV89 620ms cubic-bezier(.16,1,.3,1) both !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-revealed .kahoot-option.wrong-reveal.kahoot-reveal-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-choice-revealed .kahoot-option.wrong-reveal {
+  animation: quizKahootWrongShakeV89 620ms cubic-bezier(.36,.07,.19,.97) both !important;
+}
+@keyframes quizKahootCorrectPopV89 {
+  0% { transform: scale(.98); }
+  30% { transform: scale(1.055); }
+  58% { transform: scale(.985); }
+  82% { transform: scale(1.018); }
+  100% { transform: scale(1); }
+}
+@keyframes quizKahootWrongShakeV89 {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  12% { transform: translateX(-9px) rotate(-1deg); }
+  24% { transform: translateX(8px) rotate(1deg); }
+  36% { transform: translateX(-7px) rotate(-.8deg); }
+  48% { transform: translateX(6px) rotate(.8deg); }
+  60% { transform: translateX(-4px) rotate(-.5deg); }
+  72% { transform: translateX(3px) rotate(.3deg); }
+  84% { transform: translateX(-2px) rotate(-.2deg); }
+}
+
+/* 3) Pregunta abierta: no forzar scroll al enfocar; mantener bloque estable */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused {
+  transform: none !important;
+  translate: none !important;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open.quiz-open-input-focused .quiz-question-content {
+  transform: none !important;
+  translate: none !important;
+  scroll-margin: 0 !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input:focus {
+  scroll-margin: 0 !important;
+}
+
+/* 4) Slider ultra compacto para pantallas pequenas: bullets pasan a circulos */
+@media (max-height: 640px), (max-width: 390px) {
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider {
+    --quiz-fit-image-fr: 28fr !important;
+    --quiz-fit-text-fr: 42fr !important;
+    --quiz-fit-answer-fr: 30fr !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-answer-zone,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-answer-zone {
+    overflow: hidden !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-shell {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) auto 34px !important;
+    gap: 2px !important;
+    padding: 2px 4px 4px !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-visual-stage,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-visual-stage {
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: 112px !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-widget,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-widget {
+    width: min(88vw, 286px) !important;
+    height: 104px !important;
+    min-height: 0 !important;
+    max-height: 104px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble {
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    top: 0 !important;
+    left: var(--slider-bubble-x, 50%) !important;
+    transform: translateX(-50%) scale(var(--slider-user-scale, .61)) !important;
+    border-radius: 999px !important;
+    padding: 0 !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble::after,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble::after {
+    display: none !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble span,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-bubble span {
+    font-size: 1.8rem !important;
+    line-height: 1 !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks {
+    position: absolute !important;
+    left: 4px !important;
+    right: 4px !important;
+    top: 58px !important;
+    width: auto !important;
+    min-height: 22px !important;
+    height: 22px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 3px !important;
+    transform: none !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick],
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick] {
+    flex: 0 0 auto !important;
+    width: clamp(7px, 2.8vw, 10px) !important;
+    max-width: clamp(7px, 2.8vw, 10px) !important;
+    min-width: clamp(7px, 2.8vw, 10px) !important;
+    height: clamp(7px, 2.8vw, 10px) !important;
+    min-height: clamp(7px, 2.8vw, 10px) !important;
+    max-height: clamp(7px, 2.8vw, 10px) !important;
+    border-radius: 999px !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick].active,
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick].correct-answer,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick].active,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-ticks span[data-slider-tick].correct-answer {
+    width: clamp(12px, 4vw, 16px) !important;
+    max-width: clamp(12px, 4vw, 16px) !important;
+    min-width: clamp(12px, 4vw, 16px) !important;
+    height: clamp(12px, 4vw, 16px) !important;
+    min-height: clamp(12px, 4vw, 16px) !important;
+    max-height: clamp(12px, 4vw, 16px) !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-phone-range,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-phone-range {
+    top: 38px !important;
+    height: 58px !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-limits,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-limits {
+    font-size: .68rem !important;
+    line-height: 1 !important;
+    padding: 0 4px !important;
+    margin: 0 !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-submit,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .quiz-slider-submit {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 4px 8px !important;
+    font-size: .86rem !important;
+    line-height: 1 !important;
+  }
+  body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .slider-correct-bubble,
+  .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-slider .slider-correct-bubble {
+    transform: translateX(-50%) scale(.72) !important;
+  }
+}
+
+/* 5 y 6) Banda correcto/incorrecto: zoom bounce real, sin degradado, con emoji/titulo/frase */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  z-index: 2147483000 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden] {
+  display: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card {
+  width: min(92vw, 720px) !important;
+  min-height: clamp(74px, 13dvh, 112px) !important;
+  height: auto !important;
+  border-radius: 6px !important;
+  padding: clamp(10px, 2dvh, 16px) clamp(16px, 4vw, 28px) !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-areas: "icon title" "icon phrase" !important;
+  column-gap: clamp(10px, 3vw, 18px) !important;
+  row-gap: 4px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: left !important;
+  overflow: hidden !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform-origin: center center !important;
+  opacity: 0;
+  animation-name: quizFeedbackCenterZoomBounceV89 !important;
+  animation-duration: 520ms !important;
+  animation-timing-function: cubic-bezier(.2, 1.15, .32, 1) !important;
+  animation-fill-mode: both !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct {
+  background: #58cc02 !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong {
+  background: #e21b3c !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral {
+  background: #1368ce !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span {
+  grid-area: icon !important;
+  font-size: clamp(1.9rem, 8vw, 3.2rem) !important;
+  line-height: 1 !important;
+  transform: none !important;
+  align-self: center !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong {
+  grid-area: title !important;
+  color: #fff !important;
+  font-size: clamp(1.25rem, 5.4vw, 2rem) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p {
+  grid-area: phrase !important;
+  color: rgba(255,255,255,.95) !important;
+  font-size: clamp(.82rem, 3.2vw, 1.02rem) !important;
+  line-height: 1.12 !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  transform: none !important;
+  min-width: 0 !important;
+}
+@keyframes quizFeedbackCenterZoomBounceV89 {
+  0% { opacity: 0; transform: rotate(-8deg) scale(0); }
+  56% { opacity: 1; transform: rotate(-8deg) scale(1.10); }
+  76% { opacity: 1; transform: rotate(-8deg) scale(.94); }
+  90% { opacity: 1; transform: rotate(-8deg) scale(1.025); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
