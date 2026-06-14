@@ -1,6 +1,6 @@
 {
   "version": "1.9",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.125 estabiliza el alto al arrastrar, retira la instrucción de Organizar tarjetas y fuerza validación individual secuencial.",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.126 estabiliza el alto al arrastrar, retira la instrucción de Organizar tarjetas y fuerza validación individual secuencial.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
