@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.115';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.115: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.116';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.116: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.115';
-  // v0.24.115: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.116';
+  // v0.24.116: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1900,6 +1900,12 @@
             <button class="btn ghost small" type="button" data-quiz-typography-reset>Restablecer fuentes</button>
           </div>
           ${quizFeedbackMiniTuneBoxHTML()}
+          <div class="quiz-layout-live-measures" aria-label="Altos reales actuales del layout">
+            <strong>Altos reales en pantalla</strong>
+            <span data-quiz-layout-measure="image">Imagen: calculando…</span>
+            <span data-quiz-layout-measure="textA">Texto: calculando…</span>
+            <span data-quiz-layout-measure="answers">Opciones: calculando…</span>
+          </div>
           <div class="quiz-layout-tune-scroll">
             ${layoutFields.map((field) => `
               <label class="quiz-layout-tune-row">
@@ -1929,6 +1935,7 @@
         panel.classList.add('is-open');
         const type = panel.dataset.quizLayoutType || 'default';
         applyQuizLayoutTune(type, getQuizLayoutTune(type));
+        window.setTimeout(() => updateQuizLayoutMeasurements(stage), 60);
           });
     });
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
@@ -1937,6 +1944,7 @@
       const panelHasImage = panel.dataset.quizHasImage === 'true';
       applyQuizLayoutTune(type, getQuizLayoutTune(type));
       applyQuizCascadeTune(type, getQuizCascadeTune(type, panelHasImage), panelStage, panelHasImage);
+      window.setTimeout(() => updateQuizLayoutMeasurements(panelStage), 60);
       const closePanel = () => {
         const active = document.activeElement;
         if (active && panel.contains(active)) active.blur();
@@ -2030,6 +2038,7 @@
           current[key] = Number(input.value);
           const balanced = saveQuizLayoutTune(type, rebalanceQuizLayoutTune(current, key));
           applyQuizLayoutTune(type, balanced);
+          updateQuizLayoutMeasurements(panelStage);
           panel.querySelectorAll('[data-quiz-layout-tune]').forEach((slider) => {
             const sliderKey = slider.dataset.quizLayoutTune;
             const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === sliderKey);
@@ -2044,6 +2053,7 @@
       panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
         const defaults = saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
         applyQuizLayoutTune(type, defaults);
+        updateQuizLayoutMeasurements(panelStage);
         panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
           const key = input.dataset.quizLayoutTune;
           input.value = defaults[key];
@@ -2127,6 +2137,7 @@
     setBox('image', 'image');
     setBox('answers', 'answers');
     applyQuizTypographyTune(getQuizTypographyTune());
+    window.requestAnimationFrame?.(() => updateQuizLayoutMeasurements(stage));
   }
 
   function quizTypeLabel(type) {
@@ -2194,18 +2205,65 @@
     return Array.from(board?.querySelectorAll('[data-order-card]') || []).map((card) => card.dataset.orderCard || '');
   }
 
+  function animateQuizOrderShift(stack, mutate) {
+    if (!stack || typeof mutate !== 'function') return;
+    const cards = Array.from(stack.querySelectorAll('[data-order-card]:not(.is-pointer-dragging):not(.is-dragging)'));
+    const first = new Map(cards.map((card) => [card, card.getBoundingClientRect()]));
+    mutate();
+    cards.forEach((card) => {
+      const start = first.get(card);
+      if (!start || !card.isConnected) return;
+      const end = card.getBoundingClientRect();
+      const dx = start.left - end.left;
+      const dy = start.top - end.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      card.animate([
+        { transform: `translate(${dx}px, ${dy}px)` },
+        { transform: 'translate(0, 0)' }
+      ], {
+        duration: 260,
+        easing: 'cubic-bezier(.2,.8,.2,1)'
+      });
+    });
+  }
+
   function placeOrderPlaceholder(board, y, draggingCard, placeholder) {
-    const cards = Array.from(board.querySelectorAll('[data-order-card]')).filter((card) => card !== draggingCard);
-    let placed = false;
+    const stack = board?.querySelector('[data-quiz-order-stack]');
+    if (!stack) return;
+    const cards = Array.from(stack.querySelectorAll('[data-order-card]')).filter((card) => card !== draggingCard);
+    let beforeNode = null;
     for (const card of cards) {
       const rect = card.getBoundingClientRect();
       if (y < rect.top + rect.height / 2) {
-        card.parentNode.insertBefore(placeholder, card);
-        placed = true;
+        beforeNode = card;
         break;
       }
     }
-    if (!placed) board.querySelector('[data-quiz-order-stack]')?.appendChild(placeholder);
+    if (placeholder.nextSibling === beforeNode || (!beforeNode && placeholder.parentNode === stack && placeholder.nextSibling === null)) return;
+    animateQuizOrderShift(stack, () => {
+      if (beforeNode) stack.insertBefore(placeholder, beforeNode);
+      else stack.appendChild(placeholder);
+    });
+  }
+
+  function updateQuizLayoutMeasurements(stage = document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage')) {
+    if (!stage) return;
+    const rows = [
+      ['image', 'Imagen'],
+      ['textA', 'Texto'],
+      ['answers', 'Opciones']
+    ];
+    rows.forEach(([target, label]) => {
+      const box = stage.querySelector(`[data-quiz-tune-target="${target}"]`);
+      const output = stage.querySelector(`[data-quiz-layout-measure="${target}"]`);
+      if (!output) return;
+      if (!box) {
+        output.textContent = `${label}: sin bloque visible`;
+        return;
+      }
+      const rect = box.getBoundingClientRect();
+      output.textContent = `${label}: ${Math.round(rect.height)}px alto`;
+    });
   }
 
   function bindQuizOrderEvents() {
@@ -2231,7 +2289,8 @@
         const target = event.target.closest('[data-order-card]');
         if (!target || target === dragging) return;
         const rect = target.getBoundingClientRect();
-        stack.insertBefore(dragging, event.clientY < rect.top + rect.height / 2 ? target : target.nextSibling);
+        const beforeNode = event.clientY < rect.top + rect.height / 2 ? target : target.nextSibling;
+        animateQuizOrderShift(stack, () => stack.insertBefore(dragging, beforeNode));
         updateQuizOrderNumbers(board);
       });
       stack.addEventListener('dragend', () => {
@@ -2274,6 +2333,7 @@
             placeOrderPlaceholder(board, moveEvent.clientY, card, placeholder);
           };
           const finish = () => {
+            const finalRect = placeholder.getBoundingClientRect();
             placeholder.replaceWith(card);
             card.classList.remove('is-pointer-dragging');
             stack.classList.remove('is-reordering');
@@ -2284,6 +2344,15 @@
             card.style.zIndex = '';
             card.style.pointerEvents = '';
             card.releasePointerCapture?.(pointerId);
+            const settledRect = card.getBoundingClientRect();
+            const dx = finalRect.left - settledRect.left;
+            const dy = finalRect.top - settledRect.top;
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+              card.animate([
+                { transform: `translate(${dx}px, ${dy}px) scale(1.02)` },
+                { transform: 'translate(0, 0) scale(1)' }
+              ], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+            }
             window.removeEventListener('pointermove', move);
             window.removeEventListener('pointerup', finish);
             window.removeEventListener('pointercancel', finish);
@@ -2303,15 +2372,21 @@
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
         board.classList.add('order-locked', ok ? 'order-correct' : 'order-wrong');
-        board.querySelectorAll('[data-order-card]').forEach((card, index) => {
-          card.draggable = false;
-          card.classList.add(selected[index] === correctOrder[index] ? 'matched' : 'wrong');
-        });
+        const cards = Array.from(board.querySelectorAll('[data-order-card]'));
+        cards.forEach((card) => { card.draggable = false; });
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
+        cards.forEach((card, index) => {
+          window.setTimeout(() => {
+            const matched = selected[index] === correctOrder[index];
+            card.classList.remove('order-reveal-correct', 'order-reveal-wrong');
+            void card.offsetWidth;
+            card.classList.add(matched ? 'matched' : 'wrong', matched ? 'order-reveal-correct' : 'order-reveal-wrong');
+          }, index * 230);
+        });
         recordQuizAnswer(question, ok, { order: selected, correctOrder });
-        if (!ok) pulseElement(board, 'quiz-slider-wrong-pop');
-        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
+        if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), cards.length * 230 + 80);
+        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, cards.length * 230 + 520));
       });
       updateQuizOrderNumbers(board);
     });
@@ -2565,7 +2640,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.115</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.116</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3237,8 +3312,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.115: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.115 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.116: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.116 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4508,7 +4583,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.115', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.116', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
