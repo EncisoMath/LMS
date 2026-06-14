@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.131';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.131: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.134';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.134: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1431,14 +1431,12 @@
     const promptText = promptSegments.join('\n\n');
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
-    const calibratable = ['multiple_choice', 'true_false', 'open', 'order'].includes(question.type);
     return `
-      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <span class="quiz-timer-pill">Item ${index + 1}</span>
-            ${calibratable ? '<button class="quiz-tune-gear" type="button" data-quiz-layout-tune-open aria-label="Abrir ajustes de layout" title="Ajustar layout">⚙️</button>' : ''}
           </div>
         </div>
         <div class="quiz-question-content">
@@ -1449,7 +1447,6 @@
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
-        ${calibratable ? quizLayoutTunePanelHTML(question.type, questions.length, index, Boolean(question.image)) : ''}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -1664,7 +1661,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.131';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.134';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1932,6 +1929,33 @@
         </div>
       </section>
     `;
+  }
+
+
+  function updateQuizLayoutMeasurements(stage) {
+    if (!stage) return;
+    const panel = stage.querySelector('[data-quiz-layout-tune-panel]');
+    if (!panel) return;
+    const targets = {
+      image: stage.querySelector('[data-quiz-tune-target="image"]'),
+      textA: stage.querySelector('[data-quiz-tune-target="textA"]'),
+      answers: stage.querySelector('[data-quiz-tune-target="answers"]')
+    };
+    const labels = {
+      image: 'Imagen',
+      textA: 'Texto',
+      answers: 'Opciones'
+    };
+    Object.entries(targets).forEach(([key, el]) => {
+      const output = panel.querySelector(`[data-quiz-layout-measure="${key}"]`);
+      if (!output) return;
+      if (!el) {
+        output.textContent = `${labels[key]}: 0 px`;
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      output.textContent = `${labels[key]}: ${Math.round(rect.height)} px`;
+    });
   }
 
   function bindQuizLayoutTunePanel() {
@@ -2660,7 +2684,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.131</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.134</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4461,7 +4485,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.131', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.134', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
