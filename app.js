@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.118';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.118: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.119';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.119: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.118';
-  // v0.24.118: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.119';
+  // v0.24.119: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1858,14 +1858,15 @@
     if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
     const layoutTune = getQuizLayoutTune(type);
     const typographyTune = getQuizTypographyTune();
-    const layoutFields = QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => hasImage || !field.key.startsWith('image_'));
+    const isOrderTune = type === 'order';
+    const layoutFields = (hasImage || isOrderTune) ? QUIZ_LAYOUT_TUNE_FIELDS : QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => !field.key.startsWith('image_'));
     return `
       <section class="quiz-layout-tune-panel quiz-cascade-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" hidden aria-hidden="true">
         <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajustes temporales del quiz">
           <div class="quiz-layout-tune-dialog-head">
             <div>
-              <strong>Ajustes temporales</strong>
-              <small>Ajusta el porcentaje vertical. Los tres valores siempre suman 100%.</small>
+              <strong>Ajustes temporales${isOrderTune ? ' · Organizar tarjetas' : ''}</strong>
+              <small>${isOrderTune ? 'Este quiz tiene porcentajes propios: Imagen + Texto + Opciones = 100%. Si no hay imagen, ese porcentaje se suma al texto.' : 'Ajusta el porcentaje vertical. Los tres valores siempre suman 100%.'}</small>
             </div>
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
@@ -2275,6 +2276,28 @@
 
       const cards = () => Array.from(stack.querySelectorAll('[data-order-card]'));
       const layoutItems = () => Array.from(stack.children).filter((item) => item.matches?.('[data-order-card], .quiz-order-placeholder'));
+      const ORDER_EASE = 'cubic-bezier(0.87, 0, 0.13, 1)';
+      const ORDER_SHIFT_MS = 600;
+
+      const animateShift = (beforeRects) => {
+        layoutItems().forEach((item) => {
+          if (item.classList.contains('quiz-order-placeholder')) return;
+          const startRect = beforeRects.get(item);
+          if (!startRect) return;
+          const endRect = item.getBoundingClientRect();
+          const dx = startRect.left - endRect.left;
+          const dy = startRect.top - endRect.top;
+          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+          item.animate([
+            { transform: `translate3d(${dx}px, ${dy}px, 0)` },
+            { transform: 'translate3d(0, 0, 0)' }
+          ], {
+            duration: ORDER_SHIFT_MS,
+            easing: ORDER_EASE
+          });
+        });
+      };
+
       const updatePlaceholderPosition = (placeholder, clientY) => {
         if (!placeholder?.isConnected) return;
         const visibleCards = cards();
@@ -2286,26 +2309,63 @@
             break;
           }
         }
-        const alreadyThere = beforeNode === placeholder.nextElementSibling || (!beforeNode && placeholder === stack.lastElementChild);
+        const alreadyThere = (beforeNode && placeholder.nextElementSibling === beforeNode) || (!beforeNode && placeholder === stack.lastElementChild);
         if (alreadyThere) return;
-        const first = new Map(layoutItems().map((item) => [item, item.getBoundingClientRect()]));
+        const beforeRects = new Map(layoutItems().map((item) => [item, item.getBoundingClientRect()]));
         if (beforeNode) stack.insertBefore(placeholder, beforeNode);
         else stack.appendChild(placeholder);
-        layoutItems().forEach((item) => {
-          if (item === placeholder) return;
-          const startRect = first.get(item);
-          if (!startRect) return;
-          const endRect = item.getBoundingClientRect();
-          const dy = startRect.top - endRect.top;
-          if (Math.abs(dy) < 1) return;
-          item.animate([
-            { transform: `translate3d(0, ${dy}px, 0)` },
-            { transform: 'translate3d(0, 0, 0)' }
-          ], {
-            duration: 220,
-            easing: 'cubic-bezier(.22,.9,.25,1)'
-          });
+        animateShift(beforeRects);
+      };
+
+      const makeDragGhost = (card, rect) => {
+        const ghost = card.cloneNode(true);
+        const computed = window.getComputedStyle(card);
+        ghost.classList.add('quiz-order-drag-ghost');
+        ghost.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.removeAttribute('tabindex');
+        ghost.removeAttribute('role');
+        Object.assign(ghost.style, {
+          position: 'fixed',
+          left: `${rect.left}px`,
+          top: `${rect.top}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          margin: '0',
+          zIndex: '2147483000',
+          pointerEvents: 'none',
+          opacity: '.8',
+          transform: 'translate3d(0,0,0) scale(1.01)',
+          transition: 'none',
+          display: computed.display,
+          gridTemplateColumns: computed.gridTemplateColumns,
+          alignItems: computed.alignItems,
+          gap: computed.gap,
+          padding: computed.padding,
+          fontSize: computed.fontSize,
+          lineHeight: computed.lineHeight,
+          fontFamily: computed.fontFamily,
+          fontWeight: computed.fontWeight,
+          fontStyle: computed.fontStyle,
+          boxSizing: computed.boxSizing,
+          borderRadius: computed.borderRadius
         });
+        const number = ghost.querySelector('.quiz-order-number');
+        const originalNumber = card.querySelector('.quiz-order-number');
+        if (number && originalNumber) {
+          const numberStyle = window.getComputedStyle(originalNumber);
+          Object.assign(number.style, {
+            width: numberStyle.width,
+            height: numberStyle.height,
+            minWidth: numberStyle.minWidth,
+            fontSize: numberStyle.fontSize,
+            lineHeight: numberStyle.lineHeight
+          });
+        }
+        const grip = ghost.querySelector('.quiz-order-grip');
+        const originalGrip = card.querySelector('.quiz-order-grip');
+        if (grip && originalGrip) grip.style.fontSize = window.getComputedStyle(originalGrip).fontSize;
+        return ghost;
       };
 
       cards().forEach((card) => {
@@ -2314,7 +2374,6 @@
         card.addEventListener('pointerdown', (event) => {
           if (board.classList.contains('order-locked') || event.button > 0) return;
           event.preventDefault();
-          const pointerId = event.pointerId;
           const rect = card.getBoundingClientRect();
           const offsetX = event.clientX - rect.left;
           const offsetY = event.clientY - rect.top;
@@ -2323,67 +2382,60 @@
           placeholder.setAttribute('aria-hidden', 'true');
           stack.insertBefore(placeholder, card);
 
-          card.classList.add('is-pointer-dragging');
+          const ghost = makeDragGhost(card, rect);
+          document.body.appendChild(ghost);
+          card.remove();
           stack.classList.add('is-reordering');
+          board.classList.add('order-dragging');
           document.body.classList.add('quiz-order-drag-active');
-          document.body.appendChild(card);
-          Object.assign(card.style, {
-            position: 'fixed',
-            left: `${rect.left}px`,
-            top: `${rect.top}px`,
-            width: `${rect.width}px`,
-            height: `${rect.height}px`,
-            margin: '0',
-            zIndex: '2147483000',
-            pointerEvents: 'none',
-            opacity: '.8',
-            transform: 'translate3d(0,0,0) scale(1.01)',
-            transition: 'none'
-          });
-          card.setPointerCapture?.(pointerId);
 
-          const moveCard = (clientX, clientY) => {
-            card.style.left = `${clientX - offsetX}px`;
-            card.style.top = `${clientY - offsetY}px`;
+          const moveGhost = (clientX, clientY) => {
+            ghost.style.left = `${clientX - offsetX}px`;
+            ghost.style.top = `${clientY - offsetY}px`;
           };
-          moveCard(event.clientX, event.clientY);
+          moveGhost(event.clientX, event.clientY);
 
-          const cleanupDrag = () => {
+          let done = false;
+          const cleanupDrag = (dropClientY = event.clientY) => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onFinish);
+            window.removeEventListener('pointercancel', onCancel);
+            updatePlaceholderPosition(placeholder, dropClientY);
             const slotRect = placeholder.getBoundingClientRect();
-            card.style.transition = 'left 160ms cubic-bezier(.22,.9,.25,1), top 160ms cubic-bezier(.22,.9,.25,1), transform 160ms cubic-bezier(.22,.9,.25,1), opacity 120ms ease';
-            card.style.left = `${slotRect.left}px`;
-            card.style.top = `${slotRect.top}px`;
-            card.style.transform = 'translate3d(0,0,0) scale(1)';
+            ghost.style.transition = `left 170ms ${ORDER_EASE}, top 170ms ${ORDER_EASE}, transform 170ms ${ORDER_EASE}, opacity 130ms ease`;
+            ghost.style.left = `${slotRect.left}px`;
+            ghost.style.top = `${slotRect.top}px`;
+            ghost.style.transform = 'translate3d(0,0,0) scale(1)';
             window.setTimeout(() => {
               if (placeholder.parentNode === stack) stack.insertBefore(card, placeholder);
               placeholder.remove();
-              card.classList.remove('is-pointer-dragging');
-              card.removeAttribute('style');
+              ghost.remove();
               stack.classList.remove('is-reordering');
+              board.classList.remove('order-dragging');
               document.body.classList.remove('quiz-order-drag-active');
-              card.releasePointerCapture?.(pointerId);
               updateQuizOrderNumbers(board);
-            }, 165);
-            window.removeEventListener('pointermove', onMove);
-            window.removeEventListener('pointerup', onFinish);
-            window.removeEventListener('pointercancel', onFinish);
+            }, 175);
           };
 
           const onMove = (moveEvent) => {
-            moveCard(moveEvent.clientX, moveEvent.clientY);
+            if (moveEvent.pointerId !== event.pointerId) return;
+            moveGhost(moveEvent.clientX, moveEvent.clientY);
             updatePlaceholderPosition(placeholder, moveEvent.clientY);
           };
-          const onFinish = () => cleanupDrag();
+          const onFinish = (finishEvent) => cleanupDrag(finishEvent.clientY);
+          const onCancel = (cancelEvent) => cleanupDrag(cancelEvent.clientY || event.clientY);
 
           window.addEventListener('pointermove', onMove, { passive: true });
           window.addEventListener('pointerup', onFinish, { once: true });
-          window.addEventListener('pointercancel', onFinish, { once: true });
+          window.addEventListener('pointercancel', onCancel, { once: true });
         });
       });
       board.querySelector('[data-order-validate]')?.addEventListener('click', () => {
         const session = getQuizSession();
         const question = getCurrentQuizQuestion();
-        if (!question || session.locked || board.classList.contains('order-locked')) return;
+        if (!question || session.locked || board.classList.contains('order-locked') || board.classList.contains('order-dragging')) return;
         const selected = getQuizOrderIds(board);
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
@@ -2657,7 +2709,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.118</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.119</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3329,8 +3381,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.118: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.118 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.119: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.119 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4600,7 +4652,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.118', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.119', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
