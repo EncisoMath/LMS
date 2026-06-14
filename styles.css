@@ -1,146 +1,40 @@
-/* ===== v0.24.102 Montserrat local para quizzes ===== */
+/* ===== v0.24.104 Montserrat local para quizzes =====
+   Rutas compatibles con la carpeta plana mostrada por el usuario:
+   assets/fonts/Montserrat/Montserrat-*.ttf
+   Se usan fuentes variables para cubrir todos los pesos y se dejan pesos
+   estáticos exactos como respaldo sin /static/ para evitar 404. */
 @font-face {
   font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/Montserrat-VariableFont_wght.ttf') format('truetype-variations'),
-       url('./assets/fonts/Montserrat/Montserrat-VariableFont_wght.ttf') format('truetype');
+  src: url('./assets/fonts/Montserrat/Montserrat-VariableFont_wght.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf') format('truetype-variations'),
-       url('./assets/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf') format('truetype');
+  src: url('./assets/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf') format('truetype');
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Thin.ttf') format('truetype');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-ThinItalic.ttf') format('truetype');
-  font-weight: 100;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-ExtraLight.ttf') format('truetype');
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-ExtraLightItalic.ttf') format('truetype');
-  font-weight: 200;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-LightItalic.ttf') format('truetype');
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Italic.ttf') format('truetype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-MediumItalic.ttf') format('truetype');
-  font-weight: 500;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-SemiBoldItalic.ttf') format('truetype');
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-BoldItalic.ttf') format('truetype');
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-ExtraBold.ttf') format('truetype');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-ExtraBoldItalic.ttf') format('truetype');
-  font-weight: 800;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-Black.ttf') format('truetype');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Montserrat';
-  src: url('./assets/fonts/Montserrat/static/Montserrat-BlackItalic.ttf') format('truetype');
-  font-weight: 900;
-  font-style: italic;
-  font-display: swap;
-}
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Thin.ttf') format('truetype'); font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-ThinItalic.ttf') format('truetype'); font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-ExtraLight.ttf') format('truetype'); font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-ExtraLightItalic.ttf') format('truetype'); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-LightItalic.ttf') format('truetype'); font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-MediumItalic.ttf') format('truetype'); font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-SemiBoldItalic.ttf') format('truetype'); font-weight: 600; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-ExtraBold.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-ExtraBoldItalic.ttf') format('truetype'); font-weight: 800; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-Black.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Montserrat'; src: url('./assets/fonts/Montserrat/Montserrat-BlackItalic.ttf') format('truetype'); font-weight: 900; font-style: italic; font-display: swap; }
 
 :root {
   --app-bg: #000000;
@@ -13414,7 +13308,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.102"; }
+:root { --encisomath-build: "0.24.104"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13503,7 +13397,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.102"; }
+:root { --encisomath-build: "0.24.104"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13729,7 +13623,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.102"; }
+:root { --encisomath-build: "0.24.104"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13933,8 +13827,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.102 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.102"; }
+/* ===== v0.24.104 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.104"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -14055,8 +13949,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.102 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.102"; }
+/* ===== v0.24.104 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.104"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -14079,7 +13973,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.102 quiz font and feedback tuning overlay ===== */
+/* ===== v0.24.104 quiz font and feedback tuning overlay ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage-fullscreen,
@@ -14121,7 +14015,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.102 Montserrat + visible feedback tune panel ===== */
+/* ===== v0.24.104 Montserrat + visible feedback tune panel ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage *,
@@ -14208,7 +14102,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.102 Montserrat + interactive feedback sliders ===== */
+/* ===== v0.24.104 Montserrat + interactive feedback sliders ===== */
 :root { --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .quiz-fullscreen-layer,
 .quiz-fullscreen-layer *,
@@ -14266,4 +14160,85 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-feedback-tune-panel[data-quiz-feedback-tune-live="true"],
   .quiz-feedback-tune-panel.is-live { max-height: 62dvh !important; }
   .quiz-feedback-tune-panel .quiz-feedback-tune-scroll { max-height: 42dvh !important; }
+}
+
+/* ===== v0.24.104 global quiz typography controls ===== */
+:root {
+  --quiz-global-font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --quiz-global-text-weight: 700;
+  --quiz-global-text-style: normal;
+  --quiz-global-text-size: 18px;
+  --quiz-global-option-weight: 800;
+  --quiz-global-option-style: normal;
+  --quiz-global-option-size: 17px;
+}
+.quiz-fullscreen-layer,
+.quiz-stage,
+.quiz-stage-fullscreen,
+.quiz-layout-tune-panel,
+.quiz-feedback-tune-panel,
+.enciso-feedback-v95,
+.enciso-feedback-v99 {
+  font-family: var(--quiz-global-font-family) !important;
+}
+.quiz-stage-fullscreen .quiz-text-a,
+.quiz-stage-fullscreen .quiz-text-b,
+.quiz-stage .quiz-text-a,
+.quiz-stage .quiz-text-b,
+.quiz-open-input,
+.quiz-fill-text,
+.quiz-match-column,
+.quiz-slider-labels,
+.quiz-slider-shell {
+  font-family: var(--quiz-global-font-family) !important;
+  font-weight: var(--quiz-global-text-weight) !important;
+  font-style: var(--quiz-global-text-style) !important;
+  font-size: var(--quiz-global-text-size) !important;
+}
+.quiz-stage-fullscreen .kahoot-option,
+.quiz-stage-fullscreen .kahoot-answer-text,
+.quiz-stage .kahoot-option,
+.quiz-stage .kahoot-answer-text,
+.quiz-submit-btn,
+.quiz-slider-submit,
+.quiz-match-validate,
+.quiz-match-reset,
+.fill-option,
+.match-card {
+  font-family: var(--quiz-global-font-family) !important;
+  font-weight: var(--quiz-global-option-weight) !important;
+  font-style: var(--quiz-global-option-style) !important;
+  font-size: var(--quiz-global-option-size) !important;
+}
+.quiz-typography-tune-box {
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 6px !important;
+  background: rgba(255,255,255,.055) !important;
+  padding: 10px !important;
+  display: grid !important;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
+}
+.quiz-typography-tune-box strong {
+  font-size: .92rem !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+}
+.quiz-typography-tune-box small {
+  color: rgba(255,255,255,.72) !important;
+  line-height: 1.2 !important;
+}
+.quiz-font-select-row select,
+.quiz-typography-tune-box select {
+  width: 100% !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  border-radius: 6px !important;
+  background: rgba(0,0,0,.32) !important;
+  color: #fff !important;
+  min-height: 36px !important;
+  padding: 6px 8px !important;
+  font-family: var(--quiz-global-font-family) !important;
+}
+.quiz-typography-tune-box input[type="range"] {
+  width: 100% !important;
 }
