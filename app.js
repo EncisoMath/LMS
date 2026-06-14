@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.119';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.119: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.120';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.120: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.119';
-  // v0.24.119: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.120';
+  // v0.24.120: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -1907,6 +1907,17 @@
             <span data-quiz-layout-measure="textA">Texto: calculando…</span>
             <span data-quiz-layout-measure="answers">Opciones: calculando…</span>
           </div>
+          ${isOrderTune ? `
+          <div class="quiz-order-layout-tune-box" data-order-layout-tune-box>
+            <strong>Layout SOLO para Organizar tarjetas</strong>
+            <small>Estos sliders controlan los contenedores de este tipo de quiz: Imagen %, Texto % y Opciones %. Los tres suman 100%. Si no hay imagen, su porcentaje se suma al texto y Opciones queda igual.</small>
+            ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
+              <label class="quiz-layout-tune-row quiz-order-layout-tune-row">
+                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
+                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
+              </label>
+            `).join('')}
+          </div>` : `
           <div class="quiz-layout-tune-scroll">
             ${layoutFields.map((field) => `
               <label class="quiz-layout-tune-row">
@@ -1914,7 +1925,7 @@
                 <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
               </label>
             `).join('')}
-          </div>
+          </div>`}
           <div class="quiz-cascade-tune-actions">
             <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer 30 / 40 / 30</button>
           </div>
@@ -2206,167 +2217,94 @@
     return Array.from(board?.querySelectorAll('[data-order-card]') || []).map((card) => card.dataset.orderCard || '');
   }
 
-  function animateQuizOrderShift(stack, mutate) {
-    if (!stack || typeof mutate !== 'function') return;
-    const cards = Array.from(stack.querySelectorAll('[data-order-card]:not(.is-pointer-dragging):not(.is-dragging)'));
-    const first = new Map(cards.map((card) => [card, card.getBoundingClientRect()]));
-    mutate();
-    cards.forEach((card) => {
-      const start = first.get(card);
-      if (!start || !card.isConnected) return;
-      const end = card.getBoundingClientRect();
+  const QUIZ_ORDER_EASE_EXPO = 'cubic-bezier(0.87, 0, 0.13, 1)';
+  const QUIZ_ORDER_SHIFT_MS = 600;
+
+  function getQuizOrderGapPx(stack) {
+    if (!stack) return 6;
+    const styles = window.getComputedStyle(stack);
+    const gap = Number.parseFloat(styles.rowGap || styles.gap || '6');
+    return Number.isFinite(gap) ? gap : 6;
+  }
+
+  function fitQuizOrderCards(board) {
+    const stack = board?.querySelector('[data-quiz-order-stack]');
+    if (!stack) return;
+    const count = Math.max(1, stack.querySelectorAll('[data-order-card]').length || 4);
+    const gap = getQuizOrderGapPx(stack);
+    const available = Math.max(96, stack.clientHeight || stack.getBoundingClientRect().height || 240);
+    const cardHeight = Math.max(34, Math.floor((available - (gap * (count - 1))) / count));
+    board.style.setProperty('--quiz-order-card-h', `${cardHeight}px`);
+  }
+
+  function getOrderLayoutNodes(stack, draggingCard = null) {
+    return Array.from(stack?.children || []).filter((item) => {
+      if (item === draggingCard) return false;
+      return item.matches?.('[data-order-card], .quiz-order-placeholder');
+    });
+  }
+
+  function animateOrderLayoutChange(stack, beforeRects, draggingCard = null) {
+    getOrderLayoutNodes(stack, draggingCard).forEach((item) => {
+      if (item.classList.contains('quiz-order-placeholder')) return;
+      const start = beforeRects.get(item);
+      if (!start) return;
+      const end = item.getBoundingClientRect();
       const dx = start.left - end.left;
       const dy = start.top - end.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      card.animate([
-        { transform: `translate(${dx}px, ${dy}px)` },
-        { transform: 'translate(0, 0)' }
-      ], {
-        duration: 260,
-        easing: 'cubic-bezier(.2,.8,.2,1)'
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+      item.style.transition = 'none';
+      item.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+      item.getBoundingClientRect();
+      window.requestAnimationFrame(() => {
+        item.classList.add('order-moving');
+        item.style.transition = `transform ${QUIZ_ORDER_SHIFT_MS}ms ${QUIZ_ORDER_EASE_EXPO}`;
+        item.style.transform = 'translate3d(0, 0, 0)';
+        window.setTimeout(() => {
+          item.classList.remove('order-moving');
+          item.style.removeProperty('transition');
+          item.style.removeProperty('transform');
+        }, QUIZ_ORDER_SHIFT_MS + 40);
       });
     });
   }
 
-  function placeOrderPlaceholder(board, y, draggingCard, placeholder) {
-    const stack = board?.querySelector('[data-quiz-order-stack]');
-    if (!stack) return;
+  function moveOrderPlaceholder(stack, placeholder, clientY, draggingCard) {
+    if (!stack || !placeholder?.isConnected) return false;
     const cards = Array.from(stack.querySelectorAll('[data-order-card]')).filter((card) => card !== draggingCard);
     let beforeNode = null;
     for (const card of cards) {
       const rect = card.getBoundingClientRect();
-      if (y < rect.top + rect.height / 2) {
+      if (clientY < rect.top + rect.height / 2) {
         beforeNode = card;
         break;
       }
     }
-    if (placeholder.nextSibling === beforeNode || (!beforeNode && placeholder.parentNode === stack && placeholder.nextSibling === null)) return;
-    animateQuizOrderShift(stack, () => {
-      if (beforeNode) stack.insertBefore(placeholder, beforeNode);
-      else stack.appendChild(placeholder);
-    });
-  }
-
-  function updateQuizLayoutMeasurements(stage = document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage')) {
-    if (!stage) return;
-    const rows = [
-      ['image', 'Imagen'],
-      ['textA', 'Texto'],
-      ['answers', 'Opciones']
-    ];
-    rows.forEach(([target, label]) => {
-      const box = stage.querySelector(`[data-quiz-tune-target="${target}"]`);
-      const output = stage.querySelector(`[data-quiz-layout-measure="${target}"]`);
-      if (!output) return;
-      if (!box) {
-        output.textContent = `${label}: sin bloque visible`;
-        return;
-      }
-      const rect = box.getBoundingClientRect();
-      output.textContent = `${label}: ${Math.round(rect.height)}px alto`;
-    });
+    const currentNext = placeholder.nextElementSibling;
+    const alreadyThere = (beforeNode && currentNext === beforeNode) || (!beforeNode && placeholder === stack.lastElementChild);
+    if (alreadyThere) return false;
+    const beforeRects = new Map(getOrderLayoutNodes(stack, draggingCard).map((item) => [item, item.getBoundingClientRect()]));
+    if (beforeNode) stack.insertBefore(placeholder, beforeNode);
+    else stack.appendChild(placeholder);
+    animateOrderLayoutChange(stack, beforeRects, draggingCard);
+    return true;
   }
 
   function bindQuizOrderEvents() {
     document.querySelectorAll('[data-quiz-order-board]').forEach((board) => {
-      if (board.dataset.boundOrder === 'true') return;
-      board.dataset.boundOrder = 'true';
       const stack = board.querySelector('[data-quiz-order-stack]');
       if (!stack) return;
+      fitQuizOrderCards(board);
+      if (board.dataset.boundOrder === 'true') return;
+      board.dataset.boundOrder = 'true';
+
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => fitQuizOrderCards(board), 120);
+      });
 
       const cards = () => Array.from(stack.querySelectorAll('[data-order-card]'));
-      const layoutItems = () => Array.from(stack.children).filter((item) => item.matches?.('[data-order-card], .quiz-order-placeholder'));
-      const ORDER_EASE = 'cubic-bezier(0.87, 0, 0.13, 1)';
-      const ORDER_SHIFT_MS = 600;
-
-      const animateShift = (beforeRects) => {
-        layoutItems().forEach((item) => {
-          if (item.classList.contains('quiz-order-placeholder')) return;
-          const startRect = beforeRects.get(item);
-          if (!startRect) return;
-          const endRect = item.getBoundingClientRect();
-          const dx = startRect.left - endRect.left;
-          const dy = startRect.top - endRect.top;
-          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-          item.animate([
-            { transform: `translate3d(${dx}px, ${dy}px, 0)` },
-            { transform: 'translate3d(0, 0, 0)' }
-          ], {
-            duration: ORDER_SHIFT_MS,
-            easing: ORDER_EASE
-          });
-        });
-      };
-
-      const updatePlaceholderPosition = (placeholder, clientY) => {
-        if (!placeholder?.isConnected) return;
-        const visibleCards = cards();
-        let beforeNode = null;
-        for (const item of visibleCards) {
-          const rect = item.getBoundingClientRect();
-          if (clientY < rect.top + rect.height / 2) {
-            beforeNode = item;
-            break;
-          }
-        }
-        const alreadyThere = (beforeNode && placeholder.nextElementSibling === beforeNode) || (!beforeNode && placeholder === stack.lastElementChild);
-        if (alreadyThere) return;
-        const beforeRects = new Map(layoutItems().map((item) => [item, item.getBoundingClientRect()]));
-        if (beforeNode) stack.insertBefore(placeholder, beforeNode);
-        else stack.appendChild(placeholder);
-        animateShift(beforeRects);
-      };
-
-      const makeDragGhost = (card, rect) => {
-        const ghost = card.cloneNode(true);
-        const computed = window.getComputedStyle(card);
-        ghost.classList.add('quiz-order-drag-ghost');
-        ghost.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
-        ghost.setAttribute('aria-hidden', 'true');
-        ghost.removeAttribute('tabindex');
-        ghost.removeAttribute('role');
-        Object.assign(ghost.style, {
-          position: 'fixed',
-          left: `${rect.left}px`,
-          top: `${rect.top}px`,
-          width: `${rect.width}px`,
-          height: `${rect.height}px`,
-          margin: '0',
-          zIndex: '2147483000',
-          pointerEvents: 'none',
-          opacity: '.8',
-          transform: 'translate3d(0,0,0) scale(1.01)',
-          transition: 'none',
-          display: computed.display,
-          gridTemplateColumns: computed.gridTemplateColumns,
-          alignItems: computed.alignItems,
-          gap: computed.gap,
-          padding: computed.padding,
-          fontSize: computed.fontSize,
-          lineHeight: computed.lineHeight,
-          fontFamily: computed.fontFamily,
-          fontWeight: computed.fontWeight,
-          fontStyle: computed.fontStyle,
-          boxSizing: computed.boxSizing,
-          borderRadius: computed.borderRadius
-        });
-        const number = ghost.querySelector('.quiz-order-number');
-        const originalNumber = card.querySelector('.quiz-order-number');
-        if (number && originalNumber) {
-          const numberStyle = window.getComputedStyle(originalNumber);
-          Object.assign(number.style, {
-            width: numberStyle.width,
-            height: numberStyle.height,
-            minWidth: numberStyle.minWidth,
-            fontSize: numberStyle.fontSize,
-            lineHeight: numberStyle.lineHeight
-          });
-        }
-        const grip = ghost.querySelector('.quiz-order-grip');
-        const originalGrip = card.querySelector('.quiz-order-grip');
-        if (grip && originalGrip) grip.style.fontSize = window.getComputedStyle(originalGrip).fontSize;
-        return ghost;
-      };
 
       cards().forEach((card) => {
         card.draggable = false;
@@ -2374,64 +2312,84 @@
         card.addEventListener('pointerdown', (event) => {
           if (board.classList.contains('order-locked') || event.button > 0) return;
           event.preventDefault();
+          fitQuizOrderCards(board);
+
           const rect = card.getBoundingClientRect();
           const offsetX = event.clientX - rect.left;
           const offsetY = event.clientY - rect.top;
           const placeholder = document.createElement('div');
           placeholder.className = 'quiz-order-placeholder';
           placeholder.setAttribute('aria-hidden', 'true');
-          stack.insertBefore(placeholder, card);
+          placeholder.style.height = `${rect.height}px`;
+          placeholder.style.flexBasis = `${rect.height}px`;
 
-          const ghost = makeDragGhost(card, rect);
-          document.body.appendChild(ghost);
-          card.remove();
+          stack.insertBefore(placeholder, card);
+          card.classList.add('is-pointer-dragging');
+          card.style.position = 'fixed';
+          card.style.left = `${rect.left}px`;
+          card.style.top = `${rect.top}px`;
+          card.style.width = `${rect.width}px`;
+          card.style.height = `${rect.height}px`;
+          card.style.margin = '0';
+          card.style.zIndex = '2147483000';
+          card.style.pointerEvents = 'none';
+          card.style.opacity = '.8';
+          card.style.transform = 'translate3d(0,0,0) scale(1.01)';
+          card.style.transition = 'none';
+
           stack.classList.add('is-reordering');
           board.classList.add('order-dragging');
           document.body.classList.add('quiz-order-drag-active');
 
-          const moveGhost = (clientX, clientY) => {
-            ghost.style.left = `${clientX - offsetX}px`;
-            ghost.style.top = `${clientY - offsetY}px`;
+          const moveCard = (clientX, clientY) => {
+            card.style.left = `${clientX - offsetX}px`;
+            card.style.top = `${clientY - offsetY}px`;
           };
-          moveGhost(event.clientX, event.clientY);
+          moveCard(event.clientX, event.clientY);
 
           let done = false;
-          const cleanupDrag = (dropClientY = event.clientY) => {
+          let lastMoveY = event.clientY;
+          const cleanupDrag = (dropClientY = lastMoveY) => {
             if (done) return;
             done = true;
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onFinish);
             window.removeEventListener('pointercancel', onCancel);
-            updatePlaceholderPosition(placeholder, dropClientY);
+            moveOrderPlaceholder(stack, placeholder, dropClientY, card);
             const slotRect = placeholder.getBoundingClientRect();
-            ghost.style.transition = `left 170ms ${ORDER_EASE}, top 170ms ${ORDER_EASE}, transform 170ms ${ORDER_EASE}, opacity 130ms ease`;
-            ghost.style.left = `${slotRect.left}px`;
-            ghost.style.top = `${slotRect.top}px`;
-            ghost.style.transform = 'translate3d(0,0,0) scale(1)';
+            card.style.transition = `left 180ms ${QUIZ_ORDER_EASE_EXPO}, top 180ms ${QUIZ_ORDER_EASE_EXPO}, transform 180ms ${QUIZ_ORDER_EASE_EXPO}, opacity 140ms ease`;
+            card.style.left = `${slotRect.left}px`;
+            card.style.top = `${slotRect.top}px`;
+            card.style.transform = 'translate3d(0,0,0) scale(1)';
+            card.style.opacity = '1';
             window.setTimeout(() => {
-              if (placeholder.parentNode === stack) stack.insertBefore(card, placeholder);
+              stack.insertBefore(card, placeholder);
               placeholder.remove();
-              ghost.remove();
+              card.classList.remove('is-pointer-dragging');
+              ['position','left','top','width','height','margin','z-index','pointer-events','opacity','transform','transition'].forEach((prop) => card.style.removeProperty(prop));
               stack.classList.remove('is-reordering');
               board.classList.remove('order-dragging');
               document.body.classList.remove('quiz-order-drag-active');
               updateQuizOrderNumbers(board);
-            }, 175);
+              fitQuizOrderCards(board);
+            }, 190);
           };
 
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
-            moveGhost(moveEvent.clientX, moveEvent.clientY);
-            updatePlaceholderPosition(placeholder, moveEvent.clientY);
+            lastMoveY = moveEvent.clientY;
+            moveCard(moveEvent.clientX, moveEvent.clientY);
+            moveOrderPlaceholder(stack, placeholder, moveEvent.clientY, card);
           };
           const onFinish = (finishEvent) => cleanupDrag(finishEvent.clientY);
-          const onCancel = (cancelEvent) => cleanupDrag(cancelEvent.clientY || event.clientY);
+          const onCancel = (cancelEvent) => cleanupDrag(cancelEvent.clientY || lastMoveY);
 
-          window.addEventListener('pointermove', onMove, { passive: true });
+          window.addEventListener('pointermove', onMove, { passive: false });
           window.addEventListener('pointerup', onFinish, { once: true });
           window.addEventListener('pointercancel', onCancel, { once: true });
         });
       });
+
       board.querySelector('[data-order-validate]')?.addEventListener('click', () => {
         const session = getQuizSession();
         const question = getCurrentQuizQuestion();
@@ -2709,7 +2667,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.119</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.120</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3381,8 +3339,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.119: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.119 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.120: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.120 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4652,7 +4610,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.119', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.120', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
