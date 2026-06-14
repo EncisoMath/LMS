@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.104';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.104: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.105';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.105: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -55,7 +55,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.104';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.105';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -8,
     bandX: 7,
@@ -1417,7 +1417,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.104';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.105';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1482,25 +1482,64 @@
 
   function applyQuizTypographyTune(tune = getQuizTypographyTune()) {
     const safe = normalizeQuizTypographyTune(tune);
-    const text = quizPresetParts(safe.textPreset);
-    const option = quizPresetParts(safe.optionPreset);
+    const textPreset = quizPresetParts(safe.textPreset);
+    const optionPreset = quizPresetParts(safe.optionPreset);
+    const fontFamily = "'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
     const target = document.documentElement;
-    target.style.setProperty('--quiz-global-font-family', "'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
-    target.style.setProperty('--quiz-global-text-weight', String(text.weight));
-    target.style.setProperty('--quiz-global-text-style', text.style);
-    target.style.setProperty('--quiz-global-text-size', `${safe.textSize}px`);
-    target.style.setProperty('--quiz-global-option-weight', String(option.weight));
-    target.style.setProperty('--quiz-global-option-style', option.style);
-    target.style.setProperty('--quiz-global-option-size', `${safe.optionSize}px`);
-    document.querySelectorAll('.quiz-stage, .quiz-fullscreen-layer, .quiz-feedback-tune-panel, .enciso-feedback-v95, .enciso-feedback-v99').forEach((node) => {
-      node.style.setProperty('--quiz-global-font-family', "'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
-      node.style.setProperty('--quiz-global-text-weight', String(text.weight));
-      node.style.setProperty('--quiz-global-text-style', text.style);
+    const setVarTarget = (node) => {
+      if (!node || !node.style) return;
+      node.style.setProperty('--enciso-quiz-font', fontFamily);
+      node.style.setProperty('--quiz-global-font-family', fontFamily);
+      node.style.setProperty('--quiz-global-text-weight', String(textPreset.weight));
+      node.style.setProperty('--quiz-global-text-style', textPreset.style);
       node.style.setProperty('--quiz-global-text-size', `${safe.textSize}px`);
-      node.style.setProperty('--quiz-global-option-weight', String(option.weight));
-      node.style.setProperty('--quiz-global-option-style', option.style);
+      node.style.setProperty('--quiz-text-font', `${safe.textSize}px`);
+      node.style.setProperty('--quiz-text-a-font', `${safe.textSize}px`);
+      node.style.setProperty('--quiz-text-b-font', `${safe.textSize}px`);
+      node.style.setProperty('--quiz-fill-font', `${safe.textSize}px`);
+      node.style.setProperty('--quiz-global-option-weight', String(optionPreset.weight));
+      node.style.setProperty('--quiz-global-option-style', optionPreset.style);
       node.style.setProperty('--quiz-global-option-size', `${safe.optionSize}px`);
-    });
+    };
+    setVarTarget(target);
+    document.querySelectorAll('.quiz-stage, .quiz-fullscreen-layer, .quiz-layout-tune-panel, .quiz-feedback-tune-panel, .enciso-feedback-v95, .enciso-feedback-v99, .enciso-quiz-feedback-overlay-v95, .enciso-quiz-feedback-overlay-v99, .enciso-quiz-feedback-overlay-v100').forEach(setVarTarget);
+
+    const applyInline = (selector, preset, size) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (!node || !node.style) return;
+        node.style.setProperty('font-family', fontFamily, 'important');
+        node.style.setProperty('font-weight', String(preset.weight), 'important');
+        node.style.setProperty('font-style', preset.style, 'important');
+        node.style.setProperty('font-size', `${size}px`, 'important');
+      });
+    };
+    applyInline([
+      '.quiz-stage .quiz-text-a',
+      '.quiz-stage .quiz-text-b',
+      '.quiz-stage-fullscreen .quiz-text-a',
+      '.quiz-stage-fullscreen .quiz-text-b',
+      '.quiz-open-input',
+      '.quiz-open-feedback',
+      '.quiz-fill-text',
+      '.quiz-match-column',
+      '.quiz-match-column strong',
+      '.match-drop-label',
+      '.quiz-slider-labels',
+      '.quiz-slider-caption',
+      '.quiz-slider-question'
+    ].join(','), textPreset, safe.textSize);
+    applyInline([
+      '.kahoot-option',
+      '.kahoot-answer-text',
+      '.quiz-submit-btn',
+      '.quiz-slider-submit',
+      '.quiz-match-validate',
+      '.quiz-match-reset',
+      '.fill-option',
+      '.match-card'
+    ].join(','), optionPreset, safe.optionSize);
+    document.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
+    document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
     return safe;
   }
 
@@ -1565,8 +1604,8 @@
     return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.104';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.104';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.105';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.105';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1874,7 +1913,7 @@
       panel.querySelectorAll('[data-quiz-typography-range]').forEach((input) => {
         if (input.dataset.boundQuizTypographyRange === 'true') return;
         input.dataset.boundQuizTypographyRange = 'true';
-        input.addEventListener('input', () => {
+        const updateTypographyRange = () => {
           const current = getQuizTypographyTune();
           const key = input.dataset.quizTypographyRange;
           current[key] = Number(input.value);
@@ -1882,7 +1921,9 @@
           applyQuizTypographyTune(safe);
           const output = panel.querySelector(`[data-quiz-typography-value="${escapeSelector(key)}"]`);
           if (output) output.textContent = `${safe[key]}px`;
-        });
+        };
+        input.addEventListener('input', updateTypographyRange);
+        input.addEventListener('change', updateTypographyRange);
       });
       panel.querySelector('[data-quiz-typography-reset]')?.addEventListener('click', () => {
         const safe = saveQuizTypographyTune(QUIZ_TYPOGRAPHY_DEFAULTS);
@@ -2015,6 +2056,7 @@
     setBox('textA', 'textA');
     setBox('image', 'image');
     setBox('answers', 'answers');
+    applyQuizTypographyTune(getQuizTypographyTune());
   }
 
   function quizTypeLabel(type) {
@@ -2339,7 +2381,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.104</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.105</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -2490,6 +2532,7 @@
     bindQuizMatchEvents();
     bindQuizFillTextEvents();
     bindQuizSliderEvents();
+    applyQuizTypographyTune(getQuizTypographyTune());
   }
 
 
@@ -2838,7 +2881,7 @@
   }
 
   function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.104: the feedback overlay uses inline styles and Web Animations.
+    // v0.24.105: the feedback overlay uses inline styles and Web Animations.
     // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
@@ -4543,7 +4586,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.104', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.105', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

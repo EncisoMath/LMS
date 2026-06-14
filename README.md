@@ -776,7 +776,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Versiones/cache busting actualizados a `0.24.72`.
 
 
-## v0.24.104
+## v0.24.105
 
 - Preparado Montserrat local para quizzes usando `assets/fonts/Montserrat/`.
 - Quita dependencia de Google Fonts en `index.html`.

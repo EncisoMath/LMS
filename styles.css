@@ -1,4 +1,4 @@
-/* ===== v0.24.104 Montserrat local para quizzes =====
+/* ===== v0.24.105 Montserrat local para quizzes =====
    Rutas compatibles con la carpeta plana mostrada por el usuario:
    assets/fonts/Montserrat/Montserrat-*.ttf
    Se usan fuentes variables para cubrir todos los pesos y se dejan pesos
@@ -13308,7 +13308,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.104"; }
+:root { --encisomath-build: "0.24.105"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13397,7 +13397,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.104"; }
+:root { --encisomath-build: "0.24.105"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13623,7 +13623,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.104"; }
+:root { --encisomath-build: "0.24.105"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13827,8 +13827,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.104 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.104"; }
+/* ===== v0.24.105 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.105"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -13949,8 +13949,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.104 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.104"; }
+/* ===== v0.24.105 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.105"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -13973,7 +13973,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.104 quiz font and feedback tuning overlay ===== */
+/* ===== v0.24.105 quiz font and feedback tuning overlay ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage-fullscreen,
@@ -14015,7 +14015,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.104 Montserrat + visible feedback tune panel ===== */
+/* ===== v0.24.105 Montserrat + visible feedback tune panel ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage *,
@@ -14102,7 +14102,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.104 Montserrat + interactive feedback sliders ===== */
+/* ===== v0.24.105 Montserrat + interactive feedback sliders ===== */
 :root { --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .quiz-fullscreen-layer,
 .quiz-fullscreen-layer *,
@@ -14162,7 +14162,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-feedback-tune-panel .quiz-feedback-tune-scroll { max-height: 42dvh !important; }
 }
 
-/* ===== v0.24.104 global quiz typography controls ===== */
+/* ===== v0.24.105 global quiz typography controls ===== */
 :root {
   --quiz-global-font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --quiz-global-text-weight: 700;
@@ -14241,4 +14241,52 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 .quiz-typography-tune-box input[type="range"] {
   width: 100% !important;
+}
+
+
+/* ===== v0.24.105 forced quiz typography controls ===== */
+:root {
+  --encisomath-build: "0.24.105";
+  --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
+.quiz-stage .quiz-text-a,
+.quiz-stage .quiz-text-b,
+.quiz-open-input,
+.quiz-open-feedback,
+.quiz-fill-text,
+.quiz-match-column,
+.quiz-match-column strong,
+.match-drop-label,
+.quiz-slider-labels,
+.quiz-slider-caption,
+.quiz-slider-question {
+  font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
+  font-weight: var(--quiz-global-text-weight, 700) !important;
+  font-style: var(--quiz-global-text-style, normal) !important;
+  font-size: var(--quiz-global-text-size, 18px) !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
+.quiz-stage .kahoot-option,
+.quiz-stage .kahoot-answer-text,
+.quiz-submit-btn,
+.quiz-slider-submit,
+.quiz-match-validate,
+.quiz-match-reset,
+.fill-option,
+.match-card {
+  font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
+  font-weight: var(--quiz-global-option-weight, 800) !important;
+  font-style: var(--quiz-global-option-style, normal) !important;
+  font-size: var(--quiz-global-option-size, 17px) !important;
+}
+.quiz-layout-tune-panel,
+.quiz-layout-tune-panel * {
+  font-family: var(--quiz-global-font-family, var(--enciso-quiz-font)) !important;
 }
