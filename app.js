@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.124';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.124: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.125';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.125: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1671,7 +1671,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.124';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.125';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2201,7 +2201,6 @@
       : cards.slice().sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).map((card) => card.id);
     return `
       <div class="quiz-order-board" data-quiz-order-board data-correct-order="${escapeAttr(correctOrder.join('|'))}">
-        <div class="quiz-order-instruction">Arrastra las tarjetas y ordénalas de arriba hacia abajo.</div>
         <div class="quiz-order-stack" data-quiz-order-stack>
           ${cards.slice(0, 4).map((card, index) => {
             const orderColors = ['red', 'blue', 'yellow', 'green'];
@@ -2384,10 +2383,14 @@
         stack.insertBefore(placeholder, card);
         card.classList.add('is-pointer-dragging');
         card.style.position = 'fixed';
+        card.style.boxSizing = 'border-box';
         card.style.left = `${rect.left}px`;
         card.style.top = `${rect.top}px`;
         card.style.width = `${rect.width}px`;
         card.style.height = `${rect.height}px`;
+        card.style.minHeight = `${rect.height}px`;
+        card.style.maxHeight = `${rect.height}px`;
+        card.style.flexBasis = `${rect.height}px`;
         card.style.margin = '0';
         card.style.zIndex = '2147483000';
         card.style.pointerEvents = 'none';
@@ -2447,7 +2450,7 @@
 
           movePlaceholder(lastClientY);
           card.classList.remove('is-pointer-dragging');
-          ['position', 'left', 'top', 'width', 'height', 'margin', 'z-index', 'pointer-events', 'opacity', 'transition', 'transform'].forEach((prop) => card.style.removeProperty(prop));
+          ['position', 'box-sizing', 'left', 'top', 'width', 'height', 'min-height', 'max-height', 'flex-basis', 'margin', 'z-index', 'pointer-events', 'opacity', 'transition', 'transform', 'animation'].forEach((prop) => card.style.removeProperty(prop));
           stack.insertBefore(card, placeholder);
           placeholder.remove();
           stack.classList.remove('is-reordering');
@@ -2478,26 +2481,40 @@
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
-        const revealGap = 560;
-        const revealDuration = 520;
+        const revealGap = 620;
+        const revealDuration = 560;
+        board.classList.add('order-validating');
         orderCards.forEach((card) => {
           card.classList.remove('order-moving', 'order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
           card.style.removeProperty('transition');
           card.style.removeProperty('transform');
+          card.style.removeProperty('animation');
         });
+        const revealOneCard = (card, index) => {
+          const matched = selected[index] === correctOrder[index];
+          card.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
+          card.style.removeProperty('transition');
+          card.style.removeProperty('transform');
+          card.style.setProperty('animation', 'none', 'important');
+          void card.offsetWidth;
+          card.classList.add(matched ? 'matched' : 'wrong');
+          window.requestAnimationFrame(() => {
+            card.classList.add(matched ? 'order-reveal-correct' : 'order-reveal-wrong');
+            card.style.setProperty(
+              'animation',
+              matched
+                ? 'quizOrderCorrectBounce125 560ms cubic-bezier(0.34, 1.56, 0.64, 1) both'
+                : 'quizOrderWrongShake125 520ms cubic-bezier(.36,.07,.19,.97) both',
+              'important'
+            );
+          });
+        };
         orderCards.forEach((card, index) => {
-          window.setTimeout(() => {
-            const matched = selected[index] === correctOrder[index];
-            card.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
-            void card.offsetWidth;
-            card.classList.add(matched ? 'matched' : 'wrong');
-            window.requestAnimationFrame(() => {
-              card.classList.add(matched ? 'order-reveal-correct' : 'order-reveal-wrong');
-            });
-          }, index * revealGap);
+          window.setTimeout(() => revealOneCard(card, index), index * revealGap);
         });
         recordQuizAnswer(question, ok, { order: selected, correctOrder });
         const revealTotal = (Math.max(0, orderCards.length - 1) * revealGap) + revealDuration;
+        window.setTimeout(() => board.classList.remove('order-validating'), revealTotal + 120);
         showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
       });
 
@@ -2753,7 +2770,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.124</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.125</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4696,7 +4713,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.124', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.125', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
