@@ -13270,7 +13270,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.91"; }
+:root { --encisomath-build: "0.24.92"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -13359,7 +13359,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.91"; }
+:root { --encisomath-build: "0.24.92"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -13582,4 +13582,209 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   72% { opacity: 1; scale: .93; }
   88% { opacity: 1; scale: 1.035; }
   100% { opacity: 1; scale: 1; }
+}
+
+/* ===== v0.24.92 final feedback stability and pro bounce ===== */
+:root { --encisomath-build: "0.24.92"; }
+
+/* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible {
+  padding: 6px 8px 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  overflow: hidden !important;
+  --quiz-feedback-lift: 0px !important;
+  --quiz-feedback-cascade-shift: 0px !important;
+  --quiz-feedback-cascade-answer-shift: 0px !important;
+  --quiz-feedback-cascade-image-shift: 0px !important;
+  --quiz-feedback-cascade-text-a-shift: 0px !important;
+  --quiz-feedback-cascade-text-b-shift: 0px !important;
+  --quiz-fit-image-fr: 30fr !important;
+  --quiz-fit-text-fr: 40fr !important;
+  --quiz-fit-answer-fr: 30fr !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-image-tune-box,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-text-a,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-answer-zone,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid-2x2,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid-two,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid-single,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-widget,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-ticks,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-image-tune-box,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .kahoot-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-open-form,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-shell,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-visual-stage,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-slider-widget {
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  top: auto !important;
+  bottom: auto !important;
+  transition: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-image-fr, 30fr)) minmax(0, var(--quiz-fit-text-fr, 40fr)) minmax(0, var(--quiz-fit-answer-fr, 30fr)) !important;
+  padding: 0 0 max(15px, env(safe-area-inset-bottom)) !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible:not([data-quiz-has-image="true"]) .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible:not([data-quiz-has-image="true"]) .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-text-fr, 40fr)) minmax(0, var(--quiz-fit-answer-fr, 30fr)) !important;
+}
+
+/* Feedback overlay must not participate in layout and must never clip the rotated band. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback.quiz-feedback-zooming,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback.quiz-feedback-zooming {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  z-index: 2147483640 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  opacity: 1 !important;
+  animation: none !important;
+  contain: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback[hidden] {
+  display: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card {
+  width: 150vw !important;
+  max-width: none !important;
+  min-width: 150vw !important;
+  min-height: clamp(86px, 14dvh, 128px) !important;
+  height: auto !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  padding: clamp(12px, 2.4dvh, 18px) 0 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, min(70vw, 620px)) !important;
+  grid-template-areas: "icon title" "icon phrase" !important;
+  align-items: center !important;
+  justify-content: center !important;
+  column-gap: clamp(12px, 3.6vw, 22px) !important;
+  row-gap: 4px !important;
+  text-align: left !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+  filter: none !important;
+  background-image: none !important;
+  transform-origin: center center !important;
+  transform: rotate(-8deg) scale(0) !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  opacity: 0 !important;
+  animation: quizFeedbackMegaZoomBounceV92 680ms cubic-bezier(.18, 1.08, .16, 1) both !important;
+  will-change: transform, opacity !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-correct {
+  background: #58cc02 !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-wrong {
+  background: #e21b3c !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card.is-neutral {
+  background: #1368ce !important;
+  color: #fff !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card > span {
+  grid-area: icon !important;
+  font-size: clamp(2.1rem, 8.6vw, 3.7rem) !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  filter: none !important;
+  align-self: center !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card strong {
+  grid-area: title !important;
+  color: #fff !important;
+  font-size: clamp(1.35rem, 5.8vw, 2.15rem) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  text-shadow: none !important;
+  white-space: nowrap !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-feedback .quiz-feedback-card p {
+  grid-area: phrase !important;
+  color: rgba(255,255,255,.94) !important;
+  font-size: clamp(.84rem, 3.3vw, 1.06rem) !important;
+  line-height: 1.12 !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  rotate: none !important;
+  text-shadow: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+@keyframes quizFeedbackMegaZoomBounceV92 {
+  0% { opacity: 0; transform: rotate(-8deg) scale(0); }
+  34% { opacity: 1; transform: rotate(-8deg) scale(1.24); }
+  50% { opacity: 1; transform: rotate(-8deg) scale(.88); }
+  64% { opacity: 1; transform: rotate(-8deg) scale(1.105); }
+  76% { opacity: 1; transform: rotate(-8deg) scale(.965); }
+  88% { opacity: 1; transform: rotate(-8deg) scale(1.025); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
