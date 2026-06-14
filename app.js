@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.78';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.78: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.80';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.80: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1342,14 +1342,13 @@
     const index = Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1));
     const question = questions[index];
     const fullscreen = Boolean(options.fullscreen);
-    const promptText = question.textA || question.prompt || '';
-    const textBText = question.textB || '';
-    const sharedTextModifier = quizSharedTextModifier(promptText, textBText);
+    const promptSegments = [question.textA || question.prompt || '', question.textB || ''].map((value) => String(value || '').trim()).filter(Boolean);
+    const promptText = promptSegments.join('\n\n');
+    const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
-    const textBClass = quizLengthClass(textBText, 'quiz-text-b', sharedTextModifier);
-    const calibratable = ['multiple_choice', 'true_false', 'open', 'match', 'fill_text', 'slider'].includes(question.type);
+    const calibratable = ['multiple_choice', 'true_false', 'open', 'slider'].includes(question.type);
     return `
-      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''} ${calibratable ? 'quiz-calibration-mode' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
@@ -1358,9 +1357,8 @@
           </div>
         </div>
         <div class="quiz-question-content">
-          <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
           ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
-          ${question.textB ? `<p class="quiz-text-b ${textBClass} quiz-tune-box" data-quiz-tune-target="textB">${escapeHTML(question.textB)}</p>` : ''}
+          <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
           <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
             ${quizQuestionBodyHTML(question)}
           </div>
@@ -1401,75 +1399,35 @@
     return `quiz-prompt${modifier ? ` quiz-prompt-${modifier}` : ''}`;
   }
 
+  function shouldStackMultipleChoiceOptions(options = []) {
+    const texts = (Array.isArray(options) ? options : []).map((option) => String(option?.text || '').trim());
+    return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
+  }
 
   const QUIZ_LAYOUT_TUNE_FIELDS = [
-    { key: 'textA_x', label: 'Texto A X', min: -80, max: 80, step: 1, unit: 'px' },
-    { key: 'textA_y', label: 'Texto A Y', min: -120, max: 120, step: 1, unit: 'px' },
-    { key: 'textA_w', label: 'Texto A ancho', min: 70, max: 110, step: 1, unit: '%' },
-    { key: 'textA_h', label: 'Texto A alto', min: 0, max: 180, step: 1, unit: 'px' },
-    { key: 'text_font', label: 'Texto A/B fuente base', min: 12, max: 32, step: 1, unit: 'px' },
-    { key: 'image_x', label: 'Imagen X', min: -80, max: 80, step: 1, unit: 'px' },
-    { key: 'image_y', label: 'Imagen Y', min: -120, max: 120, step: 1, unit: 'px' },
-    { key: 'image_w', label: 'Imagen ancho', min: 70, max: 110, step: 1, unit: '%' },
-    { key: 'image_h', label: 'Imagen alto', min: 80, max: 320, step: 1, unit: 'px' },
-    { key: 'textB_x', label: 'Texto B X', min: -80, max: 80, step: 1, unit: 'px' },
-    { key: 'textB_y', label: 'Texto B Y', min: -120, max: 120, step: 1, unit: 'px' },
-    { key: 'textB_w', label: 'Texto B ancho', min: 70, max: 110, step: 1, unit: '%' },
-    { key: 'textB_h', label: 'Texto B alto', min: 0, max: 180, step: 1, unit: 'px' },
-    { key: 'answers_x', label: 'Opciones X', min: -80, max: 80, step: 1, unit: 'px' },
-    { key: 'answers_y', label: 'Opciones Y', min: -160, max: 160, step: 1, unit: 'px' },
-    { key: 'answers_w', label: 'Opciones ancho', min: 70, max: 110, step: 1, unit: '%' },
+    { key: 'image_y', label: 'Imagen Y', min: -80, max: 160, step: 1, unit: 'px' },
+    { key: 'image_h', label: 'Imagen alto', min: 100, max: 360, step: 1, unit: 'px' },
+    { key: 'textA_y', label: 'Texto Y', min: -80, max: 180, step: 1, unit: 'px' },
+    { key: 'textA_h', label: 'Texto alto', min: 70, max: 320, step: 1, unit: 'px' },
+    { key: 'answers_y', label: 'Opciones Y', min: -80, max: 180, step: 1, unit: 'px' },
     { key: 'answers_h', label: 'Opciones alto', min: 90, max: 420, step: 1, unit: 'px' }
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 0, text_font: 17,
-    image_x: 0, image_y: 0, image_w: 100, image_h: 0,
-    textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 0,
-    answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 0
+    textA_y: 0, textA_h: 120, text_font: 20,
+    image_y: 0, image_h: 210,
+    answers_y: 0, answers_h: 200
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 17,
-      image_x: 0, image_y: 30, image_w: 100, image_h: 200,
-      textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
-      answers_x: -11, answers_y: 30, answers_w: 106, answers_h: 90
-    },
-    true_false: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 85, text_font: 17,
-      image_x: 0, image_y: 0, image_w: 100, image_h: 200,
-      textB_x: 0, textB_y: 1, textB_w: 100, textB_h: 85,
-      answers_x: -11, answers_y: 0, answers_w: 106, answers_h: 90
-    },
-    open: {
-      textA_x: 0, textA_y: 30, textA_w: 100, textA_h: 100, text_font: 17,
-      image_x: 0, image_y: 30, image_w: 100, image_h: 200,
-      textB_x: 0, textB_y: 30, textB_w: 100, textB_h: 100,
-      answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
-    },
-    match: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 17,
-      image_x: 0, image_y: 10, image_w: 100, image_h: 200,
-      textB_x: 0, textB_y: 20, textB_w: 100, textB_h: 80,
-      answers_x: 0, answers_y: 30, answers_w: 100, answers_h: 90
-    },
-    fill_text: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 80, text_font: 17,
-      image_x: 0, image_y: 0, image_w: 100, image_h: 180,
-      textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 80,
-      answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
-    },
-    slider: {
-      textA_x: 0, textA_y: 0, textA_w: 100, textA_h: 100, text_font: 17,
-      image_x: 0, image_y: 0, image_w: 100, image_h: 200,
-      textB_x: 0, textB_y: 0, textB_w: 100, textB_h: 100,
-      answers_x: 0, answers_y: 0, answers_w: 100, answers_h: 90
-    }
+    multiple_choice: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 220 },
+    true_false: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 170 },
+    open: { textA_y: 0, textA_h: 130, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 170 },
+    slider: { textA_y: 0, textA_h: 120, text_font: 20, image_y: 0, image_h: 210, answers_y: 0, answers_h: 260 }
   };
 
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.76';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.76';
+  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.80';
+  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.80';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
     { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1477,11 +1435,34 @@
     { key: 'answers_y', label: 'Opciones / respuesta subir Y', min: 0, max: 90, step: 1, unit: 'px' }
   ];
   const QUIZ_CASCADE_TUNE_DEFAULTS = {
-    textA_y: 16,
-    image_y: 22,
-    textB_y: 28,
-    answers_y: 34
+    textA_y: 35,
+    image_y: 35,
+    textB_y: 35,
+    answers_y: 85
   };
+
+  function getQuizCascadeTuneDefaults(type = 'default', hasImage = false) {
+    if (type === 'slider') {
+      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
+    }
+    if (type === 'open') {
+      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 90 };
+    }
+    if (type === 'true_false') {
+      return { textA_y: 25, image_y: 25, textB_y: 25, answers_y: 80 };
+    }
+    if (type === 'multiple_choice') {
+      return hasImage
+        ? { textA_y: 40, image_y: 40, textB_y: 40, answers_y: 90 }
+        : { textA_y: 10, image_y: 10, textB_y: 10, answers_y: 10 };
+    }
+    return { ...QUIZ_CASCADE_TUNE_DEFAULTS };
+  }
+
+  function getQuizCascadeProfile(type = 'default', hasImage = false) {
+    if (type === 'multiple_choice') return hasImage ? 'multiple_choice_with_image' : 'multiple_choice_no_image';
+    return type || 'default';
+  }
 
   let quizCascadeReplayTimer = null;
 
@@ -1504,17 +1485,12 @@
 
   function normalizeQuizLayoutTune(tune = {}, type = 'default') {
     const defaults = getQuizLayoutTuneDefaults(type);
-    const normalized = { ...defaults };
+    const normalized = { ...defaults, text_font: 20 };
     QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
       const raw = Number(tune[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : defaults[field.key];
     });
-    if (!Number.isFinite(Number(tune.text_font))) {
-      const legacyTextA = Number(tune.textA_font);
-      const legacyTextB = Number(tune.textB_font);
-      const legacyFont = Number.isFinite(legacyTextA) ? legacyTextA : legacyTextB;
-      if (Number.isFinite(legacyFont)) normalized.text_font = Math.max(12, Math.min(32, legacyFont));
-    }
+    normalized.text_font = 20;
     return normalized;
   }
 
@@ -1524,12 +1500,13 @@
     return normalized;
   }
 
-  function quizCascadeTuneKey(type = 'default') {
-    return `encisomath:quizCascadeTune:${QUIZ_CASCADE_TUNE_STORAGE_VERSION}:${type || 'default'}`;
+  function quizCascadeTuneKey(type = 'default', hasImage = false) {
+    const profile = getQuizCascadeProfile(type, hasImage);
+    return `encisomath:quizCascadeTune:${QUIZ_CASCADE_TUNE_STORAGE_VERSION}:${profile}`;
   }
 
-  function normalizeQuizCascadeTune(tune = {}) {
-    const normalized = { ...QUIZ_CASCADE_TUNE_DEFAULTS };
+  function normalizeQuizCascadeTune(tune = {}, type = 'default', hasImage = false) {
+    const normalized = { ...getQuizCascadeTuneDefaults(type, hasImage) };
     QUIZ_CASCADE_TUNE_FIELDS.forEach((field) => {
       const raw = Number(tune[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : normalized[field.key];
@@ -1537,24 +1514,25 @@
     return normalized;
   }
 
-  function getQuizCascadeTune(type = 'default') {
+  function getQuizCascadeTune(type = 'default', hasImage = false) {
     try {
-      return normalizeQuizCascadeTune(JSON.parse(localStorage.getItem(quizCascadeTuneKey(type)) || '{}'));
+      return normalizeQuizCascadeTune(JSON.parse(localStorage.getItem(quizCascadeTuneKey(type, hasImage)) || '{}'), type, hasImage);
     } catch (_) {
-      return normalizeQuizCascadeTune({});
+      return normalizeQuizCascadeTune({}, type, hasImage);
     }
   }
 
-  function saveQuizCascadeTune(type, tune) {
-    const normalized = normalizeQuizCascadeTune(tune);
-    try { localStorage.setItem(quizCascadeTuneKey(type), JSON.stringify(normalized)); } catch (_) {}
+  function saveQuizCascadeTune(type, tune, hasImage = false) {
+    const normalized = normalizeQuizCascadeTune(tune, type, hasImage);
+    try { localStorage.setItem(quizCascadeTuneKey(type, hasImage), JSON.stringify(normalized)); } catch (_) {}
     return normalized;
   }
 
-  function applyQuizCascadeTune(type = 'default', tune = getQuizCascadeTune(type)) {
-    const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector(`.quiz-stage.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
+  function applyQuizCascadeTune(type = 'default', tune = null, stageRef = null, hasImageOverride = null) {
+    const stage = stageRef || document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector(`.quiz-stage.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
     if (!stage) return;
-    const safe = normalizeQuizCascadeTune(tune);
+    const hasImage = hasImageOverride === null ? stage.dataset.quizHasImage === 'true' : Boolean(hasImageOverride);
+    const safe = normalizeQuizCascadeTune(tune || getQuizCascadeTune(type, hasImage), type, hasImage);
     stage.style.setProperty('--quiz-feedback-cascade-text-a-shift', `${safe.textA_y}px`);
     stage.style.setProperty('--quiz-feedback-cascade-image-shift', `${safe.image_y}px`);
     stage.style.setProperty('--quiz-feedback-cascade-text-b-shift', `${safe.textB_y}px`);
@@ -1640,37 +1618,58 @@
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
     if (!['multiple_choice', 'true_false', 'open', 'slider'].includes(type)) return '';
-    const cascadeTune = getQuizCascadeTune(type);
+    const cascadeTune = getQuizCascadeTune(type, hasImage);
+    const layoutTune = getQuizLayoutTune(type);
+    const layoutFields = QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => hasImage || !field.key.startsWith('image_'));
     return `
-      <section class="quiz-layout-tune-panel quiz-cascade-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" hidden aria-hidden="true">
-        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajuste temporal de cascada">
+      <section class="quiz-layout-tune-panel quiz-cascade-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" hidden aria-hidden="true">
+        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajustes temporales del quiz">
           <div class="quiz-layout-tune-dialog-head">
             <div>
-              <strong>Ajuste temporal de cascada</strong>
-              <small>Calibra cuánto suben en Y los elementos cuando aparece Correcto / Incorrecto.</small>
+              <strong>Ajustes temporales</strong>
+              <small>Layout responsive por examen y pestaña separada para animación de cascada.</small>
             </div>
             <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
           </div>
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
-          ${hasImage ? `
-          <div class="quiz-layout-image-preview-row">
-            <label class="quiz-layout-image-preview-toggle">
-              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
-              <span>Mostrar imagen en vista previa</span>
-            </label>
-            <small>Solo oculta/muestra la imagen para revisar cómo se ve el ítem.</small>
-          </div>` : ''}
-          <div class="quiz-layout-tune-scroll quiz-cascade-tune-scroll">
-            ${QUIZ_CASCADE_TUNE_FIELDS.map((field) => `
-              <label class="quiz-layout-tune-row quiz-cascade-tune-row">
-                <span>${escapeHTML(field.label)} <b data-quiz-cascade-tune-value="${escapeAttr(field.key)}">${cascadeTune[field.key]}${field.unit}</b></span>
-                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${cascadeTune[field.key]}" data-quiz-cascade-tune="${escapeAttr(field.key)}" />
-              </label>
-            `).join('')}
+          <div class="quiz-layout-tune-tabs" role="tablist" aria-label="Opciones de ajuste">
+            <button class="quiz-layout-tab is-active" type="button" role="tab" aria-selected="true" data-quiz-tune-tab="layout">Layout</button>
+            <button class="quiz-layout-tab" type="button" role="tab" aria-selected="false" data-quiz-tune-tab="cascade">Animación</button>
           </div>
-          <div class="quiz-cascade-tune-actions">
-            <button class="primary-btn small" type="button" data-quiz-cascade-replay>Reproducir animación</button>
-            <button class="btn ghost small" type="button" data-quiz-cascade-tune-reset>Restablecer cascada</button>
+          <div class="quiz-layout-tab-panel is-active" data-quiz-tune-panel="layout">
+            ${hasImage ? `
+            <div class="quiz-layout-image-preview-row">
+              <label class="quiz-layout-image-preview-toggle">
+                <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
+                <span>Mostrar imagen en vista previa</span>
+              </label>
+              <small>La imagen sigue siendo ampliable con toque.</small>
+            </div>` : ''}
+            <div class="quiz-layout-tune-scroll">
+              ${layoutFields.map((field) => `
+                <label class="quiz-layout-tune-row">
+                  <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
+                  <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
+                </label>
+              `).join('')}
+            </div>
+            <div class="quiz-cascade-tune-actions">
+              <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>Restablecer layout</button>
+            </div>
+          </div>
+          <div class="quiz-layout-tab-panel" data-quiz-tune-panel="cascade" hidden>
+            <div class="quiz-layout-tune-scroll quiz-cascade-tune-scroll">
+              ${QUIZ_CASCADE_TUNE_FIELDS.map((field) => `
+                <label class="quiz-layout-tune-row quiz-cascade-tune-row">
+                  <span>${escapeHTML(field.label)} <b data-quiz-cascade-tune-value="${escapeAttr(field.key)}">${cascadeTune[field.key]}${field.unit}</b></span>
+                  <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${cascadeTune[field.key]}" data-quiz-cascade-tune="${escapeAttr(field.key)}" />
+                </label>
+              `).join('')}
+            </div>
+            <div class="quiz-cascade-tune-actions">
+              <button class="primary-btn small" type="button" data-quiz-cascade-replay>Reproducir animación</button>
+              <button class="btn ghost small" type="button" data-quiz-cascade-tune-reset>Restablecer cascada</button>
+            </div>
           </div>
         </div>
       </section>
@@ -1690,13 +1689,15 @@
         panel.classList.add('is-open');
         const type = panel.dataset.quizLayoutType || 'default';
         applyQuizLayoutTune(type, getQuizLayoutTune(type));
-        applyQuizCascadeTune(type, getQuizCascadeTune(type));
+        applyQuizCascadeTune(type, getQuizCascadeTune(type, stage.dataset.quizHasImage === 'true'), stage, stage.dataset.quizHasImage === 'true');
       });
     });
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
       const type = panel.dataset.quizLayoutType || 'default';
+      const panelStage = panel.closest('.quiz-stage');
+      const panelHasImage = panel.dataset.quizHasImage === 'true';
       applyQuizLayoutTune(type, getQuizLayoutTune(type));
-      applyQuizCascadeTune(type, getQuizCascadeTune(type));
+      applyQuizCascadeTune(type, getQuizCascadeTune(type, panelHasImage), panelStage, panelHasImage);
       const closePanel = () => {
         panel.classList.remove('is-open');
         panel.setAttribute('aria-hidden', 'true');
@@ -1722,15 +1723,57 @@
           applyQuizLayoutTune(type, getQuizLayoutTune(type));
         });
       }
+      panel.querySelectorAll('[data-quiz-tune-tab]').forEach((button) => {
+        if (button.dataset.boundQuizTuneTab === 'true') return;
+        button.dataset.boundQuizTuneTab = 'true';
+        button.addEventListener('click', () => {
+          const target = button.dataset.quizTuneTab;
+          panel.querySelectorAll('[data-quiz-tune-tab]').forEach((tab) => {
+            const active = tab === button;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+          });
+          panel.querySelectorAll('[data-quiz-tune-panel]').forEach((section) => {
+            const active = section.dataset.quizTunePanel === target;
+            section.classList.toggle('is-active', active);
+            section.hidden = !active;
+          });
+        });
+      });
+      panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
+        if (input.dataset.boundLayoutTune === 'true') return;
+        input.dataset.boundLayoutTune = 'true';
+        input.addEventListener('input', () => {
+          const current = getQuizLayoutTune(type);
+          const key = input.dataset.quizLayoutTune;
+          current[key] = Number(input.value);
+          saveQuizLayoutTune(type, current);
+          applyQuizLayoutTune(type, current);
+          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
+          if (output && field) output.textContent = `${current[key]}${field.unit}`;
+        });
+      });
+      panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
+        const defaults = saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
+        applyQuizLayoutTune(type, defaults);
+        panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
+          const key = input.dataset.quizLayoutTune;
+          input.value = defaults[key];
+          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
+          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
+          if (output && field) output.textContent = `${defaults[key]}${field.unit}`;
+        });
+      });
       panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
         if (input.dataset.boundCascadeTune === 'true') return;
         input.dataset.boundCascadeTune = 'true';
         input.addEventListener('input', () => {
-          const current = getQuizCascadeTune(type);
+          const current = getQuizCascadeTune(type, panelHasImage);
           const key = input.dataset.quizCascadeTune;
           current[key] = Number(input.value);
-          saveQuizCascadeTune(type, current);
-          applyQuizCascadeTune(type, current);
+          saveQuizCascadeTune(type, current, panelHasImage);
+          applyQuizCascadeTune(type, current, panel.closest('.quiz-stage'), panelHasImage);
           const field = QUIZ_CASCADE_TUNE_FIELDS.find((item) => item.key === key);
           const output = panel.querySelector(`[data-quiz-cascade-tune-value="${escapeSelector(key)}"]`);
           if (output && field) output.textContent = `${current[key]}${field.unit}`;
@@ -1742,8 +1785,8 @@
         replayButton.addEventListener('click', () => replayQuizCascadePreview(replayButton));
       }
       panel.querySelector('[data-quiz-cascade-tune-reset]')?.addEventListener('click', () => {
-        const defaults = saveQuizCascadeTune(type, QUIZ_CASCADE_TUNE_DEFAULTS);
-        applyQuizCascadeTune(type, defaults);
+        const defaults = saveQuizCascadeTune(type, getQuizCascadeTuneDefaults(type, panelHasImage), panelHasImage);
+        applyQuizCascadeTune(type, defaults, panel.closest('.quiz-stage'), panelHasImage);
         panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
           const key = input.dataset.quizCascadeTune;
           input.value = defaults[key];
@@ -1775,12 +1818,12 @@
     const setBox = (name, prefix) => {
       const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
       if (!box) return;
-      box.style.setProperty('--quiz-tune-x', `${safe[`${prefix}_x`]}px`);
-      box.style.setProperty('--quiz-tune-y', `${safe[`${prefix}_y`]}px`);
-      box.style.setProperty('--quiz-tune-w', `${safe[`${prefix}_w`]}%`);
+      box.style.removeProperty('--quiz-tune-x');
+      box.style.removeProperty('--quiz-tune-w');
+      box.style.setProperty('--quiz-tune-y', `${safe[`${prefix}_y`] || 0}px`);
       if (Number(safe[`${prefix}_h`]) > 0) box.style.setProperty('--quiz-tune-h', `${safe[`${prefix}_h`]}px`);
       else box.style.removeProperty('--quiz-tune-h');
-      if (prefix === 'textA' || prefix === 'textB') {
+      if (prefix === 'textA') {
         box.style.setProperty('--quiz-text-font', `${safe.text_font}px`);
         box.style.setProperty('--quiz-text-a-font', `${safe.text_font}px`);
         box.style.setProperty('--quiz-text-b-font', `${safe.text_font}px`);
@@ -1788,9 +1831,8 @@
     };
     setBox('textA', 'textA');
     setBox('image', 'image');
-    setBox('textB', 'textB');
     setBox('answers', 'answers');
-    applyQuizCascadeTune(type, getQuizCascadeTune(type));
+    applyQuizCascadeTune(type, getQuizCascadeTune(type, stage.dataset.quizHasImage === 'true'), stage, stage.dataset.quizHasImage === 'true');
   }
 
   function quizTypeLabel(type) {
@@ -1825,8 +1867,9 @@
   function quizMultipleChoiceHTML(question) {
     const colors = ['red', 'blue', 'yellow', 'green'];
     const options = Array.isArray(question.options) ? question.options : [];
+    const layoutClass = shouldStackMultipleChoiceOptions(options) ? 'kahoot-grid-single' : 'kahoot-grid-2x2';
     return `
-      <div class="kahoot-grid kahoot-grid-2x2" role="list">
+      <div class="kahoot-grid ${layoutClass}" role="list">
         ${options.slice(0, 4).map((option, index) => `
           <button class="kahoot-option kahoot-${colors[index]}" data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem">
             <span class="kahoot-answer-text">${escapeHTML(option.text || '')}</span>
@@ -4133,7 +4176,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.78', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.80', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
