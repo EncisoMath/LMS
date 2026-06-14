@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.138';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.138: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.139';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.139: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,26 +72,26 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.106';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.139';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
-    bandRotation: -8,
-    bandX: 7,
+    bandRotation: 0,
+    bandX: 0,
     bandY: 0,
-    bandWidth: 188,
-    bandHeight: 148,
+    bandWidth: 106,
+    bandHeight: 126,
     bandZoom: 100,
-    emojiX: 6,
-    emojiY: -4,
-    emojiZoom: 166,
+    emojiX: 0,
+    emojiY: 0,
+    emojiZoom: 100,
     titleX: 0,
-    titleY: 10,
-    titleSize: 29,
-    titleWidth: 74,
-    textX: -1,
-    textY: -25,
-    textSize: 16,
-    textWidth: 74,
-    bounceDuration: 920
+    titleY: 0,
+    titleSize: 31,
+    titleWidth: 92,
+    textX: 0,
+    textY: 0,
+    textSize: 15,
+    textWidth: 92,
+    bounceDuration: 0
   };
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
@@ -1490,7 +1490,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.106';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.139';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1505,10 +1505,10 @@
     { value: '800|italic', label: 'Montserrat ExtraBold Italic' }
   ];
   const QUIZ_TYPOGRAPHY_DEFAULTS = {
-    textPreset: '700|normal',
-    optionPreset: '800|normal',
-    textSize: 18,
-    optionSize: 17
+    textPreset: '600|normal',
+    optionPreset: '600|normal',
+    textSize: 14,
+    optionSize: 14
   };
 
   function normalizeQuizTypographyTune(tune = {}) {
@@ -1670,7 +1670,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.138';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.139';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2590,7 +2590,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.138</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.139</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3116,37 +3116,33 @@
   }
 
   function quizFeedbackParts(correct, neutralText = '', question = null) {
-    if (neutralText) return { kind: 'neutral', emoji: '✍️', title: 'Respuesta enviada', phrase: neutralText };
+    if (neutralText) return { kind: 'neutral', emoji: '', title: 'Respuesta enviada', phrase: 'Tu respuesta quedó guardada.' };
     const correctPhrases = [
-      'Esa neurona vino con turbo.',
-      'Respuesta nivel crack. Siga brillando.',
-      'Bien jugado. Punto para la mente matemática.',
-      'Así se responde, sin despeinarse.',
-      'Modo leyenda activado.'
+      'Muy bien, sigue así.',
+      'Respuesta correcta.',
+      'Excelente trabajo.',
+      'Punto para ti.',
+      'Lo lograste.'
     ];
     const wrongPhrases = [
-      'Sacúdete el polvo. La grandeza espera.',
-      'Casi, pero la opción correcta se escondió bien.',
-      'Error con estilo. Respira y vamos por la siguiente.',
-      'La respuesta se fue por la tangente.',
-      'Ups, el cálculo pidió revisión.'
+      'Revisa y continúa.',
+      'No era esa opción.',
+      'Inténtalo en la próxima.',
+      'Sigue practicando.',
+      'Vamos con la siguiente.'
     ];
     const session = getQuizSession();
     const correctCount = session.answers.filter((answer) => answer.correct === true).length;
     const wrongCount = session.answers.filter((answer) => answer.correct === false).length;
-    const correctEmoji = correctCount >= 5 ? '😎' : ['🫡', '😃', '😏', '🤩'][Math.max(0, correctCount - 1)] || '🫡';
-    let wrongEmoji = wrongCount >= 5 ? '☠️' : ['😬', '😕', '😨', '🥶'][Math.max(0, wrongCount - 1)] || '😬';
-    if (question?.type === 'true_false' && correct === false) wrongEmoji = '😒';
     return correct
-      ? { kind: 'correct', emoji: correctEmoji, title: '¡Correcto!', phrase: correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length] }
-      : { kind: 'wrong', emoji: wrongEmoji, title: '¡Incorrecto!', phrase: wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length] };
+      ? { kind: 'correct', emoji: '', title: '¡Correcto!', phrase: correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length] }
+      : { kind: 'wrong', emoji: '', title: '¡Incorrecto!', phrase: wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length] };
   }
 
   function quizGlobalFeedbackHTML(correct, neutralText = '', question = null) {
     const parts = quizFeedbackParts(correct, neutralText, question);
     return `
       <span class="enciso-quiz-feedback-mesh-v102" aria-hidden="true"></span>
-      <span class="enciso-quiz-feedback-emoji-v102">${parts.emoji}</span>
       <strong class="enciso-quiz-feedback-title-v102">${escapeHTML(parts.title)}</strong>
       <p class="enciso-quiz-feedback-phrase-v102">${escapeHTML(parts.phrase)}</p>
     `;
@@ -3157,18 +3153,15 @@
     const safe = getQuizFeedbackTune();
     const isCorrect = kind === 'correct';
     const isWrong = kind === 'wrong';
-    const heroBg = isCorrect
-      ? 'radial-gradient(circle at 18% 25%, rgba(210,255,191,.34), transparent 32%), radial-gradient(circle at 82% 18%, rgba(22,163,74,.36), transparent 34%), linear-gradient(135deg, #58cc02 0%, #26890c 48%, #0f5f18 100%)'
-      : isWrong
-        ? 'radial-gradient(circle at 18% 25%, rgba(255,210,218,.35), transparent 32%), radial-gradient(circle at 82% 18%, rgba(226,27,60,.38), transparent 34%), linear-gradient(135deg, #ff375b 0%, #e21b3c 48%, #8f1230 100%)'
-        : 'radial-gradient(circle at 18% 25%, rgba(219,234,254,.30), transparent 32%), radial-gradient(circle at 82% 18%, rgba(19,104,206,.34), transparent 34%), linear-gradient(135deg, #1368ce 0%, #0b3d91 100%)';
-    const meshColor = isCorrect ? 'rgba(225,255,216,.42)' : isWrong ? 'rgba(255,225,231,.42)' : 'rgba(219,234,254,.34)';
-    const meshGlow = isCorrect ? 'rgba(187,247,208,.34)' : isWrong ? 'rgba(254,202,202,.32)' : 'rgba(30,64,175,.24)';
-    const rotation = Number(safe.bandRotation) || 0;
+    const baseA = isCorrect ? 'rgba(88,204,2,.92)' : isWrong ? 'rgba(226,27,60,.92)' : 'rgba(19,104,206,.90)';
+    const baseB = isCorrect ? 'rgba(15,95,24,.96)' : isWrong ? 'rgba(96,9,28,.96)' : 'rgba(8,31,77,.96)';
+    const glow = isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
+    const line = isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
+    const shine = isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
+    const rotation = 0;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
-    const titleWidth = Math.max(24, Math.min(120, Number(safe.titleWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleWidth));
-    const textWidth = Math.max(24, Math.min(120, Number(safe.textWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textWidth));
-    const contentWidth = Math.max(titleWidth, textWidth);
+    const bandWidth = Math.max(84, Math.min(118, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
+    const bandHeight = Math.max(92, Math.min(156, Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight));
     band.dataset.feedbackKind = kind;
     band.dataset.feedbackRotation = String(rotation);
     band.dataset.feedbackZoom = String(zoom);
@@ -3176,32 +3169,34 @@
       'position:fixed',
       `left:calc(50% + ${Number(safe.bandX) || 0}px)`,
       `top:calc(50% + ${Number(safe.bandY) || 0}px)`,
-      `width:${Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth}vw`,
-      'max-width:none',
-      `min-width:${Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth}vw`,
-      `height:${Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight}px`,
-      `min-height:${Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight}px`,
+      `width:${bandWidth}vw`,
+      'max-width:1120px',
+      'min-width:min(92vw,720px)',
+      `height:${bandHeight}px`,
+      `min-height:${bandHeight}px`,
       'box-sizing:border-box',
       'border-radius:6px',
-      'border:0',
-      'padding:0',
+      'border:1px solid rgba(255,255,255,.12)',
+      'padding:clamp(14px,2.4vw,22px) clamp(20px,5vw,54px)',
       'display:grid',
-      `grid-template-columns:auto minmax(0,min(${contentWidth}vw,980px))`,
-      'grid-template-areas:"icon title" "icon phrase"',
+      'grid-template-columns:minmax(0,1fr)',
+      'grid-template-rows:auto auto',
+      'grid-template-areas:"title" "phrase"',
+      'align-content:center',
       'align-items:center',
+      'justify-items:center',
       'justify-content:center',
-      'column-gap:clamp(12px,3.5vw,28px)',
-      'row-gap:2px',
+      'row-gap:clamp(6px,1.2vh,10px)',
       'overflow:hidden',
-      'background:'+heroBg,
+      `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), radial-gradient(circle at 82% 18%, ${glow}, transparent 34%), linear-gradient(135deg, rgba(6,8,16,.98) 0%, ${baseB} 42%, ${baseA} 100%)`,
       'color:#fff',
-      `box-shadow:0 0 0 1px rgba(255,255,255,.10) inset, 0 18px 42px ${isCorrect ? 'rgba(38,137,12,.32)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)'}`, 
+      `box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 52px ${glow}, 0 12px 34px rgba(0,0,0,.42)`,
       'filter:none',
       'text-shadow:none',
       'opacity:1',
       `transform:translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${zoom})`,
       'transform-origin:center center',
-      'will-change:transform,opacity',
+      'will-change:auto',
       'pointer-events:none',
       'z-index:2147483000',
       "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
@@ -3209,8 +3204,8 @@
     const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
     if (mesh) {
       mesh.style.cssText = [
-        'position:absolute', 'inset:-18%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.78',
-        `background-image:linear-gradient(90deg, ${meshColor} 1px, transparent 1px), linear-gradient(0deg, ${meshColor} 1px, transparent 1px), radial-gradient(circle at 18% 30%, ${meshGlow}, transparent 32%), radial-gradient(circle at 82% 70%, ${meshGlow}, transparent 34%)`,
+        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.72',
+        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px), radial-gradient(circle at 18% 30%, ${glow}, transparent 32%), radial-gradient(circle at 82% 70%, ${glow}, transparent 34%)`,
         'background-size:42px 42px, 42px 42px, 100% 100%, 100% 100%',
         'transform:translate3d(0,0,0)',
         'backface-visibility:hidden',
@@ -3218,70 +3213,37 @@
       ].join(';') + ';';
       try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     }
-    const emoji = band.querySelector('.enciso-quiz-feedback-emoji-v102');
-    if (emoji) emoji.style.cssText = [
-      'grid-area:icon', 'display:block', 'position:relative', 'z-index:1', `font-size:calc(3.1rem * ${(Number(safe.emojiZoom) || 100) / 100})`, 'line-height:1', 'margin:0', 'filter:none',
-      `transform:translate(${Number(safe.emojiX) || 0}px, ${Number(safe.emojiY) || 0}px)`, 'transform-origin:center center'
-    ].join(';') + ';';
     const title = band.querySelector('.enciso-quiz-feedback-title-v102');
     if (title) title.style.cssText = [
-      'grid-area:title', 'display:block', 'position:relative', 'z-index:1', 'color:#fff', `font-size:${Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize}px`, 'line-height:1', 'font-weight:900', 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', `width:min(${titleWidth}vw,980px)`, 'max-width:100%', 'text-shadow:none',
-      `transform:translate(${Number(safe.titleX) || 0}px, ${Number(safe.titleY) || 0}px)`, 'transform-origin:center center'
+      'grid-area:title', 'display:block', 'position:relative', 'z-index:1', 'color:#fff',
+      `font-size:clamp(28px, 7.2vw, ${Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize}px)`,
+      'line-height:1', 'font-weight:950', 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
+      'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
+      'transform:none', 'transform-origin:center center'
     ].join(';') + ';';
     const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v102');
     if (phrase) phrase.style.cssText = [
-      'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', 'color:rgba(255,255,255,.96)', `font-size:${Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize}px`, 'line-height:1.12', 'font-weight:400', 'margin:0', `width:min(${textWidth}vw,980px)`, 'max-width:100%', 'white-space:normal', 'overflow-wrap:anywhere', 'text-shadow:none',
-      `transform:translate(${Number(safe.textX) || 0}px, ${Number(safe.textY) || 0}px)`, 'transform-origin:center center'
+      'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', 'color:rgba(255,255,255,.94)',
+      `font-size:clamp(13px, 3.8vw, ${Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize}px)`,
+      'line-height:1.1', 'font-weight:700', 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
+      'transform:none', 'transform-origin:center center'
     ].join(';') + ';';
   }
 
   function startFeedbackMeshDrift(band) {
     const mesh = band?.querySelector?.('.enciso-quiz-feedback-mesh-v102');
-    if (!mesh || typeof mesh.animate !== 'function') return;
-    if (prefEnabled && !prefEnabled('animatedBackgrounds')) return;
-    try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-    mesh.style.willChange = 'transform';
-    mesh.animate([
-      { transform: 'translate3d(-18px,-10px,0)' },
-      { transform: 'translate3d(18px,10px,0)' }
-    ], { duration: 6800, iterations: Infinity, easing: 'linear' });
-  }
-
-  function playInlineFeedbackBounce(band) {
-    if (!band) return;
-    const tune = getQuizFeedbackTune();
-    const rotation = Number(band.dataset.feedbackRotation || tune.bandRotation || 0);
-    const zoom = Number(band.dataset.feedbackZoom || ((tune.bandZoom || 100) / 100));
-    const t = (scale) => `translate3d(-50%,-50%,0) rotate(${rotation}deg) scale(${scale * zoom})`;
-    try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-    const mesh = band.querySelector?.('.enciso-quiz-feedback-mesh-v102');
     try { mesh?.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     if (mesh) {
       mesh.style.transform = 'translate3d(0,0,0)';
       mesh.style.willChange = 'auto';
     }
+  }
 
-    // v0.24.124: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.124 porque al alargarlo parecia lag/FPS bajo.
-    // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
-    const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
-    const frames = [
-      { opacity: 0, transform: t(0.88), offset: 0 },
-      { opacity: 1, transform: t(1.045), offset: 0.72 },
-      { opacity: 1, transform: t(1), offset: 1 }
-    ];
-    if (typeof band.animate === 'function') {
-      const anim = band.animate(frames, { duration, easing: 'cubic-bezier(.18,.92,.22,1)', fill: 'forwards' });
-      anim.onfinish = () => {
-        band.style.opacity = '1';
-        band.style.transform = t(1);
-        startFeedbackMeshDrift(band);
-      };
-      return;
-    }
-    band.style.opacity = '1';
-    band.style.transform = t(1);
+  function playInlineFeedbackBounce(band) {
+    if (!band) return;
+    try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     startFeedbackMeshDrift(band);
+    band.style.opacity = '1';
   }
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
@@ -3309,7 +3271,7 @@
     applyInlineFeedbackBandStyles(band, parts.kind);
     document.documentElement.dataset.encisoLastFeedback = String(Date.now());
     window.__encisomathLastFeedbackV102 = (window.__encisomathLastFeedbackV102 || 0) + 1;
-    requestAnimationFrame(() => requestAnimationFrame(() => playInlineFeedbackBounce(band)));
+    playInlineFeedbackBounce(band);
     scheduleQuizAdvance();
   }
 
@@ -4391,7 +4353,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.138', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.139', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
