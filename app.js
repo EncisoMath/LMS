@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.136';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.136: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.138';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.138: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1590,13 +1590,18 @@
       '.quiz-stage .quiz-text-b',
       '.quiz-stage-fullscreen .quiz-text-a',
       '.quiz-stage-fullscreen .quiz-text-b',
-      '.quiz-open-input',
       '.quiz-open-feedback'
     ].join(','), textPreset, safe.textSize);
     applyInline([
       '.kahoot-option',
       '.kahoot-answer-text',
       '.quiz-submit-btn',
+      '.quiz-open-input',
+      '.quiz-order-card',
+      '.quiz-order-card strong',
+      '.quiz-order-number',
+      '.quiz-order-grip',
+      '.quiz-order-submit'
     ].join(','), optionPreset, safe.optionSize);
     document.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
     document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
@@ -1665,7 +1670,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.136';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.138';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1855,6 +1860,37 @@
     `;
   }
 
+
+  function quizTypographyQuickControlsHTML() {
+    const tune = getQuizTypographyTune();
+    return `
+      <div class="quiz-typography-tune-box quiz-quick-typography-box" data-quiz-typography-box>
+        <div class="quiz-layout-tune-nav-head">
+          <strong>Texto y opciones</strong>
+          <span>Ajusta la fuente y el tamaño visual del texto principal y de las respuestas.</span>
+        </div>
+        <div class="quiz-quick-font-grid">
+          <label class="quiz-font-select-row">
+            <span>Fuente del texto</span>
+            <select data-quiz-typography-input="textPreset">${quizFontPresetOptionsHTML(tune.textPreset)}</select>
+          </label>
+          <label class="quiz-layout-tune-row quiz-quick-range-row">
+            <span>Tamaño texto <b data-quiz-typography-value="textSize">${tune.textSize}px</b></span>
+            <input type="range" min="12" max="28" step="1" value="${tune.textSize}" data-quiz-typography-input="textSize" />
+          </label>
+          <label class="quiz-font-select-row">
+            <span>Fuente de opciones</span>
+            <select data-quiz-typography-input="optionPreset">${quizFontPresetOptionsHTML(tune.optionPreset)}</select>
+          </label>
+          <label class="quiz-layout-tune-row quiz-quick-range-row">
+            <span>Tamaño opciones <b data-quiz-typography-value="optionSize">${tune.optionSize}px</b></span>
+            <input type="range" min="12" max="28" step="1" value="${tune.optionSize}" data-quiz-typography-input="optionSize" />
+          </label>
+        </div>
+      </div>
+    `;
+  }
+
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
     if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
     const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
@@ -1882,6 +1918,7 @@
           </div>
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
           ${imageToggleHTML}
+          ${quizTypographyQuickControlsHTML()}
         </div>
       </section>
     `;
@@ -1957,6 +1994,35 @@
           applyQuizLayoutTune(panel.dataset.quizLayoutType || 'default', getQuizLayoutTune(panel.dataset.quizLayoutType || 'default'), panelStage);
         });
       }
+
+      const typographyInputs = panel.querySelectorAll('[data-quiz-typography-input]');
+      const refreshTypographyPanel = (safe) => {
+        panel.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
+        panel.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
+        panel.querySelectorAll('[data-quiz-typography-input]').forEach((input) => {
+          const key = input.dataset.quizTypographyInput;
+          if (!key || !(key in safe)) return;
+          input.value = String(safe[key]);
+        });
+      };
+      typographyInputs.forEach((input) => {
+        const handleTypographyChange = () => {
+          const key = input.dataset.quizTypographyInput;
+          if (!key) return;
+          const current = getQuizTypographyTune();
+          const value = key === 'textSize' || key === 'optionSize' ? Number(input.value) : input.value;
+          const safe = saveQuizTypographyTune({ ...current, [key]: value });
+          applyQuizTypographyTune(safe);
+          refreshTypographyPanel(safe);
+          if ((panel.dataset.quizLayoutType || '') === 'order') {
+            window.requestAnimationFrame(() => {
+              document.querySelectorAll('[data-quiz-order-board]').forEach((orderBoard) => fitQuizOrderCards(orderBoard));
+            });
+          }
+        };
+        input.addEventListener('input', handleTypographyChange);
+        input.addEventListener('change', handleTypographyChange);
+      });
     });
   }
 
@@ -1983,9 +2049,17 @@
     const imageFr = Math.max(0, Number(safe.image_h) || 0);
     const textFr = Math.max(1, Number(safe.textA_h) || 1);
     const answerFr = Math.max(1, Number(safe.answers_h) || 1);
-    stage.style.setProperty('--quiz-fit-image-fr', `${imageVisible ? imageFr : 0}fr`);
-    stage.style.setProperty('--quiz-fit-text-fr', `${imageVisible ? textFr : imageFr + textFr}fr`);
-    stage.style.setProperty('--quiz-fit-answer-fr', `${answerFr}fr`);
+    if (imageVisible) {
+      stage.style.setProperty('--quiz-fit-image-fr', `${imageFr}fr`);
+      stage.style.setProperty('--quiz-fit-text-fr', `${textFr}fr`);
+      stage.style.setProperty('--quiz-fit-spacer-fr', '0fr');
+      stage.style.setProperty('--quiz-fit-answer-fr', `${answerFr}fr`);
+    } else {
+      stage.style.setProperty('--quiz-fit-image-fr', '0fr');
+      stage.style.setProperty('--quiz-fit-text-fr', '52fr');
+      stage.style.setProperty('--quiz-fit-spacer-fr', '3fr');
+      stage.style.setProperty('--quiz-fit-answer-fr', '45fr');
+    }
     if (type === 'order') {
       window.requestAnimationFrame(() => {
         document.querySelectorAll('[data-quiz-order-board]').forEach((orderBoard) => fitQuizOrderCards(orderBoard));
@@ -2516,7 +2590,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.136</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.138</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4317,7 +4391,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.136', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.138', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
