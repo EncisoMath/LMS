@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.135';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.135: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.136';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.136: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -1432,11 +1432,14 @@
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
     return `
-      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(`${quiz.id || 'quiz'}:${question.id || index}`)}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
-            <span class="quiz-timer-pill">Item ${index + 1}</span>
+            <div class="quiz-stage-meta-actions">
+              <span class="quiz-timer-pill">Item ${index + 1}</span>
+              <button class="quiz-layout-tune-open quiz-quick-menu-btn" type="button" data-quiz-layout-tune-open aria-label="Abrir navegación del quiz">⚙️</button>
+            </div>
           </div>
         </div>
         <div class="quiz-question-content">
@@ -1447,6 +1450,7 @@
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
+        ${quizLayoutTunePanelHTML(question.type, questions.length, index, Boolean(question.image), quiz.id || 'quiz', question.id || String(index))}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -1661,7 +1665,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.135';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.136';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1851,81 +1855,33 @@
     `;
   }
 
-  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false) {
+  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
     if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
-    const layoutTune = getQuizLayoutTune(type);
-    const typographyTune = getQuizTypographyTune();
-    const isOrderTune = type === 'order';
-    const layoutFields = (hasImage || isOrderTune) ? QUIZ_LAYOUT_TUNE_FIELDS : QUIZ_LAYOUT_TUNE_FIELDS.filter((field) => !field.key.startsWith('image_'));
-    return `
-      <section class="quiz-layout-tune-panel quiz-cascade-tune-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" hidden aria-hidden="true">
-        <div class="quiz-layout-tune-dialog" role="dialog" aria-modal="true" aria-label="Ajustes temporales del quiz">
-          <div class="quiz-layout-tune-dialog-head">
-            <div>
-              <strong>Ajustes temporales${isOrderTune ? ' · Organizar tarjetas' : ''}</strong>
-              <small>${isOrderTune ? 'Este quiz tiene porcentajes propios: Imagen + Texto + Opciones = 100%. Si no hay imagen, ese porcentaje se suma al texto.' : 'Ajusta el porcentaje vertical. Los tres valores siempre suman 100%.'}</small>
-            </div>
-            <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar ajustes">×</button>
-          </div>
-          ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
-          ${hasImage ? `
+    const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
+    const imageToggleHTML = hasImage ? `
           <div class="quiz-layout-image-preview-row">
             <label class="quiz-layout-image-preview-toggle">
-              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(type) ? 'checked' : ''} />
-              <span>Mostrar imagen en vista previa</span>
+              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(imageKey) ? 'checked' : ''} />
+              <span>Mostrar imagen de esta pregunta</span>
             </label>
-            <small>La imagen sigue siendo ampliable con toque.</small>
-          </div>` : ''}
-          <div class="quiz-typography-tune-box" data-quiz-typography-box>
-            <strong>Tipografía global de quizzes</strong>
-            <small>Estos ajustes se aplican a todos los quizzes: textos y opciones.</small>
-            <label class="quiz-layout-tune-row quiz-font-select-row">
-              <span>Fuente texto</span>
-              <select data-quiz-typography-select="textPreset">${quizFontPresetOptionsHTML(typographyTune.textPreset)}</select>
-            </label>
-            <label class="quiz-layout-tune-row quiz-font-select-row">
-              <span>Fuente opciones</span>
-              <select data-quiz-typography-select="optionPreset">${quizFontPresetOptionsHTML(typographyTune.optionPreset)}</select>
-            </label>
-            <label class="quiz-layout-tune-row">
-              <span>Tamaño texto <b data-quiz-typography-value="textSize">${typographyTune.textSize}px</b></span>
-              <input type="range" min="12" max="28" step="1" value="${typographyTune.textSize}" data-quiz-typography-range="textSize" />
-            </label>
-            <label class="quiz-layout-tune-row">
-              <span>Tamaño opciones <b data-quiz-typography-value="optionSize">${typographyTune.optionSize}px</b></span>
-              <input type="range" min="12" max="28" step="1" value="${typographyTune.optionSize}" data-quiz-typography-range="optionSize" />
-            </label>
-            <button class="btn ghost small" type="button" data-quiz-typography-reset>Restablecer fuentes</button>
-          </div>
-          ${quizFeedbackMiniTuneBoxHTML()}
-          <div class="quiz-layout-live-measures" aria-label="Altos reales actuales del layout">
-            <strong>Altos reales en pantalla</strong>
-            <span data-quiz-layout-measure="image">Imagen: calculando…</span>
-            <span data-quiz-layout-measure="textA">Texto: calculando…</span>
-            <span data-quiz-layout-measure="answers">Opciones: calculando…</span>
-          </div>
-          ${isOrderTune ? `
-          <div class="quiz-order-layout-tune-box" data-order-layout-tune-box>
-            <strong>Layout SOLO para Organizar tarjetas</strong>
-            <small>Estos sliders controlan los contenedores de este tipo de quiz: Imagen %, Texto % y Opciones %. Los tres suman 100%. Si no hay imagen, su porcentaje se suma al texto y Opciones queda igual.</small>
-            ${QUIZ_LAYOUT_TUNE_FIELDS.map((field) => `
-              <label class="quiz-layout-tune-row quiz-order-layout-tune-row">
-                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
-                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
-              </label>
-            `).join('')}
+            <small>Al desactivarla, el texto usa el espacio de la imagen. No modifica el JSON ni borra el recurso.</small>
           </div>` : `
-          <div class="quiz-layout-tune-scroll">
-            ${layoutFields.map((field) => `
-              <label class="quiz-layout-tune-row">
-                <span>${escapeHTML(field.label)} <b data-quiz-layout-tune-value="${escapeAttr(field.key)}">${layoutTune[field.key]}${field.unit}</b></span>
-                <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${layoutTune[field.key]}" data-quiz-layout-tune="${escapeAttr(field.key)}" />
-              </label>
-            `).join('')}
-          </div>`}
-          <div class="quiz-cascade-tune-actions">
-            <button class="btn ghost small" type="button" data-quiz-layout-tune-reset>${isOrderTune ? 'Restablecer 30 / 30 / 40' : 'Restablecer 30 / 40 / 30'}</button>
+          <div class="quiz-layout-image-preview-row quiz-layout-image-preview-row-empty">
+            <strong>Imagen</strong>
+            <small>Esta pregunta no tiene imagen cargada.</small>
+          </div>`;
+    return `
+      <section class="quiz-layout-tune-panel quiz-quick-menu-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(imageKey)}" hidden aria-hidden="true">
+        <div class="quiz-layout-tune-dialog quiz-quick-menu-dialog" role="dialog" aria-modal="true" aria-label="Navegación del quiz">
+          <div class="quiz-layout-tune-dialog-head">
+            <div>
+              <strong>Navegación del quiz</strong>
+              <small>Salta entre preguntas y controla la imagen de este ítem.</small>
+            </div>
+            <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar navegación">×</button>
           </div>
+          ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
+          ${imageToggleHTML}
         </div>
       </section>
     `;
@@ -1969,18 +1925,13 @@
         panel.hidden = false;
         panel.setAttribute('aria-hidden', 'false');
         panel.classList.add('is-open');
-        const type = panel.dataset.quizLayoutType || 'default';
-        applyQuizLayoutTune(type, getQuizLayoutTune(type));
-        window.setTimeout(() => updateQuizLayoutMeasurements(stage), 60);
-          });
+      });
     });
+
     document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
-      const type = panel.dataset.quizLayoutType || 'default';
+      if (panel.dataset.boundQuickQuizMenu === 'true') return;
+      panel.dataset.boundQuickQuizMenu = 'true';
       const panelStage = panel.closest('.quiz-stage');
-      const panelHasImage = panel.dataset.quizHasImage === 'true';
-      applyQuizLayoutTune(type, getQuizLayoutTune(type));
-      applyQuizCascadeTune(type, getQuizCascadeTune(type, panelHasImage), panelStage, panelHasImage);
-      window.setTimeout(() => updateQuizLayoutMeasurements(panelStage), 60);
       const closePanel = () => {
         const active = document.activeElement;
         if (active && panel.contains(active)) active.blur();
@@ -1989,153 +1940,35 @@
         panel.hidden = true;
         panelStage?.querySelector('[data-quiz-layout-tune-open]')?.focus?.({ preventScroll: true });
       };
+
       panel.querySelectorAll('[data-quiz-layout-tune-close]').forEach((button) => {
-        if (button.dataset.boundLayoutTuneClose === 'true') return;
-        button.dataset.boundLayoutTuneClose = 'true';
         button.addEventListener('click', closePanel);
       });
-      if (panel.dataset.boundLayoutTuneBackdrop !== 'true') {
-        panel.dataset.boundLayoutTuneBackdrop = 'true';
-        panel.addEventListener('click', (event) => {
-          if (event.target === panel) closePanel();
-        });
-      }
+      panel.addEventListener('click', (event) => {
+        if (event.target === panel) closePanel();
+      });
+
       const imagePreviewToggle = panel.querySelector('[data-quiz-image-preview-toggle]');
-      if (imagePreviewToggle && imagePreviewToggle.dataset.boundImagePreviewToggle !== 'true') {
-        imagePreviewToggle.dataset.boundImagePreviewToggle = 'true';
-        imagePreviewToggle.checked = getQuizImagePreviewVisible(type);
+      if (imagePreviewToggle) {
+        const imageKey = panel.dataset.quizImagePreviewKey || panel.dataset.quizLayoutType || 'default';
+        imagePreviewToggle.checked = getQuizImagePreviewVisible(imageKey);
         imagePreviewToggle.addEventListener('change', () => {
-          setQuizImagePreviewVisible(type, imagePreviewToggle.checked);
-          applyQuizLayoutTune(type, getQuizLayoutTune(type));
+          setQuizImagePreviewVisible(imageKey, imagePreviewToggle.checked);
+          applyQuizLayoutTune(panel.dataset.quizLayoutType || 'default', getQuizLayoutTune(panel.dataset.quizLayoutType || 'default'), panelStage);
         });
       }
-      panel.querySelectorAll('[data-quiz-typography-select]').forEach((select) => {
-        if (select.dataset.boundQuizTypography === 'true') return;
-        select.dataset.boundQuizTypography = 'true';
-        select.addEventListener('change', () => {
-          const current = getQuizTypographyTune();
-          current[select.dataset.quizTypographySelect] = select.value;
-          const safe = saveQuizTypographyTune(current);
-          applyQuizTypographyTune(safe);
-        });
-      });
-      panel.querySelectorAll('[data-quiz-typography-range]').forEach((input) => {
-        if (input.dataset.boundQuizTypographyRange === 'true') return;
-        input.dataset.boundQuizTypographyRange = 'true';
-        const updateTypographyRange = () => {
-          const current = getQuizTypographyTune();
-          const key = input.dataset.quizTypographyRange;
-          current[key] = Number(input.value);
-          const safe = saveQuizTypographyTune(current);
-          applyQuizTypographyTune(safe);
-          const output = panel.querySelector(`[data-quiz-typography-value="${escapeSelector(key)}"]`);
-          if (output) output.textContent = `${safe[key]}px`;
-        };
-        input.addEventListener('input', updateTypographyRange);
-        input.addEventListener('change', updateTypographyRange);
-      });
-      panel.querySelector('[data-quiz-typography-reset]')?.addEventListener('click', () => {
-        const safe = saveQuizTypographyTune(QUIZ_TYPOGRAPHY_DEFAULTS);
-        applyQuizTypographyTune(safe);
-        panel.querySelectorAll('[data-quiz-typography-select]').forEach((select) => {
-          const key = select.dataset.quizTypographySelect;
-          select.value = safe[key];
-        });
-        panel.querySelectorAll('[data-quiz-typography-range]').forEach((input) => {
-          const key = input.dataset.quizTypographyRange;
-          input.value = safe[key];
-          const output = panel.querySelector(`[data-quiz-typography-value="${escapeSelector(key)}"]`);
-          if (output) output.textContent = `${safe[key]}px`;
-        });
-      });
-      panel.querySelectorAll('[data-quiz-tune-tab]').forEach((button) => {
-        if (button.dataset.boundQuizTuneTab === 'true') return;
-        button.dataset.boundQuizTuneTab = 'true';
-        button.addEventListener('click', () => {
-          const target = button.dataset.quizTuneTab;
-          panel.querySelectorAll('[data-quiz-tune-tab]').forEach((tab) => {
-            const active = tab === button;
-            tab.classList.toggle('is-active', active);
-            tab.setAttribute('aria-selected', active ? 'true' : 'false');
-          });
-          panel.querySelectorAll('[data-quiz-tune-panel]').forEach((section) => {
-            const active = section.dataset.quizTunePanel === target;
-            section.classList.toggle('is-active', active);
-            section.hidden = !active;
-          });
-        });
-      });
-      panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
-        if (input.dataset.boundLayoutTune === 'true') return;
-        input.dataset.boundLayoutTune = 'true';
-        input.addEventListener('input', () => {
-          const current = getQuizLayoutTune(type);
-          const key = input.dataset.quizLayoutTune;
-          current[key] = Number(input.value);
-          const balanced = saveQuizLayoutTune(type, rebalanceQuizLayoutTune(current, key));
-          applyQuizLayoutTune(type, balanced);
-          updateQuizLayoutMeasurements(panelStage);
-          panel.querySelectorAll('[data-quiz-layout-tune]').forEach((slider) => {
-            const sliderKey = slider.dataset.quizLayoutTune;
-            const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === sliderKey);
-            if (!field) return;
-            slider.value = balanced[sliderKey];
-            const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(sliderKey)}"]`);
-            if (output) output.textContent = `${balanced[sliderKey]}${field.unit}`;
-          });
-        });
-      });
-      bindQuizFeedbackTunePanel();
-      panel.querySelector('[data-quiz-layout-tune-reset]')?.addEventListener('click', () => {
-        const defaults = saveQuizLayoutTune(type, getQuizLayoutTuneDefaults(type));
-        applyQuizLayoutTune(type, defaults);
-        updateQuizLayoutMeasurements(panelStage);
-        panel.querySelectorAll('[data-quiz-layout-tune]').forEach((input) => {
-          const key = input.dataset.quizLayoutTune;
-          input.value = defaults[key];
-          const field = QUIZ_LAYOUT_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-layout-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${defaults[key]}${field.unit}`;
-        });
-      });
-      panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
-        if (input.dataset.boundCascadeTune === 'true') return;
-        input.dataset.boundCascadeTune = 'true';
-        input.addEventListener('input', () => {
-          const current = getQuizCascadeTune(type, panelHasImage);
-          const key = input.dataset.quizCascadeTune;
-          current[key] = Number(input.value);
-          saveQuizCascadeTune(type, current, panelHasImage);
-          applyQuizCascadeTune(type, current, panel.closest('.quiz-stage'), panelHasImage);
-          const field = QUIZ_CASCADE_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-cascade-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${current[key]}${field.unit}`;
-        });
-      });
-      const replayButton = panel.querySelector('[data-quiz-cascade-replay]');
-      if (replayButton && replayButton.dataset.boundCascadeReplay !== 'true') {
-        replayButton.dataset.boundCascadeReplay = 'true';
-        replayButton.addEventListener('click', () => replayQuizCascadePreview(replayButton));
-      }
-      panel.querySelector('[data-quiz-cascade-tune-reset]')?.addEventListener('click', () => {
-        const defaults = saveQuizCascadeTune(type, getQuizCascadeTuneDefaults(type, panelHasImage), panelHasImage);
-        applyQuizCascadeTune(type, defaults, panel.closest('.quiz-stage'), panelHasImage);
-        panel.querySelectorAll('[data-quiz-cascade-tune]').forEach((input) => {
-          const key = input.dataset.quizCascadeTune;
-          input.value = defaults[key];
-          const field = QUIZ_CASCADE_TUNE_FIELDS.find((item) => item.key === key);
-          const output = panel.querySelector(`[data-quiz-cascade-tune-value="${escapeSelector(key)}"]`);
-          if (output && field) output.textContent = `${defaults[key]}${field.unit}`;
-        });
-      });
     });
   }
 
-  function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type)) {
-    const stage = document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
+
+  function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type), stageRef = null) {
+    const stage = stageRef || document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
     if (!stage) return;
     applyQuizTypographyTune(getQuizTypographyTune());
-    stage.classList.toggle('quiz-hide-image-preview', !getQuizImagePreviewVisible(type));
+    const imagePreviewKey = stage.dataset.quizImagePreviewKey || type;
+    const hasStageImage = stage.dataset.quizHasImage === 'true';
+    const imageVisible = hasStageImage && getQuizImagePreviewVisible(imagePreviewKey);
+    stage.classList.toggle('quiz-hide-image-preview', !imageVisible);
     const safe = normalizeQuizLayoutTune(tune, type);
     const unifiedFont = `${safe.text_font}px`;
     stage.style.setProperty('--quiz-text-font', unifiedFont);
@@ -2147,12 +1980,11 @@
       answerZone.style.setProperty('--quiz-text-a-font', unifiedFont);
       answerZone.style.setProperty('--quiz-text-b-font', unifiedFont);
     }
-    const hasStageImage = stage.dataset.quizHasImage === 'true';
     const imageFr = Math.max(0, Number(safe.image_h) || 0);
     const textFr = Math.max(1, Number(safe.textA_h) || 1);
     const answerFr = Math.max(1, Number(safe.answers_h) || 1);
-    stage.style.setProperty('--quiz-fit-image-fr', `${hasStageImage ? imageFr : 0}fr`);
-    stage.style.setProperty('--quiz-fit-text-fr', `${hasStageImage ? textFr : imageFr + textFr}fr`);
+    stage.style.setProperty('--quiz-fit-image-fr', `${imageVisible ? imageFr : 0}fr`);
+    stage.style.setProperty('--quiz-fit-text-fr', `${imageVisible ? textFr : imageFr + textFr}fr`);
     stage.style.setProperty('--quiz-fit-answer-fr', `${answerFr}fr`);
     if (type === 'order') {
       window.requestAnimationFrame(() => {
@@ -2684,7 +2516,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.135</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.136</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -4485,7 +4317,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.135', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.136', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
