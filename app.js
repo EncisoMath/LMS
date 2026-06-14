@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.116';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.116: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.117';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.117: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -163,8 +163,8 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
-  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.116';
-  // v0.24.116: la transición entre pestañas queda desactivada de forma fija;
+  const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.117';
+  // v0.24.117: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -2272,87 +2272,70 @@
       board.dataset.boundOrder = 'true';
       const stack = board.querySelector('[data-quiz-order-stack]');
       if (!stack) return;
-      let dragId = '';
-      stack.addEventListener('dragstart', (event) => {
-        const card = event.target.closest('[data-order-card]');
-        if (!card || board.classList.contains('order-locked')) return;
-        dragId = card.dataset.orderCard || '';
-        card.classList.add('is-dragging');
-        stack.classList.add('is-reordering');
-        event.dataTransfer?.setData('text/plain', dragId);
-        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
-      });
-      stack.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        const dragging = stack.querySelector('.is-dragging');
-        if (!dragging) return;
-        const target = event.target.closest('[data-order-card]');
-        if (!target || target === dragging) return;
-        const rect = target.getBoundingClientRect();
-        const beforeNode = event.clientY < rect.top + rect.height / 2 ? target : target.nextSibling;
-        animateQuizOrderShift(stack, () => stack.insertBefore(dragging, beforeNode));
-        updateQuizOrderNumbers(board);
-      });
-      stack.addEventListener('dragend', () => {
-        stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
-        stack.classList.remove('is-reordering');
-        updateQuizOrderNumbers(board);
-      });
-      stack.addEventListener('drop', (event) => {
-        event.preventDefault();
-        dragId = '';
-        stack.querySelectorAll('.is-dragging').forEach((card) => card.classList.remove('is-dragging'));
-        stack.classList.remove('is-reordering');
-        updateQuizOrderNumbers(board);
-      });
 
-      stack.querySelectorAll('[data-order-card]').forEach((card) => {
+      const cards = () => Array.from(stack.querySelectorAll('[data-order-card]'));
+      const reorderToPointer = (dragCard, clientY) => {
+        const siblings = cards().filter((card) => card !== dragCard);
+        let beforeNode = null;
+        for (const card of siblings) {
+          const rect = card.getBoundingClientRect();
+          if (clientY < rect.top + rect.height / 2) {
+            beforeNode = card;
+            break;
+          }
+        }
+        const currentNext = dragCard.nextElementSibling;
+        const alreadyThere = beforeNode === dragCard || currentNext === beforeNode || (!beforeNode && dragCard === stack.lastElementChild);
+        if (alreadyThere) return;
+        animateQuizOrderShift(stack, () => {
+          if (beforeNode) stack.insertBefore(dragCard, beforeNode);
+          else stack.appendChild(dragCard);
+        });
+        updateQuizOrderNumbers(board);
+      };
+
+      cards().forEach((card) => {
+        card.draggable = false;
+        card.addEventListener('dragstart', (event) => event.preventDefault());
         card.addEventListener('pointerdown', (event) => {
           if (board.classList.contains('order-locked') || event.button > 0) return;
           event.preventDefault();
-          stack.classList.add('is-reordering');
           const pointerId = event.pointerId;
           const rect = card.getBoundingClientRect();
           const offsetX = event.clientX - rect.left;
           const offsetY = event.clientY - rect.top;
-          const placeholder = document.createElement('div');
-          placeholder.className = 'quiz-order-placeholder';
-          placeholder.style.height = `${rect.height}px`;
-          card.after(placeholder);
-          card.classList.add('is-pointer-dragging');
-          card.style.position = 'fixed';
-          card.style.left = `${rect.left}px`;
-          card.style.top = `${rect.top}px`;
-          card.style.width = `${rect.width}px`;
-          card.style.zIndex = '2147481000';
-          card.style.pointerEvents = 'none';
+          const ghost = card.cloneNode(true);
+          ghost.removeAttribute('id');
+          ghost.classList.add('quiz-order-drag-ghost');
+          ghost.style.left = `${rect.left}px`;
+          ghost.style.top = `${rect.top}px`;
+          ghost.style.width = `${rect.width}px`;
+          ghost.style.height = `${rect.height}px`;
+          document.body.appendChild(ghost);
+          card.classList.add('is-drag-origin');
+          stack.classList.add('is-reordering');
           card.setPointerCapture?.(pointerId);
+
+          const moveGhost = (clientX, clientY) => {
+            ghost.style.transform = `translate3d(${clientX - offsetX - rect.left}px, ${clientY - offsetY - rect.top}px, 0) scale(1.02)`;
+          };
+          moveGhost(event.clientX, event.clientY);
+
           const move = (moveEvent) => {
-            card.style.left = `${moveEvent.clientX - offsetX}px`;
-            card.style.top = `${moveEvent.clientY - offsetY}px`;
-            placeOrderPlaceholder(board, moveEvent.clientY, card, placeholder);
+            moveGhost(moveEvent.clientX, moveEvent.clientY);
+            reorderToPointer(card, moveEvent.clientY);
           };
           const finish = () => {
-            const finalRect = placeholder.getBoundingClientRect();
-            placeholder.replaceWith(card);
-            card.classList.remove('is-pointer-dragging');
+            const finalRect = card.getBoundingClientRect();
+            ghost.style.transition = 'left 180ms cubic-bezier(.2,.8,.2,1), top 180ms cubic-bezier(.2,.8,.2,1), transform 180ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease';
+            ghost.style.left = `${finalRect.left}px`;
+            ghost.style.top = `${finalRect.top}px`;
+            ghost.style.transform = 'translate3d(0,0,0) scale(1)';
+            ghost.style.opacity = '0';
+            window.setTimeout(() => ghost.remove(), 190);
+            card.classList.remove('is-drag-origin');
             stack.classList.remove('is-reordering');
-            card.style.position = '';
-            card.style.left = '';
-            card.style.top = '';
-            card.style.width = '';
-            card.style.zIndex = '';
-            card.style.pointerEvents = '';
             card.releasePointerCapture?.(pointerId);
-            const settledRect = card.getBoundingClientRect();
-            const dx = finalRect.left - settledRect.left;
-            const dy = finalRect.top - settledRect.top;
-            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-              card.animate([
-                { transform: `translate(${dx}px, ${dy}px) scale(1.02)` },
-                { transform: 'translate(0, 0) scale(1)' }
-              ], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
-            }
             window.removeEventListener('pointermove', move);
             window.removeEventListener('pointerup', finish);
             window.removeEventListener('pointercancel', finish);
@@ -2372,21 +2355,21 @@
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
         board.classList.add('order-locked', ok ? 'order-correct' : 'order-wrong');
-        const cards = Array.from(board.querySelectorAll('[data-order-card]'));
-        cards.forEach((card) => { card.draggable = false; });
+        const orderCards = cards();
+        orderCards.forEach((card) => { card.draggable = false; });
         const button = board.querySelector('[data-order-validate]');
         if (button) button.disabled = true;
-        cards.forEach((card, index) => {
+        orderCards.forEach((card, index) => {
           window.setTimeout(() => {
             const matched = selected[index] === correctOrder[index];
-            card.classList.remove('order-reveal-correct', 'order-reveal-wrong');
+            card.classList.remove('order-reveal-correct', 'order-reveal-wrong', 'matched', 'wrong');
             void card.offsetWidth;
             card.classList.add(matched ? 'matched' : 'wrong', matched ? 'order-reveal-correct' : 'order-reveal-wrong');
-          }, index * 230);
+          }, index * 260);
         });
         recordQuizAnswer(question, ok, { order: selected, correctOrder });
-        if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), cards.length * 230 + 80);
-        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, cards.length * 230 + 520));
+        if (!ok) window.setTimeout(() => pulseElement(board, 'quiz-slider-wrong-pop'), orderCards.length * 260 + 80);
+        showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, orderCards.length * 260 + 620));
       });
       updateQuizOrderNumbers(board);
     });
@@ -2640,7 +2623,7 @@
     `).join('');
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.116</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.117</div>
         <div class="quiz-feedback-tune-help">La banda está pausada. Ajusta sin mover el quiz, repite la animación o continúa.</div>
         <div class="quiz-feedback-tune-scroll">${rows}</div>
         <div class="quiz-feedback-tune-actions">
@@ -3312,8 +3295,8 @@
       mesh.style.willChange = 'auto';
     }
 
-    // v0.24.116: pop limpio de 3 pasos.
-    // Se elimina el rebote multi-frame de v0.24.116 porque al alargarlo parecia lag/FPS bajo.
+    // v0.24.117: pop limpio de 3 pasos.
+    // Se elimina el rebote multi-frame de v0.24.117 porque al alargarlo parecia lag/FPS bajo.
     // La banda conserva estilo hero, pero durante la entrada solo anima transform+opacity.
     const duration = Math.max(260, Math.min(1600, Number(tune.bounceDuration) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bounceDuration || 760));
     const frames = [
@@ -4583,7 +4566,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.116', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.117', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
