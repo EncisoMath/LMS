@@ -1,4 +1,4 @@
-/* ===== v0.24.107 Montserrat local para quizzes =====
+/* ===== v0.24.108 Montserrat local para quizzes =====
    Rutas compatibles con la carpeta plana mostrada por el usuario:
    assets/fonts/Montserrat/Montserrat-*.ttf
    Se usan fuentes variables para cubrir todos los pesos y se dejan pesos
@@ -11577,7 +11577,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.107"; }
+:root { --encisomath-build: "0.24.108"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -11666,7 +11666,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.107"; }
+:root { --encisomath-build: "0.24.108"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -11892,7 +11892,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.107"; }
+:root { --encisomath-build: "0.24.108"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -12096,8 +12096,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   100% { opacity: 1; transform: rotate(-8deg) scale(1); }
 }
 
-/* ===== v0.24.107 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.107"; }
+/* ===== v0.24.108 global feedback overlay fix ===== */
+:root { --encisomath-build: "0.24.108"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -12218,8 +12218,8 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 }
 
 
-/* ===== v0.24.107 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.107"; }
+/* ===== v0.24.108 inline feedback overlay guard ===== */
+:root { --encisomath-build: "0.24.108"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -12242,7 +12242,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.107 quiz font and feedback tuning overlay ===== */
+/* ===== v0.24.108 quiz font and feedback tuning overlay ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage-fullscreen,
@@ -12284,7 +12284,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.107 Montserrat + visible feedback tune panel ===== */
+/* ===== v0.24.108 Montserrat + visible feedback tune panel ===== */
 .quiz-fullscreen-layer,
 .quiz-stage,
 .quiz-stage *,
@@ -12371,7 +12371,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.107 Montserrat + interactive feedback sliders ===== */
+/* ===== v0.24.108 Montserrat + interactive feedback sliders ===== */
 :root { --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .quiz-fullscreen-layer,
 .quiz-fullscreen-layer *,
@@ -12431,7 +12431,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-feedback-tune-panel .quiz-feedback-tune-scroll { max-height: 42dvh !important; }
 }
 
-/* ===== v0.24.107 global quiz typography controls ===== */
+/* ===== v0.24.108 global quiz typography controls ===== */
 :root {
   --quiz-global-font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --quiz-global-text-weight: 700;
@@ -12484,9 +12484,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.107 forced quiz typography controls ===== */
+/* ===== v0.24.108 forced quiz typography controls ===== */
 :root {
-  --encisomath-build: "0.24.107";
+  --encisomath-build: "0.24.108";
   --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .quiz-layout-tune-panel,
@@ -12495,7 +12495,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.107 cleanup and performance toggles ===== */
+/* ===== v0.24.108 cleanup and performance toggles ===== */
 :root {
   --effects-motion-enabled: 1;
 }
@@ -12555,9 +12555,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   overflow-y: auto !important;
 }
 
-/* ===== v0.24.107 visual performance without flat mode ===== */
+/* ===== v0.24.108 visual performance without flat mode ===== */
 :root {
-  --encisomath-build: "0.24.107";
+  --encisomath-build: "0.24.108";
 }
 @keyframes tabIn {
   0% { opacity: 0; transform: translate3d(0, 6px, 0); }
@@ -12722,5 +12722,149 @@ body.modal-open .quiz-tile {
   :root[data-visual-optimized="on"] .quiz-card,
   :root[data-visual-optimized="on"] .kahoot-option {
     box-shadow: 0 8px 18px rgba(0,0,0,.34) !important;
+  }
+}
+
+
+/* ===== v0.24.108 hero performance tuning: rich static instead of flat ===== */
+:root {
+  --encisomath-build: "0.24.108";
+}
+:root[data-visual-optimized="on"] #app,
+:root[data-visual-optimized="on"] #app.is-leaving,
+:root[data-visual-optimized="on"] #app.is-entering {
+  filter: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+:root[data-visual-optimized="on"] #app.is-entering .screen,
+:root[data-visual-optimized="on"] #app.is-entering .login-screen,
+:root[data-visual-optimized="on"] #app.is-entering .loading-screen {
+  animation: none !important;
+  filter: none !important;
+}
+:root[data-tab-transitions="off"] .tab-enter,
+:root[data-visual-optimized="on"] .tab-enter {
+  animation: none !important;
+}
+
+/* Isolate expensive hero paints so they do not dirty the whole screen. */
+.subject-banner,
+.profile-cover,
+.rockstar-hero,
+.quiz-hero,
+.animated-cover {
+  contain: paint;
+  backface-visibility: hidden;
+}
+
+/* Route/header covers keep the identity, but stop breathing/moving in optimized mode. */
+:root[data-visual-optimized="on"] .animated-cover,
+:root[data-visual-optimized="on"] .profile-cover,
+:root[data-visual-optimized="on"] .subject-banner {
+  animation: none !important;
+  filter: none !important;
+}
+:root[data-visual-optimized="on"] .cover-grid,
+:root[data-visual-optimized="on"] .cover-symbol,
+:root[data-visual-optimized="on"] .cover-geo,
+:root[data-hero-animations="off"] .cover-grid,
+:root[data-hero-animations="off"] .cover-symbol,
+:root[data-hero-animations="off"] .cover-geo {
+  animation: none !important;
+  will-change: auto !important;
+}
+:root[data-visual-optimized="on"] .cover-symbol,
+:root[data-hero-animations="off"] .cover-symbol {
+  opacity: .55 !important;
+  text-shadow: 0 8px 15px rgba(0,0,0,.18) !important;
+}
+:root[data-visual-optimized="on"] .cover-geo,
+:root[data-hero-animations="off"] .cover-geo {
+  opacity: .28 !important;
+}
+
+/* Default optimized mode: keep Rockstars/Quizzes visual identity but freeze the infinite loops. */
+:root[data-hero-animations="off"] .rockstar-hero::before,
+:root[data-hero-animations="off"] .rockstar-spotlight,
+:root[data-hero-animations="off"] .rockstar-light-bulb,
+:root[data-hero-animations="off"] .rocket-wrap,
+:root[data-hero-animations="off"] .rocket-emoji,
+:root[data-hero-animations="off"] .flame,
+:root[data-hero-animations="off"] .flame-plume,
+:root[data-hero-animations="off"] .rockstar-title-neon,
+:root[data-hero-animations="off"] .rockstar-title-neon::before,
+:root[data-hero-animations="off"] .quiz-hero-grid,
+:root[data-hero-animations="off"] .quiz-tile,
+:root[data-hero-animations="off"] .quiz-title-neon,
+:root[data-hero-animations="off"] .quiz-kahoot-mark span {
+  animation: none !important;
+  transition-duration: .001ms !important;
+  will-change: auto !important;
+}
+:root[data-hero-animations="off"] .smoke,
+:root[data-hero-animations="off"] .spark {
+  display: none !important;
+}
+:root[data-hero-animations="off"] .rockstar-spotlight {
+  filter: none !important;
+  opacity: .72 !important;
+}
+:root[data-hero-animations="off"] .rockstar-spotlights {
+  opacity: .68 !important;
+}
+:root[data-hero-animations="off"] .rocket-wrap {
+  transform: translate3d(0, 0, 0) !important;
+  filter: none !important;
+}
+:root[data-hero-animations="off"] .rocket-emoji {
+  transform: rotate(-42deg) translate3d(0, 0, 0) !important;
+  filter: drop-shadow(0 0 7px rgba(255,255,255,.28)) drop-shadow(0 0 12px rgba(34,211,238,.20)) !important;
+}
+:root[data-hero-animations="off"] .flame,
+:root[data-hero-animations="off"] .flame-plume {
+  filter: none !important;
+  opacity: .88 !important;
+}
+:root[data-hero-animations="off"] .rockstar-title-neon {
+  transform: none !important;
+  filter: none !important;
+  text-shadow:
+    0 0 6px rgba(255,255,255,.55),
+    0 0 13px rgba(34,211,238,.34),
+    0 0 20px rgba(255,43,214,.24) !important;
+}
+:root[data-hero-animations="off"] .rockstar-title-neon::before {
+  filter: none !important;
+  opacity: .34 !important;
+}
+:root[data-hero-animations="off"] .quiz-hero-grid {
+  opacity: .20 !important;
+}
+:root[data-hero-animations="off"] .quiz-tile {
+  transform: none !important;
+  box-shadow: 0 8px 14px rgba(0,0,0,.24), 0 0 9px currentColor !important;
+}
+:root[data-hero-animations="off"] .quiz-title-neon {
+  transform: none !important;
+  background-position: 50% 50% !important;
+  text-shadow: 0 0 8px rgba(255,255,255,.18), 0 0 15px rgba(226,27,60,.18), 0 0 16px rgba(19,104,206,.16) !important;
+}
+
+/* Extra mobile guard: hero remains styled, but avoids continuous repaints. */
+@media (max-width: 640px) {
+  :root[data-visual-optimized="on"] .rockstar-hero,
+  :root[data-visual-optimized="on"] .quiz-hero,
+  :root[data-visual-optimized="on"] .subject-banner {
+    box-shadow: 0 10px 22px rgba(0,0,0,.34) !important;
+  }
+  :root[data-visual-optimized="on"] .rockstar-hero::before,
+  :root[data-visual-optimized="on"] .quiz-hero-grid,
+  :root[data-visual-optimized="on"] .cover-grid {
+    animation: none !important;
+  }
+  :root[data-visual-optimized="on"] .rockstar-title-neon,
+  :root[data-visual-optimized="on"] .quiz-title-neon {
+    animation: none !important;
   }
 }

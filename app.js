@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.107';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.107: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.108';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.108: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -18,8 +18,9 @@
     effectsMotion: true,
     effectsMesh: true,
     visualOptimized: true,
-    tabTransitions: true,
-    glassEffects: true,
+    heroAnimations: false,
+    tabTransitions: false,
+    glassEffects: false,
     quizOptionEffects: true,
     quizFeedbackEffects: true
   };
@@ -156,6 +157,19 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
   };
 
+  const PERF_DEFAULTS_108_KEY = 'encisomath:perfDefaults:v0.24.108';
+  if (!localStorage.getItem(PERF_DEFAULTS_108_KEY)) {
+    state.prefs = {
+      ...state.prefs,
+      visualOptimized: true,
+      heroAnimations: false,
+      tabTransitions: false,
+      glassEffects: false
+    };
+    localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+    localStorage.setItem(PERF_DEFAULTS_108_KEY, '1');
+  }
+
   let firstPaint = true;
   let transitionTimer = null;
   let warningMotionAnimations = [];
@@ -213,17 +227,18 @@
   }
 
   function mount(markup, afterRender = null, options = {}) {
+    const optimizedRoute = prefEnabled('visualOptimized') || !prefEnabled('effectsMotion') || !prefEnabled('tabTransitions');
     const paint = () => {
       $app.innerHTML = markup;
       $app.classList.remove('is-leaving');
-      $app.classList.add('is-entering');
+      if (!optimizedRoute) $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
-      window.setTimeout(() => $app.classList.remove('is-entering'), 620);
+      window.setTimeout(() => $app.classList.remove('is-entering'), optimizedRoute ? 90 : 620);
       firstPaint = false;
     };
 
     window.clearTimeout(transitionTimer);
-    if (firstPaint || options.instant || options.noTransition) {
+    if (firstPaint || options.instant || options.noTransition || optimizedRoute) {
       paint();
       return;
     }
@@ -635,13 +650,14 @@
         <div class="settings-group settings-effects-group">
           <label class="settings-label">Rendimiento y efectos</label>
           <label class="toggle-row" for="visualOptimizedToggle"><span>Visual optimizado sin modo plano</span><input id="visualOptimizedToggle" type="checkbox" ${booleanPrefChecked('visualOptimized')} /></label>
+          <label class="toggle-row" for="heroAnimationsToggle"><span>Animación viva de heroes Rockstars/Quizzes</span><input id="heroAnimationsToggle" type="checkbox" ${booleanPrefChecked('heroAnimations')} /></label>
           <label class="toggle-row" for="tabTransitionsToggle"><span>Transiciones entre pestañas</span><input id="tabTransitionsToggle" type="checkbox" ${booleanPrefChecked('tabTransitions')} /></label>
           <label class="toggle-row" for="glassEffectsToggle"><span>Blur / vidrio</span><input id="glassEffectsToggle" type="checkbox" ${booleanPrefChecked('glassEffects')} /></label>
           <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
           <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
           <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
           <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
-          <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero usa animaciones más lentas, menos blur y menos capas pesadas.</p>
+          <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero deja los heroes como composiciones estáticas ricas y evita animaciones permanentes pesadas.</p>
         </div>
         <div class="profile-menu-actions">
           <button class="ghost-btn" id="profileSoonBtn">🪪 Gestionar perfil</button>
@@ -675,6 +691,7 @@
       document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
       [
         ['visualOptimizedToggle', 'visualOptimized'],
+        ['heroAnimationsToggle', 'heroAnimations'],
         ['tabTransitionsToggle', 'tabTransitions'],
         ['glassEffectsToggle', 'glassEffects'],
         ['effectsMotionToggle', 'effectsMotion'],
@@ -4097,6 +4114,7 @@
     root.dataset.effectsMotion = prefEnabled('effectsMotion') ? 'on' : 'off';
     root.dataset.effectsMesh = prefEnabled('effectsMesh') ? 'on' : 'off';
     root.dataset.visualOptimized = prefEnabled('visualOptimized') ? 'on' : 'off';
+    root.dataset.heroAnimations = prefEnabled('heroAnimations') ? 'on' : 'off';
     root.dataset.tabTransitions = prefEnabled('tabTransitions') ? 'on' : 'off';
     root.dataset.glassEffects = prefEnabled('glassEffects') ? 'on' : 'off';
     root.dataset.quizOptionEffects = prefEnabled('quizOptionEffects') ? 'on' : 'off';
@@ -4259,7 +4277,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.107', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.108', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
