@@ -776,7 +776,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Versiones/cache busting actualizados a `0.24.72`.
 
 
-## v0.24.111
+## v0.24.112
 
 - Preparado Montserrat local para quizzes usando `assets/fonts/Montserrat/`.
 - Quita dependencia de Google Fonts en `index.html`.
@@ -784,16 +784,16 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Mantiene `bindQuizTabEvents()` y el arranque de Quizzes corregido.
 
 
-## v0.24.111
+## v0.24.112
 - Limpieza parcial de quiz: retirados flujos JS/CSS legacy de match/fill_text no usados en el demo actual.
 - Nuevas opciones de rendimiento en Perfil y apariencia para desactivar animaciones, mallas/brillos, efectos de opciones y animación de banda.
 - Corrección de foco al cerrar la tuerquita para evitar advertencias aria-hidden.
 
 
-## v0.24.111
+## v0.24.112
 
 - Se reemplazo la entrada pesada con blur por una animacion ligera de opacidad + desplazamiento corto sin blur.
 - Se aplico la entrada unificada en Home, botones de pestañas, bloques principales de Estudiantes, Rockstars, Quizzes y Clases.
 - En Estudiantes/Rockstars/Quizzes se anima la lista como bloque, no cada estudiante/quiz.
 - En Clases se elimino el blur restante y se anima cada clase individualmente por ser pocas.
-- Version/cache busting actualizado a 0.24.111.
+- Version/cache busting actualizado a 0.24.112.
