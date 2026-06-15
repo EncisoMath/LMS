@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.183';
+  const APP_VERSION = '0.24.184';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -321,6 +321,14 @@
   const QUIZ_ITEM_TIME_LIMIT_MAX = 999;
   const QUIZ_COUNTDOWN_DANGER_SECONDS = 10;
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
+  const QUIZ_ITEM_POINTS_TOTAL = 10000;
+  const QUIZ_TIME_POINTS_TOTAL = 10000;
+  const QUIZ_TIME_SCORE_PEAK_RATIO = 0.75;
+  const QUIZ_TIME_SCORE_EARLY_ZERO_RATIO = 0.12;
+  const QUIZ_TIME_SCORE_RAMP_END_RATIO = 0.30;
+  const QUIZ_TIME_SCORE_LEFT_SIGMA = 0.25;
+  const QUIZ_TIME_SCORE_RIGHT_SIGMA = 0.18;
+  const QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS = 3000;
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
     p1x: 5, p1y: -45, p1rot: 0,
@@ -2791,19 +2799,21 @@
             card.classList.add(ok ? 'flip-correct-reveal' : 'flip-wrong-reveal');
           };
           if (selectedCorrect) {
+            const answerRecord = recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
             runRevealAnimation(selected, true);
+            showQuizPointsCascade(selected, answerRecord, 160);
             playQuizSound('correct');
-            recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
-            showQuizFeedbackBandAfterDelay(stage, true, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
+            showQuizFeedbackBandAfterDelay(stage, true, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
           } else {
+            const answerRecord = recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '' });
             runRevealAnimation(selected, false);
+            showQuizPointsCascade(selected, answerRecord, 160);
             playQuizSound('wrong');
             if (correctCard && correctCard !== selected) {
               setQuizFlipCardOpen(correctCard, true);
               window.setTimeout(() => runRevealAnimation(correctCard, true), 430);
             }
-            recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correct: correctCard?.dataset.quizAnswer || '' });
-            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720));
+            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
           }
         }, 1000);
       });
@@ -3055,8 +3065,9 @@
             board.classList.remove('order-validating');
             stage?.classList.remove('order-reveal-active');
           }, revealTotal + 120);
-          recordQuizAnswer(question, ok, { order: selected, correctOrder });
-          showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
+          const answerRecord = recordQuizAnswer(question, ok, { order: selected, correctOrder });
+          showQuizPointsCascade(board, answerRecord, Math.min(520, revealTotal + 120));
+          showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
         }, pendingDelay);
       });
 
@@ -3170,6 +3181,143 @@
     return normalizeQuizItemSeconds(raw ?? QUIZ_ITEM_TIME_LIMIT_DEFAULT);
   }
 
+  function getQuizScoringItemCount(quiz = getActiveQuiz()) {
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    return Math.max(1, questions.length || 1);
+  }
+
+  function clampQuizNumber(value, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return min;
+    return Math.min(Math.max(number, min), max);
+  }
+
+  function getQuizAnswerTimingSnapshot() {
+    const active = state.quizCountdown || null;
+    const question = getCurrentQuizQuestion();
+    const quiz = getActiveQuiz();
+    const totalSeconds = normalizeQuizItemSeconds(active?.totalSeconds || getQuizQuestionTimeLimit(question, quiz));
+    let elapsedSeconds = Number(active?.respondedElapsedSeconds);
+    if (!Number.isFinite(elapsedSeconds)) {
+      if (Number.isFinite(Number(active?.startedAt)) && typeof performance !== 'undefined') {
+        elapsedSeconds = (performance.now() - Number(active.startedAt)) / 1000;
+      } else {
+        const remaining = Number.isFinite(Number(active?.remainingSeconds)) ? Number(active.remainingSeconds) : totalSeconds;
+        elapsedSeconds = totalSeconds - remaining;
+      }
+    }
+    elapsedSeconds = clampQuizNumber(elapsedSeconds, 0, totalSeconds);
+    const remainingSeconds = clampQuizNumber(totalSeconds - elapsedSeconds, 0, totalSeconds);
+    const elapsedRatio = totalSeconds > 0 ? clampQuizNumber(elapsedSeconds / totalSeconds, 0, 1) : 0;
+    return {
+      totalSeconds,
+      elapsedSeconds: Math.round(elapsedSeconds * 1000) / 1000,
+      remainingSeconds: Math.round(remainingSeconds * 1000) / 1000,
+      elapsedRatio: Math.round(elapsedRatio * 10000) / 10000
+    };
+  }
+
+  function quizTimeScoreCurve(elapsedRatio = 0) {
+    const ratio = clampQuizNumber(elapsedRatio, 0, 1);
+    if (ratio <= QUIZ_TIME_SCORE_EARLY_ZERO_RATIO) return 0;
+    const sigma = ratio <= QUIZ_TIME_SCORE_PEAK_RATIO ? QUIZ_TIME_SCORE_LEFT_SIGMA : QUIZ_TIME_SCORE_RIGHT_SIGMA;
+    const curve = Math.exp(-0.5 * Math.pow((ratio - QUIZ_TIME_SCORE_PEAK_RATIO) / sigma, 2));
+    const ramp = clampQuizNumber((ratio - QUIZ_TIME_SCORE_EARLY_ZERO_RATIO) / Math.max(0.001, QUIZ_TIME_SCORE_RAMP_END_RATIO - QUIZ_TIME_SCORE_EARLY_ZERO_RATIO), 0, 1);
+    return clampQuizNumber(curve * ramp, 0, 1);
+  }
+
+  function calculateQuizAnswerScore(question, correct, extra = {}, quiz = getActiveQuiz()) {
+    const totalItems = getQuizScoringItemCount(quiz);
+    const itemMax = QUIZ_ITEM_POINTS_TOTAL / totalItems;
+    const timeMax = QUIZ_TIME_POINTS_TOTAL / totalItems;
+    const timing = extra?.timing && typeof extra.timing === 'object' ? extra.timing : getQuizAnswerTimingSnapshot();
+    const score = {
+      item: 0,
+      time: 0,
+      total: 0,
+      totalItems,
+      itemMax: Math.round(itemMax),
+      timeMax: Math.round(timeMax),
+      curve: 0,
+      timing
+    };
+    if (correct !== true) return score;
+    const curve = quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0);
+    score.curve = Math.round(curve * 10000) / 10000;
+    score.item = Math.round(itemMax);
+    score.time = Math.round(timeMax * curve);
+    score.total = Math.max(0, score.item + score.time);
+    return score;
+  }
+
+  function formatQuizPointsNumber(value = 0) {
+    const safe = Math.max(0, Math.round(Number(value) || 0));
+    return String(safe).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function formatQuizPointsText(value = 0) {
+    const safe = Math.max(0, Math.round(Number(value) || 0));
+    return safe > 0 ? `+${formatQuizPointsNumber(safe)}` : '0';
+  }
+
+  function playCascadeText({ target, text = 'Ítem 1' } = {}) {
+    const container = typeof target === 'string' ? document.querySelector(target) : target;
+    if (!container) return;
+    const ENTER_DURATION = 780;
+    const EXIT_DURATION = 780;
+    const STAGGER = 45;
+    const HOLD_TIME = 2000;
+    if (container._cascadeExitTimeout) window.clearTimeout(container._cascadeExitTimeout);
+    if (container._cascadeClearTimeout) window.clearTimeout(container._cascadeClearTimeout);
+    container.innerHTML = '';
+    const textElement = document.createElement('div');
+    textElement.className = 'cascade-text';
+    const cleanText = String(text).trim() || 'Ítem 1';
+    [...cleanText].forEach((letter, index) => {
+      const span = document.createElement('span');
+      span.className = letter === ' ' ? 'cascade-text__char cascade-text__space' : 'cascade-text__char';
+      span.style.setProperty('--i', index);
+      if (letter === ' ') span.innerHTML = '&nbsp;';
+      else span.textContent = letter;
+      textElement.appendChild(span);
+    });
+    container.appendChild(textElement);
+    const textLength = cleanText.length;
+    const totalEntranceTime = ENTER_DURATION + ((textLength - 1) * STAGGER);
+    const totalExitTime = EXIT_DURATION + ((textLength - 1) * STAGGER);
+    container._cascadeExitTimeout = window.setTimeout(() => {
+      textElement.querySelectorAll('.cascade-text__char').forEach((char) => char.classList.add('out'));
+    }, totalEntranceTime + HOLD_TIME);
+    container._cascadeClearTimeout = window.setTimeout(() => {
+      container.innerHTML = '';
+    }, totalEntranceTime + HOLD_TIME + totalExitTime + 120);
+  }
+
+  function ensureQuizScoreCascadeStage(target) {
+    if (!target) return null;
+    target.classList.add('quiz-score-cascade-host');
+    let stage = Array.from(target.children || []).find((child) => child.classList?.contains('quiz-score-cascade-stage'));
+    if (!stage) {
+      stage = document.createElement('span');
+      stage.className = 'cascade-text-stage quiz-score-cascade-stage';
+      stage.setAttribute('aria-hidden', 'true');
+      target.appendChild(stage);
+    }
+    return stage;
+  }
+
+  function showQuizPointsCascade(target, answerRecord = null, delayMs = 0) {
+    if (!target || !answerRecord) return;
+    const points = Number(answerRecord?.score?.total ?? answerRecord?.points ?? 0) || 0;
+    const text = formatQuizPointsText(points);
+    const play = () => {
+      const stage = ensureQuizScoreCascadeStage(target);
+      if (stage) playCascadeText({ target: stage, text });
+    };
+    if (delayMs > 0) window.setTimeout(play, delayMs);
+    else play();
+  }
+
   function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
     const safeSeconds = normalizeQuizItemSeconds(seconds);
     return `
@@ -3205,6 +3353,10 @@
     stopQuizQuestionMusic(true);
     const active = state.quizCountdown;
     if (!active) return;
+    const timing = getQuizAnswerTimingSnapshot();
+    active.respondedElapsedSeconds = timing.elapsedSeconds;
+    active.respondedRemainingSeconds = timing.remainingSeconds;
+    active.remainingSeconds = timing.remainingSeconds;
     if (active.interval) {
       window.clearInterval(active.interval);
       active.interval = null;
@@ -3243,9 +3395,10 @@
     const stage = document.querySelector(`.quiz-stage[data-quiz-question-index="${Number(questionIndex)}"]`) || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
     lockQuizQuestionForTimeout(stage);
     setQuizCountdownDisplay('0', 'is-timeup');
-    recordQuizAnswer(question, false, { timeout: true });
+    const answerRecord = recordQuizAnswer(question, false, { timeout: true });
+    showQuizPointsCascade(stage, answerRecord, 80);
     playQuizSound('wrong');
-    showQuizFeedbackBandAfterDelay(stage, false, question, QUIZ_TIMEOUT_FEEDBACK_TEXT, 0);
+    showQuizFeedbackBandAfterDelay(stage, false, question, QUIZ_TIMEOUT_FEEDBACK_TEXT, 620);
   }
 
   function startQuizCountdownForCurrentQuestion(layer = document.getElementById('quizFullscreenLayer'), quiz = getActiveQuiz()) {
@@ -3394,7 +3547,7 @@
     polygon.setAttribute('points', pointsToString(currentPoints));
     wrap.classList.remove('danger', 'beat', 'is-answered', 'is-timeup');
     startIdleMovement();
-    state.quizCountdown = { wrap, polygon, number, interval: null, animationFrame: null, beatTimer: null, questionIndex, totalSeconds, remainingSeconds, isRunning: true };
+    state.quizCountdown = { wrap, polygon, number, interval: null, animationFrame: null, beatTimer: null, questionIndex, totalSeconds, remainingSeconds, startedAt: performance.now(), respondedElapsedSeconds: null, respondedRemainingSeconds: null, isRunning: true };
     state.quizCountdown.animationFrame = window.requestAnimationFrame(animatePolygon);
     updateDangerState();
     moveToNewSecondShape();
@@ -4390,14 +4543,14 @@
 
     const selectedCorrect = button.dataset.correct === 'true';
     scheduleQuizTimer(() => {
-      revealQuizAnswer(stage, button, selectedCorrect);
+      const answerRecord = recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
+      revealQuizAnswer(stage, button, selectedCorrect, answerRecord);
       playQuizSound(selectedCorrect ? 'correct' : 'wrong');
-      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
-      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
+      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
     }, 1000);
   }
 
-  function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
+  function revealQuizAnswer(stage, selectedButton, selectedCorrect, answerRecord = null) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
     const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
@@ -4415,6 +4568,7 @@
       scheduleQuizTimer(() => {
         item.classList.remove('is-dimmed');
         item.classList.add(isCorrect ? 'correct-reveal' : 'wrong-reveal', 'kahoot-reveal-pop', isCorrect ? 'kahoot-reveal-correct' : 'kahoot-reveal-wrong');
+        if (item === selectedButton) showQuizPointsCascade(item, answerRecord, 120);
       }, 90 * index);
     });
   }
@@ -4678,14 +4832,26 @@
   function recordQuizAnswer(question, correct, extra = {}) {
     const session = getQuizSession();
     const index = Number(state.quizQuestionIndex);
-    session.answers = session.answers.filter((answer) => Number(answer.index) !== index);
-    session.answers.push({
+    const safeExtra = { ...(extra || {}) };
+    if (Object.prototype.hasOwnProperty.call(safeExtra, 'correct') && typeof safeExtra.correct !== 'boolean') {
+      safeExtra.correctAnswer = safeExtra.correct;
+      delete safeExtra.correct;
+    }
+    const timing = safeExtra?.timing && typeof safeExtra.timing === 'object' ? safeExtra.timing : getQuizAnswerTimingSnapshot();
+    const score = calculateQuizAnswerScore(question, correct, { ...safeExtra, timing }, getActiveQuiz());
+    const answerRecord = {
       index,
       questionId: question?.id || `q${index + 1}`,
       type: question?.type || 'unknown',
+      ...safeExtra,
       correct,
-      ...extra
-    });
+      timing,
+      score,
+      points: score.total
+    };
+    session.answers = session.answers.filter((answer) => Number(answer.index) !== index);
+    session.answers.push(answerRecord);
+    return answerRecord;
   }
 
   function scheduleQuizAdvance() {
@@ -4736,7 +4902,8 @@
     window.requestAnimationFrame(() => {
       form.classList.add('is-open-submitted');
     });
-    recordQuizAnswer(question, null, { text: value });
+    const answerRecord = recordQuizAnswer(question, null, { text: value });
+    if (!value) showQuizPointsCascade(form, answerRecord, 120);
     showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', 720);
   }
 
@@ -5974,7 +6141,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.183', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.184', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

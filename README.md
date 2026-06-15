@@ -880,12 +880,12 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Version/cache busting actualizado a 0.24.181.
 
 
-## v0.24.183
+## v0.24.184
 - Cambio enfocado en Quizzes: se reemplaza la música global `music1.mp3` por música aleatoria por pregunta/ítem, según el tiempo del ítem.
 - La app busca pistas en `assets/music_quiz/` con nombres `20_X`, `30_X`, `60_X`, `90_X` o `120_X` (por ejemplo `20_1.mp3`, `20_2.mp3`, `30_1.mp3`) y solo usa la familia que coincide con los segundos de la pregunta.
 - La detección cuenta las pistas disponibles por duración usando los candidatos `X=1..3`; si no hay pistas para ese tiempo, el quiz continúa sin música y sin romper.
 - La música ya no se reproduce durante todo el quiz ni durante transiciones: arranca al entrar a cada pregunta y se detiene con fadeout rápido cuando se responde, se envía respuesta, se valida Organizar/Flip o se acaba el tiempo.
-- Version/cache busting actualizado a 0.24.183.
+- Version/cache busting actualizado a 0.24.184.
 - Validaciones: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
 ## v0.24.182
@@ -900,3 +900,12 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Version/cache busting actualizado a 0.24.182.
 - Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
 
+
+## v0.24.184
+- Se agrega sistema de puntos por ítem en Quizzes: los puntos por acierto suman 10.000 si todos los ítems están correctos.
+- Se agrega sistema de puntos por tiempo: otros 10.000 posibles, calculados con curva de respuesta que evita premiar respuestas demasiado inmediatas y alcanza su máximo alrededor del 75% del tiempo usado.
+- El puntaje se guarda en cada respuesta con desglose de ítem, tiempo, total, curva y timing.
+- Al revelar una respuesta, el puntaje aparece sobre la tarjeta/opción con texto en cascada carácter por carácter, bounce de entrada, permanencia y salida invertida.
+- Para respuestas incorrectas o tiempo agotado se muestra 0; para correctas se muestra +puntaje con punto de miles.
+- Se mantiene Montserrat local, sin Google Fonts ni recursos externos.
+- Version/cache busting actualizado a 0.24.184.
