@@ -1,4 +1,14 @@
 
+## v0.24.187
+
+- Se parte de `v0.24.186`.
+- Version temporal de calibracion para los puntajes flotantes del quiz.
+- Se agrego panel `⚙️ Puntajes` con sliders de posicion X, posicion Y y zoom para el puntaje por pregunta y el puntaje por tiempo.
+- Se agrego boton `Repetir animacion` para reproducir de nuevo los puntajes en cascada con los valores actuales.
+- El flujo del quiz queda pausado despues de la animacion de puntajes y solo continua al pulsar `Seguir`.
+- Se conserva el layout de contenedores de opciones/respuesta de v0.24.186; los puntajes siguen como overlays flotantes sin fondo, con texto blanco y resplandor oscuro.
+- Version/cache busting actualizado a `0.24.187`.
+
 
 ## v0.24.60
 
@@ -921,7 +931,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Version/cache busting actualizado a 0.24.185.
 
 
-## v0.24.186
+## v0.24.187
 
 - Corrección enfocada en Quizzes/puntajes visuales.
 - Se retiró el fondo negro de los puntajes animados; ahora quedan como texto blanco flotante con resplandor/sombra exterior oscura para contraste.
@@ -929,4 +939,4 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - El puntaje por ítem aparece flotando sobre el contenedor de opciones/respuesta, centrado, entrando desde abajo hacia arriba.
 - El puntaje por tiempo aparece flotando debajo del countdown, visible, entrando desde arriba hacia abajo.
 - Se mantiene la lógica de puntos de v0.24.184-v0.24.185, la música random por ítem y el countdown por pregunta.
-- Version/cache busting actualizado a 0.24.186.
+- Version/cache busting actualizado a 0.24.187.

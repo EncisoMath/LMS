@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.186';
+  const APP_VERSION = '0.24.187';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -329,6 +329,24 @@
   const QUIZ_TIME_SCORE_LEFT_SIGMA = 0.25;
   const QUIZ_TIME_SCORE_RIGHT_SIGMA = 0.18;
   const QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS = 3000;
+  const QUIZ_SCORE_TUNE_ENABLED = true;
+  const QUIZ_SCORE_TUNE_KEY = 'encisomath:quizScoreTune:v0.24.187';
+  const QUIZ_SCORE_TUNE_DEFAULTS = {
+    itemX: 0,
+    itemY: 0,
+    itemZoom: 100,
+    timeX: 0,
+    timeY: 0,
+    timeZoom: 100
+  };
+  const QUIZ_SCORE_TUNE_FIELDS = [
+    { key: 'itemX', group: 'Puntaje pregunta', label: 'Pregunta X', min: -180, max: 180, step: 1, unit: 'px' },
+    { key: 'itemY', group: 'Puntaje pregunta', label: 'Pregunta Y', min: -160, max: 160, step: 1, unit: 'px' },
+    { key: 'itemZoom', group: 'Puntaje pregunta', label: 'Pregunta zoom', min: 50, max: 180, step: 1, unit: '%' },
+    { key: 'timeX', group: 'Puntaje tiempo', label: 'Tiempo X', min: -180, max: 180, step: 1, unit: 'px' },
+    { key: 'timeY', group: 'Puntaje tiempo', label: 'Tiempo Y', min: -160, max: 160, step: 1, unit: 'px' },
+    { key: 'timeZoom', group: 'Puntaje tiempo', label: 'Tiempo zoom', min: 50, max: 180, step: 1, unit: '%' }
+  ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
     p1x: 5, p1y: -45, p1rot: 0,
@@ -417,6 +435,9 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
     quizTransitionPanelOpen: true,
     quizRankingPodiumPanelOpen: true,
+    quizScoreTunePanelOpen: true,
+    quizScoreTuneLast: null,
+    quizScoreTunePendingFeedback: null,
     appRoute: null,
     appHistoryReady: false,
     applyingHistoryRoute: false
@@ -3260,6 +3281,139 @@
     return safe > 0 ? `+${formatQuizPointsNumber(safe)}` : '0';
   }
 
+
+  function normalizeQuizScoreTune(raw = {}) {
+    const tune = { ...QUIZ_SCORE_TUNE_DEFAULTS };
+    QUIZ_SCORE_TUNE_FIELDS.forEach((field) => {
+      const value = Number(raw?.[field.key]);
+      if (!Number.isFinite(value)) return;
+      tune[field.key] = Math.min(Math.max(value, field.min), field.max);
+    });
+    return tune;
+  }
+
+  function getQuizScoreTune() {
+    try {
+      return normalizeQuizScoreTune(JSON.parse(localStorage.getItem(QUIZ_SCORE_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return normalizeQuizScoreTune({});
+    }
+  }
+
+  function saveQuizScoreTune(tune = {}) {
+    const safe = normalizeQuizScoreTune(tune);
+    try { localStorage.setItem(QUIZ_SCORE_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function updateQuizScoreTuneOutput(key, value) {
+    document.querySelectorAll(`[data-quiz-score-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
+      const field = QUIZ_SCORE_TUNE_FIELDS.find((item) => item.key === key);
+      output.textContent = `${value}${field?.unit || ''}`;
+    });
+  }
+
+  function quizScoreTuneRangeRowHTML(field, tune = getQuizScoreTune()) {
+    const value = Number(tune[field.key] ?? QUIZ_SCORE_TUNE_DEFAULTS[field.key]);
+    return `
+      <label class="quiz-score-tune-row">
+        <span class="quiz-score-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-score-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
+        <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-score-tune="${escapeAttr(field.key)}" />
+      </label>`;
+  }
+
+  function quizScoreTunePanelHTML(last = false) {
+    const tune = getQuizScoreTune();
+    const groups = [...new Set(QUIZ_SCORE_TUNE_FIELDS.map((field) => field.group))];
+    return `
+      <section class="quiz-score-tune-panel" data-quiz-score-tune-panel aria-label="Ajuste temporal de puntajes">
+        <div class="quiz-score-tune-title">⚙️ Puntajes · v0.24.187</div>
+        <div class="quiz-score-tune-help">El flujo está pausado. Ajusta X/Y/zoom, repite la animación y pulsa Seguir.</div>
+        <div class="quiz-score-tune-scroll">
+          ${groups.map((group) => `
+            <div class="quiz-score-tune-group">
+              <h4>${escapeHTML(group)}</h4>
+              ${QUIZ_SCORE_TUNE_FIELDS.filter((field) => field.group === group).map((field) => quizScoreTuneRangeRowHTML(field, tune)).join('')}
+            </div>`).join('')}
+        </div>
+        <div class="quiz-score-tune-actions">
+          <button class="ghost-btn small" type="button" data-quiz-score-replay>Repetir animación</button>
+          <button class="primary-btn small" type="button" data-quiz-score-continue>${last ? 'Seguir a resultados' : 'Seguir'}</button>
+        </div>
+      </section>`;
+  }
+
+  function removeQuizScoreTunePanel(clearPending = false) {
+    document.querySelectorAll('[data-quiz-score-tune-panel]').forEach((panel) => panel.remove());
+    if (clearPending) state.quizScoreTunePendingFeedback = null;
+  }
+
+  function applyQuizScoreTuneToFloatingStages() {
+    const last = state.quizScoreTuneLast;
+    if (!last) return;
+    const stage = getQuizStageFromScoreTarget(last.target);
+    const answerZone = stage?.querySelector?.('.quiz-answer-zone') || last.target || stage;
+    const countdownAnchor = document.querySelector('[data-quiz-countdown-poly]') || document.querySelector('.quiz-countdown-slot');
+    const itemStage = document.querySelector('[data-quiz-floating-score-stage="item"]');
+    const timeStage = document.querySelector('[data-quiz-floating-score-stage="time"]');
+    if (itemStage && answerZone) positionQuizFloatingScoreStage(itemStage, answerZone, 'item');
+    if (timeStage && countdownAnchor) positionQuizFloatingScoreStage(timeStage, countdownAnchor, 'time');
+  }
+
+  function replayQuizScoreAnimation() {
+    const last = state.quizScoreTuneLast;
+    if (!last || !last.answerRecord) return;
+    clearQuizFloatingScoreStages();
+    showQuizScoreBreakdown(last.target, last.answerRecord, 0, { silentTunePanel: true });
+  }
+
+  function bindQuizScoreTunePanel() {
+    document.querySelectorAll('[data-quiz-score-tune]').forEach((input) => {
+      if (input.dataset.boundScoreTune === 'true') return;
+      input.dataset.boundScoreTune = 'true';
+      const update = () => {
+        const current = getQuizScoreTune();
+        const key = input.dataset.quizScoreTune;
+        current[key] = Number(input.value);
+        const saved = saveQuizScoreTune(current);
+        updateQuizScoreTuneOutput(key, saved[key]);
+        applyQuizScoreTuneToFloatingStages();
+      };
+      input.addEventListener('input', update);
+      input.addEventListener('change', update);
+    });
+    document.querySelectorAll('[data-quiz-score-replay]').forEach((button) => {
+      if (button.dataset.boundScoreReplay === 'true') return;
+      button.dataset.boundScoreReplay = 'true';
+      button.addEventListener('click', replayQuizScoreAnimation);
+    });
+    document.querySelectorAll('[data-quiz-score-continue]').forEach((button) => {
+      if (button.dataset.boundScoreContinue === 'true') return;
+      button.dataset.boundScoreContinue = 'true';
+      button.addEventListener('click', () => {
+        const pending = state.quizScoreTunePendingFeedback;
+        removeQuizScoreTunePanel(false);
+        state.quizScoreTunePendingFeedback = null;
+        if (pending) showQuizFeedbackBand(pending.stage, pending.correct, pending.question, pending.neutralText);
+      });
+    });
+  }
+
+  function showQuizScoreTuneGate(stage, correct, question = null, neutralText = '') {
+    if (!QUIZ_SCORE_TUNE_ENABLED || !stage) {
+      showQuizFeedbackBand(stage, correct, question, neutralText);
+      return;
+    }
+    removeQuizScoreTunePanel(false);
+    const quiz = getActiveQuiz();
+    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+    const last = state.quizQuestionIndex >= total - 1;
+    state.quizScoreTunePendingFeedback = { stage, correct, question, neutralText };
+    document.body.insertAdjacentHTML('beforeend', quizScoreTunePanelHTML(last));
+    bindQuizScoreTunePanel();
+    applyQuizScoreTuneToFloatingStages();
+  }
+
   function playCascadeText({ target, text = 'Ítem 1' } = {}) {
     const container = typeof target === 'string' ? document.querySelector(target) : target;
     if (!container) return;
@@ -3325,19 +3479,30 @@
     if (!stage || !anchor || typeof anchor.getBoundingClientRect !== 'function') return;
     const rect = anchor.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return;
+    const tune = getQuizScoreTune();
+    const isTime = kind === 'time';
+    const tuneX = isTime ? tune.timeX : tune.itemX;
+    const tuneY = isTime ? tune.timeY : tune.itemY;
+    const tuneZoom = (isTime ? tune.timeZoom : tune.itemZoom) / 100;
     const x = rect.left + rect.width / 2;
-    const y = kind === 'time' ? rect.bottom + 5 : rect.top - 6;
+    const y = isTime ? rect.bottom + 5 : rect.top - 6;
     stage.style.left = `${Math.round(x)}px`;
     stage.style.top = `${Math.round(y)}px`;
-    stage.style.transform = kind === 'time' ? 'translate(-50%, 0) rotate(1.5deg)' : 'translate(-50%, -100%) rotate(-1.5deg)';
+    stage.style.setProperty('--quiz-score-tune-x', `${Number(tuneX) || 0}px`);
+    stage.style.setProperty('--quiz-score-tune-y', `${Number(tuneY) || 0}px`);
+    stage.style.setProperty('--quiz-score-tune-zoom', `${Number(tuneZoom) || 1}`);
+    stage.style.transform = isTime
+      ? 'translate(-50%, 0) translate(var(--quiz-score-tune-x), var(--quiz-score-tune-y)) scale(var(--quiz-score-tune-zoom)) rotate(1.5deg)'
+      : 'translate(-50%, -100%) translate(var(--quiz-score-tune-x), var(--quiz-score-tune-y)) scale(var(--quiz-score-tune-zoom)) rotate(-1.5deg)';
   }
 
-  function showQuizScoreBreakdown(target, answerRecord = null, delayMs = 0) {
+  function showQuizScoreBreakdown(target, answerRecord = null, delayMs = 0, options = {}) {
     if (!answerRecord) return;
     const stage = getQuizStageFromScoreTarget(target);
     if (!stage) return;
     const answerZone = stage.querySelector('.quiz-answer-zone') || target || stage;
     const countdownAnchor = document.querySelector('[data-quiz-countdown-poly]') || document.querySelector('.quiz-countdown-slot');
+    state.quizScoreTuneLast = { target, answerRecord };
     const itemPoints = Number(answerRecord?.score?.item ?? 0) || 0;
     const timePoints = Number(answerRecord?.score?.time ?? 0) || 0;
     const itemText = formatQuizPointsText(itemPoints);
@@ -3351,6 +3516,7 @@
         positionQuizFloatingScoreStage(timeStage, countdownAnchor, 'time');
         playCascadeText({ target: timeStage, text: timeText });
       }
+      if (!options.silentTunePanel) bindQuizScoreTunePanel();
     };
     if (delayMs > 0) window.setTimeout(play, delayMs);
     else play();
@@ -4287,6 +4453,7 @@
     bindQuizLayoutTunePanel();
     bindQuizTransitionTunePanel();
     bindQuizRankingPodiumTunePanel();
+    bindQuizScoreTunePanel();
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
@@ -4828,6 +4995,7 @@
 
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
+    removeQuizScoreTunePanel(false);
     removeQuizGlobalFeedback();
     ensureQuizGlobalFeedbackStyles();
     const parts = quizFeedbackParts(correct, neutralText, question);
@@ -4867,7 +5035,8 @@
     if (window.__encisomathQuizFeedbackShowTimer) window.clearTimeout(window.__encisomathQuizFeedbackShowTimer);
     window.__encisomathQuizFeedbackShowTimer = window.setTimeout(() => {
       window.__encisomathQuizFeedbackShowTimer = null;
-      showQuizFeedbackBand(stage, correct, question, neutralText);
+      if (QUIZ_SCORE_TUNE_ENABLED) showQuizScoreTuneGate(stage, correct, question, neutralText);
+      else showQuizFeedbackBand(stage, correct, question, neutralText);
     }, effectiveDelay);
   }
 
@@ -5014,6 +5183,7 @@
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
     removeQuizGlobalFeedback();
     clearQuizFloatingScoreStages();
+    removeQuizScoreTunePanel(true);
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
     if (!layer) {
@@ -6184,7 +6354,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.186', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.187', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
