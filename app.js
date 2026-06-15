@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.177';
+  const APP_VERSION = '0.24.178';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4541,24 +4541,85 @@
     `;
   }
 
+  function quizResultItemCardsHTML(quiz, answers = []) {
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const answerMap = new Map((Array.isArray(answers) ? answers : []).map((answer) => [Number(answer.index), answer]));
+    if (!questions.length) return '';
+    const cards = questions.map((question, index) => {
+      const answer = answerMap.get(index);
+      const correct = answer?.correct === true;
+      const wrong = answer?.correct === false;
+      const revisable = answer && !correct && !wrong;
+      const stateClass = correct || revisable ? 'is-correct' : 'is-wrong';
+      const icon = correct ? '✓' : (wrong ? '×' : '✓');
+      const label = correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado');
+      const typeLabel = {
+        multiple_choice: 'Opción múltiple',
+        true_false: 'Verdadero/Falso',
+        open: 'Respuesta abierta',
+        order: 'Organizar',
+        flip: 'Flip'
+      }[question?.type] || 'Pregunta';
+      return `
+        <article class="quiz-ranking-item-card ${stateClass}" style="--item-delay:${index * 90 + 860}ms">
+          <span class="quiz-ranking-item-number">Ítem ${index + 1}</span>
+          <span class="quiz-ranking-item-type">${escapeHTML(typeLabel)}</span>
+          <span class="quiz-ranking-item-result" aria-label="${escapeHTML(label)}">${icon}</span>
+        </article>
+      `;
+    }).join('');
+    return `<section class="quiz-ranking-items" aria-label="Resultado por ítem">${cards}</section>`;
+  }
+
+  function quizRankingPodiumHTML(stats) {
+    const scoreBase = Math.max(1, stats.scorable || stats.total || 1);
+    const userScore = Math.max(0, stats.correct || 0);
+    const podium = [
+      { rank: 2, name: 'Sofía', avatar: 'S', score: Math.max(0, Math.min(scoreBase, userScore - 1)), order: 'left' },
+      { rank: 1, name: 'Tú', avatar: '★', score: userScore, order: 'center' },
+      { rank: 3, name: 'Mateo', avatar: 'M', score: Math.max(0, Math.min(scoreBase, userScore - 2)), order: 'right' }
+    ];
+    return `
+      <section class="quiz-ranking-panel" aria-label="Ranking del quiz">
+        <div class="quiz-ranking-podium" aria-hidden="false">
+          ${podium.map((slot) => `
+            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" style="--podium-delay:${slot.rank === 3 ? 120 : slot.rank === 2 ? 360 : 620}ms">
+              <div class="quiz-podium-profile">
+                <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
+                <strong>${escapeHTML(slot.name)}</strong>
+              </div>
+              <div class="quiz-podium-step">
+                <span>${slot.rank}</span>
+              </div>
+            </div>
+          `).join('')}
+          <div class="quiz-podium-base" aria-hidden="true"></div>
+        </div>
+      </section>
+    `;
+  }
+
   function quizResultsHTML(quiz) {
     const stats = getQuizStats(quiz);
     const session = getQuizSession();
     const securedOut = Boolean(session.securityTerminated);
     const win = !securedOut && (stats.scorable === 0 || stats.correct >= Math.ceil(stats.scorable * 0.6));
+    const answers = Array.isArray(session.answers) ? session.answers : [];
     return `
-      <section class="quiz-results-screen ${securedOut ? 'is-security-ended' : (win ? 'is-win' : 'is-try')}">
+      <section class="quiz-results-screen quiz-ranking-screen ${securedOut ? 'is-security-ended' : (win ? 'is-win' : 'is-try')}">
         <div class="quiz-results-burst" aria-hidden="true"></div>
-        <div class="quiz-results-emoji">${securedOut ? '😡' : (win ? '🏆' : '💪')}</div>
-        <p class="section-kicker">${securedOut ? 'Quiz anulado' : 'Resultados'}</p>
-        <h2>${securedOut ? 'Quiz terminado por seguridad' : (win ? '¡Quiz completado!' : 'Quiz terminado')}</h2>
-        <p>${securedOut ? 'Se detectó un segundo intento sospechoso durante el quiz.' : (win ? 'Buen trabajo. Esa mente vino en modo turbo.' : 'No pasa nada. La próxima ronda viene con revancha.')}</p>
-        ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
-        <div class="quiz-score-board">
+        <div class="quiz-ranking-head">
+          <p class="section-kicker">${securedOut ? 'Quiz anulado' : 'Ranking'}</p>
+          <h2>${securedOut ? 'Quiz terminado por seguridad' : 'Resultados del quiz'}</h2>
+          ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
+        </div>
+        ${quizRankingPodiumHTML(stats)}
+        ${quizResultItemCardsHTML(quiz, answers)}
+        <div class="quiz-score-board quiz-ranking-score">
           <strong>${stats.correct}<small>/${stats.scorable || stats.total}</small></strong>
           <span>${securedOut ? 'resultado no válido' : (stats.scorable ? 'respuestas correctas' : 'respuestas revisables')}</span>
         </div>
-        <div class="quiz-results-actions">
+        <div class="quiz-results-actions quiz-ranking-actions">
           <button class="primary-btn" type="button" data-quiz-result-target="quizzes">Volver a Quizzes</button>
           <button class="mini-btn" type="button" data-quiz-result-target="classes">Ir a Clases</button>
           <button class="mini-btn" type="button" data-quiz-result-target="rockstars">Ver Rockstars</button>
@@ -5377,7 +5438,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.177', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.178', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

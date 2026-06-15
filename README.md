@@ -835,3 +835,12 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Ajuste de musica de fondo en quizzes: `assets/music_quiz/music1.mp3` inicia desde el comienzo del quiz/transicion inicial y continua sin detenerse entre items, respuestas, feedback y transiciones.
 - La musica se detiene al finalizar/cerrar el quiz, no al responder cada pregunta.
 - Se conserva `assets/sounds/item.mp3` cuando aparece el contador X/Y de transicion.
+
+## v0.24.178
+
+- Se rehizo solo la pantalla final de resultados/ranking del quiz.
+- Se agrego un podio visual construido con HTML/CSS siguiendo la referencia: bloques amarillos `#ebb513`, sombra flat `#c49710`, base inferior amarilla y numeros blancos con Montserrat de peso alto.
+- El podio aparece en cascada 3, 2 y 1 usando la animacion tipo `animate__bounceIn` de la transicion X/Y.
+- Se agregaron avatares circulares temporales y nombres con Montserrat Medium; el puesto 1 tiene avatar mas grande.
+- Se agregaron tarjetas por item que entran en cascada y se pintan verde/rojo segun respuesta correcta/incorrecta, usando `jello-horizontal` para aciertos y `wobble-hor-bottom` para errores.
+- Version/cache busting actualizado a 0.24.178.
