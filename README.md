@@ -1,15 +1,14 @@
-## v0.24.190
+## v0.24.191
 
-- Cambio en Quizzes: se reintrodujo el sistema de puntos, pero ahora solo se muestra en la pantalla de transición entre ítems, nunca dentro de la pantalla de pregunta.
-- La transición hacia el ítem 1 no muestra puntos; la transición hacia el ítem 2 muestra el puntaje acumulado del ítem 1; la transición hacia el ítem 3 muestra el acumulado hasta el ítem 2, y así sucesivamente.
-- Los puntos son acumulativos y no usan signo `+`.
-- Puntos por ítem: todos los ítems correctos suman 10.000.
-- Puntos por tiempo: todos los tiempos óptimos suman hasta 10.000 adicionales, con curva que da 0 a respuestas demasiado inmediatas, premia el punto dulce cercano al 75% del tiempo usado y reduce hacia el final.
-- Se integró el contador poligonal de puntos en la transición, con número Montserrat Black, polígono blanco, glitch azul/rojo, apertura/cierre del polígono y conteo desde el acumulado anterior hasta el acumulado nuevo.
-- Se agregó panel temporal de calibración en transición con sliders de posición Y y zoom del contador, botón `Repetir animación` y botón `Seguir`; las transiciones con puntos no avanzan automáticamente.
-- Clave de calibración: `encisomath:quizTransitionScoreTune:v0.24.190`.
-- Se mantienen countdown por ítem, música random por pregunta, ranking/podio y tipos de pregunta actuales.
-- Versión/cache busting actualizado a `0.24.190`.
+- Se parte de `v0.24.190`.
+- Corrección del contador de puntos en la pantalla de transición: ahora el acumulado suma correctamente en un solo contador los puntos por ítem y los puntos por tiempo.
+- Los puntos por tiempo ya no dependen de que la respuesta sea correcta: se calculan cuando el estudiante hace un intento real y no por timeout; si responde demasiado inmediato, la curva puede dar 0.
+- Los puntos por ítem se mantienen solo para respuestas correctas, sumando hasta 10.000 si todo queda correcto.
+- Los puntos por tiempo suman hasta otros 10.000 con curva de lectura/respuesta, para un máximo total de 20.000.
+- Se aplicaron valores iniciales de calibración del contador de transición: posición Y `220px` y zoom `55%`.
+- Clave nueva de calibración: `encisomath:quizTransitionScoreTune:v0.24.191`, para no arrastrar valores viejos.
+- Se mantienen countdown por ítem, música random por pregunta, ranking/podio, pantalla del quiz limpia y tipos de pregunta actuales.
+- Versión/cache busting actualizado a `0.24.191`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
 ## v0.24.189

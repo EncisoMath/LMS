@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.190';
+  const APP_VERSION = '0.24.191';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,8 +323,8 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.190';
-  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 0, zoom: 100 };
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.191';
+  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 220, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -220, max: 220, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
@@ -3239,9 +3239,15 @@
     const timeMax = quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_TIME_POINTS);
     const timing = extra?.timing || getQuizAnswerTimingSnapshot();
     const isCorrect = correct === true;
-    const curve = isCorrect ? quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0) : 0;
+    const hasTextAnswer = String(extra?.text || '').trim().length > 0;
+    const hasSelectedAnswer = String(extra?.selected || extra?.selectedAnswer || extra?.selectedAnswerId || '').trim().length > 0;
+    const hasOrderAnswer = Array.isArray(extra?.order) || Array.isArray(extra?.selectedOrder) || Array.isArray(extra?.currentOrder);
+    const hasFlipAnswer = String(extra?.selectedCard || extra?.selectedFlip || extra?.selected || '').trim().length > 0;
+    const isTimeout = extra?.timeout === true;
+    const madeAttempt = !isTimeout && (isCorrect || correct === false || hasTextAnswer || hasSelectedAnswer || hasOrderAnswer || hasFlipAnswer);
+    const curve = madeAttempt ? quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0) : 0;
     const item = isCorrect ? itemMax : 0;
-    const time = isCorrect ? Math.round(timeMax * curve) : 0;
+    const time = madeAttempt ? Math.round(timeMax * curve) : 0;
     return {
       item,
       time,
@@ -6441,7 +6447,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.190', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.191', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
