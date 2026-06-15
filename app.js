@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.181';
+  const APP_VERSION = '0.24.182';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -237,6 +237,11 @@
   const QUIZ_TRANSITION_FIRST_EXIT_START_MS = 6500;
   const QUIZ_TRANSITION_FIRST_TOTAL_MS = 7000;
   const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
+  const QUIZ_ITEM_TIME_LIMIT_DEFAULT = 20;
+  const QUIZ_ITEM_TIME_LIMIT_MIN = 1;
+  const QUIZ_ITEM_TIME_LIMIT_MAX = 999;
+  const QUIZ_COUNTDOWN_DANGER_SECONDS = 10;
+  const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
     p1x: 5, p1y: -45, p1rot: 0,
@@ -318,6 +323,7 @@
     quizFullscreenActive: false,
     quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '', securityEvents: [], securityWarningOpen: false, securityTerminated: false },
     quizTimers: [],
+    quizCountdown: null,
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
@@ -2676,6 +2682,7 @@
           return;
         }
         session.locked = true;
+        markQuizCountdownResponded();
         session.selectedAnswerId = selected.dataset.quizAnswer || '';
         const selectedCorrect = selected.dataset.correct === 'true';
         const correctCard = cards().find((card) => card.dataset.correct === 'true') || null;
@@ -2895,6 +2902,7 @@
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
+        markQuizCountdownResponded();
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
@@ -3051,6 +3059,7 @@
   function clearQuizTimers() {
     (state.quizTimers || []).forEach((timer) => window.clearTimeout(timer));
     state.quizTimers = [];
+    stopQuizCountdown();
   }
 
   function scheduleQuizTimer(callback, delay) {
@@ -3060,6 +3069,283 @@
     }, delay);
     state.quizTimers = [...(state.quizTimers || []), timer];
     return timer;
+  }
+
+
+  function normalizeQuizItemSeconds(value) {
+    const number = Number.parseInt(value, 10);
+    if (Number.isNaN(number)) return QUIZ_ITEM_TIME_LIMIT_DEFAULT;
+    return Math.min(Math.max(number, QUIZ_ITEM_TIME_LIMIT_MIN), QUIZ_ITEM_TIME_LIMIT_MAX);
+  }
+
+  function getQuizQuestionTimeLimit(question = getCurrentQuizQuestion(), quiz = getActiveQuiz()) {
+    const candidates = [
+      question?.timeLimit,
+      question?.timeLimitSeconds,
+      question?.seconds,
+      quiz?.questionTimeLimit,
+      quiz?.timePerQuestion,
+      quiz?.defaultTimeLimit
+    ];
+    const raw = candidates.find((item) => item !== undefined && item !== null && item !== '');
+    return normalizeQuizItemSeconds(raw ?? QUIZ_ITEM_TIME_LIMIT_DEFAULT);
+  }
+
+  function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
+    const safeSeconds = normalizeQuizItemSeconds(seconds);
+    return `
+      <section class="countdown-poly quiz-countdown-poly" data-quiz-countdown-poly data-quiz-countdown-total="${safeSeconds}" aria-label="Tiempo restante">
+        <svg class="countdown-poly__svg" viewBox="0 0 500 300" aria-hidden="true">
+          <polygon data-quiz-moving-polygon></polygon>
+        </svg>
+        <div class="countdown-poly__number" data-quiz-countdown-number>${safeSeconds}</div>
+      </section>`;
+  }
+
+  function stopQuizCountdown() {
+    const active = state.quizCountdown;
+    if (!active) return;
+    if (active.interval) window.clearInterval(active.interval);
+    if (active.beatTimer) window.clearTimeout(active.beatTimer);
+    if (active.animationFrame) window.cancelAnimationFrame(active.animationFrame);
+    state.quizCountdown = null;
+  }
+
+  function setQuizCountdownDisplay(value, className = '') {
+    const active = state.quizCountdown;
+    const wrap = active?.wrap || document.querySelector('[data-quiz-countdown-poly]');
+    const number = active?.number || wrap?.querySelector?.('[data-quiz-countdown-number]');
+    if (number) number.textContent = String(value);
+    if (wrap) {
+      wrap.classList.remove('is-answered', 'is-timeup');
+      if (className) wrap.classList.add(className);
+    }
+  }
+
+  function markQuizCountdownResponded() {
+    const active = state.quizCountdown;
+    if (!active) return;
+    if (active.interval) {
+      window.clearInterval(active.interval);
+      active.interval = null;
+    }
+    if (active.beatTimer) {
+      window.clearTimeout(active.beatTimer);
+      active.beatTimer = null;
+    }
+    active.isRunning = false;
+    active.wrap?.classList?.remove('danger', 'beat');
+    setQuizCountdownDisplay('!', 'is-answered');
+  }
+
+  function lockQuizQuestionForTimeout(stage) {
+    if (!stage) return;
+    stage.classList.add('quiz-timeout-locked');
+    stage.querySelectorAll('[data-quiz-answer], [data-quiz-flip-card], [data-flip-validate], [data-order-validate], textarea, button.quiz-submit-btn').forEach((item) => {
+      item.disabled = true;
+      item.classList.remove('selected', 'correct-reveal', 'wrong-reveal', 'is-pressing');
+      item.classList.add('is-dimmed');
+    });
+    stage.querySelectorAll('[data-quiz-flip-board]').forEach((board) => board.classList.add('flip-locked', 'quiz-timeout-board'));
+    stage.querySelectorAll('[data-quiz-order-board]').forEach((board) => board.classList.add('order-locked', 'quiz-timeout-board'));
+  }
+
+  function handleQuizCountdownExpired(questionIndex) {
+    const session = getQuizSession();
+    const quiz = getActiveQuiz();
+    if (!quiz || session.phase !== 'question') return;
+    if (session.locked || Number(state.quizQuestionIndex) !== Number(questionIndex)) return;
+    const question = getCurrentQuizQuestion();
+    if (!question) return;
+    session.locked = true;
+    session.selectedAnswerId = '';
+    const stage = document.querySelector(`.quiz-stage[data-quiz-question-index="${Number(questionIndex)}"]`) || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
+    lockQuizQuestionForTimeout(stage);
+    setQuizCountdownDisplay('0', 'is-timeup');
+    recordQuizAnswer(question, false, { timeout: true });
+    playQuizSound('wrong');
+    showQuizFeedbackBandAfterDelay(stage, false, question, QUIZ_TIMEOUT_FEEDBACK_TEXT, 0);
+  }
+
+  function startQuizCountdownForCurrentQuestion(layer = document.getElementById('quizFullscreenLayer'), quiz = getActiveQuiz()) {
+    stopQuizCountdown();
+    const session = getQuizSession();
+    if (!layer || !quiz || session.phase !== 'question' || session.locked) return;
+    const wrap = layer.querySelector('[data-quiz-countdown-poly]');
+    const polygon = wrap?.querySelector?.('[data-quiz-moving-polygon]');
+    const number = wrap?.querySelector?.('[data-quiz-countdown-number]');
+    if (!wrap || !polygon || !number) return;
+
+    const BASE_POINTS = [
+      [62, 72],
+      [438, 64],
+      [428, 228],
+      [72, 236]
+    ];
+    const SECOND_MOVE_X = 34;
+    const SECOND_MOVE_Y = 16;
+    const IDLE_MOVE_X = 7;
+    const IDLE_MOVE_Y = 4;
+    const LIMITS = [
+      { minX: 38, maxX: 96, minY: 50, maxY: 90 },
+      { minX: 404, maxX: 462, minY: 50, maxY: 90 },
+      { minX: 396, maxX: 456, minY: 210, maxY: 250 },
+      { minX: 44, maxX: 104, minY: 210, maxY: 250 }
+    ];
+    const BEAT_EVERY_SECONDS = 10;
+    const DANGER_SECONDS = QUIZ_COUNTDOWN_DANGER_SECONDS;
+    const questionIndex = Number(state.quizQuestionIndex) || 0;
+    const totalSeconds = normalizeQuizItemSeconds(wrap.dataset.quizCountdownTotal || getQuizQuestionTimeLimit(getCurrentQuizQuestion(), quiz));
+    let remainingSeconds = totalSeconds;
+    let countdownInterval = null;
+    let isRunning = true;
+    let currentPoints = createSecondShape();
+    let lastSecondShape = clonePoints(currentPoints);
+    let startPoints = clonePoints(currentPoints);
+    let targetPoints = clonePoints(currentPoints);
+    let morphStartTime = performance.now();
+    let morphDuration = 900;
+    let morphType = 'idle';
+
+    function clonePoints(points) {
+      return points.map(([x, y]) => [x, y]);
+    }
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function pointsToString(points) {
+      return points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+    }
+
+    function createSecondShape() {
+      return BASE_POINTS.map(([x, y], index) => {
+        const limit = LIMITS[index];
+        return [
+          clamp(x + randomBetween(-SECOND_MOVE_X, SECOND_MOVE_X), limit.minX, limit.maxX),
+          clamp(y + randomBetween(-SECOND_MOVE_Y, SECOND_MOVE_Y), limit.minY, limit.maxY)
+        ];
+      });
+    }
+
+    function createIdleShapeAround(points) {
+      return points.map(([x, y], index) => {
+        const limit = LIMITS[index];
+        return [
+          clamp(x + randomBetween(-IDLE_MOVE_X, IDLE_MOVE_X), limit.minX, limit.maxX),
+          clamp(y + randomBetween(-IDLE_MOVE_Y, IDLE_MOVE_Y), limit.minY, limit.maxY)
+        ];
+      });
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function startMorph(newTargetPoints, duration, type) {
+      startPoints = clonePoints(currentPoints);
+      targetPoints = clonePoints(newTargetPoints);
+      morphStartTime = performance.now();
+      morphDuration = duration;
+      morphType = type;
+    }
+
+    function moveToNewSecondShape() {
+      const newShape = createSecondShape();
+      lastSecondShape = clonePoints(newShape);
+      startMorph(newShape, 620, 'second');
+    }
+
+    function startIdleMovement() {
+      const idleShape = createIdleShapeAround(lastSecondShape);
+      startMorph(idleShape, randomBetween(900, 1300), 'idle');
+    }
+
+    function triggerBeat() {
+      wrap.classList.remove('beat');
+      void wrap.offsetWidth;
+      wrap.classList.add('beat');
+      const active = state.quizCountdown;
+      if (active?.beatTimer) window.clearTimeout(active.beatTimer);
+      if (active) {
+        active.beatTimer = window.setTimeout(() => {
+          wrap.classList.remove('beat');
+          if (state.quizCountdown) state.quizCountdown.beatTimer = null;
+        }, 650);
+      }
+    }
+
+    function updateDangerState() {
+      if (remainingSeconds <= DANGER_SECONDS && remainingSeconds > 0 && isRunning) wrap.classList.add('danger');
+      else wrap.classList.remove('danger');
+    }
+
+    function handleSecondEffects() {
+      const elapsedSeconds = totalSeconds - remainingSeconds;
+      if (elapsedSeconds > 0 && elapsedSeconds % BEAT_EVERY_SECONDS === 0 && remainingSeconds > 0) triggerBeat();
+      updateDangerState();
+    }
+
+    function animatePolygon(time) {
+      if (!state.quizCountdown || state.quizCountdown.wrap !== wrap || !wrap.isConnected) return;
+      const elapsed = time - morphStartTime;
+      const progress = Math.min(elapsed / morphDuration, 1);
+      const eased = morphType === 'second' ? easeOutCubic(progress) : easeInOutCubic(progress);
+      currentPoints = startPoints.map(([x, y], index) => {
+        const [targetX, targetY] = targetPoints[index];
+        return [x + (targetX - x) * eased, y + (targetY - y) * eased];
+      });
+      polygon.setAttribute('points', pointsToString(currentPoints));
+      if (progress >= 1) startIdleMovement();
+      state.quizCountdown.animationFrame = window.requestAnimationFrame(animatePolygon);
+    }
+
+    number.textContent = String(totalSeconds);
+    polygon.setAttribute('points', pointsToString(currentPoints));
+    wrap.classList.remove('danger', 'beat', 'is-answered', 'is-timeup');
+    startIdleMovement();
+    state.quizCountdown = { wrap, polygon, number, interval: null, animationFrame: null, beatTimer: null, questionIndex, totalSeconds, remainingSeconds, isRunning: true };
+    state.quizCountdown.animationFrame = window.requestAnimationFrame(animatePolygon);
+    updateDangerState();
+    moveToNewSecondShape();
+
+    countdownInterval = window.setInterval(() => {
+      const active = state.quizCountdown;
+      if (!active || active.wrap !== wrap || !wrap.isConnected) {
+        window.clearInterval(countdownInterval);
+        return;
+      }
+      if (getQuizSession().locked || getQuizSession().phase !== 'question' || Number(state.quizQuestionIndex) !== questionIndex) {
+        window.clearInterval(countdownInterval);
+        active.interval = null;
+        return;
+      }
+      remainingSeconds -= 1;
+      active.remainingSeconds = remainingSeconds;
+      number.textContent = String(Math.max(0, remainingSeconds));
+      moveToNewSecondShape();
+      handleSecondEffects();
+      if (remainingSeconds <= 0) {
+        window.clearInterval(countdownInterval);
+        active.interval = null;
+        isRunning = false;
+        active.isRunning = false;
+        window.setTimeout(() => {
+          wrap.classList.remove('danger', 'beat');
+        }, 350);
+        handleQuizCountdownExpired(questionIndex);
+      }
+    }, 1000);
+    state.quizCountdown.interval = countdownInterval;
   }
 
   function normalizeQuizTransitionTune(tune = {}) {
@@ -4011,6 +4297,7 @@
     if (!button || !stage || !question || session.locked) return;
 
     session.locked = true;
+    markQuizCountdownResponded();
     session.selectedAnswerId = button.dataset.quizAnswer || '';
     stage.classList.add('quiz-choice-pending');
     stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
@@ -4102,6 +4389,9 @@
   }
 
   function quizFeedbackParts(correct, neutralText = '', question = null) {
+    if (neutralText === QUIZ_TIMEOUT_FEEDBACK_TEXT) {
+      return { kind: 'timeout', emoji: '', title: 'Tiempo!', phrase: '' };
+    }
     if (neutralText) {
       return {
         kind: 'neutral',
@@ -4137,7 +4427,7 @@
     return `
       <span class="enciso-quiz-feedback-mesh-v102" aria-hidden="true"></span>
       <strong class="enciso-quiz-feedback-title-v102">${escapeHTML(parts.title)}</strong>
-      <p class="enciso-quiz-feedback-phrase-v102">${escapeHTML(parts.phrase)}</p>
+      ${parts.phrase ? `<p class="enciso-quiz-feedback-phrase-v102">${escapeHTML(parts.phrase)}</p>` : ''}
     `;
   }
 
@@ -4146,11 +4436,12 @@
     const safe = getQuizFeedbackTune();
     const isCorrect = kind === 'correct';
     const isWrong = kind === 'wrong';
-    const baseA = isCorrect ? 'rgba(88,204,2,.92)' : isWrong ? 'rgba(226,27,60,.92)' : 'rgba(19,104,206,.90)';
-    const baseB = isCorrect ? 'rgba(15,95,24,.96)' : isWrong ? 'rgba(96,9,28,.96)' : 'rgba(8,31,77,.96)';
-    const glow = isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
-    const line = isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
-    const shine = isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
+    const isTimeout = kind === 'timeout';
+    const baseA = isTimeout ? '#ffffff' : isCorrect ? 'rgba(88,204,2,.92)' : isWrong ? 'rgba(226,27,60,.92)' : 'rgba(19,104,206,.90)';
+    const baseB = isTimeout ? '#f7f7f7' : isCorrect ? 'rgba(15,95,24,.96)' : isWrong ? 'rgba(96,9,28,.96)' : 'rgba(8,31,77,.96)';
+    const glow = isTimeout ? 'rgba(255,255,255,.34)' : isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
+    const line = isTimeout ? 'rgba(0,0,0,.09)' : isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
+    const shine = isTimeout ? 'rgba(255,255,255,.80)' : isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
     const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
     const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
@@ -4171,7 +4462,7 @@
       `min-height:${bandHeight}px`,
       'box-sizing:border-box',
       'border-radius:6px',
-      'border:1px solid rgba(255,255,255,.12)',
+      isTimeout ? 'border:1px solid rgba(0,0,0,.10)' : 'border:1px solid rgba(255,255,255,.12)',
       'padding:clamp(14px,2.4vw,22px) clamp(20px,5vw,54px)',
       'display:grid',
       'grid-template-columns:minmax(0,1fr)',
@@ -4183,8 +4474,8 @@
       'justify-content:center',
       'row-gap:clamp(6px,1.2vh,10px)',
       'overflow:hidden',
-      `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), radial-gradient(circle at 82% 18%, ${glow}, transparent 34%), linear-gradient(135deg, rgba(6,8,16,.98) 0%, ${baseB} 42%, ${baseA} 100%)`,
-      'color:#fff',
+      isTimeout ? `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), linear-gradient(135deg, #ffffff 0%, ${baseB} 48%, ${baseA} 100%)` : `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), radial-gradient(circle at 82% 18%, ${glow}, transparent 34%), linear-gradient(135deg, rgba(6,8,16,.98) 0%, ${baseB} 42%, ${baseA} 100%)`,
+      isTimeout ? 'color:#000' : 'color:#fff',
       `box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 52px ${glow}, 0 12px 34px rgba(0,0,0,.42)`,
       'filter:none',
       'text-shadow:none',
@@ -4216,15 +4507,15 @@
     const textPreset = quizPresetParts(safe.textPreset || QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset);
     const title = band.querySelector('.enciso-quiz-feedback-title-v102');
     if (title) title.style.cssText = [
-      'grid-area:title', 'display:block', 'position:relative', 'z-index:1', 'color:#fff',
+      'grid-area:title', 'display:block', 'position:relative', 'z-index:1', isTimeout ? 'color:#000' : 'color:#fff',
       `font-size:${Math.max(18, Math.min(54, Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize))}px`,
       'line-height:1', `font-weight:${titlePreset.weight}`, `font-style:${titlePreset.style}`, 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
-      'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
+      isTimeout ? 'text-shadow:none' : 'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
       `transform:translate3d(0, ${Number(safe.titleY) || 0}px, 0)`, 'transform-origin:center center'
     ].join(';') + ';';
     const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v102');
     if (phrase) phrase.style.cssText = [
-      'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', 'color:rgba(255,255,255,.94)',
+      'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', isTimeout ? 'color:rgba(0,0,0,.82)' : 'color:rgba(255,255,255,.94)',
       `font-size:${Math.max(11, Math.min(30, Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize))}px`,
       'line-height:1.1', `font-weight:${textPreset.weight}`, `font-style:${textPreset.style}`, 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
       `transform:translate3d(0, ${Number(safe.textY) || 0}px, 0)`, 'transform-origin:center center'
@@ -4348,6 +4639,7 @@
     if (!form || !question || session.locked) return;
     const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
     session.locked = true;
+    markQuizCountdownResponded();
     const stage = form.closest('.quiz-stage');
     const openTargets = Array.from(form.querySelectorAll('.quiz-open-input, .quiz-submit-btn'));
     form.classList.remove('is-open-submitted');
@@ -4452,16 +4744,19 @@
     else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
     const showTop = phase === 'question';
+    const currentQuestion = questions[Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1))] || null;
+    const currentSeconds = getQuizQuestionTimeLimit(currentQuestion, quiz);
 
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
       ${phase !== 'confirm' && phase !== 'intro' ? quizSecurityWatermarkHTML() : ''}
-      ${showTop ? `<div class="quiz-fullscreen-top ${phase === 'results' ? 'quiz-top-results' : ''}">
-        <div>
+      ${showTop ? `<div class="quiz-fullscreen-top quiz-fullscreen-top-countdown ${phase === 'results' ? 'quiz-top-results' : ''}">
+        <div class="quiz-fullscreen-hero-copy">
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
+          <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
         </div>
-        <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
+        <div class="quiz-countdown-slot">${quizCountdownHTML(currentSeconds)}</div>
       </div>` : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
@@ -4472,6 +4767,7 @@
       window.requestAnimationFrame(() => {
         playQuizItemEnterMotion(layer);
         startQuizQuestionMusic(getCurrentQuizQuestion());
+        startQuizCountdownForCurrentQuestion(layer, quiz);
       });
     } else if (phase === 'transition') {
       startQuizQuestionMusic(getCurrentQuizQuestion());
@@ -5600,7 +5896,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.181', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.182', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

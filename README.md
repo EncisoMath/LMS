@@ -879,3 +879,15 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - No se tocaron preguntas, tipos de quiz, musica, Rockstars, Clases, Estudiantes ni datos base.
 - Version/cache busting actualizado a 0.24.181.
 
+## v0.24.182
+
+- Cambio enfocado en Quizzes: se agrega countdown por item/pregunta.
+- El contador queda en la esquina superior derecha al nivel del hero del quiz; el hero se compacta para ocupar aproximadamente 70% y el countdown 30%.
+- Tiempo inicial por pregunta: 20 segundos, con soporte tecnico para valores por pregunta/quiz hasta 3 digitos mediante `timeLimit`, `timeLimitSeconds`, `seconds`, `questionTimeLimit`, `timePerQuestion` o `defaultTimeLimit` en el JSON.
+- El countdown usa poligono blanco de cuatro vertices con numero Montserrat Black, morph aleatorio por segundo, movimiento idle, beat cada 10 segundos y modo peligro en los ultimos 10 segundos con temblor y alternancia rojo/blanco.
+- Cuando el estudiante responde o envia respuesta, el contador se detiene y muestra `!`.
+- Cuando el tiempo llega a 0, la pregunta queda registrada como incorrecta, no se revela la respuesta correcta y aparece la banda blanca con letra negra `Tiempo!`.
+- No se tocaron preguntas, tipos de quiz, ranking, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a 0.24.182.
+- Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
+
