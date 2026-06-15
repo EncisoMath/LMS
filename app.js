@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.184';
+  const APP_VERSION = '0.24.185';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1880,6 +1880,9 @@
         <div class="quiz-question-content">
           ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
           <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
+          <div class="quiz-item-score-row" data-quiz-score-row="item">
+            <span class="cascade-text-stage quiz-score-cascade-stage quiz-item-points-stage" data-quiz-score-stage="item" aria-hidden="true"></span>
+          </div>
           <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
             ${quizQuestionBodyHTML(question)}
           </div>
@@ -3306,16 +3309,32 @@
     return stage;
   }
 
-  function showQuizPointsCascade(target, answerRecord = null, delayMs = 0) {
+  function getQuizStageFromScoreTarget(target) {
+    if (!target) return null;
+    if (target.classList?.contains('quiz-stage')) return target;
+    return target.closest?.('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
+  }
+
+  function showQuizScoreBreakdown(target, answerRecord = null, delayMs = 0) {
     if (!target || !answerRecord) return;
-    const points = Number(answerRecord?.score?.total ?? answerRecord?.points ?? 0) || 0;
-    const text = formatQuizPointsText(points);
+    const stage = getQuizStageFromScoreTarget(target);
+    if (!stage) return;
+    const itemPoints = Number(answerRecord?.score?.item ?? 0) || 0;
+    const timePoints = Number(answerRecord?.score?.time ?? 0) || 0;
+    const itemText = formatQuizPointsText(itemPoints);
+    const timeText = formatQuizPointsText(timePoints);
     const play = () => {
-      const stage = ensureQuizScoreCascadeStage(target);
-      if (stage) playCascadeText({ target: stage, text });
+      const itemStage = stage.querySelector('[data-quiz-score-stage="item"]');
+      const timeStage = document.querySelector('[data-quiz-score-stage="time"]');
+      if (itemStage) playCascadeText({ target: itemStage, text: itemText });
+      if (timeStage) playCascadeText({ target: timeStage, text: timeText });
     };
     if (delayMs > 0) window.setTimeout(play, delayMs);
     else play();
+  }
+
+  function showQuizPointsCascade(target, answerRecord = null, delayMs = 0) {
+    showQuizScoreBreakdown(target, answerRecord, delayMs);
   }
 
   function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
@@ -3326,7 +3345,8 @@
           <polygon data-quiz-moving-polygon></polygon>
         </svg>
         <div class="countdown-poly__number" data-quiz-countdown-number>${safeSeconds}</div>
-      </section>`;
+      </section>
+      <span class="cascade-text-stage quiz-score-cascade-stage quiz-time-points-stage" data-quiz-score-stage="time" aria-hidden="true"></span>`;
   }
 
   function stopQuizCountdown() {
@@ -4903,8 +4923,8 @@
       form.classList.add('is-open-submitted');
     });
     const answerRecord = recordQuizAnswer(question, null, { text: value });
-    if (!value) showQuizPointsCascade(form, answerRecord, 120);
-    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', 720);
+    showQuizPointsCascade(form, answerRecord, 120);
+    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', Math.max(720, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
   }
 
   function startQuiz(quizId) {
@@ -6141,7 +6161,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.184', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.185', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

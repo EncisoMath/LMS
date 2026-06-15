@@ -909,3 +909,13 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Para respuestas incorrectas o tiempo agotado se muestra 0; para correctas se muestra +puntaje con punto de miles.
 - Se mantiene Montserrat local, sin Google Fonts ni recursos externos.
 - Version/cache busting actualizado a 0.24.184.
+
+## v0.24.185
+
+- Ajuste en Quizzes sobre el sistema de puntos de v0.24.184.
+- El puntaje por ítem ahora se muestra separado, arriba del contenedor de opciones/respuesta y centrado sobre esa zona; su animación entra desde abajo hacia arriba.
+- El puntaje por tiempo ahora se muestra debajo del countdown, separado del puntaje por ítem; su animación entra desde arriba hacia abajo.
+- La función de animación en cascada se mantiene reutilizable y usando Montserrat local, sin Google Fonts.
+- En pregunta abierta también se dispara la visualización de puntajes, con 0 cuando no hay calificación automática.
+- No se tocaron ranking/podio, tipos de pregunta, música random por ítem, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a 0.24.185.
