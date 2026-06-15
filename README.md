@@ -805,7 +805,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se mantuvo border-radius 6px y se evitó copiar el componente externo sin adaptar tamaños/espacios del AVA.
 - Version/cache busting actualizado a 0.24.115.
 
-## v0.24.163
+## v0.24.164
 
 - Se eliminó el uso de la pantalla independiente `Preparando reto` al iniciar o reiniciar un quiz.
 - La información del quiz se fusionó en la transición del Ítem 1 únicamente: primero muestra `Preparando reto`, título y descripción con fade; luego aparece `1/Y` con `scale-in-center`.
@@ -813,7 +813,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - La barra, los radiales y las figuras permanecen activos desde el inicio de la transición del Ítem 1.
 - El modo Continuo respeta la duración especial del Ítem 1 antes de avanzar a la pregunta.
 
-## v0.24.163
+## v0.24.164
 
 - Ajustada la transición especial del Ítem 1: la información del quiz dura 4 segundos y luego el contador X/Y ocupa 3 segundos, para un total de 7 segundos.
 - Sincronizados radiales, figuras, countdown/barra y modo Continuo con la nueva duración especial del Ítem 1.

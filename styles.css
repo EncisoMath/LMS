@@ -12860,9 +12860,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   }
 }
 
-/* ===== v0.24.163 - Intro del quiz fusionada con transición del Ítem 1 ===== */
+/* ===== v0.24.164 - Intro del quiz fusionada con transición del Ítem 1 ===== */
 :root {
-  --encisomath-build: "0.24.163";
+  --encisomath-build: "0.24.164";
 }
 
 .quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro {
@@ -12958,9 +12958,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   }
 }
 
-/* ===== v0.24.163 - Ítem 1: info 4s + X/Y 3s = 7s ===== */
+/* ===== v0.24.164 - Ítem 1: info 4s + X/Y 3s = 7s ===== */
 :root {
-  --encisomath-build: "0.24.163";
+  --encisomath-build: "0.24.164";
 }
 
 .quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro {
@@ -13008,7 +13008,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   }
 }
 
-/* ===== v0.24.163 - Sincronía fina de elementos en intro de Ítem 1 ===== */
+/* ===== v0.24.164 - Sincronía fina de elementos en intro de Ítem 1 ===== */
 .quiz-transition-with-intro .quiz-transition-progress {
   animation: quizTransitionProgressOpacitySeven 7000ms ease both !important;
 }
@@ -13073,4 +13073,68 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
     opacity: 0;
     transform: translate(-50%, -50%) scale(.16) rotate(0deg);
   }
+}
+
+
+/* ===== v0.24.164 - Ajustes TF, feedback abierto y countdown item 1 ===== */
+:root {
+  --encisomath-build: "0.24.164";
+}
+
+/* Verdadero/Falso debe usar las mismas proporciones visuales que ABCD. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false {
+  --quiz-fit-image-fr: 30fr !important;
+  --quiz-fit-text-fr: 40fr !important;
+  --quiz-fit-answer-fr: 30fr !important;
+  --quiz-fit-answer-h: auto !important;
+  --quiz-answer-zone-h: auto !important;
+  --quiz-answer-zone-max: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-question-content {
+  grid-template-rows: minmax(0, 30fr) minmax(0, 40fr) minmax(0, 30fr) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false:not([data-quiz-has-image="true"]) .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false:not([data-quiz-has-image="true"]) .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-text-fr, 52fr)) minmax(0, var(--quiz-fit-answer-fr, 45fr)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-answer-zone,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .quiz-answer-zone,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two .kahoot-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-grid-two .kahoot-option {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+
+/* En el Item 1, la barra/countdown aparece solo cuando sale X/Y y dura 3s. */
+.quiz-transition-with-intro .quiz-transition-progress {
+  animation: quizTransitionProgressOpacityIntroThenNumber 7000ms ease both !important;
+}
+
+.quiz-transition-with-intro .quiz-transition-progress span {
+  animation: quizTransitionBarIntroThenNumber 7000ms linear forwards !important;
+}
+
+@keyframes quizTransitionBarIntroThenNumber {
+  0%, 57.142% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+@keyframes quizTransitionProgressOpacityIntroThenNumber {
+  0%, 56% { opacity: 0; }
+  59% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { opacity: 0; }
 }
