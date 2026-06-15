@@ -9571,7 +9571,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -9660,7 +9660,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -9862,7 +9862,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -10035,7 +10035,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.125 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -10157,7 +10157,7 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 
 
 /* ===== v0.24.125 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -10412,7 +10412,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.125 forced quiz typography controls ===== */
 :root {
-  --encisomath-build: "0.24.155";
+  --encisomath-build: "0.24.156";
   --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .quiz-layout-tune-panel,
@@ -10469,7 +10469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.125 visual performance without flat mode ===== */
 :root {
-  --encisomath-build: "0.24.155";
+  --encisomath-build: "0.24.156";
 }
 @keyframes tabIn {
   0% { opacity: 0; transform: translate3d(0, 6px, 0); }
@@ -10634,7 +10634,7 @@ body.modal-open .quiz-tile {
 
 /* ===== v0.24.125 hero performance tuning: rich static instead of flat ===== */
 :root {
-  --encisomath-build: "0.24.155";
+  --encisomath-build: "0.24.156";
 }
 :root[data-visual-optimized="on"] #app,
 :root[data-visual-optimized="on"] #app.is-leaving,
@@ -10778,7 +10778,7 @@ body.modal-open .quiz-tile {
 
 /* ===== v0.24.125 unified light entrance motion ===== */
 :root {
-  --encisomath-build: "0.24.155";
+  --encisomath-build: "0.24.156";
   --enciso-flow-distance: 18px;
   --enciso-flow-duration: 500ms;
   --enciso-flow-ease: cubic-bezier(.16, 1, .3, 1);
@@ -11058,7 +11058,7 @@ body.modal-open .quiz-tile {
 }
 
 /* ===== v0.24.140 quiz fullscreen: quitar espacio inferior heredado ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content {
@@ -11355,7 +11355,7 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
 
 
 /* ===== v0.24.140 quiz fullscreen: el layout ocupa todo el cuerpo, sin hueco inferior ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
@@ -11453,7 +11453,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.140 Quizzes: ajustes temporales retirados ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 .quiz-tune-gear,
 .quiz-layout-tune-panel {
   display: none !important;
@@ -11464,7 +11464,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz order: separar encabezado del layout ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order {
   row-gap: clamp(6px, 1dvh, 10px) !important;
@@ -11478,7 +11478,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.140 ABCD/TF reveal: usar jello/wobble como Organizar ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed,
@@ -11580,7 +11580,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz sin imagen: texto 52% + espacio 3% + opciones 45% ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-hide-image-preview .quiz-question-content,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-hide-image-preview .quiz-question-content,
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen:not([data-quiz-has-image="true"]) .quiz-question-content,
@@ -11618,7 +11618,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz quick menu: font controls ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 .quiz-quick-menu-panel .quiz-quick-typography-box {
   margin: 0 !important;
 }
@@ -11653,7 +11653,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz typography + centered text + static feedback band ===== */
-:root { --encisomath-build: "0.24.155"; }
+:root { --encisomath-build: "0.24.156"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-tune-box,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-tune-box {
@@ -11748,7 +11748,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   color: #fff !important;
 }
 
-/* ===== v0.24.155 feedback tune fixes: working text size + scrollable panel ===== */
+/* ===== v0.24.156 feedback tune fixes: working text size + scrollable panel ===== */
 .enciso-quiz-feedback-mesh-v102 {
   animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
   will-change: transform !important;
@@ -11809,7 +11809,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   }
 }
 
-/* ===== v0.24.155 final feedback band: simple continue only, no tuning panel ===== */
+/* ===== v0.24.156 final feedback band: simple continue only, no tuning panel ===== */
 .quiz-feedback-continue-control {
   position: fixed !important;
   left: 50% !important;
@@ -11828,7 +11828,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   font-weight: 800 !important;
 }
 
-/* ===== v0.24.155 feedback band: real left hold right slide blur ===== */
+/* ===== v0.24.156 feedback band: real left hold right slide blur ===== */
 .enciso-quiz-feedback-overlay-v102.quiz-feedback-stage {
   perspective: none !important;
   overflow: visible !important;
@@ -11874,7 +11874,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.155 - Cascada de entrada/salida por item de quiz ===== */
+/* ===== v0.24.156 - Cascada de entrada/salida por item de quiz ===== */
 .quiz-fullscreen-layer:not(.quiz-phase-transition).quiz-item-motion-ready .quiz-fullscreen-top,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-item-enter-ready {
   opacity: 0;
@@ -11904,9 +11904,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.155 - Pantalla de transición Ítem X/Y: limpia, configurable y con salida inversa ===== */
+/* ===== v0.24.156 - Pantalla de transición Ítem X/Y: limpia, configurable y con salida inversa ===== */
 :root {
-  --encisomath-build: "0.24.155";
+  --encisomath-build: "0.24.156";
   --quiz-transition-total-duration: 4600ms;
   --quiz-transition-exit-at: 3650ms;
 }
@@ -12277,4 +12277,165 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   .quiz-phase-transition .quiz-burst-shapes span:nth-child(6) { --x: 6px; --y: 185px; }
   .quiz-transition-tune-grid { grid-template-columns: 1fr; }
   .quiz-transition-tune-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ===== v0.24.156 - Transicion X/Y manual, radiales visibles y scale-in-center ===== */
+:root {
+  --encisomath-build: "0.24.156";
+  --quiz-transition-total-duration: 4600ms;
+  --quiz-transition-exit-at: 3650ms;
+}
+
+.quiz-phase-transition .quiz-fullscreen-transition-content,
+.quiz-phase-transition .quiz-fullscreen-content {
+  background: transparent !important;
+}
+
+.quiz-phase-transition .quiz-fullscreen-bg {
+  opacity: 1 !important;
+  filter: none !important;
+  background: #000 !important;
+}
+
+.quiz-phase-transition.quiz-transition-radials-on .quiz-fullscreen-bg {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(226, 27, 60, .42), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(19, 104, 206, .38), transparent 33%),
+    radial-gradient(circle at 78% 82%, rgba(38, 137, 12, .34), transparent 34%),
+    radial-gradient(circle at 24% 78%, rgba(216, 158, 0, .22), transparent 28%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .09), transparent 18%),
+    #000 !important;
+}
+
+.quiz-phase-transition .quiz-item-transition.quiz-burst-scene,
+.quiz-phase-transition.quiz-transition-radials-on .quiz-item-transition.quiz-burst-scene {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.quiz-phase-transition.quiz-transition-scene-effects-on .quiz-item-transition.quiz-burst-scene {
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.05) inset,
+    0 0 54px rgba(19,104,206,.16),
+    0 0 70px rgba(226,27,60,.08) !important;
+}
+
+.quiz-phase-transition .quiz-burst-shapes span {
+  --float-x1: 4px;
+  --float-y1: -5px;
+  --float-r1: 5deg;
+  --float-x2: -5px;
+  --float-y2: 3px;
+  --float-r2: -4deg;
+  --float-x3: 3px;
+  --float-y3: 5px;
+  --float-r3: 3deg;
+  animation: quizShapeBurstFloatInOut var(--quiz-transition-total-duration) cubic-bezier(.16,1,.3,1) both !important;
+  animation-delay: 0ms !important;
+  will-change: transform, opacity;
+}
+
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(1) {
+  --float-x1: -5px; --float-y1: 4px; --float-r1: -6deg;
+  --float-x2: 6px; --float-y2: -4px; --float-r2: 5deg;
+  --float-x3: -2px; --float-y3: -6px; --float-r3: -3deg;
+}
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(2) {
+  --float-x1: 5px; --float-y1: 5px; --float-r1: 4deg;
+  --float-x2: -4px; --float-y2: -6px; --float-r2: -5deg;
+  --float-x3: 6px; --float-y3: -2px; --float-r3: 3deg;
+}
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(3) {
+  --float-x1: 3px; --float-y1: -6px; --float-r1: 0deg;
+  --float-x2: -6px; --float-y2: 3px; --float-r2: 0deg;
+  --float-x3: 4px; --float-y3: 4px; --float-r3: 0deg;
+}
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(4) {
+  --float-x1: -6px; --float-y1: -3px; --float-r1: 6deg;
+  --float-x2: 4px; --float-y2: 6px; --float-r2: -4deg;
+  --float-x3: -3px; --float-y3: 4px; --float-r3: 3deg;
+}
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(5) {
+  --float-x1: 5px; --float-y1: -4px; --float-r1: 7deg;
+  --float-x2: -5px; --float-y2: 5px; --float-r2: -6deg;
+  --float-x3: 2px; --float-y3: 6px; --float-r3: 4deg;
+}
+.quiz-phase-transition .quiz-burst-shapes span:nth-child(6) {
+  --float-x1: -4px; --float-y1: 6px; --float-r1: -5deg;
+  --float-x2: 5px; --float-y2: -3px; --float-r2: 5deg;
+  --float-x3: -6px; --float-y3: -2px; --float-r3: -4deg;
+}
+
+.quiz-phase-transition .quiz-transition-count {
+  text-shadow: none !important;
+  transform-origin: center center !important;
+  animation: scale-in-center .5s cubic-bezier(.68,-.55,.265,1.55) both,
+             scale-in-center .5s cubic-bezier(.68,-.55,.265,1.55) var(--quiz-transition-exit-at) reverse both !important;
+}
+
+.quiz-phase-transition .quiz-transition-number {
+  gap: clamp(18px, 3vw, 34px) !important;
+}
+
+.quiz-phase-transition .quiz-transition-number strong {
+  letter-spacing: -.035em !important;
+}
+
+.quiz-phase-transition .quiz-transition-number small {
+  margin-left: .04em !important;
+  color: rgba(255,255,255,.86) !important;
+}
+
+.quiz-phase-transition .quiz-transition-progress {
+  background: rgba(255,255,255,.18) !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.quiz-phase-transition .quiz-transition-progress span {
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+@-webkit-keyframes scale-in-center {
+  0% { -webkit-transform: scale(0); transform: scale(0); opacity: 1; }
+  100% { -webkit-transform: scale(1); transform: scale(1); opacity: 1; }
+}
+
+@keyframes scale-in-center {
+  0% { -webkit-transform: scale(0); transform: scale(0); opacity: 1; }
+  100% { -webkit-transform: scale(1); transform: scale(1); opacity: 1; }
+}
+
+@keyframes quizShapeBurstFloatInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.18) rotate(0deg);
+  }
+  14% {
+    opacity: .95;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(var(--r));
+  }
+  28% {
+    opacity: .92;
+    transform: translate(calc(-50% + var(--x) + var(--float-x1)), calc(-50% + var(--y) + var(--float-y1))) scale(1.015) rotate(calc(var(--r) + var(--float-r1)));
+  }
+  46% {
+    opacity: .86;
+    transform: translate(calc(-50% + var(--x) + var(--float-x2)), calc(-50% + var(--y) + var(--float-y2))) scale(.99) rotate(calc(var(--r) + var(--float-r2)));
+  }
+  64% {
+    opacity: .90;
+    transform: translate(calc(-50% + var(--x) + var(--float-x3)), calc(-50% + var(--y) + var(--float-y3))) scale(1.01) rotate(calc(var(--r) + var(--float-r3)));
+  }
+  78% {
+    opacity: .86;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(var(--r));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.18) rotate(0deg);
+  }
 }
