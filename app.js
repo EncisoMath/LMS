@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.153';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.153: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.154';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.154: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.153';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.154';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -1494,7 +1494,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.153';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.154';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1674,7 +1674,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.153';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.154';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2563,25 +2563,66 @@
     return stage?.closest?.('.quiz-fullscreen-layer') || document.getElementById('quizFullscreenLayer') || document;
   }
 
-  function quizItemMotionPieces(stage) {
-    if (!stage) return [];
+  function quizItemMotionParts(stage) {
     const layer = quizItemMotionLayerFrom(stage);
-    const nodes = [
-      layer?.querySelector?.('.quiz-fullscreen-top > div'),
-      layer?.querySelector?.('.quiz-fullscreen-top .quiz-top-counter'),
-      stage.querySelector('.quiz-eyebrow'),
-      stage.querySelector('.quiz-timer-pill'),
-      stage.querySelector('.quiz-layout-tune-open'),
-      stage.querySelector('.quiz-image-tune-box'),
-      stage.querySelector('.quiz-text-a'),
-      stage.querySelector('.quiz-answer-zone')
-    ];
+    const top = layer?.querySelector?.('.quiz-fullscreen-top') || null;
+    const title = top?.querySelector?.(':scope > div') || null;
+    const counter = top?.querySelector?.('.quiz-top-counter') || null;
+    const info = stage?.querySelector?.('.quiz-eyebrow') || null;
+    const item = stage?.querySelector?.('.quiz-timer-pill') || null;
+    const gear = stage?.querySelector?.('.quiz-layout-tune-open') || null;
+    const image = stage?.querySelector?.('.quiz-image-tune-box') || null;
+    const text = stage?.querySelector?.('.quiz-text-a') || null;
+    const options = stage?.querySelector?.('.quiz-answer-zone') || null;
+    return { layer, top, title, counter, info, item, gear, image, text, options };
+  }
+
+  function uniqueQuizItemMotionNodes(nodes) {
     const seen = new Set();
     return nodes.filter((node) => {
       if (!node || seen.has(node)) return false;
       seen.add(node);
       return true;
     });
+  }
+
+  function quizItemMotionPieces(stage) {
+    if (!stage) return [];
+    const parts = quizItemMotionParts(stage);
+    return uniqueQuizItemMotionNodes([
+      parts.top,
+      parts.title,
+      parts.counter,
+      parts.info,
+      parts.item,
+      parts.gear,
+      parts.image,
+      parts.text,
+      parts.options
+    ]);
+  }
+
+  function quizItemMotionStagePieces(stage) {
+    if (!stage) return [];
+    const parts = quizItemMotionParts(stage);
+    return uniqueQuizItemMotionNodes([
+      parts.info,
+      parts.item,
+      parts.gear,
+      parts.image,
+      parts.text,
+      parts.options
+    ]);
+  }
+
+  function quizItemMotionTopPieces(stage) {
+    if (!stage) return [];
+    const parts = quizItemMotionParts(stage);
+    return uniqueQuizItemMotionNodes([
+      parts.top,
+      parts.title,
+      parts.counter
+    ]);
   }
 
   function resetQuizItemFlowNode(node) {
@@ -2632,56 +2673,81 @@
   function playQuizItemEnterMotion(root = document) {
     const stage = quizItemMotionStageFrom(root);
     if (!stage) return;
+    const parts = quizItemMotionParts(stage);
     stage.classList.remove('quiz-item-motion-exiting');
+    parts.layer?.classList?.remove?.('quiz-item-motion-exiting');
     stage.dataset.quizItemMotion = 'entering';
     cancelQuizItemMotion(stage);
+    quizItemMotionTopPieces(stage).forEach(cancelQuizItemMotion);
+
+    const topDelay = 0;
+    const titleDelay = 85;
+    const counterDelay = 150;
+    const stageDelay = 230;
+    const stageDuration = 240;
+    const innerStart = stageDelay + 150;
+    const innerStagger = 70;
+
+    applyQuizItemFlow(parts.top, 'in', topDelay);
+    applyQuizItemFlow(parts.title, 'in', titleDelay);
+    applyQuizItemFlow(parts.counter, 'in', counterDelay);
+    parts.layer?.classList?.remove?.('quiz-item-motion-ready');
+
     try {
       const stageAnim = stage.animate([
         { opacity: 0 },
         { opacity: 1 }
-      ], { duration: 240, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' });
+      ], { duration: stageDuration, delay: stageDelay, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' });
       stageAnim.id = 'quiz-item-motion-stage-enter';
       stageAnim.onfinish = () => {
         stage.classList.remove('quiz-item-enter-ready');
+        parts.layer?.classList?.remove?.('quiz-item-motion-ready');
         stage.style.opacity = '';
         delete stage.dataset.quizItemMotion;
       };
     } catch (_) {
       stage.classList.remove('quiz-item-enter-ready');
+      parts.layer?.classList?.remove?.('quiz-item-motion-ready');
     }
 
-    quizItemMotionPieces(stage).forEach((node, index) => {
-      applyQuizItemFlow(node, 'in', 80 + (index * 70));
+    quizItemMotionStagePieces(stage).forEach((node, index) => {
+      applyQuizItemFlow(node, 'in', innerStart + (index * innerStagger));
     });
   }
 
   function playQuizItemExitDuringFeedback(stage) {
     stage = quizItemMotionStageFrom(stage);
     if (!stage || stage.dataset.quizItemMotion === 'exiting') return;
+    const parts = quizItemMotionParts(stage);
     stage.dataset.quizItemMotion = 'exiting';
     stage.classList.remove('quiz-item-enter-ready');
     stage.classList.add('quiz-item-motion-exiting');
-    const pieces = quizItemMotionPieces(stage);
-    const pieceDuration = 280;
-    const pieceStagger = 24;
+    parts.layer?.classList?.add?.('quiz-item-motion-exiting');
+    const stagePieces = quizItemMotionStagePieces(stage).slice().reverse();
+    const topPieces = quizItemMotionTopPieces(stage).slice().reverse();
+    const pieceDuration = 220;
+    const step = 45;
     const startDelay = QUIZ_FEEDBACK_BAND_EXIT_START_MS;
     scheduleQuizTimer(() => {
-      pieces.forEach((node, index) => {
-        applyQuizItemFlow(node, 'out', index * pieceStagger);
+      stagePieces.forEach((node, index) => {
+        applyQuizItemFlow(node, 'out', index * step);
       });
-      const total = pieceDuration + Math.max(0, pieces.length - 1) * pieceStagger;
+      const stageFadeDelay = Math.max(0, stagePieces.length * step);
       scheduleQuizTimer(() => {
-        cancelQuizItemMotion(stage);
         try {
           const stageAnim = stage.animate([
             { opacity: 1 },
             { opacity: 0 }
-          ], { duration: 140, easing: 'ease-out', fill: 'forwards' });
+          ], { duration: 150, easing: 'ease-out', fill: 'forwards' });
           stageAnim.id = 'quiz-item-motion-stage-exit';
         } catch (_) {
           stage.style.opacity = '0';
         }
-      }, total + 10);
+      }, stageFadeDelay);
+      const topStart = stageFadeDelay + 95;
+      topPieces.forEach((node, index) => {
+        applyQuizItemFlow(node, 'out', topStart + (index * step));
+      });
     }, startDelay);
   }
 
@@ -2736,7 +2802,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.153</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.154</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3625,7 +3691,7 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}`;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
@@ -4559,7 +4625,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.153', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.154', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
