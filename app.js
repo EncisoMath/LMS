@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.151';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.151: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.153';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.153: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.151';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.153';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -99,6 +99,7 @@
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
+  const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
@@ -1493,7 +1494,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.151';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.153';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1673,7 +1674,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.151';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.153';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2558,32 +2559,74 @@
     return stage;
   }
 
+  function quizItemMotionLayerFrom(stage) {
+    return stage?.closest?.('.quiz-fullscreen-layer') || document.getElementById('quizFullscreenLayer') || document;
+  }
+
   function quizItemMotionPieces(stage) {
     if (!stage) return [];
-    const selectors = [
-      '.quiz-eyebrow',
-      '.quiz-timer-pill',
-      '.quiz-layout-tune-open',
-      '.quiz-image-tune-box',
-      '.quiz-text-a',
-      '.quiz-answer-zone'
+    const layer = quizItemMotionLayerFrom(stage);
+    const nodes = [
+      layer?.querySelector?.('.quiz-fullscreen-top > div'),
+      layer?.querySelector?.('.quiz-fullscreen-top .quiz-top-counter'),
+      stage.querySelector('.quiz-eyebrow'),
+      stage.querySelector('.quiz-timer-pill'),
+      stage.querySelector('.quiz-layout-tune-open'),
+      stage.querySelector('.quiz-image-tune-box'),
+      stage.querySelector('.quiz-text-a'),
+      stage.querySelector('.quiz-answer-zone')
     ];
     const seen = new Set();
-    return selectors
-      .map((selector) => stage.querySelector(selector))
-      .filter((node) => {
-        if (!node || seen.has(node)) return false;
-        seen.add(node);
-        return true;
+    return nodes.filter((node) => {
+      if (!node || seen.has(node)) return false;
+      seen.add(node);
+      return true;
+    });
+  }
+
+  function resetQuizItemFlowNode(node) {
+    if (!node) return;
+    try {
+      node.getAnimations?.().forEach((anim) => {
+        const id = String(anim.id || '');
+        const name = String(anim.animationName || '');
+        if (id.startsWith('quiz-item-motion-') || name === 'encisoFlowIn' || name === 'encisoFlowOut') anim.cancel();
       });
+    } catch (_) {}
+    node.classList?.remove?.('enciso-flow-in', 'enciso-flow-out', 'quiz-item-flow-piece');
+    node.style.animationDelay = '';
+    node.style.removeProperty('--quiz-item-flow-delay');
   }
 
   function cancelQuizItemMotion(node) {
+    if (!node) return;
+    resetQuizItemFlowNode(node);
     try {
-      node?.getAnimations?.().forEach((anim) => {
+      node.getAnimations?.().forEach((anim) => {
         if (String(anim.id || '').startsWith('quiz-item-motion-')) anim.cancel();
       });
     } catch (_) {}
+  }
+
+  function applyQuizItemFlow(node, mode, delay = 0) {
+    if (!node) return;
+    resetQuizItemFlowNode(node);
+    node.classList.add('quiz-item-flow-piece');
+    node.style.setProperty('--quiz-item-flow-delay', `${Math.max(0, Number(delay) || 0)}ms`);
+    node.style.animationDelay = `var(--quiz-item-flow-delay)`;
+    void node.offsetWidth;
+    node.classList.add(mode === 'out' ? 'enciso-flow-out' : 'enciso-flow-in');
+    if (mode !== 'out') {
+      const cleanup = () => {
+        node.removeEventListener('animationend', cleanup);
+        if (node.classList.contains('enciso-flow-in')) {
+          node.classList.remove('enciso-flow-in', 'quiz-item-flow-piece');
+          node.style.animationDelay = '';
+          node.style.removeProperty('--quiz-item-flow-delay');
+        }
+      };
+      node.addEventListener('animationend', cleanup, { once: true });
+    }
   }
 
   function playQuizItemEnterMotion(root = document) {
@@ -2608,24 +2651,7 @@
     }
 
     quizItemMotionPieces(stage).forEach((node, index) => {
-      cancelQuizItemMotion(node);
-      try {
-        const anim = node.animate([
-          { opacity: 0, translate: '0 18px', scale: '.97' },
-          { opacity: 1, translate: '0 0', scale: '1' }
-        ], {
-          duration: 500,
-          delay: 80 + (index * 70),
-          easing: 'cubic-bezier(.16,1,.3,1)',
-          fill: 'both'
-        });
-        anim.id = 'quiz-item-motion-piece-enter';
-        anim.onfinish = () => {
-          node.style.opacity = '';
-          node.style.translate = '';
-          node.style.scale = '';
-        };
-      } catch (_) {}
+      applyQuizItemFlow(node, 'in', 80 + (index * 70));
     });
   }
 
@@ -2636,26 +2662,12 @@
     stage.classList.remove('quiz-item-enter-ready');
     stage.classList.add('quiz-item-motion-exiting');
     const pieces = quizItemMotionPieces(stage);
-    const pieceDuration = 420;
-    const pieceStagger = 75;
-    const startDelay = 900;
+    const pieceDuration = 280;
+    const pieceStagger = 24;
+    const startDelay = QUIZ_FEEDBACK_BAND_EXIT_START_MS;
     scheduleQuizTimer(() => {
       pieces.forEach((node, index) => {
-        cancelQuizItemMotion(node);
-        try {
-          const anim = node.animate([
-            { opacity: 1, translate: '0 0', scale: '1' },
-            { opacity: 0, translate: '0 18px', scale: '.97' }
-          ], {
-            duration: pieceDuration,
-            delay: index * pieceStagger,
-            easing: 'cubic-bezier(.2,.9,.2,1)',
-            fill: 'forwards'
-          });
-          anim.id = 'quiz-item-motion-piece-exit';
-        } catch (_) {
-          node.style.opacity = '0';
-        }
+        applyQuizItemFlow(node, 'out', index * pieceStagger);
       });
       const total = pieceDuration + Math.max(0, pieces.length - 1) * pieceStagger;
       scheduleQuizTimer(() => {
@@ -2664,12 +2676,12 @@
           const stageAnim = stage.animate([
             { opacity: 1 },
             { opacity: 0 }
-          ], { duration: 260, easing: 'ease-out', fill: 'forwards' });
+          ], { duration: 140, easing: 'ease-out', fill: 'forwards' });
           stageAnim.id = 'quiz-item-motion-stage-exit';
         } catch (_) {
           stage.style.opacity = '0';
         }
-      }, total + 90);
+      }, total + 10);
     }, startDelay);
   }
 
@@ -2724,7 +2736,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.151</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.153</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -4547,7 +4559,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.151', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.153', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
