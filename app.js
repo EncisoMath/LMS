@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.167';
+  const APP_VERSION = '0.24.168';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1681,7 +1681,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.167';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.168';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1863,7 +1863,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.167';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.168';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2588,7 +2588,13 @@
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
-        if (button) button.disabled = true;
+        if (button) {
+          button.classList.remove('is-order-submit-jello');
+          button.style.removeProperty('animation');
+          void button.offsetWidth;
+          button.classList.add('is-order-submit-jello');
+          button.disabled = true;
+        }
         const revealGap = 105;
         const revealDuration = 585;
         const pendingDelay = 1000;
@@ -5043,7 +5049,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.167', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.168', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -13245,8 +13245,8 @@ textarea.quiz-open-input {
   opacity: 1 !important;
 }
 
-/* ===== v0.24.167 - Tipografia base 12px en quizzes y Montserrat Regular en pregunta abierta ===== */
-:root { --encisomath-build: "0.24.167"; }
+/* ===== v0.24.168 - Tipografia base 12px en quizzes y Montserrat Regular en pregunta abierta ===== */
+:root { --encisomath-build: "0.24.168"; }
 
 /* TEXTO: base global de 12px para preguntas actuales y futuras. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
@@ -13310,4 +13310,13 @@ textarea.quiz-open-input::placeholder {
   font-weight: 400 !important;
   font-style: normal !important;
   font-size: 12px !important;
+}
+
+
+/* ===== v0.24.168 - Jello al pulsar Enviar respuesta en Organizar ===== */
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello {
+  animation: jello-horizontal .585s both !important;
+  transform-origin: center center !important;
 }
