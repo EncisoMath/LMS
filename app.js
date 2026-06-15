@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.191';
+  const APP_VERSION = '0.24.192';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,7 +323,7 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.191';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.192';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 220, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -220, max: 220, step: 1, unit: 'px' },
@@ -2770,7 +2770,7 @@
           return;
         }
         session.locked = true;
-        markQuizCountdownResponded();
+        const answerTiming = markQuizCountdownResponded();
         session.selectedAnswerId = selected.dataset.quizAnswer || '';
         const selectedCorrect = selected.dataset.correct === 'true';
         const correctCard = cards().find((card) => card.dataset.correct === 'true') || null;
@@ -2800,12 +2800,12 @@
             card.classList.add(ok ? 'flip-correct-reveal' : 'flip-wrong-reveal');
           };
           if (selectedCorrect) {
-            recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
+            recordQuizAnswer(question, true, { selected: session.selectedAnswerId, timing: answerTiming });
             runRevealAnimation(selected, true);
             playQuizSound('correct');
             showQuizFeedbackBandAfterDelay(stage, true, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
           } else {
-            recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '' });
+            recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '', timing: answerTiming });
             runRevealAnimation(selected, false);
             playQuizSound('wrong');
             if (correctCard && correctCard !== selected) {
@@ -2990,7 +2990,7 @@
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
-        markQuizCountdownResponded();
+        const answerTiming = markQuizCountdownResponded();
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
@@ -3064,7 +3064,7 @@
             board.classList.remove('order-validating');
             stage?.classList.remove('order-reveal-active');
           }, revealTotal + 120);
-          recordQuizAnswer(question, ok, { order: selected, correctOrder });
+          recordQuizAnswer(question, ok, { order: selected, correctOrder, timing: answerTiming });
           showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
         }, pendingDelay);
       });
@@ -3237,7 +3237,17 @@
     const safeIndex = Math.max(0, Math.min(count - 1, Number(index) || 0));
     const itemMax = quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_ITEM_POINTS);
     const timeMax = quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_TIME_POINTS);
-    const timing = extra?.timing || getQuizAnswerTimingSnapshot();
+    const rawTiming = extra?.timing || getQuizAnswerTimingSnapshot();
+    const totalSeconds = normalizeQuizItemSeconds(rawTiming?.totalSeconds || getQuizQuestionTimeLimit(question, quiz));
+    const elapsedSeconds = clampQuizNumber(Number(rawTiming?.elapsedSeconds), 0, totalSeconds);
+    const remainingSeconds = clampQuizNumber(Number.isFinite(Number(rawTiming?.remainingSeconds)) ? Number(rawTiming.remainingSeconds) : totalSeconds - elapsedSeconds, 0, totalSeconds);
+    const elapsedRatio = totalSeconds > 0 ? clampQuizNumber(elapsedSeconds / totalSeconds, 0, 1) : 0;
+    const timing = {
+      totalSeconds,
+      elapsedSeconds: Math.round(elapsedSeconds * 1000) / 1000,
+      remainingSeconds: Math.round(remainingSeconds * 1000) / 1000,
+      elapsedRatio: Math.round(elapsedRatio * 10000) / 10000
+    };
     const isCorrect = correct === true;
     const hasTextAnswer = String(extra?.text || '').trim().length > 0;
     const hasSelectedAnswer = String(extra?.selected || extra?.selectedAnswer || extra?.selectedAnswerId || '').trim().length > 0;
@@ -3245,23 +3255,39 @@
     const hasFlipAnswer = String(extra?.selectedCard || extra?.selectedFlip || extra?.selected || '').trim().length > 0;
     const isTimeout = extra?.timeout === true;
     const madeAttempt = !isTimeout && (isCorrect || correct === false || hasTextAnswer || hasSelectedAnswer || hasOrderAnswer || hasFlipAnswer);
-    const curve = madeAttempt ? quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0) : 0;
+    const curveRaw = madeAttempt ? quizTimeScoreCurve(elapsedRatio) : 0;
+    const curve = Math.round(curveRaw * 10000) / 10000;
     const item = isCorrect ? itemMax : 0;
-    const time = madeAttempt ? Math.round(timeMax * curve) : 0;
+    const time = madeAttempt ? Math.round(timeMax * curveRaw) : 0;
+    const total = item + time;
+    const noReadLimit = 0.18;
+    const sweetSpot = 0.75;
+    const branch = !madeAttempt ? 'sin intento real / timeout' : elapsedRatio <= noReadLimit ? 'demasiado rapido' : elapsedRatio <= sweetSpot ? 'subida hacia punto dulce' : 'bajada por respuesta tardia';
+    const formula = madeAttempt
+      ? `r = tiempoDemorado / tiempoLimite = ${timing.elapsedSeconds}s / ${timing.totalSeconds}s = ${timing.elapsedRatio}; curva = r <= 0.18 ? 0 : r <= 0.75 ? ((r - 0.18) / (0.75 - 0.18))^0.72 : max(0.08, 1 - ((r - 0.75) / (1 - 0.75))^1.45 * 0.92); puntosTiempo = redondear(${timeMax} * ${curve}) = ${time}`
+      : `sin intento real o timeout; puntosTiempo = 0`;
     return {
       item,
       time,
-      total: item + time,
+      total,
       maxItem: itemMax,
       maxTime: timeMax,
-      curve: Math.round(curve * 10000) / 10000,
-      timing
+      curve,
+      timing,
+      debug: {
+        itemIndex: safeIndex + 1,
+        itemCount: count,
+        correct: isCorrect,
+        madeAttempt,
+        timeout: isTimeout,
+        branch,
+        formula
+      }
     };
   }
 
   function getQuizAnswerScore(answer, quiz = getActiveQuiz()) {
     if (!answer) return { item: 0, time: 0, total: 0 };
-    if (answer.score && Number.isFinite(Number(answer.score.total))) return answer.score;
     const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
     const question = questions[Number(answer.index)] || null;
     return calculateQuizAnswerScore(question, answer.correct === true, answer, Number(answer.index), quiz);
@@ -3273,6 +3299,8 @@
     const previousIndex = current - 2;
     const beforePreviousIndex = current - 3;
     const answers = Array.isArray(session.answers) ? session.answers : [];
+    const previousAnswer = answers.find((answer) => Number(answer.index) === Number(previousIndex)) || null;
+    const previousScore = previousAnswer ? getQuizAnswerScore(previousAnswer, quiz) : null;
     const sumThrough = (maxIndex) => answers.reduce((total, answer) => {
       const index = Number(answer.index);
       if (!Number.isFinite(index) || index > maxIndex) return total;
@@ -3281,7 +3309,9 @@
     return {
       from: Math.max(0, Math.round(sumThrough(beforePreviousIndex))),
       to: Math.max(0, Math.round(sumThrough(previousIndex))),
-      previousIndex
+      previousIndex,
+      previousAnswer,
+      previousScore
     };
   }
 
@@ -3355,7 +3385,7 @@
   function markQuizCountdownResponded() {
     stopQuizQuestionMusic(true);
     const active = state.quizCountdown;
-    if (!active) return;
+    if (!active) return getQuizAnswerTimingSnapshot();
     const timing = getQuizAnswerTimingSnapshot();
     active.respondedElapsedSeconds = timing.elapsedSeconds;
     active.respondedRemainingSeconds = timing.remainingSeconds;
@@ -3371,6 +3401,7 @@
     active.isRunning = false;
     active.wrap?.classList?.remove('danger', 'beat');
     setQuizCountdownDisplay('!', 'is-answered');
+    return timing;
   }
 
   function lockQuizQuestionForTimeout(stage) {
@@ -3398,7 +3429,7 @@
     const stage = document.querySelector(`.quiz-stage[data-quiz-question-index="${Number(questionIndex)}"]`) || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
     lockQuizQuestionForTimeout(stage);
     setQuizCountdownDisplay('0', 'is-timeup');
-    recordQuizAnswer(question, false, { timeout: true });
+    recordQuizAnswer(question, false, { timeout: true, timing: getQuizAnswerTimingSnapshot() });
     playQuizSound('wrong');
     showQuizFeedbackBandAfterDelay(stage, false, question, QUIZ_TIMEOUT_FEEDBACK_TEXT, 620);
   }
@@ -3684,6 +3715,31 @@
     return Math.max(1, Number(itemNumber) || 1) > 1;
   }
 
+  function quizTransitionScoreDebugHTML(scoreData = {}) {
+    const answer = scoreData.previousAnswer || null;
+    const score = scoreData.previousScore || { item: 0, time: 0, total: 0, maxItem: 0, maxTime: 0, curve: 0, timing: {} };
+    const timing = score.timing || {};
+    const debug = score.debug || {};
+    const itemNumber = Number(scoreData.previousIndex) + 1;
+    const status = answer?.timeout ? 'Tiempo agotado' : answer?.correct === true ? 'Correcta' : answer?.correct === false ? 'Incorrecta' : 'Abierta / sin calificación automática';
+    const formula = debug.formula || 'Sin fórmula disponible para este ítem.';
+    return `
+      <section class="quiz-transition-score-debug" data-quiz-score-debug aria-label="Debug de puntaje">
+        <strong>DEBUG puntos · Ítem ${escapeHTML(String(itemNumber || ''))}</strong>
+        <div class="quiz-score-debug-grid">
+          <span>Estado</span><b>${escapeHTML(status)}</b>
+          <span>Puntaje por ítem</span><b>${formatQuizScoreNumber(score.item)} / ${formatQuizScoreNumber(score.maxItem)}</b>
+          <span>Puntaje por tiempo</span><b>${formatQuizScoreNumber(score.time)} / ${formatQuizScoreNumber(score.maxTime)}</b>
+          <span>Tiempo que demoró</span><b>${escapeHTML(String(timing.elapsedSeconds ?? 0))}s de ${escapeHTML(String(timing.totalSeconds ?? 0))}s</b>
+          <span>Tiempo restante</span><b>${escapeHTML(String(timing.remainingSeconds ?? 0))}s</b>
+          <span>r = demorado/límite</span><b>${escapeHTML(String(timing.elapsedRatio ?? 0))}</b>
+          <span>Curva</span><b>${escapeHTML(String(score.curve ?? 0))} · ${escapeHTML(String(debug.branch || ''))}</b>
+          <span>Acumulado</span><b>${formatQuizScoreNumber(scoreData.from)} → ${formatQuizScoreNumber(scoreData.to)}</b>
+        </div>
+        <code>${escapeHTML(formula)}</code>
+      </section>`;
+  }
+
   function quizTransitionScoreHTML(itemNumber = 1, quiz = getActiveQuiz()) {
     if (!shouldShowQuizTransitionScore(itemNumber)) return '';
     const score = getQuizCumulativeScoreBeforeTransition(itemNumber, quiz);
@@ -3696,6 +3752,7 @@
           <button type="button" data-quiz-score-counter-action="continue">Seguir</button>
           <button class="quiz-transition-score-gear" type="button" data-quiz-score-panel-toggle aria-label="Ajustar contador de puntos">⚙️ Puntos</button>
         </div>
+        ${quizTransitionScoreDebugHTML(score)}
         <section class="quiz-transition-score-panel" data-quiz-transition-score-panel ${state.quizTransitionScorePanelOpen ? '' : 'hidden'} aria-label="Ajustes del contador de puntos">
           <div class="quiz-transition-score-panel-head">
             <strong>Contador de puntos</strong>
@@ -4837,7 +4894,7 @@
     if (!button || !stage || !question || session.locked) return;
 
     session.locked = true;
-    markQuizCountdownResponded();
+    const answerTiming = markQuizCountdownResponded();
     session.selectedAnswerId = button.dataset.quizAnswer || '';
     stage.classList.add('quiz-choice-pending');
     stage.querySelectorAll('[data-quiz-answer]').forEach((item) => {
@@ -4849,7 +4906,7 @@
 
     const selectedCorrect = button.dataset.correct === 'true';
     scheduleQuizTimer(() => {
-      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
+      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId, timing: answerTiming });
       revealQuizAnswer(stage, button, selectedCorrect);
       playQuizSound(selectedCorrect ? 'correct' : 'wrong');
       showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
@@ -5191,7 +5248,7 @@
     if (!form || !question || session.locked) return;
     const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
     session.locked = true;
-    markQuizCountdownResponded();
+    const answerTiming = markQuizCountdownResponded();
     const stage = form.closest('.quiz-stage');
     const openTargets = Array.from(form.querySelectorAll('.quiz-open-input, .quiz-submit-btn'));
     form.classList.remove('is-open-submitted');
@@ -5207,7 +5264,7 @@
     window.requestAnimationFrame(() => {
       form.classList.add('is-open-submitted');
     });
-    recordQuizAnswer(question, null, { text: value });
+    recordQuizAnswer(question, null, { text: value, timing: answerTiming });
     showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', 720);
   }
 
@@ -6447,7 +6504,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.191', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.192', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

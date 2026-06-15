@@ -1,3 +1,22 @@
+## v0.24.192
+
+- Corrección enfocada en Quizzes/puntaje de transición: se reforzó la captura del tiempo real de respuesta en el momento exacto en que el estudiante responde/valida/envía, pasándolo explícitamente a `recordQuizAnswer()` para que no dependa de lecturas posteriores del countdown.
+- El contador acumulado de transición sigue siendo único, pero ahora el cálculo vuelve a sumar explícitamente `puntos por ítem + puntos por tiempo` en un mismo total.
+- Se agregó un debug visible temporal en la transición con: estado del ítem, puntaje por ítem, puntaje por tiempo, tiempo que demoró el estudiante, tiempo límite, tiempo restante, ratio `r`, valor de curva, fórmula usada y acumulado anterior → nuevo.
+- La fórmula visible es: `r = tiempoDemorado / tiempoLimite`; si `r <= 0.18`, tiempo suma 0; si `0.18 < r <= 0.75`, `curva = ((r - 0.18)/(0.75 - 0.18))^0.72`; si `r > 0.75`, `curva = max(0.08, 1 - ((r - 0.75)/(1 - 0.75))^1.45 * 0.92)`; `puntosTiempo = redondear(maxTiempo * curva)`.
+- Se mantiene la posición inicial del contador en Y `220px` y zoom `55%`, con clave nueva `encisomath:quizTransitionScoreTune:v0.24.192` para no arrastrar calibraciones viejas.
+- No se tocaron ranking/podio, countdown visual, música random por pregunta, tipos de pregunta, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.192`.
+
+Validación:
+
+```bash
+node --check app.js
+node --check sw.js
+JSON/manifest válidos
+unzip -t sin errores
+```
+
 ## v0.24.191
 
 - Se parte de `v0.24.190`.
