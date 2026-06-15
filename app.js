@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.154';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.154: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.155';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.155: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.154';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.155';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -100,6 +100,13 @@
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
+  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.155';
+  const QUIZ_TRANSITION_ENTER_MS = 650;
+  const QUIZ_TRANSITION_WAIT_MS = 3000;
+  const QUIZ_TRANSITION_EXIT_MS = 950;
+  const QUIZ_TRANSITION_EXIT_START_MS = QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
+  const QUIZ_TRANSITION_TOTAL_MS = QUIZ_TRANSITION_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
+  const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: false, sceneGlow: false, shapeGlow: true };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
@@ -163,7 +170,8 @@
     attendanceDate: todayISO(),
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
-    prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) }
+    prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
+    quizTransitionPanelOpen: true
   };
 
   const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.124';
@@ -1494,7 +1502,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.154';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.155';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1674,7 +1682,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.154';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.155';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2550,6 +2558,152 @@
     return timer;
   }
 
+  function normalizeQuizTransitionTune(tune = {}) {
+    const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
+    return {
+      radials: safe.radials === true,
+      sceneGlow: safe.sceneGlow === true,
+      shapeGlow: safe.shapeGlow !== false
+    };
+  }
+
+  function getQuizTransitionTune() {
+    return normalizeQuizTransitionTune(readJSON(QUIZ_TRANSITION_TUNE_KEY) || QUIZ_TRANSITION_TUNE_DEFAULTS);
+  }
+
+  function saveQuizTransitionTune(tune) {
+    const safe = normalizeQuizTransitionTune(tune);
+    localStorage.setItem(QUIZ_TRANSITION_TUNE_KEY, JSON.stringify(safe));
+    return safe;
+  }
+
+  function quizTransitionClassNames(tune = getQuizTransitionTune()) {
+    const safe = normalizeQuizTransitionTune(tune);
+    return [
+      safe.radials ? 'quiz-transition-radials-on' : 'quiz-transition-radials-off',
+      safe.sceneGlow ? 'quiz-transition-scene-effects-on' : 'quiz-transition-scene-effects-off',
+      safe.shapeGlow ? 'quiz-transition-shape-glow-on' : 'quiz-transition-shape-glow-off'
+    ].join(' ');
+  }
+
+  function applyQuizTransitionTune(tune = getQuizTransitionTune()) {
+    const layer = document.getElementById('quizFullscreenLayer');
+    if (!layer) return normalizeQuizTransitionTune(tune);
+    const safe = normalizeQuizTransitionTune(tune);
+    layer.classList.toggle('quiz-transition-radials-on', safe.radials);
+    layer.classList.toggle('quiz-transition-radials-off', !safe.radials);
+    layer.classList.toggle('quiz-transition-scene-effects-on', safe.sceneGlow);
+    layer.classList.toggle('quiz-transition-scene-effects-off', !safe.sceneGlow);
+    layer.classList.toggle('quiz-transition-shape-glow-on', safe.shapeGlow);
+    layer.classList.toggle('quiz-transition-shape-glow-off', !safe.shapeGlow);
+    return safe;
+  }
+
+  function quizTransitionTuneSwitchHTML(key, label, help = '') {
+    const tune = getQuizTransitionTune();
+    const checked = tune[key] ? 'checked' : '';
+    return `
+      <label class="quiz-transition-tune-switch">
+        <input type="checkbox" data-quiz-transition-tune="${escapeAttr(key)}" ${checked} />
+        <span><strong>${escapeHTML(label)}</strong>${help ? `<small>${escapeHTML(help)}</small>` : ''}</span>
+      </label>
+    `;
+  }
+
+  function quizTransitionTunePanelHTML(item = 1, total = 1) {
+    return `
+      <div class="quiz-transition-tools" data-quiz-transition-tools>
+        <button class="quiz-transition-gear" type="button" data-quiz-transition-panel-toggle aria-label="Ajustar transicion">⚙️</button>
+        <section class="quiz-transition-tune-panel" data-quiz-transition-tune-panel ${state.quizTransitionPanelOpen ? '' : 'hidden'} aria-label="Ajustes de la transicion entre items">
+          <div class="quiz-transition-tune-head">
+            <strong>Transición ítem ${Number(item) || 1}/${Number(total) || 1}</strong>
+            <button type="button" data-quiz-transition-panel-close aria-label="Cerrar ajustes">×</button>
+          </div>
+          <div class="quiz-transition-tune-scroll">
+            <div class="quiz-transition-tune-grid">
+              ${quizTransitionTuneSwitchHTML('radials', 'Radiales', 'Fondo/panel')}
+              ${quizTransitionTuneSwitchHTML('sceneGlow', 'Marco/glow', 'Contenedor')}
+              ${quizTransitionTuneSwitchHTML('shapeGlow', 'Glow figuras', 'Exterior')}
+            </div>
+            <div class="quiz-transition-tune-actions">
+              <button type="button" data-quiz-transition-action="restart">Reiniciar</button>
+              <button type="button" data-quiz-transition-action="prev">Anterior</button>
+              <button type="button" data-quiz-transition-action="next">Siguiente</button>
+              <button type="button" data-quiz-transition-action="question">Ver pregunta</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function goToQuizQuestionFromTransition() {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    clearQuizTimers();
+    const session = getQuizSession();
+    session.phase = 'question';
+    session.locked = false;
+    session.selectedAnswerId = '';
+    session.transitionFromIntro = false;
+    renderQuizFullscreen(quiz);
+  }
+
+  function bindQuizTransitionTunePanel() {
+    const layer = document.getElementById('quizFullscreenLayer');
+    if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
+    applyQuizTransitionTune(getQuizTransitionTune());
+    const panel = layer.querySelector('[data-quiz-transition-tune-panel]');
+    const syncPanel = () => {
+      if (!panel) return;
+      panel.hidden = !state.quizTransitionPanelOpen;
+      panel.setAttribute('aria-hidden', state.quizTransitionPanelOpen ? 'false' : 'true');
+    };
+    syncPanel();
+    layer.querySelectorAll('[data-quiz-transition-panel-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.quizTransitionPanelOpen = !state.quizTransitionPanelOpen;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-transition-panel-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.quizTransitionPanelOpen = false;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-transition-tune]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const key = input.dataset.quizTransitionTune;
+        const tune = getQuizTransitionTune();
+        tune[key] = Boolean(input.checked);
+        applyQuizTransitionTune(saveQuizTransitionTune(tune));
+      });
+    });
+    layer.querySelectorAll('[data-quiz-transition-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.quizTransitionAction;
+        const quiz = getActiveQuiz();
+        const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+        if (!quiz || !total) return;
+        if (action === 'restart') {
+          showQuizItemTransition(state.quizQuestionIndex);
+          return;
+        }
+        if (action === 'question') {
+          goToQuizQuestionFromTransition();
+          return;
+        }
+        if (action === 'prev') {
+          showQuizItemTransition(Math.max(0, state.quizQuestionIndex - 1));
+          return;
+        }
+        if (action === 'next') {
+          showQuizItemTransition(Math.min(total - 1, state.quizQuestionIndex + 1));
+        }
+      });
+    });
+  }
 
 
 
@@ -2802,7 +2956,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.154</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.155</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -2986,6 +3140,7 @@
       });
     });
     bindQuizLayoutTunePanel();
+    bindQuizTransitionTunePanel();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -3653,7 +3808,7 @@
       current.selectedAnswerId = '';
       current.transitionFromIntro = false;
       renderQuizFullscreen(quiz);
-    }, 1500);
+    }, QUIZ_TRANSITION_TOTAL_MS);
   }
 
   function showQuizResults() {
@@ -3691,7 +3846,7 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
@@ -3781,10 +3936,13 @@
   }
 
   function quizItemTransitionHTML(item, total) {
+    const current = Math.max(1, Number(item) || 1);
+    const count = Math.max(1, Number(total) || 1);
     return `
       <section class="quiz-item-transition quiz-burst-scene" aria-live="polite">
+        ${quizTransitionTunePanelHTML(current, count)}
         <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="quiz-transition-count"><em>Ítem</em><span>${item}<small>/${total}</small></span></div>
+        <div class="quiz-transition-count"><span class="quiz-transition-number"><strong>${current}</strong><small>/${count}</small></span></div>
         <div class="quiz-transition-progress"><span></span></div>
       </section>
     `;
@@ -4625,7 +4783,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.154', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.155', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
