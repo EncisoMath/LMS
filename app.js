@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.178';
+  const APP_VERSION = '0.24.179';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4428,7 +4428,7 @@
     else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length, quiz, transitionWithIntro);
     else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
-    const showTop = phase === 'question' || phase === 'results';
+    const showTop = phase === 'question';
 
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
@@ -4542,17 +4542,17 @@
   }
 
   function quizResultItemCardsHTML(quiz, answers = []) {
-    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions.slice(0, 10) : [];
     const answerMap = new Map((Array.isArray(answers) ? answers : []).map((answer) => [Number(answer.index), answer]));
     if (!questions.length) return '';
     const cards = questions.map((question, index) => {
       const answer = answerMap.get(index);
+      const isOpen = question?.type === 'open';
       const correct = answer?.correct === true;
       const wrong = answer?.correct === false;
       const revisable = answer && !correct && !wrong;
-      const stateClass = correct || revisable ? 'is-correct' : 'is-wrong';
-      const icon = correct ? '✓' : (wrong ? '×' : '✓');
-      const label = correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado');
+      const stateClass = isOpen ? 'is-open' : (correct || revisable ? 'is-correct' : 'is-wrong');
+      const label = isOpen ? 'Respuesta abierta' : (correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado'));
       const typeLabel = {
         multiple_choice: 'Opción múltiple',
         true_false: 'Verdadero/Falso',
@@ -4561,10 +4561,9 @@
         flip: 'Flip'
       }[question?.type] || 'Pregunta';
       return `
-        <article class="quiz-ranking-item-card ${stateClass}" style="--item-delay:${index * 90 + 860}ms">
+        <article class="quiz-ranking-item-card ${stateClass}" style="--item-delay:${index * 90 + 720}ms" aria-label="Ítem ${index + 1}: ${escapeHTML(label)}">
           <span class="quiz-ranking-item-number">Ítem ${index + 1}</span>
           <span class="quiz-ranking-item-type">${escapeHTML(typeLabel)}</span>
-          <span class="quiz-ranking-item-result" aria-label="${escapeHTML(label)}">${icon}</span>
         </article>
       `;
     }).join('');
@@ -4583,7 +4582,7 @@
       <section class="quiz-ranking-panel" aria-label="Ranking del quiz">
         <div class="quiz-ranking-podium" aria-hidden="false">
           ${podium.map((slot) => `
-            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" style="--podium-delay:${slot.rank === 3 ? 120 : slot.rank === 2 ? 360 : 620}ms">
+            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" style="--podium-delay:${slot.rank === 3 ? 90 : slot.rank === 2 ? 310 : 540}ms">
               <div class="quiz-podium-profile">
                 <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
                 <strong>${escapeHTML(slot.name)}</strong>
@@ -4605,19 +4604,18 @@
     const securedOut = Boolean(session.securityTerminated);
     const win = !securedOut && (stats.scorable === 0 || stats.correct >= Math.ceil(stats.scorable * 0.6));
     const answers = Array.isArray(session.answers) ? session.answers : [];
+    const denominator = Math.max(1, stats.scorable || stats.total || 1);
+    const scorePercent = Math.round((Math.max(0, stats.correct || 0) / denominator) * 100);
+    const scoreTone = securedOut ? 'blackred' : (scorePercent >= 90 ? 'green' : (scorePercent >= 70 ? 'yellow' : (scorePercent >= 60 ? 'orange' : (scorePercent <= 30 ? 'blackred' : 'red'))));
     return `
-      <section class="quiz-results-screen quiz-ranking-screen ${securedOut ? 'is-security-ended' : (win ? 'is-win' : 'is-try')}">
+      <section class="quiz-results-screen quiz-ranking-screen quiz-ranking-tone-${scoreTone} ${securedOut ? 'is-security-ended' : (win ? 'is-win' : 'is-try')}" style="--quiz-score-percent:${scorePercent}">
         <div class="quiz-results-burst" aria-hidden="true"></div>
-        <div class="quiz-ranking-head">
-          <p class="section-kicker">${securedOut ? 'Quiz anulado' : 'Ranking'}</p>
-          <h2>${securedOut ? 'Quiz terminado por seguridad' : 'Resultados del quiz'}</h2>
-          ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
-        </div>
+        ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
         ${quizRankingPodiumHTML(stats)}
         ${quizResultItemCardsHTML(quiz, answers)}
         <div class="quiz-score-board quiz-ranking-score">
           <strong>${stats.correct}<small>/${stats.scorable || stats.total}</small></strong>
-          <span>${securedOut ? 'resultado no válido' : (stats.scorable ? 'respuestas correctas' : 'respuestas revisables')}</span>
+          <span>${securedOut ? 'resultado no válido' : (stats.scorable ? `${scorePercent}% de acierto` : 'respuestas revisables')}</span>
         </div>
         <div class="quiz-results-actions quiz-ranking-actions">
           <button class="primary-btn" type="button" data-quiz-result-target="quizzes">Volver a Quizzes</button>
@@ -5438,7 +5436,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.178', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.179', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

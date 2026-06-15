@@ -844,3 +844,16 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se agregaron avatares circulares temporales y nombres con Montserrat Medium; el puesto 1 tiene avatar mas grande.
 - Se agregaron tarjetas por item que entran en cascada y se pintan verde/rojo segun respuesta correcta/incorrecta, usando `jello-horizontal` para aciertos y `wobble-hor-bottom` para errores.
 - Version/cache busting actualizado a 0.24.178.
+
+## v0.24.179
+
+- Ajuste enfocado solo en la pantalla final de ranking/resultados del quiz.
+- Se quitó el hero/barra superior de resultados que mostraba el nombre del quiz y `FIN`.
+- Se compactó el podio para que los bloques 2, 1 y 3 queden juntos y sobre una base inferior amarilla estable, manteniendo amarillo `#ebb513`, sombra flat `#c49710` y números blancos Montserrat de peso alto.
+- Se mantiene la entrada en cascada del podio 3, 2 y 1 con `animate__bounceIn`.
+- Las tarjetas de ítems pasan a una grilla fija de 2 columnas y máximo 10 preguntas: 1-2, 3-4, 5-6, 7-8, 9-10.
+- Se retiró el chulito/equis lateral de las tarjetas de ítem.
+- El ítem de pregunta abierta se muestra siempre azul, sin depender de correcto/incorrecto.
+- El fondo de la pantalla de ranking usa malla con degradado según porcentaje: 90+ verde, 70+ amarillo, 60+ naranja, 31-59 rojo y 30 o menos negro con rojo.
+- Se estabilizó la pantalla de resultados sin scroll interno para reducir saltos visuales al aparecer el ranking.
+- Version/cache busting actualizado a 0.24.179.
