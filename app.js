@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.175';
+  const APP_VERSION = '0.24.176';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -37,12 +37,14 @@
   const QUIZ_SOUND_PATHS = {
     correct: './assets/sounds/correct.mp3',
     wrong: './assets/sounds/wrong.mp3',
-    type: './assets/sounds/type.mp3'
+    type: './assets/sounds/type.mp3',
+    item: './assets/sounds/item.mp3'
   };
   const QUIZ_SOUND_VOLUME = {
     correct: 0.82,
     wrong: 0.82,
-    type: 0.72
+    type: 0.72,
+    item: 0.78
   };
   const quizSoundPreloadCache = new Map();
 
@@ -52,6 +54,7 @@
 
   function preloadQuizSounds() {
     if (!quizSoundsEnabled()) return;
+    currentQuizMusicPath();
     Object.entries(QUIZ_SOUND_PATHS).forEach(([kind, src]) => {
       if (quizSoundPreloadCache.has(kind)) return;
       try {
@@ -76,6 +79,77 @@
       if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
     } catch (_) {}
   }
+  const QUIZ_MUSIC_PATHS = ['./assets/music_quiz/music1.mp3'];
+  const QUIZ_MUSIC_VOLUME = 0.28;
+  const QUIZ_MUSIC_FADE_MS = 280;
+  let quizQuestionMusicAudio = null;
+  let quizQuestionMusicKey = '';
+  let quizQuestionMusicFadeTimer = null;
+
+  function currentQuizMusicPath() {
+    return QUIZ_MUSIC_PATHS[0];
+  }
+
+  function stopQuizQuestionMusic(fade = true) {
+    const audio = quizQuestionMusicAudio;
+    quizQuestionMusicAudio = null;
+    quizQuestionMusicKey = '';
+    if (quizQuestionMusicFadeTimer) {
+      window.clearInterval(quizQuestionMusicFadeTimer);
+      quizQuestionMusicFadeTimer = null;
+    }
+    if (!audio) return;
+    const finish = () => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (_) {}
+    };
+    if (!fade) {
+      finish();
+      return;
+    }
+    const startVolume = Number.isFinite(audio.volume) ? audio.volume : QUIZ_MUSIC_VOLUME;
+    const started = Date.now();
+    quizQuestionMusicFadeTimer = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - started) / QUIZ_MUSIC_FADE_MS);
+      try { audio.volume = Math.max(0, startVolume * (1 - progress)); } catch (_) {}
+      if (progress >= 1) {
+        window.clearInterval(quizQuestionMusicFadeTimer);
+        quizQuestionMusicFadeTimer = null;
+        finish();
+      }
+    }, 24);
+  }
+
+  function questionAllowsQuizMusic(question = getCurrentQuizQuestion()) {
+    return Boolean(question) && question.type !== 'open';
+  }
+
+  function startQuizQuestionMusic(question = getCurrentQuizQuestion()) {
+    if (!quizSoundsEnabled() || !questionAllowsQuizMusic(question)) {
+      stopQuizQuestionMusic(false);
+      return;
+    }
+    const src = currentQuizMusicPath();
+    if (!src) return;
+    const quiz = getActiveQuiz();
+    const key = `${quiz?.id || 'quiz'}:${state.quizQuestionIndex}:${src}`;
+    if (quizQuestionMusicAudio && quizQuestionMusicKey === key && !quizQuestionMusicAudio.paused) return;
+    stopQuizQuestionMusic(false);
+    try {
+      const audio = new Audio(src);
+      audio.preload = 'auto';
+      audio.loop = true;
+      audio.volume = QUIZ_MUSIC_VOLUME;
+      audio.currentTime = 0;
+      quizQuestionMusicAudio = audio;
+      quizQuestionMusicKey = key;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+    } catch (_) {}
+  }
+
 
   const WARNING_GAP_KEY = 'encisomath:warningBangGap';
   const WARNING_TUNE_KEY = 'encisomath:warningTune';
@@ -2141,7 +2215,7 @@
           <span>Sonidos del quiz</span>
           <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
         </label>
-        <small>Usa assets/sounds/correct.mp3, wrong.mp3 y type.mp3.</small>
+        <small>Usa correct.mp3, wrong.mp3, type.mp3, item.mp3 y music1.mp3.</small>
       </div>
     `;
   }
@@ -2257,8 +2331,12 @@
         soundToggle.addEventListener('change', () => {
           state.prefs.quizSounds = Boolean(soundToggle.checked);
           localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+          if (state.prefs.quizSounds === false) stopQuizQuestionMusic(false);
           panel.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => { input.checked = state.prefs.quizSounds !== false; });
-          if (state.prefs.quizSounds !== false) preloadQuizSounds();
+          if (state.prefs.quizSounds !== false) {
+            preloadQuizSounds();
+            if (getQuizSession().phase === 'question') startQuizQuestionMusic(getCurrentQuizQuestion());
+          }
         });
       }
 
@@ -2566,6 +2644,7 @@
           return;
         }
         session.locked = true;
+        stopQuizQuestionMusic(true);
         session.selectedAnswerId = selected.dataset.quizAnswer || '';
         const selectedCorrect = selected.dataset.correct === 'true';
         const correctCard = cards().find((card) => card.dataset.correct === 'true') || null;
@@ -2785,6 +2864,7 @@
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
+        stopQuizQuestionMusic(true);
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
@@ -3023,6 +3103,7 @@
       count.style.animation = 'none';
       void count.offsetWidth;
       count.style.animation = '';
+      playQuizSound('item');
       count.classList.add('quiz-transition-count-entering');
     }, timing.numberEnterDelay);
     scheduleQuizTimer(() => {
@@ -3062,7 +3143,7 @@
               ${quizTransitionTuneSwitchHTML('shapeGlow', 'Glow figuras', 'Exterior')}
               <label class="quiz-transition-tune-switch">
                 <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
-                <span><strong>Sonidos</strong><small>Correcta / incorrecta / enviada</small></span>
+                <span><strong>Sonidos</strong><small>Efectos y música</small></span>
               </label>
               ${quizTransitionTuneSwitchHTML('continuous', 'Continuo', 'Avanza solo')}
             </div>
@@ -3142,8 +3223,12 @@
       input.addEventListener('change', () => {
         state.prefs.quizSounds = Boolean(input.checked);
         localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+        if (state.prefs.quizSounds === false) stopQuizQuestionMusic(false);
         document.querySelectorAll('[data-quiz-sound-toggle]').forEach((toggle) => { toggle.checked = state.prefs.quizSounds !== false; });
-        if (state.prefs.quizSounds !== false) preloadQuizSounds();
+        if (state.prefs.quizSounds !== false) {
+          preloadQuizSounds();
+          if (getQuizSession().phase === 'question') startQuizQuestionMusic(getCurrentQuizQuestion());
+        }
       });
     });
 
@@ -3889,6 +3974,7 @@
   }
 
   function handleQuizAnswer(button) {
+    stopQuizQuestionMusic(true);
     const stage = button?.closest('.quiz-stage');
     const question = getCurrentQuizQuestion();
     const session = getQuizSession();
@@ -4232,6 +4318,7 @@
     if (!form || !question || session.locked) return;
     const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
     session.locked = true;
+    stopQuizQuestionMusic(false);
     const stage = form.closest('.quiz-stage');
     const openTargets = Array.from(form.querySelectorAll('.quiz-open-input, .quiz-submit-btn'));
     form.classList.remove('is-open-submitted');
@@ -4276,6 +4363,7 @@
   }
 
   function showQuizItemTransition(index = 0, options = {}) {
+    stopQuizQuestionMusic(false);
     const quiz = getActiveQuiz();
     if (!quiz) return;
     clearQuizTimers();
@@ -4291,6 +4379,7 @@
   }
 
   function showQuizResults() {
+    stopQuizQuestionMusic(false);
     removeQuizGlobalFeedback();
     const quiz = getActiveQuiz();
     if (!quiz) return;
@@ -4351,10 +4440,16 @@
     `;
     bindQuizPlayerEvents();
     if (phase === 'question') {
-      window.requestAnimationFrame(() => playQuizItemEnterMotion(layer));
+      window.requestAnimationFrame(() => {
+        playQuizItemEnterMotion(layer);
+        startQuizQuestionMusic(getCurrentQuizQuestion());
+      });
     } else if (phase === 'transition') {
+      stopQuizQuestionMusic(false);
       playQuizTransitionNumberMotion(layer);
       scheduleQuizTransitionContinuousAdvance();
+    } else {
+      stopQuizQuestionMusic(false);
     }
   }
 
@@ -4474,6 +4569,7 @@
   }
 
   function closeQuizFullscreen(target = 'quizzes') {
+    stopQuizQuestionMusic(false);
     removeQuizGlobalFeedback();
     clearQuizTimers();
     unlockQuizHistory();
@@ -5271,7 +5367,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.175', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.176', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
