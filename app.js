@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.156';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.156: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.157';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.157: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.156';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.157';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -100,7 +100,7 @@
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
-  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.156';
+  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.157';
   const QUIZ_TRANSITION_ENTER_MS = 650;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
   const QUIZ_TRANSITION_EXIT_MS = 950;
@@ -1502,7 +1502,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.156';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.157';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1682,7 +1682,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.156';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.157';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2599,6 +2599,28 @@
     return safe;
   }
 
+
+  function playQuizTransitionNumberMotion(layer = document.getElementById('quizFullscreenLayer')) {
+    if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
+    const count = layer.querySelector('.quiz-transition-count');
+    if (!count) return;
+    count.classList.remove('quiz-transition-count-entering', 'quiz-transition-count-exiting');
+    count.style.animation = 'none';
+    void count.offsetWidth;
+    count.style.animation = '';
+    window.requestAnimationFrame(() => {
+      count.classList.add('quiz-transition-count-entering');
+    });
+    scheduleQuizTimer(() => {
+      if (!count.isConnected) return;
+      count.classList.remove('quiz-transition-count-entering');
+      count.style.animation = 'none';
+      void count.offsetWidth;
+      count.style.animation = '';
+      count.classList.add('quiz-transition-count-exiting');
+    }, QUIZ_TRANSITION_EXIT_START_MS);
+  }
+
   function quizTransitionTuneSwitchHTML(key, label, help = '') {
     const tune = getQuizTransitionTune();
     const checked = tune[key] ? 'checked' : '';
@@ -2956,7 +2978,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.156</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.157</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3801,7 +3823,7 @@
     session.locked = true;
     session.transitionFromIntro = Boolean(options.fromIntro);
     renderQuizFullscreen(quiz);
-    // v0.24.156: calibracion manual de la transicion. No avanza automaticamente;
+    // v0.24.157: calibracion manual de la transicion. No avanza automaticamente;
     // se usa el boton "Ver pregunta" del panel para continuar cuando la animacion termine.
   }
 
@@ -3866,6 +3888,8 @@
     bindQuizPlayerEvents();
     if (phase === 'question') {
       window.requestAnimationFrame(() => playQuizItemEnterMotion(layer));
+    } else if (phase === 'transition') {
+      playQuizTransitionNumberMotion(layer);
     }
   }
 
@@ -4777,7 +4801,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.156', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.157', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
