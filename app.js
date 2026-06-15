@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.157';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.157: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.158';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.158: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.157';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.158';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -100,7 +100,7 @@
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
-  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.157';
+  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.158';
   const QUIZ_TRANSITION_ENTER_MS = 650;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
   const QUIZ_TRANSITION_EXIT_MS = 950;
@@ -171,7 +171,10 @@
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
-    quizTransitionPanelOpen: true
+    quizTransitionPanelOpen: true,
+    appRoute: null,
+    appHistoryReady: false,
+    applyingHistoryRoute: false
   };
 
   const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.124';
@@ -209,6 +212,7 @@
     applyQuizFeedbackTune();
     registerServiceWorker();
     bindQuizSecurityGuards();
+    bindAppBackNavigation();
     mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
       state.data = await loadAllData();
@@ -260,7 +264,174 @@
     transitionTimer = window.setTimeout(paint, 285);
   }
 
-  function renderLogin() {
+  function bindAppBackNavigation() {
+    if (state.appBackNavigationBound) return;
+    state.appBackNavigationBound = true;
+    window.addEventListener('popstate', handleAppPopState);
+  }
+
+  function normalizeAppRoute(route) {
+    if (!route || typeof route !== 'object') return null;
+    const screen = String(route.screen || '').trim();
+    if (!screen) return null;
+    if (screen === 'subject') {
+      return {
+        screen: 'subject',
+        assignmentId: String(route.assignmentId || state.assignment?.id || ''),
+        tab: normalizeSubjectTab(route.tab || state.activeSubjectTab || 'students')
+      };
+    }
+    if (screen === 'lesson') {
+      return {
+        screen: 'lesson',
+        assignmentId: String(route.assignmentId || state.assignment?.id || ''),
+        lessonId: String(route.lessonId || '')
+      };
+    }
+    if (['login', 'home', 'student'].includes(screen)) return { screen };
+    return null;
+  }
+
+  function normalizeSubjectTab(tab) {
+    const value = String(tab || 'students');
+    return ['students', 'classes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
+  }
+
+  function appRouteKey(route) {
+    const normalized = normalizeAppRoute(route);
+    if (!normalized) return '';
+    if (normalized.screen === 'subject') return `subject:${normalized.assignmentId}:${normalized.tab}`;
+    if (normalized.screen === 'lesson') return `lesson:${normalized.assignmentId}:${normalized.lessonId}`;
+    return normalized.screen;
+  }
+
+  function appHistoryState(route, rootGuard = false) {
+    return {
+      encisomathApp: true,
+      encisomathRootGuard: Boolean(rootGuard),
+      encisomathRoute: normalizeAppRoute(route),
+      version: APP_VERSION
+    };
+  }
+
+  function commitAppRoute(route, options = {}) {
+    const normalized = normalizeAppRoute(route);
+    if (!normalized) return;
+    state.appRoute = normalized;
+    if (options.noHistory || state.applyingHistoryRoute) return;
+    if (state.quizFullscreenActive) return;
+    if (!window.history || typeof window.history.pushState !== 'function') return;
+
+    const key = appRouteKey(normalized);
+    const currentKey = appRouteKey(state.lastCommittedAppRoute);
+    if (state.appHistoryReady && key === currentKey && !options.forceHistory) return;
+
+    try {
+      if (!state.appHistoryReady) {
+        window.history.replaceState(appHistoryState(normalized, true), '', window.location.href);
+        window.history.pushState(appHistoryState(normalized, false), '', window.location.href);
+        state.appHistoryReady = true;
+      } else if (options.replaceHistory) {
+        window.history.replaceState(appHistoryState(normalized, false), '', window.location.href);
+      } else {
+        window.history.pushState(appHistoryState(normalized, false), '', window.location.href);
+      }
+      state.lastCommittedAppRoute = normalized;
+    } catch (error) {
+      console.warn('No se pudo actualizar el historial interno de EncisoMath.', error);
+    }
+  }
+
+  function handleAppPopState(event) {
+    if (state.quizFullscreenActive) {
+      // En quizzes no navegamos hacia atrás con el botón físico/gesto: se conserva el flujo del quiz.
+      const route = state.appRoute || currentAppRouteFallback();
+      try { window.history.pushState(appHistoryState(route, false), '', window.location.href); } catch (_) {}
+      return;
+    }
+
+    const route = normalizeAppRoute(event.state?.encisomathRoute);
+    if (!route) {
+      const fallback = currentAppRouteFallback();
+      try { window.history.pushState(appHistoryState(fallback, false), '', window.location.href); } catch (_) {}
+      return;
+    }
+
+    state.applyingHistoryRoute = true;
+    try {
+      applyAppRoute(route);
+      state.appRoute = route;
+      state.lastCommittedAppRoute = route;
+    } finally {
+      state.applyingHistoryRoute = false;
+    }
+
+    if (event.state?.encisomathRootGuard) {
+      window.setTimeout(() => {
+        if (state.quizFullscreenActive) return;
+        try {
+          window.history.pushState(appHistoryState(route, false), '', window.location.href);
+          state.lastCommittedAppRoute = route;
+        } catch (_) {}
+      }, 0);
+    }
+  }
+
+  function currentAppRouteFallback() {
+    if (!state.user) return { screen: 'login' };
+    if (state.assignment?.id) {
+      return { screen: 'subject', assignmentId: state.assignment.id, tab: normalizeSubjectTab(state.activeSubjectTab || 'students') };
+    }
+    return state.user.role === 'teacher' ? { screen: 'home' } : { screen: 'student' };
+  }
+
+  function applyAppRoute(route) {
+    const normalized = normalizeAppRoute(route) || currentAppRouteFallback();
+    if (!state.user && normalized.screen !== 'login') {
+      renderLogin({ noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'login') {
+      renderLogin({ noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'student') {
+      renderStudentPlaceholder({ noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'home') {
+      renderTeacherHome({ noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'subject') {
+      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
+      if (!assignment) {
+        renderTeacherHome({ noHistory: true });
+        return;
+      }
+      state.assignment = assignment;
+      renderSubjectDetail(normalized.tab, { noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'lesson') {
+      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
+      const lesson = state.data.classes.find((item) => item.id === normalized.lessonId);
+      if (!assignment || !lesson) {
+        renderTeacherHome({ noHistory: true });
+        return;
+      }
+      state.assignment = assignment;
+      renderLesson(lesson, { noHistory: true });
+    }
+  }
+
+  function renderLogin(options = {}) {
+    commitAppRoute({ screen: 'login' }, options);
     const last = readJSON('encisomath:lastUser');
     const markup = `
       <main class="login-screen">
@@ -331,7 +502,8 @@
     `;
   }
 
-  function renderTeacherHome() {
+  function renderTeacherHome(options = {}) {
+    commitAppRoute({ screen: 'home' }, options);
     state.assignment = null;
     const teacher = state.user;
     const assignments = getTeacherAssignments(teacher.id);
@@ -435,9 +607,11 @@
     });
   }
 
-  function renderSubjectDetail(tab = 'students') {
+  function renderSubjectDetail(tab = 'students', options = {}) {
+    tab = normalizeSubjectTab(tab);
     const assignment = state.assignment;
-    if (!assignment) return renderTeacherHome();
+    if (!assignment) return renderTeacherHome(options);
+    commitAppRoute({ screen: 'subject', assignmentId: assignment.id, tab }, options);
     const coverStyle = coverBackgroundStyle(assignment);
     const iconSrc = getAssignmentIcon(assignment);
 
@@ -574,7 +748,8 @@
     if (content) content.dataset.activeTab = tab;
   }
 
-  function setSubjectTab(tab) {
+  function setSubjectTab(tab, options = {}) {
+    tab = normalizeSubjectTab(tab);
     const content = document.getElementById('tabContent');
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     setActiveSubjectTabMeta(tab);
@@ -582,6 +757,7 @@
     document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
     document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
     document.getElementById('quizzesTab')?.classList.toggle('active', tab === 'quizzes');
+    commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
@@ -1502,7 +1678,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.157';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.158';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1682,7 +1858,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.157';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.158';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2978,7 +3154,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.157</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.158</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3823,7 +3999,7 @@
     session.locked = true;
     session.transitionFromIntro = Boolean(options.fromIntro);
     renderQuizFullscreen(quiz);
-    // v0.24.157: calibracion manual de la transicion. No avanza automaticamente;
+    // v0.24.158: calibracion manual de la transicion. No avanza automaticamente;
     // se usa el boton "Ver pregunta" del panel para continuar cuando la animacion termine.
   }
 
@@ -4220,8 +4396,9 @@
     if (animate) pulseElement(grid, 'class-grid-update');
   }
 
-  function renderLesson(lesson) {
+  function renderLesson(lesson, options = {}) {
     const assignment = state.assignment;
+    if (assignment?.id && lesson?.id) commitAppRoute({ screen: 'lesson', assignmentId: assignment.id, lessonId: lesson.id }, options);
     const src = `${lesson.contentUrl}?v=${Date.now()}&assignment=${encodeURIComponent(assignment.id)}`;
     const markup = `
       <main class="screen class-screen">
@@ -4245,7 +4422,8 @@
     });
   }
 
-  function renderStudentPlaceholder() {
+  function renderStudentPlaceholder(options = {}) {
+    commitAppRoute({ screen: 'student' }, options);
     mount(`<main class="screen mobile-pad"><h1>Vista estudiante</h1><p>La primera fase está centrada en docentes. La vista estudiante se conecta después con las clases y actividades.</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
     });
@@ -4801,7 +4979,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.157', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.158', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
