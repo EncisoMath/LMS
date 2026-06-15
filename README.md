@@ -823,7 +823,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Ajuste global de tipografía de quizzes: TEXTO y OPCIONES quedan en 12px como base para los quizzes actuales y futuros.
 - Pregunta abierta: el texto escrito en el cuadro de respuesta usa Montserrat Regular real, sin heredar SemiBold de las opciones.
 
-## v0.24.171
+## v0.24.172
 
 - Se ajusta Quiz Flip a partir de `v0.24.170`.
 - Las tarjetas de espalda usan colores normales tipo Kahoot; se agregan naranja y morado para completar las 6 opciones.

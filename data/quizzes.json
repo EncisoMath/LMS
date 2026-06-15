@@ -1,6 +1,6 @@
 {
   "version": "1.12",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.171 ajusta colores y layout de Quiz Flip.",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.172 ajusta colores y layout de Quiz Flip.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
