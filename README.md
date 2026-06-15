@@ -1,3 +1,11 @@
+## v0.24.193
+
+- Corrección en Quizzes/puntos de transición: se arregló la captura del tiempo demorado por el estudiante. El bug venía de leer `respondedElapsedSeconds` con `Number(null)`, que devolvía `0` y hacía que el debug mostrara `0s de 20s`, impidiendo sumar puntos por tiempo.
+- `getQuizAnswerTimingSnapshot()` ahora solo usa `respondedElapsedSeconds` si realmente existe; si está `null`/`undefined`, calcula el tiempo con `performance.now() - startedAt` o con los segundos restantes.
+- El debug temporal de transición se mantiene para verificar `tiempoDemorado`, `r`, curva, puntos por ítem, puntos por tiempo y acumulado.
+- Se conserva el contador de transición con Y inicial `220px`, zoom `55%`, y clave nueva `encisomath:quizTransitionScoreTune:v0.24.193` para evitar valores viejos.
+- Versión/cache busting actualizado a `0.24.193`.
+
 ## v0.24.192
 
 - Corrección enfocada en Quizzes/puntaje de transición: se reforzó la captura del tiempo real de respuesta en el momento exacto en que el estudiante responde/valida/envía, pasándolo explícitamente a `recordQuizAnswer()` para que no dependa de lecturas posteriores del countdown.

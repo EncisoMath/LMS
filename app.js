@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.192';
+  const APP_VERSION = '0.24.193';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,7 +323,7 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.192';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.193';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 220, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -220, max: 220, step: 1, unit: 'px' },
@@ -3190,7 +3190,10 @@
     const question = getCurrentQuizQuestion();
     const quiz = getActiveQuiz();
     const totalSeconds = normalizeQuizItemSeconds(active?.totalSeconds || getQuizQuestionTimeLimit(question, quiz));
-    let elapsedSeconds = Number(active?.respondedElapsedSeconds);
+    const storedElapsed = active?.respondedElapsedSeconds;
+    let elapsedSeconds = (storedElapsed !== null && storedElapsed !== undefined && Number.isFinite(Number(storedElapsed)))
+      ? Number(storedElapsed)
+      : Number.NaN;
     if (!Number.isFinite(elapsedSeconds)) {
       if (Number.isFinite(Number(active?.startedAt)) && typeof performance !== 'undefined') {
         elapsedSeconds = (performance.now() - Number(active.startedAt)) / 1000;
@@ -6504,7 +6507,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.192', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.193', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
