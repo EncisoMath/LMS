@@ -869,3 +869,13 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - No se tocaron preguntas, tipos de quiz, musica, Rockstars, Clases, Estudiantes ni datos base.
 - Version/cache busting actualizado a 0.24.180.
 
+## v0.24.181
+- Version temporal de calibracion enfocada solo en la pantalla final de ranking/resultados del quiz.
+- Se agrego slider de ancho para la base amarilla del podio.
+- Se aplicaron como valores base del podio: puesto 1 X 5px, Y -45px, rotacion 0; puesto 2 X 38px, Y -41px, rotacion -6; puesto 3 X -29px, Y -40px, rotacion 5; base Y -26px.
+- Los valores de calibracion ahora usan `localStorage` con la clave `encisomath:rankingPodiumTune:v0.24.181`.
+- En la tarjeta de pregunta abierta, si el estudiante envio texto se usa animacion `jello-horizontal`; si envio vacio se usa `wobble-hor-bottom`.
+- El contenedor de resultados usa malla animada tipo hero de Quizzes/ROCKSTARS, con degradado segun porcentaje: 90+ verde, 70+ amarillo, 60+ naranja, 31-59 rojo, 30 o menos negro con rojo.
+- No se tocaron preguntas, tipos de quiz, musica, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a 0.24.181.
+

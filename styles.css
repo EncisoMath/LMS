@@ -14886,3 +14886,107 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-resu
     max-height: min(72dvh, 520px) !important;
   }
 }
+
+
+/* ===== v0.24.181 - Calibracion ranking: ancho base, valores del usuario y malla hero ===== */
+.quiz-ranking-podium {
+  --ranking-podium-1-x: 5px;
+  --ranking-podium-1-y: -45px;
+  --ranking-podium-1-rot: 0deg;
+  --ranking-podium-2-x: 38px;
+  --ranking-podium-2-y: -41px;
+  --ranking-podium-2-rot: -6deg;
+  --ranking-podium-3-x: -29px;
+  --ranking-podium-3-y: -40px;
+  --ranking-podium-3-rot: 5deg;
+  --ranking-podium-base-x: 0px;
+  --ranking-podium-base-y: -26px;
+  --ranking-podium-base-w: 100%;
+}
+
+.quiz-podium-base {
+  left: 50% !important;
+  right: auto !important;
+  width: var(--ranking-podium-base-w) !important;
+  transform: translateX(calc(-50% + var(--ranking-podium-base-x))) translateY(var(--ranking-podium-base-y)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-results-screen.quiz-ranking-screen,
+.quiz-fullscreen-layer.quiz-phase-results .quiz-results-screen.quiz-ranking-screen,
+.quiz-results-screen.quiz-ranking-screen {
+  background:
+    radial-gradient(circle at 18% 25%, var(--ranking-hero-a, rgba(88,204,2,.28)), transparent 32%),
+    radial-gradient(circle at 82% 18%, var(--ranking-hero-b, rgba(19,104,206,.24)), transparent 34%),
+    linear-gradient(135deg, var(--ranking-hero-c, rgba(21,8,47,.94)), var(--ranking-hero-d, rgba(4,10,26,.98))) !important;
+}
+
+.quiz-results-screen.quiz-ranking-screen::before {
+  inset: -40% !important;
+  z-index: 0 !important;
+  opacity: .36 !important;
+  background-image:
+    linear-gradient(var(--ranking-mesh-line-a, rgba(255,255,255,.08)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ranking-mesh-line-b, rgba(255,255,255,.08)) 1px, transparent 1px) !important;
+  background-size: 28px 28px !important;
+  transform: rotate(-7deg) scale(1.12) !important;
+  animation: quizGridDrift 13s linear infinite !important;
+}
+
+.quiz-results-screen.quiz-ranking-screen::after {
+  background: linear-gradient(90deg, rgba(0,0,0,.34), transparent 44%, rgba(0,0,0,.54)) !important;
+}
+
+.quiz-ranking-tone-green {
+  --ranking-hero-a: rgba(88,204,2,.42);
+  --ranking-hero-b: rgba(21,128,61,.30);
+  --ranking-hero-c: rgba(6,38,15,.96);
+  --ranking-hero-d: rgba(1,12,7,.98);
+  --ranking-mesh-line-a: rgba(212,255,201,.12);
+  --ranking-mesh-line-b: rgba(212,255,201,.10);
+}
+
+.quiz-ranking-tone-yellow {
+  --ranking-hero-a: rgba(235,181,19,.46);
+  --ranking-hero-b: rgba(255,214,72,.28);
+  --ranking-hero-c: rgba(49,36,5,.96);
+  --ranking-hero-d: rgba(14,10,2,.98);
+  --ranking-mesh-line-a: rgba(255,244,188,.13);
+  --ranking-mesh-line-b: rgba(255,244,188,.10);
+}
+
+.quiz-ranking-tone-orange {
+  --ranking-hero-a: rgba(249,115,22,.48);
+  --ranking-hero-b: rgba(235,181,19,.25);
+  --ranking-hero-c: rgba(53,22,4,.96);
+  --ranking-hero-d: rgba(14,6,2,.98);
+  --ranking-mesh-line-a: rgba(255,219,174,.13);
+  --ranking-mesh-line-b: rgba(255,219,174,.10);
+}
+
+.quiz-ranking-tone-red {
+  --ranking-hero-a: rgba(226,27,60,.48);
+  --ranking-hero-b: rgba(127,29,29,.30);
+  --ranking-hero-c: rgba(49,6,13,.97);
+  --ranking-hero-d: rgba(12,1,4,.98);
+  --ranking-mesh-line-a: rgba(255,210,218,.13);
+  --ranking-mesh-line-b: rgba(255,210,218,.10);
+}
+
+.quiz-ranking-tone-blackred {
+  --ranking-hero-a: rgba(226,27,60,.40);
+  --ranking-hero-b: rgba(127,29,29,.24);
+  --ranking-hero-c: rgba(8,2,5,.99);
+  --ranking-hero-d: rgba(0,0,0,1);
+  --ranking-mesh-line-a: rgba(255,90,110,.13);
+  --ranking-mesh-line-b: rgba(255,90,110,.09);
+}
+
+.quiz-ranking-item-card.is-open-answered {
+  background: #1368ce !important;
+  animation: quizRankItemCascade 360ms var(--item-delay) cubic-bezier(.16,1,.3,1) both, jello-horizontal .585s calc(var(--item-delay) + 360ms) none !important;
+}
+
+.quiz-ranking-item-card.is-open-empty {
+  background: #1368ce !important;
+  animation: quizRankItemCascade 360ms var(--item-delay) cubic-bezier(.16,1,.3,1) both, wobble-hor-bottom .52s calc(var(--item-delay) + 360ms) none !important;
+}

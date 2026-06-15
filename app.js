@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.180';
+  const APP_VERSION = '0.24.181';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -237,12 +237,12 @@
   const QUIZ_TRANSITION_FIRST_EXIT_START_MS = 6500;
   const QUIZ_TRANSITION_FIRST_TOTAL_MS = 7000;
   const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
-  const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.180';
+  const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
-    p1x: 0, p1y: 0, p1rot: 0,
-    p2x: 0, p2y: 0, p2rot: 0,
-    p3x: 0, p3y: 0, p3rot: 0,
-    baseX: 0, baseY: 0
+    p1x: 5, p1y: -45, p1rot: 0,
+    p2x: 38, p2y: -41, p2rot: -6,
+    p3x: -29, p3y: -40, p3rot: 5,
+    baseX: 0, baseY: -26, baseW: 100
   };
   const QUIZ_RANKING_PODIUM_TUNE_FIELDS = [
     { key: 'p1x', group: 'Puesto 1', label: 'Puesto 1 X', min: -90, max: 90, step: 1, unit: 'px' },
@@ -255,7 +255,8 @@
     { key: 'p3y', group: 'Puesto 3', label: 'Puesto 3 Y', min: -90, max: 90, step: 1, unit: 'px' },
     { key: 'p3rot', group: 'Puesto 3', label: 'Puesto 3 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'baseX', group: 'Base', label: 'Base X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'baseY', group: 'Base', label: 'Base Y', min: -70, max: 70, step: 1, unit: 'px' }
+    { key: 'baseY', group: 'Base', label: 'Base Y', min: -70, max: 70, step: 1, unit: 'px' },
+    { key: 'baseW', group: 'Base', label: 'Ancho base', min: 70, max: 130, step: 1, unit: '%' }
   ];
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
@@ -4573,8 +4574,10 @@
       const correct = answer?.correct === true;
       const wrong = answer?.correct === false;
       const revisable = answer && !correct && !wrong;
-      const stateClass = isOpen ? 'is-open' : (correct || revisable ? 'is-correct' : 'is-wrong');
-      const label = isOpen ? 'Respuesta abierta' : (correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado'));
+      const openHasText = isOpen && Boolean(String(answer?.text || '').trim());
+      const openStateClass = openHasText ? 'is-open is-open-answered' : 'is-open is-open-empty';
+      const stateClass = isOpen ? openStateClass : (correct || revisable ? 'is-correct' : 'is-wrong');
+      const label = isOpen ? (openHasText ? 'Respuesta abierta enviada' : 'Respuesta abierta sin texto') : (correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado'));
       const typeLabel = {
         multiple_choice: 'Opción múltiple',
         true_false: 'Verdadero/Falso',
@@ -4629,6 +4632,7 @@
       podium.style.setProperty('--ranking-podium-3-rot', `${safe.p3rot}deg`);
       podium.style.setProperty('--ranking-podium-base-x', `${safe.baseX}px`);
       podium.style.setProperty('--ranking-podium-base-y', `${safe.baseY}px`);
+      podium.style.setProperty('--ranking-podium-base-w', `${safe.baseW}%`);
     });
     return safe;
   }
@@ -5596,7 +5600,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.180', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.181', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
