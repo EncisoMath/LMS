@@ -879,6 +879,15 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - No se tocaron preguntas, tipos de quiz, musica, Rockstars, Clases, Estudiantes ni datos base.
 - Version/cache busting actualizado a 0.24.181.
 
+
+## v0.24.183
+- Cambio enfocado en Quizzes: se reemplaza la música global `music1.mp3` por música aleatoria por pregunta/ítem, según el tiempo del ítem.
+- La app busca pistas en `assets/music_quiz/` con nombres `20_X`, `30_X`, `60_X`, `90_X` o `120_X` (por ejemplo `20_1.mp3`, `20_2.mp3`, `30_1.mp3`) y solo usa la familia que coincide con los segundos de la pregunta.
+- La detección cuenta las pistas disponibles por duración usando los candidatos `X=1..3`; si no hay pistas para ese tiempo, el quiz continúa sin música y sin romper.
+- La música ya no se reproduce durante todo el quiz ni durante transiciones: arranca al entrar a cada pregunta y se detiene con fadeout rápido cuando se responde, se envía respuesta, se valida Organizar/Flip o se acaba el tiempo.
+- Version/cache busting actualizado a 0.24.183.
+- Validaciones: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.182
 
 - Cambio enfocado en Quizzes: se agrega countdown por item/pregunta.
