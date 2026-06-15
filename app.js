@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.170';
+  const APP_VERSION = '0.24.171';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1815,7 +1815,7 @@
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
     multiple_choice: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    flip: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    flip: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 },
     true_false: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     open: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     order: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
@@ -1889,7 +1889,10 @@
     if (type === 'true_false') {
       return { textA_y: 25, image_y: 25, textB_y: 25, answers_y: 80 };
     }
-    if (type === 'multiple_choice' || type === 'flip') {
+    if (type === 'flip') {
+      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
+    }
+    if (type === 'multiple_choice') {
       return hasImage
         ? { textA_y: 40, image_y: 40, textB_y: 40, answers_y: 90 }
         : { textA_y: 10, image_y: 10, textB_y: 10, answers_y: 10 };
@@ -2308,14 +2311,14 @@
   }
 
   function quizFlipHTML(question) {
-    const colors = ['red', 'blue', 'yellow', 'green', 'red', 'blue'];
+    const colors = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];
     const options = (Array.isArray(question.options) ? question.options : []).slice(0, 6);
     return `
       <div class="quiz-flip-board" data-quiz-flip-board>
         <div class="quiz-flip-grid" role="list">
           ${options.map((option, index) => {
             const rawColor = String(option.color || colors[index % colors.length] || 'blue').toLowerCase();
-            const safeColor = ['red', 'blue', 'yellow', 'green'].includes(rawColor) ? rawColor : colors[index % colors.length];
+            const safeColor = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'].includes(rawColor) ? rawColor : colors[index % colors.length];
             return `
               <button class="quiz-flip-card quiz-flip-${safeColor}" type="button" data-quiz-flip-card data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem" aria-pressed="false" aria-label="Opción oculta ${index + 1}">
                 <span class="quiz-flip-inner" aria-hidden="true">
@@ -5177,7 +5180,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.170', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.171', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

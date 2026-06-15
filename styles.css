@@ -9571,7 +9571,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.91 cache-proof quiz bugfixes ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
   height: 100dvh !important;
   max-height: 100dvh !important;
@@ -9660,7 +9660,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.91 definitive quiz interaction bugfix ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 /* 0) No quiz content may move when feedback appears. This cancels old lift/cascade rules. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -9862,7 +9862,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.92 final feedback stability and pro bounce ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 /* Keep quiz layout dimensions identical before/during feedback. No element may be reflowed or lifted. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-feedback-visible,
@@ -10035,7 +10035,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.125 global feedback overlay fix ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 .quiz-stage-fullscreen > .quiz-answer-feedback,
 .quiz-stage-fullscreen [data-quiz-feedback] {
   display: none !important;
@@ -10157,7 +10157,7 @@ body > .quiz-global-feedback-overlay .quiz-feedback-card p {
 
 
 /* ===== v0.24.125 inline feedback overlay guard ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 .enciso-quiz-feedback-overlay-v95,
 .enciso-quiz-feedback-overlay-v95 * {
   box-sizing: border-box !important;
@@ -10412,7 +10412,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.125 forced quiz typography controls ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --enciso-quiz-font: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .quiz-layout-tune-panel,
@@ -10469,7 +10469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.125 visual performance without flat mode ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
 }
 @keyframes tabIn {
   0% { opacity: 0; transform: translate3d(0, 6px, 0); }
@@ -10634,7 +10634,7 @@ body.modal-open .quiz-tile {
 
 /* ===== v0.24.125 hero performance tuning: rich static instead of flat ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
 }
 :root[data-visual-optimized="on"] #app,
 :root[data-visual-optimized="on"] #app.is-leaving,
@@ -10778,7 +10778,7 @@ body.modal-open .quiz-tile {
 
 /* ===== v0.24.125 unified light entrance motion ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --enciso-flow-distance: 18px;
   --enciso-flow-duration: 500ms;
   --enciso-flow-ease: cubic-bezier(.16, 1, .3, 1);
@@ -11058,7 +11058,7 @@ body.modal-open .quiz-tile {
 }
 
 /* ===== v0.24.140 quiz fullscreen: quitar espacio inferior heredado ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content {
@@ -11355,7 +11355,7 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
 
 
 /* ===== v0.24.140 quiz fullscreen: el layout ocupa todo el cuerpo, sin hueco inferior ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen {
@@ -11453,7 +11453,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.140 Quizzes: ajustes temporales retirados ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 .quiz-tune-gear,
 .quiz-layout-tune-panel {
   display: none !important;
@@ -11464,7 +11464,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz order: separar encabezado del layout ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order {
   row-gap: clamp(6px, 1dvh, 10px) !important;
@@ -11478,7 +11478,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* ===== v0.24.140 ABCD/TF reveal: usar jello/wobble como Organizar ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-choice-revealed,
@@ -11580,7 +11580,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz sin imagen: texto 52% + espacio 3% + opciones 45% ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-hide-image-preview .quiz-question-content,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-hide-image-preview .quiz-question-content,
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen:not([data-quiz-has-image="true"]) .quiz-question-content,
@@ -11618,7 +11618,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz quick menu: font controls ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 .quiz-quick-menu-panel .quiz-quick-typography-box {
   margin: 0 !important;
 }
@@ -11653,7 +11653,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.140 quiz typography + centered text + static feedback band ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-tune-box,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-tune-box {
@@ -11906,7 +11906,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.161 - Pantalla de transición Ítem X/Y: limpia, configurable y con salida inversa ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --quiz-transition-total-duration: 4600ms;
   --quiz-transition-exit-at: 3650ms;
 }
@@ -12281,7 +12281,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.161 - Transicion X/Y manual, radiales visibles y scale-in-center ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --quiz-transition-total-duration: 4600ms;
   --quiz-transition-exit-at: 3650ms;
 }
@@ -12441,7 +12441,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 /* ===== v0.24.161 - Corrige entrada scale-in-center del contador X/Y ===== */
-:root { --encisomath-build: "0.24.170"; }
+:root { --encisomath-build: "0.24.171"; }
 
 .quiz-phase-transition .quiz-transition-count {
   text-shadow: none !important;
@@ -12462,7 +12462,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.161 - Transicion X/Y: figuras mas lentas, radiales del tema y countdown con fade ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --quiz-transition-total-duration: 4600ms;
   --quiz-transition-exit-at: 3650ms;
 }
@@ -12626,7 +12626,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.161 - Transicion X/Y: figuras continuas y solo 2 radiales del tema ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
   --quiz-transition-total-duration: 4600ms;
   --quiz-transition-exit-at: 3650ms;
 }
@@ -12741,7 +12741,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 /* ===== v0.24.161 - Transicion X/Y: radiales visibles y modo continuo ===== */
 :root {
-  --encisomath-build: "0.24.170";
+  --encisomath-build: "0.24.171";
 }
 
 .quiz-fullscreen-layer.quiz-phase-transition {
@@ -13245,8 +13245,8 @@ textarea.quiz-open-input {
   opacity: 1 !important;
 }
 
-/* ===== v0.24.170 - Tipografia base 12px en quizzes y Montserrat Regular en pregunta abierta ===== */
-:root { --encisomath-build: "0.24.170"; }
+/* ===== v0.24.171 - Tipografia base 12px en quizzes y Montserrat Regular en pregunta abierta ===== */
+:root { --encisomath-build: "0.24.171"; }
 
 /* TEXTO: base global de 12px para preguntas actuales y futuras. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
@@ -13313,7 +13313,7 @@ textarea.quiz-open-input::placeholder {
 }
 
 
-/* ===== v0.24.170 - Jello al pulsar Enviar respuesta en Organizar ===== */
+/* ===== v0.24.171 - Jello al pulsar Enviar respuesta en Organizar ===== */
 body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello,
 .quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-submit.is-order-submit-jello {
@@ -13322,7 +13322,7 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-s
 }
 
 
-/* ===== v0.24.170 Quiz Flip: tarjetas numericas con volteo ===== */
+/* ===== v0.24.171 Quiz Flip: tarjetas numericas con volteo ===== */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip {
   --quiz-fit-image-fr: 30fr !important;
@@ -13468,8 +13468,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 
-/* ===== v0.24.170 - Correcciones visuales Quiz Flip ===== */
-:root { --encisomath-build: "0.24.170"; }
+/* ===== v0.24.171 - Correcciones visuales Quiz Flip ===== */
+:root { --encisomath-build: "0.24.171"; }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card {
@@ -13541,4 +13541,106 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-submit {
   font-size: 12px !important;
   line-height: 1.1 !important;
+}
+
+/* ===== v0.24.171 - Quiz Flip: colores normales, frente oscuro y layout tipo Organizar ===== */
+:root { --encisomath-build: "0.24.171"; }
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip {
+  --quiz-fit-image-fr: 30fr !important;
+  --quiz-fit-text-fr: 30fr !important;
+  --quiz-fit-answer-fr: 40fr !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip:not([data-quiz-has-image="true"]),
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip:not([data-quiz-has-image="true"]) {
+  --quiz-fit-image-fr: 0fr !important;
+  --quiz-fit-text-fr: 60fr !important;
+  --quiz-fit-answer-fr: 40fr !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-image-fr, 30fr)) minmax(0, var(--quiz-fit-text-fr, 30fr)) minmax(0, var(--quiz-fit-answer-fr, 40fr)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip:not([data-quiz-has-image="true"]) .quiz-question-content,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip:not([data-quiz-has-image="true"]) .quiz-question-content {
+  grid-template-rows: minmax(0, var(--quiz-fit-text-fr, 60fr)) minmax(0, var(--quiz-fit-answer-fr, 40fr)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  gap: clamp(4px, .62dvh, 7px) !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-red { --flip-color: #e21b3c; --flip-dark: #27050d; }
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-blue { --flip-color: #1368ce; --flip-dark: #05152e; }
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-yellow { --flip-color: #d89e00; --flip-dark: #2c2100; }
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-green { --flip-color: #26890c; --flip-dark: #0a2105; }
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-orange { --flip-color: #f97316; --flip-dark: #2f1202; }
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-purple { --flip-color: #7c3aed; --flip-dark: #160729; }
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card *,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card * {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card {
+  outline: none !important;
+  filter: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  user-select: none !important;
+  touch-action: manipulation !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible {
+  outline: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back {
+  background: var(--flip-color) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.20), 0 0 0 1px rgba(255,255,255,.12) inset !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front {
+  background: var(--flip-dark) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.24), 0 0 0 3px var(--flip-color) inset !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-unused .quiz-flip-back,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-unused .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-dimmed .quiz-flip-back,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-dimmed .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-unused .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-unused .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-dimmed .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-dimmed .quiz-flip-front {
+  background: #6b7280 !important;
+  color: rgba(255,255,255,.82) !important;
+  opacity: 1 !important;
+  filter: none !important;
 }

@@ -1,6 +1,6 @@
 {
-  "version": "1.11",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.170 agrega Quiz Flip con tarjetas numéricas.",
+  "version": "1.12",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.171 ajusta colores y layout de Quiz Flip.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -48,13 +48,13 @@
               "id": "e",
               "text": "7",
               "correct": false,
-              "color": "red"
+              "color": "orange"
             },
             {
               "id": "f",
               "text": "8",
               "correct": false,
-              "color": "blue"
+              "color": "purple"
             }
           ]
         },

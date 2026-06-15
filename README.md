@@ -823,10 +823,10 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Ajuste global de tipografía de quizzes: TEXTO y OPCIONES quedan en 12px como base para los quizzes actuales y futuros.
 - Pregunta abierta: el texto escrito en el cuadro de respuesta usa Montserrat Regular real, sin heredar SemiBold de las opciones.
 
-## v0.24.170
+## v0.24.171
 
-- Agrega un nuevo tipo de pregunta `flip` como primer ítem del quiz demo.
-- Las tarjetas Flip usan 6 opciones numéricas, empiezan ocultas, se voltean con `flip-vertical-right` y solo una puede quedar visible.
-- Al enviar, las tarjetas no seleccionadas quedan grises; la seleccionada valida con jello/wobble y, si es incorrecta, la correcta se voltea y hace jello.
-- El botón del nuevo tipo usa el mismo estilo `Enviar respuesta` de Organizar/Pregunta abierta.
-- El tipo Flip conserva el layout 30/40/30 de imagen/texto/opciones.
+- Se ajusta Quiz Flip a partir de `v0.24.170`.
+- Las tarjetas de espalda usan colores normales tipo Kahoot; se agregan naranja y morado para completar las 6 opciones.
+- Al mostrar la respuesta, cada tarjeta usa fondo del mismo color en versión muy oscura con borde interior de 3px del color normal.
+- Se elimina el resaltado/filtro azul de toque en móviles.
+- El layout de Flip queda igual al de Organizar: 30/30/40 con imagen y 60/40 sin imagen.
