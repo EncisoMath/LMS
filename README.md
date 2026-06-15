@@ -919,3 +919,14 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - En pregunta abierta también se dispara la visualización de puntajes, con 0 cuando no hay calificación automática.
 - No se tocaron ranking/podio, tipos de pregunta, música random por ítem, Rockstars, Clases, Estudiantes ni datos base.
 - Version/cache busting actualizado a 0.24.185.
+
+
+## v0.24.186
+
+- Corrección enfocada en Quizzes/puntajes visuales.
+- Se retiró el fondo negro de los puntajes animados; ahora quedan como texto blanco flotante con resplandor/sombra exterior oscura para contraste.
+- Se restauró el layout de los contenedores de opciones/respuesta: el puntaje ya no agrega filas ni modifica el tamaño/estructura de los contenedores.
+- El puntaje por ítem aparece flotando sobre el contenedor de opciones/respuesta, centrado, entrando desde abajo hacia arriba.
+- El puntaje por tiempo aparece flotando debajo del countdown, visible, entrando desde arriba hacia abajo.
+- Se mantiene la lógica de puntos de v0.24.184-v0.24.185, la música random por ítem y el countdown por pregunta.
+- Version/cache busting actualizado a 0.24.186.

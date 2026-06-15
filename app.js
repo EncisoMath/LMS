@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.185';
+  const APP_VERSION = '0.24.186';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1880,9 +1880,6 @@
         <div class="quiz-question-content">
           ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
           <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
-          <div class="quiz-item-score-row" data-quiz-score-row="item">
-            <span class="cascade-text-stage quiz-score-cascade-stage quiz-item-points-stage" data-quiz-score-stage="item" aria-hidden="true"></span>
-          </div>
           <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
             ${quizQuestionBodyHTML(question)}
           </div>
@@ -3296,38 +3293,64 @@
     }, totalEntranceTime + HOLD_TIME + totalExitTime + 120);
   }
 
-  function ensureQuizScoreCascadeStage(target) {
-    if (!target) return null;
-    target.classList.add('quiz-score-cascade-host');
-    let stage = Array.from(target.children || []).find((child) => child.classList?.contains('quiz-score-cascade-stage'));
-    if (!stage) {
-      stage = document.createElement('span');
-      stage.className = 'cascade-text-stage quiz-score-cascade-stage';
-      stage.setAttribute('aria-hidden', 'true');
-      target.appendChild(stage);
-    }
-    return stage;
-  }
-
   function getQuizStageFromScoreTarget(target) {
-    if (!target) return null;
+    if (!target) return document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
     if (target.classList?.contains('quiz-stage')) return target;
     return target.closest?.('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
   }
 
+  function clearQuizFloatingScoreStages() {
+    document.querySelectorAll('[data-quiz-floating-score-stage]').forEach((stage) => {
+      if (stage._cascadeExitTimeout) window.clearTimeout(stage._cascadeExitTimeout);
+      if (stage._cascadeClearTimeout) window.clearTimeout(stage._cascadeClearTimeout);
+      stage.remove();
+    });
+  }
+
+  function getQuizFloatingScoreStage(kind = 'item') {
+    const safeKind = kind === 'time' ? 'time' : 'item';
+    let stage = document.querySelector(`[data-quiz-floating-score-stage="${safeKind}"]`);
+    if (!stage) {
+      stage = document.createElement('span');
+      stage.className = `cascade-text-stage quiz-score-cascade-stage quiz-score-float-stage quiz-${safeKind}-points-stage`;
+      stage.dataset.quizFloatingScoreStage = safeKind;
+      stage.setAttribute('data-quiz-score-stage', safeKind);
+      stage.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(stage);
+    }
+    return stage;
+  }
+
+  function positionQuizFloatingScoreStage(stage, anchor, kind = 'item') {
+    if (!stage || !anchor || typeof anchor.getBoundingClientRect !== 'function') return;
+    const rect = anchor.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
+    const x = rect.left + rect.width / 2;
+    const y = kind === 'time' ? rect.bottom + 5 : rect.top - 6;
+    stage.style.left = `${Math.round(x)}px`;
+    stage.style.top = `${Math.round(y)}px`;
+    stage.style.transform = kind === 'time' ? 'translate(-50%, 0) rotate(1.5deg)' : 'translate(-50%, -100%) rotate(-1.5deg)';
+  }
+
   function showQuizScoreBreakdown(target, answerRecord = null, delayMs = 0) {
-    if (!target || !answerRecord) return;
+    if (!answerRecord) return;
     const stage = getQuizStageFromScoreTarget(target);
     if (!stage) return;
+    const answerZone = stage.querySelector('.quiz-answer-zone') || target || stage;
+    const countdownAnchor = document.querySelector('[data-quiz-countdown-poly]') || document.querySelector('.quiz-countdown-slot');
     const itemPoints = Number(answerRecord?.score?.item ?? 0) || 0;
     const timePoints = Number(answerRecord?.score?.time ?? 0) || 0;
     const itemText = formatQuizPointsText(itemPoints);
     const timeText = formatQuizPointsText(timePoints);
     const play = () => {
-      const itemStage = stage.querySelector('[data-quiz-score-stage="item"]');
-      const timeStage = document.querySelector('[data-quiz-score-stage="time"]');
-      if (itemStage) playCascadeText({ target: itemStage, text: itemText });
-      if (timeStage) playCascadeText({ target: timeStage, text: timeText });
+      const itemStage = getQuizFloatingScoreStage('item');
+      positionQuizFloatingScoreStage(itemStage, answerZone, 'item');
+      playCascadeText({ target: itemStage, text: itemText });
+      if (countdownAnchor) {
+        const timeStage = getQuizFloatingScoreStage('time');
+        positionQuizFloatingScoreStage(timeStage, countdownAnchor, 'time');
+        playCascadeText({ target: timeStage, text: timeText });
+      }
     };
     if (delayMs > 0) window.setTimeout(play, delayMs);
     else play();
@@ -3345,8 +3368,7 @@
           <polygon data-quiz-moving-polygon></polygon>
         </svg>
         <div class="countdown-poly__number" data-quiz-countdown-number>${safeSeconds}</div>
-      </section>
-      <span class="cascade-text-stage quiz-score-cascade-stage quiz-time-points-stage" data-quiz-score-stage="time" aria-hidden="true"></span>`;
+      </section>`;
   }
 
   function stopQuizCountdown() {
@@ -4991,6 +5013,7 @@
 
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
     removeQuizGlobalFeedback();
+    clearQuizFloatingScoreStages();
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
     if (!layer) {
@@ -6161,7 +6184,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.185', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.186', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
