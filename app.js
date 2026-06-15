@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.168';
+  const APP_VERSION = '0.24.169';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1581,7 +1581,7 @@
   }
 
   function isSupportedQuizQuestionType(type) {
-    return ['multiple_choice', 'true_false', 'open', 'order'].includes(String(type || ''));
+    return ['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(String(type || ''));
   }
 
   function filterSupportedQuizQuestions(questions = []) {
@@ -1815,6 +1815,7 @@
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
     multiple_choice: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    flip: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     true_false: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     open: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
     order: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
@@ -1888,7 +1889,7 @@
     if (type === 'true_false') {
       return { textA_y: 25, image_y: 25, textB_y: 25, answers_y: 80 };
     }
-    if (type === 'multiple_choice') {
+    if (type === 'multiple_choice' || type === 'flip') {
       return hasImage
         ? { textA_y: 40, image_y: 40, textB_y: 40, answers_y: 90 }
         : { textA_y: 10, image_y: 10, textB_y: 10, answers_y: 10 };
@@ -1898,6 +1899,7 @@
 
   function getQuizCascadeProfile(type = 'default', hasImage = false) {
     if (type === 'multiple_choice') return hasImage ? 'multiple_choice_with_image' : 'multiple_choice_no_image';
+    if (type === 'flip') return hasImage ? 'flip_with_image' : 'flip_no_image';
     return type || 'default';
   }
 
@@ -2085,7 +2087,7 @@
   }
 
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
-    if (!['multiple_choice', 'true_false', 'open', 'order'].includes(type)) return '';
+    if (!['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(type)) return '';
     const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
     const imageToggleHTML = hasImage ? `
           <div class="quiz-layout-image-preview-row">
@@ -2283,7 +2285,8 @@
       multiple_choice: 'Opción múltiple',
       true_false: 'Verdadero / falso',
       open: 'Pregunta abierta',
-      order: 'Organizar tarjetas'
+      order: 'Organizar tarjetas',
+      flip: 'Quiz flip'
     };
     return labels[type] || 'Pregunta';
   }
@@ -2298,9 +2301,34 @@
 
   function quizQuestionBodyHTML(question) {
     if (question.type === 'order') return quizOrderHTML(question);
+    if (question.type === 'flip') return quizFlipHTML(question);
     if (question.type === 'open') return quizOpenHTML(question);
     if (question.type === 'true_false') return quizTrueFalseHTML(question);
     return quizMultipleChoiceHTML(question);
+  }
+
+  function quizFlipHTML(question) {
+    const colors = ['red', 'blue', 'yellow', 'green', 'red', 'blue'];
+    const options = (Array.isArray(question.options) ? question.options : []).slice(0, 6);
+    return `
+      <div class="quiz-flip-board" data-quiz-flip-board>
+        <div class="quiz-flip-grid" role="list">
+          ${options.map((option, index) => {
+            const rawColor = String(option.color || colors[index % colors.length] || 'blue').toLowerCase();
+            const safeColor = ['red', 'blue', 'yellow', 'green'].includes(rawColor) ? rawColor : colors[index % colors.length];
+            return `
+              <button class="quiz-flip-card quiz-flip-${safeColor}" type="button" data-quiz-flip-card data-quiz-answer="${escapeAttr(option.id || String(index))}" data-correct="${String(Boolean(option.correct))}" role="listitem" aria-pressed="false" aria-label="Opción oculta ${index + 1}">
+                <span class="quiz-flip-inner" aria-hidden="true">
+                  <span class="quiz-flip-face quiz-flip-back"><span>?</span></span>
+                  <span class="quiz-flip-face quiz-flip-front"><span>${escapeHTML(option.text || '')}</span></span>
+                </span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+        <button class="primary-btn quiz-flip-submit" type="button" data-flip-validate>Enviar respuesta</button>
+      </div>
+    `;
   }
 
   function quizOrderHTML(question) {
@@ -2412,6 +2440,104 @@
     else stack.appendChild(placeholder);
     animateOrderLayoutChange(stack, beforeRects, draggingCard);
     return true;
+  }
+
+  function setQuizFlipCardOpen(card, open = true) {
+    if (!card) return;
+    const inner = card.querySelector('.quiz-flip-inner');
+    const wasOpen = card.classList.contains('is-flipped');
+    if (wasOpen === Boolean(open) && !card.classList.contains('is-flip-animating')) return;
+    card.classList.remove('is-flipping-open', 'is-flipping-close', 'is-flip-animating');
+    if (inner && typeof inner.getAnimations === 'function') inner.getAnimations().forEach((animation) => animation.cancel());
+    void card.offsetWidth;
+    card.classList.add('is-flip-animating', open ? 'is-flipping-open' : 'is-flipping-close');
+    card.classList.toggle('is-flipped', Boolean(open));
+    card.setAttribute('aria-pressed', open ? 'true' : 'false');
+    window.setTimeout(() => {
+      card.classList.remove('is-flipping-open', 'is-flipping-close', 'is-flip-animating');
+    }, 430);
+  }
+
+  function bindQuizFlipEvents() {
+    document.querySelectorAll('[data-quiz-flip-board]').forEach((board) => {
+      if (board.dataset.boundFlip === 'true') return;
+      board.dataset.boundFlip = 'true';
+      const cards = () => Array.from(board.querySelectorAll('[data-quiz-flip-card]'));
+      cards().forEach((card) => {
+        card.addEventListener('click', () => {
+          const session = getQuizSession();
+          if (session.locked || board.classList.contains('flip-locked')) return;
+          const isOpen = card.classList.contains('is-flipped');
+          cards().forEach((other) => {
+            if (other !== card && other.classList.contains('is-flipped')) setQuizFlipCardOpen(other, false);
+          });
+          setQuizFlipCardOpen(card, !isOpen);
+          board.dataset.selectedFlipAnswer = !isOpen ? (card.dataset.quizAnswer || '') : '';
+        });
+      });
+
+      board.querySelector('[data-flip-validate]')?.addEventListener('click', () => {
+        const session = getQuizSession();
+        const question = getCurrentQuizQuestion();
+        const stage = board.closest('.quiz-stage-fullscreen, .quiz-stage');
+        if (!question || session.locked || board.classList.contains('flip-locked')) return;
+        const selectedId = board.dataset.selectedFlipAnswer || '';
+        const selected = cards().find((card) => card.dataset.quizAnswer === selectedId && card.classList.contains('is-flipped')) || null;
+        const submit = board.querySelector('[data-flip-validate]');
+        if (!selected) {
+          if (submit) {
+            submit.classList.remove('is-order-submit-jello');
+            submit.style.removeProperty('animation');
+            void submit.offsetWidth;
+            submit.classList.add('is-order-submit-jello');
+          }
+          return;
+        }
+        session.locked = true;
+        session.selectedAnswerId = selected.dataset.quizAnswer || '';
+        const selectedCorrect = selected.dataset.correct === 'true';
+        const correctCard = cards().find((card) => card.dataset.correct === 'true') || null;
+        board.classList.add('flip-locked', 'flip-pending', selectedCorrect ? 'flip-correct' : 'flip-wrong');
+        if (submit) {
+          submit.classList.remove('is-order-submit-jello');
+          submit.style.removeProperty('animation');
+          void submit.offsetWidth;
+          submit.classList.add('is-order-submit-jello');
+          submit.disabled = true;
+        }
+        cards().forEach((card) => {
+          card.disabled = true;
+          card.classList.remove('flip-correct-reveal', 'flip-wrong-reveal', 'flip-unused', 'is-dimmed', 'correct-reveal', 'wrong-reveal');
+          if (card !== selected) card.classList.add('flip-unused', 'is-dimmed');
+        });
+        scheduleQuizTimer(() => {
+          if (!board.isConnected) return;
+          board.classList.remove('flip-pending');
+          board.classList.add('flip-validating');
+          const runRevealAnimation = (card, ok) => {
+            if (!card) return;
+            if (typeof card.getAnimations === 'function') card.getAnimations().forEach((animation) => animation.cancel());
+            card.classList.remove('flip-unused', 'is-dimmed', 'flip-correct-reveal', 'flip-wrong-reveal');
+            card.style.removeProperty('animation');
+            void card.offsetWidth;
+            card.classList.add(ok ? 'flip-correct-reveal' : 'flip-wrong-reveal');
+          };
+          if (selectedCorrect) {
+            runRevealAnimation(selected, true);
+            recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
+            showQuizFeedbackBandAfterDelay(stage, true, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
+          } else {
+            runRevealAnimation(selected, false);
+            if (correctCard && correctCard !== selected) {
+              setQuizFlipCardOpen(correctCard, true);
+              window.setTimeout(() => runRevealAnimation(correctCard, true), 430);
+            }
+            recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correct: correctCard?.dataset.quizAnswer || '' });
+            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720));
+          }
+        }, 1000);
+      });
+    });
   }
 
   function bindQuizOrderEvents() {
@@ -3377,6 +3503,7 @@
       button.addEventListener('click', () => jumpQuizQuestion(Number(button.dataset.quizJump)));
     });
     document.querySelectorAll('[data-quiz-answer]').forEach((button) => {
+      if (button.matches?.('[data-quiz-flip-card]')) return;
       button.addEventListener('pointerdown', () => pressQuizAnswer(button), { passive: true });
       button.addEventListener('click', () => handleQuizAnswer(button));
     });
@@ -3391,6 +3518,7 @@
     });
     bindQuizLayoutTunePanel();
     bindQuizTransitionTunePanel();
+    bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
   }
@@ -5049,7 +5177,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.168', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.169', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

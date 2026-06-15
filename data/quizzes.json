@@ -1,6 +1,6 @@
 {
-  "version": "1.10",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.129 cambia el reveal de Organizar tarjetas a jello-horizontal/wobble-hor-bottom.",
+  "version": "1.11",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.169 agrega Quiz Flip con tarjetas numéricas.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
@@ -11,6 +11,53 @@
       "subject": "Estadística",
       "area": "Matemáticas",
       "questions": [
+        {
+          "id": "q-flip-1",
+          "type": "flip",
+          "prompt": "Encuentra la frecuencia correcta.",
+          "textA": "Observa la gráfica y elige la tarjeta que guarda la frecuencia absoluta de Banano. Recuerda: la frecuencia absoluta es el número de estudiantes que eligieron esa opción.",
+          "textB": "",
+          "image": "./assets/quiz-demo-statistics.svg",
+          "imageAlt": "Gráfica de apoyo para elegir una respuesta numérica",
+          "options": [
+            {
+              "id": "a",
+              "text": "2",
+              "correct": false,
+              "color": "red"
+            },
+            {
+              "id": "b",
+              "text": "4",
+              "correct": false,
+              "color": "blue"
+            },
+            {
+              "id": "c",
+              "text": "5",
+              "correct": false,
+              "color": "yellow"
+            },
+            {
+              "id": "d",
+              "text": "6",
+              "correct": true,
+              "color": "green"
+            },
+            {
+              "id": "e",
+              "text": "7",
+              "correct": false,
+              "color": "red"
+            },
+            {
+              "id": "f",
+              "text": "8",
+              "correct": false,
+              "color": "blue"
+            }
+          ]
+        },
         {
           "id": "q1",
           "type": "order",
