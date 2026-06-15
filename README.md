@@ -1,3 +1,12 @@
+## v0.24.194
+
+- Se fija el acumulador/contador de puntos de transición con posición Y inicial `300px` y zoom `55%`, usando clave nueva `encisomath:quizTransitionScoreTune:v0.24.194` para no arrastrar calibraciones anteriores.
+- Se eliminaron de la interfaz los paneles temporales/debug de puntaje: ya no aparecen el panel de fórmula, sliders, botón de repetir animación ni engranajes de ajuste en la transición.
+- También se ocultó el panel temporal de calibración del podio/ranking para dejar la experiencia limpia.
+- Se reemplazó el panel de transición por un flujo limpio con botón `Seguir`, manteniendo el contador acumulado funcionando y sin mostrar menús de calibración.
+- Se mantiene la lógica ya corregida de puntos acumulados: ítem + tiempo en un solo contador, máximo 20.000.
+- Versión/cache busting actualizado a `0.24.194`.
+
 ## v0.24.193
 
 - Corrección en Quizzes/puntos de transición: se arregló la captura del tiempo demorado por el estudiante. El bug venía de leer `respondedElapsedSeconds` con `Number(null)`, que devolvía `0` y hacía que el debug mostrara `0s de 20s`, impidiendo sumar puntos por tiempo.

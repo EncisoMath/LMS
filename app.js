@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.193';
+  const APP_VERSION = '0.24.194';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,10 +323,10 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.193';
-  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 220, zoom: 55 };
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.194';
+  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
-    { key: 'y', label: 'Posición Y contador', min: -220, max: 220, step: 1, unit: 'px' },
+    { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
@@ -415,9 +415,9 @@
     filters: { grade: 'all', area: 'all', course: 'all' },
     studentSearch: '',
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
-    quizTransitionPanelOpen: true,
-    quizTransitionScorePanelOpen: true,
-    quizRankingPodiumPanelOpen: true,
+    quizTransitionPanelOpen: false,
+    quizTransitionScorePanelOpen: false,
+    quizRankingPodiumPanelOpen: false,
     appRoute: null,
     appHistoryReady: false,
     applyingHistoryRoute: false
@@ -3718,30 +3718,7 @@
     return Math.max(1, Number(itemNumber) || 1) > 1;
   }
 
-  function quizTransitionScoreDebugHTML(scoreData = {}) {
-    const answer = scoreData.previousAnswer || null;
-    const score = scoreData.previousScore || { item: 0, time: 0, total: 0, maxItem: 0, maxTime: 0, curve: 0, timing: {} };
-    const timing = score.timing || {};
-    const debug = score.debug || {};
-    const itemNumber = Number(scoreData.previousIndex) + 1;
-    const status = answer?.timeout ? 'Tiempo agotado' : answer?.correct === true ? 'Correcta' : answer?.correct === false ? 'Incorrecta' : 'Abierta / sin calificación automática';
-    const formula = debug.formula || 'Sin fórmula disponible para este ítem.';
-    return `
-      <section class="quiz-transition-score-debug" data-quiz-score-debug aria-label="Debug de puntaje">
-        <strong>DEBUG puntos · Ítem ${escapeHTML(String(itemNumber || ''))}</strong>
-        <div class="quiz-score-debug-grid">
-          <span>Estado</span><b>${escapeHTML(status)}</b>
-          <span>Puntaje por ítem</span><b>${formatQuizScoreNumber(score.item)} / ${formatQuizScoreNumber(score.maxItem)}</b>
-          <span>Puntaje por tiempo</span><b>${formatQuizScoreNumber(score.time)} / ${formatQuizScoreNumber(score.maxTime)}</b>
-          <span>Tiempo que demoró</span><b>${escapeHTML(String(timing.elapsedSeconds ?? 0))}s de ${escapeHTML(String(timing.totalSeconds ?? 0))}s</b>
-          <span>Tiempo restante</span><b>${escapeHTML(String(timing.remainingSeconds ?? 0))}s</b>
-          <span>r = demorado/límite</span><b>${escapeHTML(String(timing.elapsedRatio ?? 0))}</b>
-          <span>Curva</span><b>${escapeHTML(String(score.curve ?? 0))} · ${escapeHTML(String(debug.branch || ''))}</b>
-          <span>Acumulado</span><b>${formatQuizScoreNumber(scoreData.from)} → ${formatQuizScoreNumber(scoreData.to)}</b>
-        </div>
-        <code>${escapeHTML(formula)}</code>
-      </section>`;
-  }
+
 
   function quizTransitionScoreHTML(itemNumber = 1, quiz = getActiveQuiz()) {
     if (!shouldShowQuizTransitionScore(itemNumber)) return '';
@@ -3750,24 +3727,13 @@
     return `
       <section class="quiz-transition-score-wrap" data-quiz-transition-score-wrap data-score-from="${Number(score.from) || 0}" data-score-to="${Number(score.to) || 0}" aria-label="Puntaje acumulado">
         <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(tune.y) || 0}px;--score-counter-zoom:${(Number(tune.zoom) || 100) / 100};"></div>
-        <div class="quiz-transition-score-controls" data-quiz-transition-score-controls>
-          <button type="button" data-quiz-score-counter-action="replay">Repetir animación</button>
+        <div class="quiz-transition-score-controls quiz-transition-score-controls-clean" data-quiz-transition-score-controls>
           <button type="button" data-quiz-score-counter-action="continue">Seguir</button>
-          <button class="quiz-transition-score-gear" type="button" data-quiz-score-panel-toggle aria-label="Ajustar contador de puntos">⚙️ Puntos</button>
         </div>
-        ${quizTransitionScoreDebugHTML(score)}
-        <section class="quiz-transition-score-panel" data-quiz-transition-score-panel ${state.quizTransitionScorePanelOpen ? '' : 'hidden'} aria-label="Ajustes del contador de puntos">
-          <div class="quiz-transition-score-panel-head">
-            <strong>Contador de puntos</strong>
-            <button type="button" data-quiz-score-panel-close aria-label="Cerrar ajustes de puntos">×</button>
-          </div>
-          <div class="quiz-transition-score-panel-grid">
-            ${QUIZ_TRANSITION_SCORE_TUNE_FIELDS.map(quizTransitionScoreTuneSliderHTML).join('')}
-          </div>
-        </section>
       </section>
     `;
   }
+
 
   function playScoreCounter({ target, from = 0, score = 0 } = {}) {
     const container = typeof target === 'string' ? document.querySelector(target) : target;
@@ -3998,36 +3964,14 @@
   }
 
   function quizTransitionTunePanelHTML(item = 1, total = 1) {
+    if (shouldShowQuizTransitionScore(item)) return '';
     return `
-      <div class="quiz-transition-tools" data-quiz-transition-tools>
-        <button class="quiz-transition-gear" type="button" data-quiz-transition-panel-toggle aria-label="Ajustar transicion">⚙️</button>
-        <section class="quiz-transition-tune-panel" data-quiz-transition-tune-panel ${state.quizTransitionPanelOpen ? '' : 'hidden'} aria-label="Ajustes de la transicion entre items">
-          <div class="quiz-transition-tune-head">
-            <strong>Transición ítem ${Number(item) || 1}/${Number(total) || 1}</strong>
-            <button type="button" data-quiz-transition-panel-close aria-label="Cerrar ajustes">×</button>
-          </div>
-          <div class="quiz-transition-tune-scroll">
-            <div class="quiz-transition-tune-grid">
-              ${quizTransitionTuneSwitchHTML('radials', 'Radiales', 'Fondo/panel')}
-              ${quizTransitionTuneSwitchHTML('sceneGlow', 'Marco/glow', 'Contenedor')}
-              ${quizTransitionTuneSwitchHTML('shapeGlow', 'Glow figuras', 'Exterior')}
-              <label class="quiz-transition-tune-switch">
-                <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
-                <span><strong>Sonidos</strong><small>Efectos y música</small></span>
-              </label>
-              ${quizTransitionTuneSwitchHTML('continuous', 'Continuo', 'Avanza solo')}
-            </div>
-            <div class="quiz-transition-tune-actions">
-              <button type="button" data-quiz-transition-action="restart">Reiniciar</button>
-              <button type="button" data-quiz-transition-action="prev">Anterior</button>
-              <button type="button" data-quiz-transition-action="next">Siguiente</button>
-              <button type="button" data-quiz-transition-action="question">Ver pregunta</button>
-            </div>
-          </div>
-        </section>
+      <div class="quiz-transition-clean-actions" data-quiz-transition-clean-actions>
+        <button type="button" data-quiz-transition-action="question">Seguir</button>
       </div>
     `;
   }
+
 
   function goToQuizQuestionFromTransition() {
     const quiz = getActiveQuiz();
@@ -4104,45 +4048,9 @@
     });
 
 
-    const scorePanel = layer.querySelector('[data-quiz-transition-score-panel]');
-    const syncScorePanel = () => {
-      if (!scorePanel) return;
-      scorePanel.hidden = !state.quizTransitionScorePanelOpen;
-      scorePanel.setAttribute('aria-hidden', state.quizTransitionScorePanelOpen ? 'false' : 'true');
-    };
-    syncScorePanel();
-    layer.querySelectorAll('[data-quiz-score-panel-toggle]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.quizTransitionScorePanelOpen = !state.quizTransitionScorePanelOpen;
-        syncScorePanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-score-panel-close]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.quizTransitionScorePanelOpen = false;
-        syncScorePanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-transition-score-tune]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.quizTransitionScoreTune;
-        const tune = getQuizTransitionScoreTune();
-        tune[key] = Number(input.value);
-        const safe = applyQuizTransitionScoreTune(saveQuizTransitionScoreTune(tune));
-        layer.querySelectorAll(`[data-score-tune-value="${key}"]`).forEach((label) => {
-          const field = QUIZ_TRANSITION_SCORE_TUNE_FIELDS.find((item) => item.key === key);
-          label.textContent = `${safe[key]}${field?.unit || ''}`;
-        });
-      });
-    });
     layer.querySelectorAll('[data-quiz-score-counter-action]').forEach((button) => {
       button.addEventListener('click', () => {
-        const action = button.dataset.quizScoreCounterAction;
-        if (action === 'replay') {
-          playQuizTransitionScoreCounter(layer);
-          return;
-        }
-        if (action === 'continue') {
+        if (button.dataset.quizScoreCounterAction === 'continue') {
           goToQuizQuestionFromTransition();
         }
       });
@@ -5553,34 +5461,9 @@
   }
 
   function quizRankingPodiumTunePanelHTML() {
-    const tune = getQuizRankingPodiumTune();
-    const groups = ['Puesto 1', 'Puesto 2', 'Puesto 3', 'Base'];
-    const groupHTML = groups.map((group) => {
-      const rows = QUIZ_RANKING_PODIUM_TUNE_FIELDS.filter((field) => field.group === group).map((field) => {
-        const value = tune[field.key];
-        return `
-          <label class="quiz-ranking-tune-row">
-            <span><strong>${escapeHTML(field.label)}</strong><output data-quiz-ranking-podium-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
-            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-ranking-podium-tune="${escapeAttr(field.key)}" />
-          </label>`;
-      }).join('');
-      return `<div class="quiz-ranking-tune-group"><h4>${escapeHTML(group)}</h4>${rows}</div>`;
-    }).join('');
-    return `
-      <div class="quiz-ranking-tune-tools" data-quiz-ranking-tune-tools>
-        <button class="quiz-ranking-tune-gear" type="button" data-quiz-ranking-tune-toggle aria-label="Ajustar podio">⚙️ Podio</button>
-        <section class="quiz-ranking-tune-panel" data-quiz-ranking-tune-panel ${state.quizRankingPodiumPanelOpen ? '' : 'hidden'} aria-hidden="${state.quizRankingPodiumPanelOpen ? 'false' : 'true'}" aria-label="Ajuste temporal del podio">
-          <div class="quiz-ranking-tune-head">
-            <div><strong>Ajuste temporal podio</strong><small>Pásame estos valores cuando quede bien.</small></div>
-            <button type="button" data-quiz-ranking-tune-close aria-label="Cerrar ajuste">×</button>
-          </div>
-          <div class="quiz-ranking-tune-scroll">${groupHTML}</div>
-          <div class="quiz-ranking-tune-actions">
-            <button class="mini-btn" type="button" data-quiz-ranking-tune-reset>Restablecer podio</button>
-          </div>
-        </section>
-      </div>`;
+    return '';
   }
+
 
   function bindQuizRankingPodiumTunePanel() {
     const layer = document.getElementById('quizFullscreenLayer');
@@ -6507,7 +6390,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.193', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.194', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

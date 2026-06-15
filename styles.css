@@ -15445,68 +15445,37 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-resu
   }
 }
 
-/* v0.24.192 - debug temporal de puntaje por item/tiempo en transicion */
-.quiz-transition-score-debug {
+/* v0.24.194 - transición limpia sin paneles temporales/debug */
+.quiz-transition-clean-actions {
   position: absolute;
   left: 50%;
-  top: clamp(12px, 3dvh, 32px);
+  bottom: clamp(18px, 5dvh, 54px);
   transform: translateX(-50%);
-  z-index: 14;
-  width: min(94vw, 620px);
-  max-height: min(42dvh, 310px);
-  overflow: auto;
-  border-radius: 6px;
-  padding: 12px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: auto;
+}
+.quiz-transition-clean-actions button,
+.quiz-transition-score-controls-clean button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 42px;
+  padding: 0 22px;
   font-family: "Montserrat", Arial, sans-serif;
-  color: #fff;
-  background: rgba(0, 0, 0, .72);
-  border: 1px solid rgba(255,255,255,.2);
-  box-shadow: 0 24px 70px rgba(0,0,0,.44);
-  backdrop-filter: blur(14px);
-}
-.quiz-transition-score-debug strong {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 12px;
   font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #f7d650;
-}
-.quiz-score-debug-grid {
-  display: grid;
-  grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr);
-  gap: 5px 10px;
-  font-size: 11px;
-  line-height: 1.25;
-}
-.quiz-score-debug-grid span {
-  color: rgba(255,255,255,.68);
-  font-weight: 700;
-}
-.quiz-score-debug-grid b {
-  color: #fff;
-  font-weight: 900;
-}
-.quiz-transition-score-debug code {
-  display: block;
-  margin-top: 9px;
-  white-space: normal;
-  word-break: break-word;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-  line-height: 1.35;
-  color: #cde7ff;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 16px 30px rgba(0,0,0,.28);
 }
 @media (max-width: 540px) {
-  .quiz-transition-score-debug {
-    top: 8px;
-    padding: 9px;
-    max-height: 35dvh;
+  .quiz-transition-clean-actions {
+    bottom: 14px;
+    width: min(94vw, 390px);
   }
-  .quiz-score-debug-grid {
-    grid-template-columns: 1fr;
-    gap: 3px;
+  .quiz-transition-clean-actions button,
+  .quiz-transition-score-controls-clean button {
+    width: 100%;
   }
 }
