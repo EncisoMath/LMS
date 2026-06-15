@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.179';
+  const APP_VERSION = '0.24.180';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -237,6 +237,26 @@
   const QUIZ_TRANSITION_FIRST_EXIT_START_MS = 6500;
   const QUIZ_TRANSITION_FIRST_TOTAL_MS = 7000;
   const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
+  const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.180';
+  const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
+    p1x: 0, p1y: 0, p1rot: 0,
+    p2x: 0, p2y: 0, p2rot: 0,
+    p3x: 0, p3y: 0, p3rot: 0,
+    baseX: 0, baseY: 0
+  };
+  const QUIZ_RANKING_PODIUM_TUNE_FIELDS = [
+    { key: 'p1x', group: 'Puesto 1', label: 'Puesto 1 X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p1y', group: 'Puesto 1', label: 'Puesto 1 Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p1rot', group: 'Puesto 1', label: 'Puesto 1 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
+    { key: 'p2x', group: 'Puesto 2', label: 'Puesto 2 X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p2y', group: 'Puesto 2', label: 'Puesto 2 Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p2rot', group: 'Puesto 2', label: 'Puesto 2 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
+    { key: 'p3x', group: 'Puesto 3', label: 'Puesto 3 X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p3y', group: 'Puesto 3', label: 'Puesto 3 Y', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'p3rot', group: 'Puesto 3', label: 'Puesto 3 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
+    { key: 'baseX', group: 'Base', label: 'Base X', min: -90, max: 90, step: 1, unit: 'px' },
+    { key: 'baseY', group: 'Base', label: 'Base Y', min: -70, max: 70, step: 1, unit: 'px' }
+  ];
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
@@ -302,6 +322,7 @@
     studentSearch: '',
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
     quizTransitionPanelOpen: true,
+    quizRankingPodiumPanelOpen: true,
     appRoute: null,
     appHistoryReady: false,
     applyingHistoryRoute: false
@@ -3702,6 +3723,7 @@
     });
     bindQuizLayoutTunePanel();
     bindQuizTransitionTunePanel();
+    bindQuizRankingPodiumTunePanel();
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
@@ -4570,6 +4592,141 @@
     return `<section class="quiz-ranking-items" aria-label="Resultado por ítem">${cards}</section>`;
   }
 
+  function normalizeQuizRankingPodiumTune(tune = {}) {
+    const safe = { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
+    QUIZ_RANKING_PODIUM_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_RANKING_PODIUM_TUNE_DEFAULTS[field.key];
+    });
+    return safe;
+  }
+
+  function getQuizRankingPodiumTune() {
+    try {
+      return normalizeQuizRankingPodiumTune(JSON.parse(localStorage.getItem(QUIZ_RANKING_PODIUM_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
+    }
+  }
+
+  function saveQuizRankingPodiumTune(tune) {
+    const safe = normalizeQuizRankingPodiumTune(tune);
+    try { localStorage.setItem(QUIZ_RANKING_PODIUM_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function applyQuizRankingPodiumTune(tune = getQuizRankingPodiumTune()) {
+    const safe = normalizeQuizRankingPodiumTune(tune);
+    document.querySelectorAll('[data-quiz-ranking-podium]').forEach((podium) => {
+      podium.style.setProperty('--ranking-podium-1-x', `${safe.p1x}px`);
+      podium.style.setProperty('--ranking-podium-1-y', `${safe.p1y}px`);
+      podium.style.setProperty('--ranking-podium-1-rot', `${safe.p1rot}deg`);
+      podium.style.setProperty('--ranking-podium-2-x', `${safe.p2x}px`);
+      podium.style.setProperty('--ranking-podium-2-y', `${safe.p2y}px`);
+      podium.style.setProperty('--ranking-podium-2-rot', `${safe.p2rot}deg`);
+      podium.style.setProperty('--ranking-podium-3-x', `${safe.p3x}px`);
+      podium.style.setProperty('--ranking-podium-3-y', `${safe.p3y}px`);
+      podium.style.setProperty('--ranking-podium-3-rot', `${safe.p3rot}deg`);
+      podium.style.setProperty('--ranking-podium-base-x', `${safe.baseX}px`);
+      podium.style.setProperty('--ranking-podium-base-y', `${safe.baseY}px`);
+    });
+    return safe;
+  }
+
+  function updateQuizRankingPodiumTuneOutput(key, value) {
+    const field = QUIZ_RANKING_PODIUM_TUNE_FIELDS.find((item) => item.key === key);
+    document.querySelectorAll(`[data-quiz-ranking-podium-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
+      output.textContent = `${value}${field?.unit || ''}`;
+    });
+  }
+
+  function quizRankingPodiumTunePanelHTML() {
+    const tune = getQuizRankingPodiumTune();
+    const groups = ['Puesto 1', 'Puesto 2', 'Puesto 3', 'Base'];
+    const groupHTML = groups.map((group) => {
+      const rows = QUIZ_RANKING_PODIUM_TUNE_FIELDS.filter((field) => field.group === group).map((field) => {
+        const value = tune[field.key];
+        return `
+          <label class="quiz-ranking-tune-row">
+            <span><strong>${escapeHTML(field.label)}</strong><output data-quiz-ranking-podium-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
+            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-ranking-podium-tune="${escapeAttr(field.key)}" />
+          </label>`;
+      }).join('');
+      return `<div class="quiz-ranking-tune-group"><h4>${escapeHTML(group)}</h4>${rows}</div>`;
+    }).join('');
+    return `
+      <div class="quiz-ranking-tune-tools" data-quiz-ranking-tune-tools>
+        <button class="quiz-ranking-tune-gear" type="button" data-quiz-ranking-tune-toggle aria-label="Ajustar podio">⚙️ Podio</button>
+        <section class="quiz-ranking-tune-panel" data-quiz-ranking-tune-panel ${state.quizRankingPodiumPanelOpen ? '' : 'hidden'} aria-hidden="${state.quizRankingPodiumPanelOpen ? 'false' : 'true'}" aria-label="Ajuste temporal del podio">
+          <div class="quiz-ranking-tune-head">
+            <div><strong>Ajuste temporal podio</strong><small>Pásame estos valores cuando quede bien.</small></div>
+            <button type="button" data-quiz-ranking-tune-close aria-label="Cerrar ajuste">×</button>
+          </div>
+          <div class="quiz-ranking-tune-scroll">${groupHTML}</div>
+          <div class="quiz-ranking-tune-actions">
+            <button class="mini-btn" type="button" data-quiz-ranking-tune-reset>Restablecer podio</button>
+          </div>
+        </section>
+      </div>`;
+  }
+
+  function bindQuizRankingPodiumTunePanel() {
+    const layer = document.getElementById('quizFullscreenLayer');
+    if (!layer || !layer.classList.contains('quiz-phase-results')) return;
+    applyQuizRankingPodiumTune(getQuizRankingPodiumTune());
+    const panel = layer.querySelector('[data-quiz-ranking-tune-panel]');
+    const syncPanel = () => {
+      if (!panel) return;
+      panel.hidden = !state.quizRankingPodiumPanelOpen;
+      panel.setAttribute('aria-hidden', state.quizRankingPodiumPanelOpen ? 'false' : 'true');
+      panel.classList.toggle('is-open', state.quizRankingPodiumPanelOpen);
+    };
+    syncPanel();
+    layer.querySelectorAll('[data-quiz-ranking-tune-toggle]').forEach((button) => {
+      if (button.dataset.boundRankingTuneToggle === 'true') return;
+      button.dataset.boundRankingTuneToggle = 'true';
+      button.addEventListener('click', () => {
+        state.quizRankingPodiumPanelOpen = !state.quizRankingPodiumPanelOpen;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-ranking-tune-close]').forEach((button) => {
+      if (button.dataset.boundRankingTuneClose === 'true') return;
+      button.dataset.boundRankingTuneClose = 'true';
+      button.addEventListener('click', () => {
+        state.quizRankingPodiumPanelOpen = false;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
+      if (input.dataset.boundRankingPodiumTune === 'true') return;
+      input.dataset.boundRankingPodiumTune = 'true';
+      const update = () => {
+        const key = input.dataset.quizRankingPodiumTune;
+        const current = getQuizRankingPodiumTune();
+        current[key] = Number(input.value);
+        const safe = saveQuizRankingPodiumTune(current);
+        applyQuizRankingPodiumTune(safe);
+        updateQuizRankingPodiumTuneOutput(key, safe[key]);
+      };
+      input.addEventListener('input', update);
+      input.addEventListener('change', update);
+    });
+    layer.querySelectorAll('[data-quiz-ranking-tune-reset]').forEach((button) => {
+      if (button.dataset.boundRankingTuneReset === 'true') return;
+      button.dataset.boundRankingTuneReset = 'true';
+      button.addEventListener('click', () => {
+        const defaults = saveQuizRankingPodiumTune({ ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS });
+        applyQuizRankingPodiumTune(defaults);
+        layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
+          const key = input.dataset.quizRankingPodiumTune;
+          input.value = defaults[key];
+          updateQuizRankingPodiumTuneOutput(key, defaults[key]);
+        });
+      });
+    });
+  }
+
   function quizRankingPodiumHTML(stats) {
     const scoreBase = Math.max(1, stats.scorable || stats.total || 1);
     const userScore = Math.max(0, stats.correct || 0);
@@ -4580,15 +4737,17 @@
     ];
     return `
       <section class="quiz-ranking-panel" aria-label="Ranking del quiz">
-        <div class="quiz-ranking-podium" aria-hidden="false">
+        <div class="quiz-ranking-podium" data-quiz-ranking-podium aria-hidden="false">
           ${podium.map((slot) => `
-            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" style="--podium-delay:${slot.rank === 3 ? 90 : slot.rank === 2 ? 310 : 540}ms">
-              <div class="quiz-podium-profile">
-                <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
-                <strong>${escapeHTML(slot.name)}</strong>
-              </div>
-              <div class="quiz-podium-step">
-                <span>${slot.rank}</span>
+            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" data-podium-rank="${slot.rank}" style="--podium-delay:${slot.rank === 3 ? 90 : slot.rank === 2 ? 310 : 540}ms">
+              <div class="quiz-podium-adjust">
+                <div class="quiz-podium-profile">
+                  <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
+                  <strong>${escapeHTML(slot.name)}</strong>
+                </div>
+                <div class="quiz-podium-step">
+                  <span>${slot.rank}</span>
+                </div>
               </div>
             </div>
           `).join('')}
@@ -4612,6 +4771,7 @@
         <div class="quiz-results-burst" aria-hidden="true"></div>
         ${securedOut ? `<div class="quiz-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
         ${quizRankingPodiumHTML(stats)}
+        ${quizRankingPodiumTunePanelHTML()}
         ${quizResultItemCardsHTML(quiz, answers)}
         <div class="quiz-score-board quiz-ranking-score">
           <strong>${stats.correct}<small>/${stats.scorable || stats.total}</small></strong>
@@ -5436,7 +5596,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.179', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.180', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

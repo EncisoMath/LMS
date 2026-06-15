@@ -857,3 +857,15 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - El fondo de la pantalla de ranking usa malla con degradado según porcentaje: 90+ verde, 70+ amarillo, 60+ naranja, 31-59 rojo y 30 o menos negro con rojo.
 - Se estabilizó la pantalla de resultados sin scroll interno para reducir saltos visuales al aparecer el ranking.
 - Version/cache busting actualizado a 0.24.179.
+
+## v0.24.180
+
+- Version temporal de calibracion enfocada solo en la pantalla final de ranking/resultados del quiz.
+- Se agrego un panel `⚙️ Podio` en resultados para ajustar en vivo el podio.
+- El panel permite modificar X, Y y rotacion de los puestos 1, 2 y 3.
+- Tambien permite ajustar X/Y de la base amarilla del podio para corregir la alineacion inferior.
+- Los valores se guardan en `localStorage` con la clave `encisomath:rankingPodiumTune:v0.24.180`.
+- Se mantiene el podio HTML/CSS amarillo `#ebb513`, sombra flat `#c49710`, animacion 3 -> 2 -> 1 y grilla de items de v0.24.179.
+- No se tocaron preguntas, tipos de quiz, musica, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a 0.24.180.
+
