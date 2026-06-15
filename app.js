@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.176';
+  const APP_VERSION = '0.24.177';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -123,19 +123,29 @@
   }
 
   function questionAllowsQuizMusic(question = getCurrentQuizQuestion()) {
-    return Boolean(question) && question.type !== 'open';
+    return Boolean(question);
   }
 
   function startQuizQuestionMusic(question = getCurrentQuizQuestion()) {
-    if (!quizSoundsEnabled() || !questionAllowsQuizMusic(question)) {
+    if (!quizSoundsEnabled()) {
       stopQuizQuestionMusic(false);
       return;
     }
     const src = currentQuizMusicPath();
     if (!src) return;
     const quiz = getActiveQuiz();
-    const key = `${quiz?.id || 'quiz'}:${state.quizQuestionIndex}:${src}`;
-    if (quizQuestionMusicAudio && quizQuestionMusicKey === key && !quizQuestionMusicAudio.paused) return;
+    const key = `${quiz?.id || 'quiz'}:${src}`;
+    if (quizQuestionMusicAudio && quizQuestionMusicKey === key) {
+      try {
+        quizQuestionMusicAudio.loop = true;
+        quizQuestionMusicAudio.volume = QUIZ_MUSIC_VOLUME;
+        if (quizQuestionMusicAudio.paused) {
+          const playPromise = quizQuestionMusicAudio.play();
+          if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+        }
+      } catch (_) {}
+      return;
+    }
     stopQuizQuestionMusic(false);
     try {
       const audio = new Audio(src);
@@ -2335,7 +2345,7 @@
           panel.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => { input.checked = state.prefs.quizSounds !== false; });
           if (state.prefs.quizSounds !== false) {
             preloadQuizSounds();
-            if (getQuizSession().phase === 'question') startQuizQuestionMusic(getCurrentQuizQuestion());
+            if (state.quizFullscreenActive) startQuizQuestionMusic(getCurrentQuizQuestion());
           }
         });
       }
@@ -2644,7 +2654,6 @@
           return;
         }
         session.locked = true;
-        stopQuizQuestionMusic(true);
         session.selectedAnswerId = selected.dataset.quizAnswer || '';
         const selectedCorrect = selected.dataset.correct === 'true';
         const correctCard = cards().find((card) => card.dataset.correct === 'true') || null;
@@ -2864,7 +2873,6 @@
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
         session.locked = true;
-        stopQuizQuestionMusic(true);
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
         const orderCards = getCards();
         const button = board.querySelector('[data-order-validate]');
@@ -3227,7 +3235,7 @@
         document.querySelectorAll('[data-quiz-sound-toggle]').forEach((toggle) => { toggle.checked = state.prefs.quizSounds !== false; });
         if (state.prefs.quizSounds !== false) {
           preloadQuizSounds();
-          if (getQuizSession().phase === 'question') startQuizQuestionMusic(getCurrentQuizQuestion());
+          if (state.quizFullscreenActive) startQuizQuestionMusic(getCurrentQuizQuestion());
         }
       });
     });
@@ -3974,7 +3982,6 @@
   }
 
   function handleQuizAnswer(button) {
-    stopQuizQuestionMusic(true);
     const stage = button?.closest('.quiz-stage');
     const question = getCurrentQuizQuestion();
     const session = getQuizSession();
@@ -4318,7 +4325,6 @@
     if (!form || !question || session.locked) return;
     const value = form.querySelector('.quiz-open-input')?.value?.trim() || '';
     session.locked = true;
-    stopQuizQuestionMusic(false);
     const stage = form.closest('.quiz-stage');
     const openTargets = Array.from(form.querySelectorAll('.quiz-open-input, .quiz-submit-btn'));
     form.classList.remove('is-open-submitted');
@@ -4354,6 +4360,7 @@
     if (!quiz) return;
     closeModal(false);
     preloadQuizSounds();
+    startQuizQuestionMusic();
     clearQuizTimers();
     state.quizFullscreenActive = true;
     state.quizSecurityGraceUntil = Date.now() + 2400;
@@ -4363,7 +4370,6 @@
   }
 
   function showQuizItemTransition(index = 0, options = {}) {
-    stopQuizQuestionMusic(false);
     const quiz = getActiveQuiz();
     if (!quiz) return;
     clearQuizTimers();
@@ -4379,7 +4385,7 @@
   }
 
   function showQuizResults() {
-    stopQuizQuestionMusic(false);
+    stopQuizQuestionMusic(true);
     removeQuizGlobalFeedback();
     const quiz = getActiveQuiz();
     if (!quiz) return;
@@ -4445,10 +4451,12 @@
         startQuizQuestionMusic(getCurrentQuizQuestion());
       });
     } else if (phase === 'transition') {
-      stopQuizQuestionMusic(false);
+      startQuizQuestionMusic(getCurrentQuizQuestion());
       playQuizTransitionNumberMotion(layer);
       scheduleQuizTransitionContinuousAdvance();
-    } else {
+    } else if (phase === 'results') {
+      stopQuizQuestionMusic(true);
+    } else if (phase === 'confirm' || phase === 'idle') {
       stopQuizQuestionMusic(false);
     }
   }
@@ -4592,6 +4600,8 @@
     state.quizSecurityGraceUntil = Date.now() + 2200;
     resetQuizSession('transition');
     lockQuizHistory();
+    preloadQuizSounds();
+    startQuizQuestionMusic();
     showQuizItemTransition(0, { fromIntro: true });
     requestQuizFullscreenMode();
   }
@@ -5367,7 +5377,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.176', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.177', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
