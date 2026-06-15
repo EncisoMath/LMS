@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.174';
+  const APP_VERSION = '0.24.175';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -22,7 +22,8 @@
     tabTransitions: false,
     glassEffects: false,
     quizOptionEffects: true,
-    quizFeedbackEffects: true
+    quizFeedbackEffects: true,
+    quizSounds: true
   };
 
 
@@ -32,6 +33,48 @@
 
   function booleanPrefChecked(key) {
     return prefEnabled(key) ? 'checked' : '';
+  }
+  const QUIZ_SOUND_PATHS = {
+    correct: './assets/sounds/correct.mp3',
+    wrong: './assets/sounds/wrong.mp3',
+    type: './assets/sounds/type.mp3'
+  };
+  const QUIZ_SOUND_VOLUME = {
+    correct: 0.82,
+    wrong: 0.82,
+    type: 0.72
+  };
+  const quizSoundPreloadCache = new Map();
+
+  function quizSoundsEnabled() {
+    return prefEnabled('quizSounds');
+  }
+
+  function preloadQuizSounds() {
+    if (!quizSoundsEnabled()) return;
+    Object.entries(QUIZ_SOUND_PATHS).forEach(([kind, src]) => {
+      if (quizSoundPreloadCache.has(kind)) return;
+      try {
+        const audio = new Audio(src);
+        audio.preload = 'auto';
+        audio.volume = QUIZ_SOUND_VOLUME[kind] ?? 0.8;
+        quizSoundPreloadCache.set(kind, audio);
+      } catch (_) {}
+    });
+  }
+
+  function playQuizSound(kind) {
+    if (!quizSoundsEnabled()) return;
+    const src = QUIZ_SOUND_PATHS[kind];
+    if (!src) return;
+    try {
+      const audio = new Audio(src);
+      audio.preload = 'auto';
+      audio.volume = QUIZ_SOUND_VOLUME[kind] ?? 0.8;
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+    } catch (_) {}
   }
 
   const WARNING_GAP_KEY = 'encisomath:warningBangGap';
@@ -848,6 +891,7 @@
           <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
           <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
           <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
+          <label class="toggle-row" for="quizSoundsToggle"><span>Sonidos de quiz</span><input id="quizSoundsToggle" type="checkbox" ${booleanPrefChecked('quizSounds')} /></label>
           <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero deja los heroes como composiciones estáticas ricas y evita animaciones permanentes pesadas.</p>
         </div>
         <div class="profile-menu-actions">
@@ -887,7 +931,8 @@
         ['effectsMotionToggle', 'effectsMotion'],
         ['effectsMeshToggle', 'effectsMesh'],
         ['quizOptionEffectsToggle', 'quizOptionEffects'],
-        ['quizFeedbackEffectsToggle', 'quizFeedbackEffects']
+        ['quizFeedbackEffectsToggle', 'quizFeedbackEffects'],
+        ['quizSoundsToggle', 'quizSounds']
       ].forEach(([id, key]) => {
         document.getElementById(id)?.addEventListener('change', (event) => updatePreference(key, event.target.checked));
       });
@@ -2089,6 +2134,18 @@
     `;
   }
 
+  function quizSoundQuickControlsHTML() {
+    return `
+      <div class="quiz-sound-tune-box quiz-quick-sound-box">
+        <label class="toggle-row quiz-sound-toggle-row">
+          <span>Sonidos del quiz</span>
+          <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
+        </label>
+        <small>Usa assets/sounds/correct.mp3, wrong.mp3 y type.mp3.</small>
+      </div>
+    `;
+  }
+
   function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
     if (!['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(type)) return '';
     const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
@@ -2117,6 +2174,7 @@
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
           ${imageToggleHTML}
           ${quizTypographyQuickControlsHTML()}
+          ${quizSoundQuickControlsHTML()}
         </div>
       </section>
     `;
@@ -2190,6 +2248,17 @@
         imagePreviewToggle.addEventListener('change', () => {
           setQuizImagePreviewVisible(imageKey, imagePreviewToggle.checked);
           applyQuizLayoutTune(panel.dataset.quizLayoutType || 'default', getQuizLayoutTune(panel.dataset.quizLayoutType || 'default'), panelStage);
+        });
+      }
+
+      const soundToggle = panel.querySelector('[data-quiz-sound-toggle]');
+      if (soundToggle) {
+        soundToggle.checked = quizSoundsEnabled();
+        soundToggle.addEventListener('change', () => {
+          state.prefs.quizSounds = Boolean(soundToggle.checked);
+          localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+          panel.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => { input.checked = state.prefs.quizSounds !== false; });
+          if (state.prefs.quizSounds !== false) preloadQuizSounds();
         });
       }
 
@@ -2527,10 +2596,12 @@
           };
           if (selectedCorrect) {
             runRevealAnimation(selected, true);
+            playQuizSound('correct');
             recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
             showQuizFeedbackBandAfterDelay(stage, true, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
           } else {
             runRevealAnimation(selected, false);
+            playQuizSound('wrong');
             if (correctCard && correctCard !== selected) {
               setQuizFlipCardOpen(correctCard, true);
               window.setTimeout(() => runRevealAnimation(correctCard, true), 430);
@@ -2778,7 +2849,10 @@
           stage?.classList.add('order-reveal-active');
           const revealTotal = orderCards.length ? ((orderCards.length - 1) * revealGap + revealDuration) : 0;
           orderCards.forEach((card, index) => {
-            window.setTimeout(() => revealOneCard(card, index), index * revealGap);
+            window.setTimeout(() => {
+              revealOneCard(card, index);
+              if (index === orderCards.length - 1) playQuizSound(ok ? 'correct' : 'wrong');
+            }, index * revealGap);
           });
           window.setTimeout(() => {
             board.classList.remove('order-validating');
@@ -2986,6 +3060,10 @@
               ${quizTransitionTuneSwitchHTML('radials', 'Radiales', 'Fondo/panel')}
               ${quizTransitionTuneSwitchHTML('sceneGlow', 'Marco/glow', 'Contenedor')}
               ${quizTransitionTuneSwitchHTML('shapeGlow', 'Glow figuras', 'Exterior')}
+              <label class="quiz-transition-tune-switch">
+                <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
+                <span><strong>Sonidos</strong><small>Correcta / incorrecta / enviada</small></span>
+              </label>
               ${quizTransitionTuneSwitchHTML('continuous', 'Continuo', 'Avanza solo')}
             </div>
             <div class="quiz-transition-tune-actions">
@@ -3059,6 +3137,16 @@
         if (key === 'continuous' && safeTune.continuous) scheduleQuizTransitionContinuousAdvance();
       });
     });
+    layer.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => {
+      input.checked = quizSoundsEnabled();
+      input.addEventListener('change', () => {
+        state.prefs.quizSounds = Boolean(input.checked);
+        localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+        document.querySelectorAll('[data-quiz-sound-toggle]').forEach((toggle) => { toggle.checked = state.prefs.quizSounds !== false; });
+        if (state.prefs.quizSounds !== false) preloadQuizSounds();
+      });
+    });
+
     layer.querySelectorAll('[data-quiz-transition-action]').forEach((button) => {
       button.addEventListener('click', () => {
         const action = button.dataset.quizTransitionAction;
@@ -3819,6 +3907,7 @@
     const selectedCorrect = button.dataset.correct === 'true';
     scheduleQuizTimer(() => {
       revealQuizAnswer(stage, button, selectedCorrect);
+      playQuizSound(selectedCorrect ? 'correct' : 'wrong');
       recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
       showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
     }, 1000);
@@ -4154,6 +4243,7 @@
     });
     void form.offsetWidth;
     form.querySelectorAll('textarea, button').forEach((item) => { item.disabled = true; });
+    playQuizSound('type');
     window.requestAnimationFrame(() => {
       form.classList.add('is-open-submitted');
     });
@@ -4176,6 +4266,7 @@
     const quiz = getActiveQuiz();
     if (!quiz) return;
     closeModal(false);
+    preloadQuizSounds();
     clearQuizTimers();
     state.quizFullscreenActive = true;
     state.quizSecurityGraceUntil = Date.now() + 2400;
@@ -5180,7 +5271,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.174', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.175', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
