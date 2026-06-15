@@ -804,3 +804,11 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se adaptó el patrón visual de arrastre tipo lift: al tomar una tarjeta sube levemente, escala a 1.02 y aumenta sombra, sin cambiar el layout general del quiz.
 - Se mantuvo border-radius 6px y se evitó copiar el componente externo sin adaptar tamaños/espacios del AVA.
 - Version/cache busting actualizado a 0.24.115.
+
+## v0.24.162
+
+- Se eliminó el uso de la pantalla independiente `Preparando reto` al iniciar o reiniciar un quiz.
+- La información del quiz se fusionó en la transición del Ítem 1 únicamente: primero muestra `Preparando reto`, título y descripción con fade; luego aparece `1/Y` con `scale-in-center`.
+- La transición del Ítem 1 dura más que las demás para incluir intro + contador + salida sin cortes; las transiciones siguientes conservan el comportamiento previo.
+- La barra, los radiales y las figuras permanecen activos desde el inicio de la transición del Ítem 1.
+- El modo Continuo respeta la duración especial del Ítem 1 antes de avanzar a la pregunta.

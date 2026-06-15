@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.161';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.161: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.162';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.162: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.161';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.162';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -100,12 +100,15 @@
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
-  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.161';
+  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.162';
   const QUIZ_TRANSITION_ENTER_MS = 650;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
   const QUIZ_TRANSITION_EXIT_MS = 950;
   const QUIZ_TRANSITION_EXIT_START_MS = QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
   const QUIZ_TRANSITION_TOTAL_MS = QUIZ_TRANSITION_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
+  const QUIZ_TRANSITION_FIRST_INFO_MS = 1450;
+  const QUIZ_TRANSITION_FIRST_EXIT_START_MS = 4600;
+  const QUIZ_TRANSITION_FIRST_TOTAL_MS = 5550;
   const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
@@ -1678,7 +1681,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.161';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.162';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1858,7 +1861,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.161';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.162';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2782,17 +2785,31 @@
   }
 
 
+  function getQuizTransitionTiming(layer = document.getElementById('quizFullscreenLayer')) {
+    const withIntro = Boolean(layer?.classList?.contains('quiz-transition-with-intro'));
+    const numberEnterDelay = withIntro ? QUIZ_TRANSITION_FIRST_INFO_MS : 0;
+    const exitStart = withIntro ? QUIZ_TRANSITION_FIRST_EXIT_START_MS : QUIZ_TRANSITION_EXIT_START_MS;
+    const total = withIntro ? QUIZ_TRANSITION_FIRST_TOTAL_MS : QUIZ_TRANSITION_TOTAL_MS;
+    return { withIntro, numberEnterDelay, exitStart, total };
+  }
+
   function playQuizTransitionNumberMotion(layer = document.getElementById('quizFullscreenLayer')) {
     if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
     const count = layer.querySelector('.quiz-transition-count');
     if (!count) return;
+    const timing = getQuizTransitionTiming(layer);
     count.classList.remove('quiz-transition-count-entering', 'quiz-transition-count-exiting');
     count.style.animation = 'none';
     void count.offsetWidth;
     count.style.animation = '';
-    window.requestAnimationFrame(() => {
+    scheduleQuizTimer(() => {
+      if (!count.isConnected) return;
+      count.classList.remove('quiz-transition-count-exiting');
+      count.style.animation = 'none';
+      void count.offsetWidth;
+      count.style.animation = '';
       count.classList.add('quiz-transition-count-entering');
-    });
+    }, timing.numberEnterDelay);
     scheduleQuizTimer(() => {
       if (!count.isConnected) return;
       count.classList.remove('quiz-transition-count-entering');
@@ -2800,7 +2817,7 @@
       void count.offsetWidth;
       count.style.animation = '';
       count.classList.add('quiz-transition-count-exiting');
-    }, QUIZ_TRANSITION_EXIT_START_MS);
+    }, timing.exitStart);
   }
 
   function quizTransitionTuneSwitchHTML(key, label, help = '') {
@@ -2857,8 +2874,10 @@
   function scheduleQuizTransitionContinuousAdvance() {
     const tune = getQuizTransitionTune();
     if (!tune.continuous) return;
+    const layer = document.getElementById('quizFullscreenLayer');
+    const timing = getQuizTransitionTiming(layer);
     const startedAt = Number(state.quizTransitionStartedAt) || Date.now();
-    const remaining = Math.max(420, QUIZ_TRANSITION_TOTAL_MS + 90 - (Date.now() - startedAt));
+    const remaining = Math.max(420, timing.total + 90 - (Date.now() - startedAt));
     scheduleQuizTimer(() => {
       const layer = document.getElementById('quizFullscreenLayer');
       if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
@@ -3175,7 +3194,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.161</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.162</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -3999,15 +4018,8 @@
     state.quizFullscreenActive = true;
     state.quizSecurityGraceUntil = Date.now() + 2400;
     lockQuizHistory();
-    const session = getQuizSession();
-    session.phase = 'intro';
-    session.locked = false;
-    renderQuizFullscreen(quiz);
+    showQuizItemTransition(0, { fromIntro: true });
     requestQuizFullscreenMode();
-    scheduleQuizTimer(() => {
-      document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
-    }, 1680);
-    scheduleQuizTimer(() => showQuizItemTransition(0, { fromIntro: true }), 2200);
   }
 
   function showQuizItemTransition(index = 0, options = {}) {
@@ -4021,7 +4033,7 @@
     session.transitionFromIntro = Boolean(options.fromIntro);
     state.quizTransitionStartedAt = Date.now();
     renderQuizFullscreen(quiz);
-    // v0.24.161: por defecto la transicion queda manual. Si se activa "Continuo",
+    // v0.24.162: por defecto la transicion queda manual. Si se activa "Continuo",
     // avanza a la pregunta al terminar la animacion completa.
   }
 
@@ -4060,11 +4072,12 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
+    const transitionWithIntro = phase === 'transition' && session.transitionFromIntro && state.quizQuestionIndex === 0;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${transitionWithIntro ? ' quiz-transition-with-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
-    else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length);
+    else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length, quiz, transitionWithIntro);
     else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
     const showTop = phase === 'question' || phase === 'results';
@@ -4152,13 +4165,20 @@
     `;
   }
 
-  function quizItemTransitionHTML(item, total) {
+  function quizItemTransitionHTML(item, total, quiz = getActiveQuiz(), withIntroInfo = false) {
     const current = Math.max(1, Number(item) || 1);
     const count = Math.max(1, Number(total) || 1);
+    const infoHTML = withIntroInfo ? `
+        <div class="quiz-transition-intro-info" aria-hidden="false">
+          <p class="section-kicker">Preparando reto</p>
+          <h2>${escapeHTML(quiz?.title || 'Quiz')}</h2>
+          <p>${escapeHTML(quiz?.description || quiz?.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
+        </div>` : '';
     return `
       <section class="quiz-item-transition quiz-burst-scene" aria-live="polite">
         ${quizTransitionTunePanelHTML(current, count)}
         <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        ${infoHTML}
         <div class="quiz-transition-count"><span class="quiz-transition-number"><strong>${current}</strong><small>/${count}</small></span></div>
         <div class="quiz-transition-progress"><span></span></div>
       </section>
@@ -4221,14 +4241,10 @@
     state.quizQuestionIndex = 0;
     state.quizFullscreenActive = true;
     state.quizSecurityGraceUntil = Date.now() + 2200;
-    resetQuizSession('intro');
+    resetQuizSession('transition');
     lockQuizHistory();
-    renderQuizFullscreen(quiz);
+    showQuizItemTransition(0, { fromIntro: true });
     requestQuizFullscreenMode();
-    scheduleQuizTimer(() => {
-      document.getElementById('quizFullscreenLayer')?.classList.add('quiz-intro-fadeout');
-    }, 1550);
-    scheduleQuizTimer(() => showQuizItemTransition(0, { fromIntro: true }), 2000);
   }
 
   function lockQuizHistory() {
@@ -5002,7 +5018,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.161', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.162', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
