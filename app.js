@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.160';
-  const QUIZ_SECURITY_ENABLED = false; // v0.24.160: modo seguro de Quizzes desactivado temporalmente
+  const APP_VERSION = '0.24.161';
+  const QUIZ_SECURITY_ENABLED = false; // v0.24.161: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -72,7 +72,7 @@
     { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
   ];
 
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.160';
+  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.161';
   const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
     bandRotation: -2,
     bandX: 0,
@@ -100,13 +100,13 @@
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
-  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.160';
+  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.161';
   const QUIZ_TRANSITION_ENTER_MS = 650;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
   const QUIZ_TRANSITION_EXIT_MS = 950;
   const QUIZ_TRANSITION_EXIT_START_MS = QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
   const QUIZ_TRANSITION_TOTAL_MS = QUIZ_TRANSITION_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
-  const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true };
+  const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
   const QUIZ_FEEDBACK_TUNE_FIELDS = [
     { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
     { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
@@ -1678,7 +1678,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.160';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.161';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1858,7 +1858,7 @@
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.160';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.161';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -2739,7 +2739,8 @@
     return {
       radials: safe.radials === true,
       sceneGlow: safe.sceneGlow === true,
-      shapeGlow: safe.shapeGlow !== false
+      shapeGlow: safe.shapeGlow !== false,
+      continuous: safe.continuous === true
     };
   }
 
@@ -2760,6 +2761,7 @@
       safe.radials ? 'quiz-transition-radials-on' : 'quiz-transition-radials-off',
       safe.sceneGlow ? 'quiz-transition-scene-effects-on' : 'quiz-transition-scene-effects-off',
       safe.shapeGlow ? 'quiz-transition-shape-glow-on' : 'quiz-transition-shape-glow-off',
+      safe.continuous ? 'quiz-transition-continuous-on' : 'quiz-transition-continuous-off',
       radialVariant
     ].join(' ');
   }
@@ -2774,6 +2776,8 @@
     layer.classList.toggle('quiz-transition-scene-effects-off', !safe.sceneGlow);
     layer.classList.toggle('quiz-transition-shape-glow-on', safe.shapeGlow);
     layer.classList.toggle('quiz-transition-shape-glow-off', !safe.shapeGlow);
+    layer.classList.toggle('quiz-transition-continuous-on', safe.continuous);
+    layer.classList.toggle('quiz-transition-continuous-off', !safe.continuous);
     return safe;
   }
 
@@ -2824,6 +2828,7 @@
               ${quizTransitionTuneSwitchHTML('radials', 'Radiales', 'Fondo/panel')}
               ${quizTransitionTuneSwitchHTML('sceneGlow', 'Marco/glow', 'Contenedor')}
               ${quizTransitionTuneSwitchHTML('shapeGlow', 'Glow figuras', 'Exterior')}
+              ${quizTransitionTuneSwitchHTML('continuous', 'Continuo', 'Avanza solo')}
             </div>
             <div class="quiz-transition-tune-actions">
               <button type="button" data-quiz-transition-action="restart">Reiniciar</button>
@@ -2847,6 +2852,19 @@
     session.selectedAnswerId = '';
     session.transitionFromIntro = false;
     renderQuizFullscreen(quiz);
+  }
+
+  function scheduleQuizTransitionContinuousAdvance() {
+    const tune = getQuizTransitionTune();
+    if (!tune.continuous) return;
+    const startedAt = Number(state.quizTransitionStartedAt) || Date.now();
+    const remaining = Math.max(420, QUIZ_TRANSITION_TOTAL_MS + 90 - (Date.now() - startedAt));
+    scheduleQuizTimer(() => {
+      const layer = document.getElementById('quizFullscreenLayer');
+      if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
+      if (!getQuizTransitionTune().continuous) return;
+      goToQuizQuestionFromTransition();
+    }, remaining);
   }
 
   function bindQuizTransitionTunePanel() {
@@ -2877,7 +2895,8 @@
         const key = input.dataset.quizTransitionTune;
         const tune = getQuizTransitionTune();
         tune[key] = Boolean(input.checked);
-        applyQuizTransitionTune(saveQuizTransitionTune(tune));
+        const safeTune = applyQuizTransitionTune(saveQuizTransitionTune(tune));
+        if (key === 'continuous' && safeTune.continuous) scheduleQuizTransitionContinuousAdvance();
       });
     });
     layer.querySelectorAll('[data-quiz-transition-action]').forEach((button) => {
@@ -3156,7 +3175,7 @@
     const tune = getQuizFeedbackTune();
     return `
       <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.160</div>
+        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.161</div>
         <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
         <div class="quiz-feedback-tune-scroll">
           <div class="quiz-feedback-tune-group">
@@ -4000,9 +4019,10 @@
     session.phase = 'transition';
     session.locked = true;
     session.transitionFromIntro = Boolean(options.fromIntro);
+    state.quizTransitionStartedAt = Date.now();
     renderQuizFullscreen(quiz);
-    // v0.24.160: calibracion manual de la transicion. No avanza automaticamente;
-    // se usa el boton "Ver pregunta" del panel para continuar cuando la animacion termine.
+    // v0.24.161: por defecto la transicion queda manual. Si se activa "Continuo",
+    // avanza a la pregunta al terminar la animacion completa.
   }
 
   function showQuizResults() {
@@ -4068,6 +4088,7 @@
       window.requestAnimationFrame(() => playQuizItemEnterMotion(layer));
     } else if (phase === 'transition') {
       playQuizTransitionNumberMotion(layer);
+      scheduleQuizTransitionContinuousAdvance();
     }
   }
 
@@ -4981,7 +5002,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.160', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.161', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
