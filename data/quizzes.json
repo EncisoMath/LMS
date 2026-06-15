@@ -1,6 +1,6 @@
 {
   "version": "1.11",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.169 agrega Quiz Flip con tarjetas numéricas.",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.170 agrega Quiz Flip con tarjetas numéricas.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",
