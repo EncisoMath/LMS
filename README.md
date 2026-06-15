@@ -818,3 +818,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Ajustada la transición especial del Ítem 1: la información del quiz dura 4 segundos y luego el contador X/Y ocupa 3 segundos, para un total de 7 segundos.
 - Sincronizados radiales, figuras, countdown/barra y modo Continuo con la nueva duración especial del Ítem 1.
 - Las transiciones normales de los demás ítems conservan la duración previa.
+
+## v0.24.167
+- Ajuste global de tipografía de quizzes: TEXTO y OPCIONES quedan en 12px como base para los quizzes actuales y futuros.
+- Pregunta abierta: el texto escrito en el cuadro de respuesta usa Montserrat Regular real, sin heredar SemiBold de las opciones.

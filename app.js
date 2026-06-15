@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.166';
+  const APP_VERSION = '0.24.167';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1681,7 +1681,7 @@
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
 
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.166';
+  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.167';
   const QUIZ_FONT_PRESETS = [
     { value: '300|normal', label: 'Montserrat Light' },
     { value: '400|normal', label: 'Montserrat Regular' },
@@ -1698,8 +1698,8 @@
   const QUIZ_TYPOGRAPHY_DEFAULTS = {
     textPreset: '600|normal',
     optionPreset: '600|normal',
-    textSize: 14,
-    optionSize: 14
+    textSize: 12,
+    optionSize: 12
   };
 
   function normalizeQuizTypographyTune(tune = {}) {
@@ -1787,13 +1787,15 @@
       '.kahoot-option',
       '.kahoot-answer-text',
       '.quiz-submit-btn',
-      '.quiz-open-input',
       '.quiz-order-card',
       '.quiz-order-card strong',
       '.quiz-order-number',
       '.quiz-order-grip',
       '.quiz-order-submit'
     ].join(','), optionPreset, safe.optionSize);
+    // v0.24.167: la pregunta abierta conserva tamaño de opciones,
+    // pero el texto escrito por el usuario va en Montserrat Regular.
+    applyInline('.quiz-open-input, textarea.quiz-open-input', { weight: 400, style: 'normal' }, safe.optionSize);
     document.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
     document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
     return safe;
@@ -1806,16 +1808,16 @@
   ];
 
   const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_y: 0, textA_h: 40, text_font: 18,
+    textA_y: 0, textA_h: 40, text_font: 12,
     image_y: 0, image_h: 30,
     answers_y: 0, answers_h: 30
   };
 
   const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    true_false: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    open: { textA_y: 0, textA_h: 40, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    order: { textA_y: 0, textA_h: 30, text_font: 18, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
+    multiple_choice: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    true_false: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    open: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
+    order: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
   };
 
   function rebalanceQuizLayoutTune(tune = {}, changedKey = 'image_h') {
@@ -1857,11 +1859,11 @@
     }
     const total = safe.image_h + safe.textA_h + safe.answers_h;
     if (total !== 100) safe.textA_h += 100 - total;
-    return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
+    return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 12, image_y: 0, textA_y: 0, answers_y: 0 };
   }
 
   const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.166';
+  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.167';
   const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
   const QUIZ_CASCADE_TUNE_FIELDS = [
     { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
@@ -1921,7 +1923,7 @@
 
   function normalizeQuizLayoutTune(tune = {}, type = 'default') {
     const defaults = getQuizLayoutTuneDefaults(type);
-    const normalized = { ...defaults, ...tune, text_font: 18, image_y: 0, textA_y: 0, answers_y: 0 };
+    const normalized = { ...defaults, ...tune, text_font: 12, image_y: 0, textA_y: 0, answers_y: 0 };
     QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
       const raw = Number(normalized[field.key]);
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : defaults[field.key];
@@ -5041,7 +5043,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.166', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.167', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

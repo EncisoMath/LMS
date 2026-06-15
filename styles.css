@@ -13244,3 +13244,70 @@ textarea.quiz-open-input {
 .quiz-open-form.is-open-submitted .quiz-submit-btn:disabled {
   opacity: 1 !important;
 }
+
+/* ===== v0.24.167 - Tipografia base 12px en quizzes y Montserrat Regular en pregunta abierta ===== */
+:root { --encisomath-build: "0.24.167"; }
+
+/* TEXTO: base global de 12px para preguntas actuales y futuras. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b,
+.quiz-stage .quiz-text-a,
+.quiz-stage .quiz-text-b {
+  font-size: 12px !important;
+  line-height: 1.16 !important;
+}
+
+/* Mantener 12px aunque el texto sea largo y reciba clases compactas. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-md,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-sm,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-a.quiz-prompt-xs,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-md,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-sm,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-text-b.quiz-text-b-xs {
+  font-size: 12px !important;
+  line-height: 1.16 !important;
+}
+
+/* OPCIONES / respuestas: base global de 12px para ABCD, VF, Organizar y Abierta. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-card,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-card strong,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-answer-text,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-option,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-card strong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit {
+  font-size: 12px !important;
+  line-height: 1.12 !important;
+}
+
+/* Pregunta abierta: el texto escrito por el usuario debe ser Montserrat Regular real. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input:focus,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input:focus,
+.quiz-stage-fullscreen.quiz-type-open .quiz-open-input,
+.quiz-stage-fullscreen.quiz-type-open .quiz-open-input:focus,
+textarea.quiz-open-input,
+textarea.quiz-open-input:focus {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-size: 12px !important;
+  line-height: 1.18 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input::placeholder,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-open .quiz-open-input::placeholder,
+textarea.quiz-open-input::placeholder {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  font-size: 12px !important;
+}
