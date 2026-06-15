@@ -1,3 +1,28 @@
+## v0.24.190
+
+- Cambio en Quizzes: se reintrodujo el sistema de puntos, pero ahora solo se muestra en la pantalla de transición entre ítems, nunca dentro de la pantalla de pregunta.
+- La transición hacia el ítem 1 no muestra puntos; la transición hacia el ítem 2 muestra el puntaje acumulado del ítem 1; la transición hacia el ítem 3 muestra el acumulado hasta el ítem 2, y así sucesivamente.
+- Los puntos son acumulativos y no usan signo `+`.
+- Puntos por ítem: todos los ítems correctos suman 10.000.
+- Puntos por tiempo: todos los tiempos óptimos suman hasta 10.000 adicionales, con curva que da 0 a respuestas demasiado inmediatas, premia el punto dulce cercano al 75% del tiempo usado y reduce hacia el final.
+- Se integró el contador poligonal de puntos en la transición, con número Montserrat Black, polígono blanco, glitch azul/rojo, apertura/cierre del polígono y conteo desde el acumulado anterior hasta el acumulado nuevo.
+- Se agregó panel temporal de calibración en transición con sliders de posición Y y zoom del contador, botón `Repetir animación` y botón `Seguir`; las transiciones con puntos no avanzan automáticamente.
+- Clave de calibración: `encisomath:quizTransitionScoreTune:v0.24.190`.
+- Se mantienen countdown por ítem, música random por pregunta, ranking/podio y tipos de pregunta actuales.
+- Versión/cache busting actualizado a `0.24.190`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.189
+
+- Se parte de `v0.24.188`.
+- Se eliminó por completo el sistema de puntos por ítem y por tiempo de Quizzes.
+- Se retiraron cálculos `score`/`points`, overlays flotantes de puntaje, animación en cascada de puntos y panel temporal `⚙️ Puntajes`.
+- El flujo del quiz vuelve a continuar normalmente después de la banda de feedback; ya no queda pausado por puntajes ni requiere el botón `Seguir` asociado a esa calibración.
+- Se mantienen countdown por ítem, música random por pregunta, ranking/podio de resultados y la lógica de respuestas actual.
+- No se tocaron Rockstars, Clases, Estudiantes, datos base ni tipos de pregunta.
+- Version/cache busting actualizado a `0.24.189`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 
 ## v0.24.187
 

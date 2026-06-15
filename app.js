@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.187';
+  const APP_VERSION = '0.24.190';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -321,31 +321,13 @@
   const QUIZ_ITEM_TIME_LIMIT_MAX = 999;
   const QUIZ_COUNTDOWN_DANGER_SECONDS = 10;
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
-  const QUIZ_ITEM_POINTS_TOTAL = 10000;
-  const QUIZ_TIME_POINTS_TOTAL = 10000;
-  const QUIZ_TIME_SCORE_PEAK_RATIO = 0.75;
-  const QUIZ_TIME_SCORE_EARLY_ZERO_RATIO = 0.12;
-  const QUIZ_TIME_SCORE_RAMP_END_RATIO = 0.30;
-  const QUIZ_TIME_SCORE_LEFT_SIGMA = 0.25;
-  const QUIZ_TIME_SCORE_RIGHT_SIGMA = 0.18;
-  const QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS = 3000;
-  const QUIZ_SCORE_TUNE_ENABLED = true;
-  const QUIZ_SCORE_TUNE_KEY = 'encisomath:quizScoreTune:v0.24.187';
-  const QUIZ_SCORE_TUNE_DEFAULTS = {
-    itemX: 0,
-    itemY: 0,
-    itemZoom: 100,
-    timeX: 0,
-    timeY: 0,
-    timeZoom: 100
-  };
-  const QUIZ_SCORE_TUNE_FIELDS = [
-    { key: 'itemX', group: 'Puntaje pregunta', label: 'Pregunta X', min: -180, max: 180, step: 1, unit: 'px' },
-    { key: 'itemY', group: 'Puntaje pregunta', label: 'Pregunta Y', min: -160, max: 160, step: 1, unit: 'px' },
-    { key: 'itemZoom', group: 'Puntaje pregunta', label: 'Pregunta zoom', min: 50, max: 180, step: 1, unit: '%' },
-    { key: 'timeX', group: 'Puntaje tiempo', label: 'Tiempo X', min: -180, max: 180, step: 1, unit: 'px' },
-    { key: 'timeY', group: 'Puntaje tiempo', label: 'Tiempo Y', min: -160, max: 160, step: 1, unit: 'px' },
-    { key: 'timeZoom', group: 'Puntaje tiempo', label: 'Tiempo zoom', min: 50, max: 180, step: 1, unit: '%' }
+  const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
+  const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.190';
+  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 0, zoom: 100 };
+  const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
+    { key: 'y', label: 'Posición Y contador', min: -220, max: 220, step: 1, unit: 'px' },
+    { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
@@ -434,10 +416,8 @@
     studentSearch: '',
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
     quizTransitionPanelOpen: true,
+    quizTransitionScorePanelOpen: true,
     quizRankingPodiumPanelOpen: true,
-    quizScoreTunePanelOpen: true,
-    quizScoreTuneLast: null,
-    quizScoreTunePendingFeedback: null,
     appRoute: null,
     appHistoryReady: false,
     applyingHistoryRoute: false
@@ -2820,21 +2800,19 @@
             card.classList.add(ok ? 'flip-correct-reveal' : 'flip-wrong-reveal');
           };
           if (selectedCorrect) {
-            const answerRecord = recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
+            recordQuizAnswer(question, true, { selected: session.selectedAnswerId });
             runRevealAnimation(selected, true);
-            showQuizPointsCascade(selected, answerRecord, 160);
             playQuizSound('correct');
-            showQuizFeedbackBandAfterDelay(stage, true, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
+            showQuizFeedbackBandAfterDelay(stage, true, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
           } else {
-            const answerRecord = recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '' });
+            recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '' });
             runRevealAnimation(selected, false);
-            showQuizPointsCascade(selected, answerRecord, 160);
             playQuizSound('wrong');
             if (correctCard && correctCard !== selected) {
               setQuizFlipCardOpen(correctCard, true);
               window.setTimeout(() => runRevealAnimation(correctCard, true), 430);
             }
-            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
+            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720));
           }
         }, 1000);
       });
@@ -3086,9 +3064,8 @@
             board.classList.remove('order-validating');
             stage?.classList.remove('order-reveal-active');
           }, revealTotal + 120);
-          const answerRecord = recordQuizAnswer(question, ok, { order: selected, correctOrder });
-          showQuizPointsCascade(board, answerRecord, Math.min(520, revealTotal + 120));
-          showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
+          recordQuizAnswer(question, ok, { order: selected, correctOrder });
+          showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
         }, pendingDelay);
       });
 
@@ -3202,11 +3179,6 @@
     return normalizeQuizItemSeconds(raw ?? QUIZ_ITEM_TIME_LIMIT_DEFAULT);
   }
 
-  function getQuizScoringItemCount(quiz = getActiveQuiz()) {
-    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
-    return Math.max(1, questions.length || 1);
-  }
-
   function clampQuizNumber(value, min, max) {
     const number = Number(value);
     if (!Number.isFinite(number)) return min;
@@ -3238,292 +3210,109 @@
     };
   }
 
-  function quizTimeScoreCurve(elapsedRatio = 0) {
-    const ratio = clampQuizNumber(elapsedRatio, 0, 1);
-    if (ratio <= QUIZ_TIME_SCORE_EARLY_ZERO_RATIO) return 0;
-    const sigma = ratio <= QUIZ_TIME_SCORE_PEAK_RATIO ? QUIZ_TIME_SCORE_LEFT_SIGMA : QUIZ_TIME_SCORE_RIGHT_SIGMA;
-    const curve = Math.exp(-0.5 * Math.pow((ratio - QUIZ_TIME_SCORE_PEAK_RATIO) / sigma, 2));
-    const ramp = clampQuizNumber((ratio - QUIZ_TIME_SCORE_EARLY_ZERO_RATIO) / Math.max(0.001, QUIZ_TIME_SCORE_RAMP_END_RATIO - QUIZ_TIME_SCORE_EARLY_ZERO_RATIO), 0, 1);
-    return clampQuizNumber(curve * ramp, 0, 1);
+
+  function quizScorePointsForIndex(totalItems = 1, index = 0, totalPoints = QUIZ_SCORE_TOTAL_ITEM_POINTS) {
+    const count = Math.max(1, Number(totalItems) || 1);
+    const safeIndex = Math.max(0, Math.min(count - 1, Number(index) || 0));
+    const base = Math.floor(totalPoints / count);
+    const remainder = totalPoints - (base * count);
+    return base + (safeIndex < remainder ? 1 : 0);
   }
 
-  function calculateQuizAnswerScore(question, correct, extra = {}, quiz = getActiveQuiz()) {
-    const totalItems = getQuizScoringItemCount(quiz);
-    const itemMax = QUIZ_ITEM_POINTS_TOTAL / totalItems;
-    const timeMax = QUIZ_TIME_POINTS_TOTAL / totalItems;
-    const timing = extra?.timing && typeof extra.timing === 'object' ? extra.timing : getQuizAnswerTimingSnapshot();
-    const score = {
-      item: 0,
-      time: 0,
-      total: 0,
-      totalItems,
-      itemMax: Math.round(itemMax),
-      timeMax: Math.round(timeMax),
-      curve: 0,
+  function quizTimeScoreCurve(elapsedRatio = 0) {
+    const r = clampQuizNumber(elapsedRatio, 0, 1);
+    const noReadLimit = 0.18;
+    const sweetSpot = 0.75;
+    if (r <= noReadLimit) return 0;
+    if (r <= sweetSpot) {
+      return Math.pow((r - noReadLimit) / (sweetSpot - noReadLimit), 0.72);
+    }
+    const lateProgress = (r - sweetSpot) / (1 - sweetSpot);
+    return Math.max(0.08, 1 - Math.pow(lateProgress, 1.45) * 0.92);
+  }
+
+  function calculateQuizAnswerScore(question, correct, extra = {}, index = state.quizQuestionIndex, quiz = getActiveQuiz()) {
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const count = Math.max(1, questions.length || 1);
+    const safeIndex = Math.max(0, Math.min(count - 1, Number(index) || 0));
+    const itemMax = quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_ITEM_POINTS);
+    const timeMax = quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_TIME_POINTS);
+    const timing = extra?.timing || getQuizAnswerTimingSnapshot();
+    const isCorrect = correct === true;
+    const curve = isCorrect ? quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0) : 0;
+    const item = isCorrect ? itemMax : 0;
+    const time = isCorrect ? Math.round(timeMax * curve) : 0;
+    return {
+      item,
+      time,
+      total: item + time,
+      maxItem: itemMax,
+      maxTime: timeMax,
+      curve: Math.round(curve * 10000) / 10000,
       timing
     };
-    if (correct !== true) return score;
-    const curve = quizTimeScoreCurve(Number(timing?.elapsedRatio) || 0);
-    score.curve = Math.round(curve * 10000) / 10000;
-    score.item = Math.round(itemMax);
-    score.time = Math.round(timeMax * curve);
-    score.total = Math.max(0, score.item + score.time);
-    return score;
   }
 
-  function formatQuizPointsNumber(value = 0) {
-    const safe = Math.max(0, Math.round(Number(value) || 0));
-    return String(safe).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  function getQuizAnswerScore(answer, quiz = getActiveQuiz()) {
+    if (!answer) return { item: 0, time: 0, total: 0 };
+    if (answer.score && Number.isFinite(Number(answer.score.total))) return answer.score;
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const question = questions[Number(answer.index)] || null;
+    return calculateQuizAnswerScore(question, answer.correct === true, answer, Number(answer.index), quiz);
   }
 
-  function formatQuizPointsText(value = 0) {
-    const safe = Math.max(0, Math.round(Number(value) || 0));
-    return safe > 0 ? `+${formatQuizPointsNumber(safe)}` : '0';
+  function getQuizCumulativeScoreBeforeTransition(itemNumber = 1, quiz = getActiveQuiz()) {
+    const session = getQuizSession();
+    const current = Math.max(1, Number(itemNumber) || 1);
+    const previousIndex = current - 2;
+    const beforePreviousIndex = current - 3;
+    const answers = Array.isArray(session.answers) ? session.answers : [];
+    const sumThrough = (maxIndex) => answers.reduce((total, answer) => {
+      const index = Number(answer.index);
+      if (!Number.isFinite(index) || index > maxIndex) return total;
+      return total + (Number(getQuizAnswerScore(answer, quiz).total) || 0);
+    }, 0);
+    return {
+      from: Math.max(0, Math.round(sumThrough(beforePreviousIndex))),
+      to: Math.max(0, Math.round(sumThrough(previousIndex))),
+      previousIndex
+    };
   }
 
-
-  function normalizeQuizScoreTune(raw = {}) {
-    const tune = { ...QUIZ_SCORE_TUNE_DEFAULTS };
-    QUIZ_SCORE_TUNE_FIELDS.forEach((field) => {
-      const value = Number(raw?.[field.key]);
-      if (!Number.isFinite(value)) return;
-      tune[field.key] = Math.min(Math.max(value, field.min), field.max);
+  function normalizeQuizTransitionScoreTune(tune = {}) {
+    const safe = { ...QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS };
+    QUIZ_TRANSITION_SCORE_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS[field.key];
     });
-    return tune;
-  }
-
-  function getQuizScoreTune() {
-    try {
-      return normalizeQuizScoreTune(JSON.parse(localStorage.getItem(QUIZ_SCORE_TUNE_KEY) || '{}'));
-    } catch (_) {
-      return normalizeQuizScoreTune({});
-    }
-  }
-
-  function saveQuizScoreTune(tune = {}) {
-    const safe = normalizeQuizScoreTune(tune);
-    try { localStorage.setItem(QUIZ_SCORE_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
     return safe;
   }
 
-  function updateQuizScoreTuneOutput(key, value) {
-    document.querySelectorAll(`[data-quiz-score-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
-      const field = QUIZ_SCORE_TUNE_FIELDS.find((item) => item.key === key);
-      output.textContent = `${value}${field?.unit || ''}`;
-    });
-  }
-
-  function quizScoreTuneRangeRowHTML(field, tune = getQuizScoreTune()) {
-    const value = Number(tune[field.key] ?? QUIZ_SCORE_TUNE_DEFAULTS[field.key]);
-    return `
-      <label class="quiz-score-tune-row">
-        <span class="quiz-score-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-score-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
-        <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-score-tune="${escapeAttr(field.key)}" />
-      </label>`;
-  }
-
-  function quizScoreTunePanelHTML(last = false) {
-    const tune = getQuizScoreTune();
-    const groups = [...new Set(QUIZ_SCORE_TUNE_FIELDS.map((field) => field.group))];
-    return `
-      <section class="quiz-score-tune-panel" data-quiz-score-tune-panel aria-label="Ajuste temporal de puntajes">
-        <div class="quiz-score-tune-title">⚙️ Puntajes · v0.24.187</div>
-        <div class="quiz-score-tune-help">El flujo está pausado. Ajusta X/Y/zoom, repite la animación y pulsa Seguir.</div>
-        <div class="quiz-score-tune-scroll">
-          ${groups.map((group) => `
-            <div class="quiz-score-tune-group">
-              <h4>${escapeHTML(group)}</h4>
-              ${QUIZ_SCORE_TUNE_FIELDS.filter((field) => field.group === group).map((field) => quizScoreTuneRangeRowHTML(field, tune)).join('')}
-            </div>`).join('')}
-        </div>
-        <div class="quiz-score-tune-actions">
-          <button class="ghost-btn small" type="button" data-quiz-score-replay>Repetir animación</button>
-          <button class="primary-btn small" type="button" data-quiz-score-continue>${last ? 'Seguir a resultados' : 'Seguir'}</button>
-        </div>
-      </section>`;
-  }
-
-  function removeQuizScoreTunePanel(clearPending = false) {
-    document.querySelectorAll('[data-quiz-score-tune-panel]').forEach((panel) => panel.remove());
-    if (clearPending) state.quizScoreTunePendingFeedback = null;
-  }
-
-  function applyQuizScoreTuneToFloatingStages() {
-    const last = state.quizScoreTuneLast;
-    if (!last) return;
-    const stage = getQuizStageFromScoreTarget(last.target);
-    const answerZone = stage?.querySelector?.('.quiz-answer-zone') || last.target || stage;
-    const countdownAnchor = document.querySelector('[data-quiz-countdown-poly]') || document.querySelector('.quiz-countdown-slot');
-    const itemStage = document.querySelector('[data-quiz-floating-score-stage="item"]');
-    const timeStage = document.querySelector('[data-quiz-floating-score-stage="time"]');
-    if (itemStage && answerZone) positionQuizFloatingScoreStage(itemStage, answerZone, 'item');
-    if (timeStage && countdownAnchor) positionQuizFloatingScoreStage(timeStage, countdownAnchor, 'time');
-  }
-
-  function replayQuizScoreAnimation() {
-    const last = state.quizScoreTuneLast;
-    if (!last || !last.answerRecord) return;
-    clearQuizFloatingScoreStages();
-    showQuizScoreBreakdown(last.target, last.answerRecord, 0, { silentTunePanel: true });
-  }
-
-  function bindQuizScoreTunePanel() {
-    document.querySelectorAll('[data-quiz-score-tune]').forEach((input) => {
-      if (input.dataset.boundScoreTune === 'true') return;
-      input.dataset.boundScoreTune = 'true';
-      const update = () => {
-        const current = getQuizScoreTune();
-        const key = input.dataset.quizScoreTune;
-        current[key] = Number(input.value);
-        const saved = saveQuizScoreTune(current);
-        updateQuizScoreTuneOutput(key, saved[key]);
-        applyQuizScoreTuneToFloatingStages();
-      };
-      input.addEventListener('input', update);
-      input.addEventListener('change', update);
-    });
-    document.querySelectorAll('[data-quiz-score-replay]').forEach((button) => {
-      if (button.dataset.boundScoreReplay === 'true') return;
-      button.dataset.boundScoreReplay = 'true';
-      button.addEventListener('click', replayQuizScoreAnimation);
-    });
-    document.querySelectorAll('[data-quiz-score-continue]').forEach((button) => {
-      if (button.dataset.boundScoreContinue === 'true') return;
-      button.dataset.boundScoreContinue = 'true';
-      button.addEventListener('click', () => {
-        const pending = state.quizScoreTunePendingFeedback;
-        removeQuizScoreTunePanel(false);
-        state.quizScoreTunePendingFeedback = null;
-        if (pending) showQuizFeedbackBand(pending.stage, pending.correct, pending.question, pending.neutralText);
-      });
-    });
-  }
-
-  function showQuizScoreTuneGate(stage, correct, question = null, neutralText = '') {
-    if (!QUIZ_SCORE_TUNE_ENABLED || !stage) {
-      showQuizFeedbackBand(stage, correct, question, neutralText);
-      return;
+  function getQuizTransitionScoreTune() {
+    try {
+      return normalizeQuizTransitionScoreTune(JSON.parse(localStorage.getItem(QUIZ_TRANSITION_SCORE_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS };
     }
-    removeQuizScoreTunePanel(false);
-    const quiz = getActiveQuiz();
-    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
-    const last = state.quizQuestionIndex >= total - 1;
-    state.quizScoreTunePendingFeedback = { stage, correct, question, neutralText };
-    document.body.insertAdjacentHTML('beforeend', quizScoreTunePanelHTML(last));
-    bindQuizScoreTunePanel();
-    applyQuizScoreTuneToFloatingStages();
   }
 
-  function playCascadeText({ target, text = 'Ítem 1' } = {}) {
-    const container = typeof target === 'string' ? document.querySelector(target) : target;
-    if (!container) return;
-    const ENTER_DURATION = 780;
-    const EXIT_DURATION = 780;
-    const STAGGER = 45;
-    const HOLD_TIME = 2000;
-    if (container._cascadeExitTimeout) window.clearTimeout(container._cascadeExitTimeout);
-    if (container._cascadeClearTimeout) window.clearTimeout(container._cascadeClearTimeout);
-    container.innerHTML = '';
-    const textElement = document.createElement('div');
-    textElement.className = 'cascade-text';
-    const cleanText = String(text).trim() || 'Ítem 1';
-    [...cleanText].forEach((letter, index) => {
-      const span = document.createElement('span');
-      span.className = letter === ' ' ? 'cascade-text__char cascade-text__space' : 'cascade-text__char';
-      span.style.setProperty('--i', index);
-      if (letter === ' ') span.innerHTML = '&nbsp;';
-      else span.textContent = letter;
-      textElement.appendChild(span);
+  function saveQuizTransitionScoreTune(tune) {
+    const safe = normalizeQuizTransitionScoreTune(tune);
+    try { localStorage.setItem(QUIZ_TRANSITION_SCORE_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function applyQuizTransitionScoreTune(tune = getQuizTransitionScoreTune()) {
+    const safe = normalizeQuizTransitionScoreTune(tune);
+    document.querySelectorAll('[data-score-counter-slot]').forEach((slot) => {
+      slot.style.setProperty('--score-counter-y', `${safe.y}px`);
+      slot.style.setProperty('--score-counter-zoom', `${safe.zoom / 100}`);
     });
-    container.appendChild(textElement);
-    const textLength = cleanText.length;
-    const totalEntranceTime = ENTER_DURATION + ((textLength - 1) * STAGGER);
-    const totalExitTime = EXIT_DURATION + ((textLength - 1) * STAGGER);
-    container._cascadeExitTimeout = window.setTimeout(() => {
-      textElement.querySelectorAll('.cascade-text__char').forEach((char) => char.classList.add('out'));
-    }, totalEntranceTime + HOLD_TIME);
-    container._cascadeClearTimeout = window.setTimeout(() => {
-      container.innerHTML = '';
-    }, totalEntranceTime + HOLD_TIME + totalExitTime + 120);
+    return safe;
   }
 
-  function getQuizStageFromScoreTarget(target) {
-    if (!target) return document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
-    if (target.classList?.contains('quiz-stage')) return target;
-    return target.closest?.('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
-  }
-
-  function clearQuizFloatingScoreStages() {
-    document.querySelectorAll('[data-quiz-floating-score-stage]').forEach((stage) => {
-      if (stage._cascadeExitTimeout) window.clearTimeout(stage._cascadeExitTimeout);
-      if (stage._cascadeClearTimeout) window.clearTimeout(stage._cascadeClearTimeout);
-      stage.remove();
-    });
-  }
-
-  function getQuizFloatingScoreStage(kind = 'item') {
-    const safeKind = kind === 'time' ? 'time' : 'item';
-    let stage = document.querySelector(`[data-quiz-floating-score-stage="${safeKind}"]`);
-    if (!stage) {
-      stage = document.createElement('span');
-      stage.className = `cascade-text-stage quiz-score-cascade-stage quiz-score-float-stage quiz-${safeKind}-points-stage`;
-      stage.dataset.quizFloatingScoreStage = safeKind;
-      stage.setAttribute('data-quiz-score-stage', safeKind);
-      stage.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(stage);
-    }
-    return stage;
-  }
-
-  function positionQuizFloatingScoreStage(stage, anchor, kind = 'item') {
-    if (!stage || !anchor || typeof anchor.getBoundingClientRect !== 'function') return;
-    const rect = anchor.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0) return;
-    const tune = getQuizScoreTune();
-    const isTime = kind === 'time';
-    const tuneX = isTime ? tune.timeX : tune.itemX;
-    const tuneY = isTime ? tune.timeY : tune.itemY;
-    const tuneZoom = (isTime ? tune.timeZoom : tune.itemZoom) / 100;
-    const x = rect.left + rect.width / 2;
-    const y = isTime ? rect.bottom + 5 : rect.top - 6;
-    stage.style.left = `${Math.round(x)}px`;
-    stage.style.top = `${Math.round(y)}px`;
-    stage.style.setProperty('--quiz-score-tune-x', `${Number(tuneX) || 0}px`);
-    stage.style.setProperty('--quiz-score-tune-y', `${Number(tuneY) || 0}px`);
-    stage.style.setProperty('--quiz-score-tune-zoom', `${Number(tuneZoom) || 1}`);
-    stage.style.transform = isTime
-      ? 'translate(-50%, 0) translate(var(--quiz-score-tune-x), var(--quiz-score-tune-y)) scale(var(--quiz-score-tune-zoom)) rotate(1.5deg)'
-      : 'translate(-50%, -100%) translate(var(--quiz-score-tune-x), var(--quiz-score-tune-y)) scale(var(--quiz-score-tune-zoom)) rotate(-1.5deg)';
-  }
-
-  function showQuizScoreBreakdown(target, answerRecord = null, delayMs = 0, options = {}) {
-    if (!answerRecord) return;
-    const stage = getQuizStageFromScoreTarget(target);
-    if (!stage) return;
-    const answerZone = stage.querySelector('.quiz-answer-zone') || target || stage;
-    const countdownAnchor = document.querySelector('[data-quiz-countdown-poly]') || document.querySelector('.quiz-countdown-slot');
-    state.quizScoreTuneLast = { target, answerRecord };
-    const itemPoints = Number(answerRecord?.score?.item ?? 0) || 0;
-    const timePoints = Number(answerRecord?.score?.time ?? 0) || 0;
-    const itemText = formatQuizPointsText(itemPoints);
-    const timeText = formatQuizPointsText(timePoints);
-    const play = () => {
-      const itemStage = getQuizFloatingScoreStage('item');
-      positionQuizFloatingScoreStage(itemStage, answerZone, 'item');
-      playCascadeText({ target: itemStage, text: itemText });
-      if (countdownAnchor) {
-        const timeStage = getQuizFloatingScoreStage('time');
-        positionQuizFloatingScoreStage(timeStage, countdownAnchor, 'time');
-        playCascadeText({ target: timeStage, text: timeText });
-      }
-      if (!options.silentTunePanel) bindQuizScoreTunePanel();
-    };
-    if (delayMs > 0) window.setTimeout(play, delayMs);
-    else play();
-  }
-
-  function showQuizPointsCascade(target, answerRecord = null, delayMs = 0) {
-    showQuizScoreBreakdown(target, answerRecord, delayMs);
+  function formatQuizScoreNumber(value = 0) {
+    return Math.max(0, Math.round(Number(value) || 0)).toLocaleString('es-CO');
   }
 
   function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
@@ -3603,8 +3392,7 @@
     const stage = document.querySelector(`.quiz-stage[data-quiz-question-index="${Number(questionIndex)}"]`) || document.querySelector('.quiz-stage-fullscreen, .quiz-stage');
     lockQuizQuestionForTimeout(stage);
     setQuizCountdownDisplay('0', 'is-timeup');
-    const answerRecord = recordQuizAnswer(question, false, { timeout: true });
-    showQuizPointsCascade(stage, answerRecord, 80);
+    recordQuizAnswer(question, false, { timeout: true });
     playQuizSound('wrong');
     showQuizFeedbackBandAfterDelay(stage, false, question, QUIZ_TIMEOUT_FEEDBACK_TEXT, 620);
   }
@@ -3874,6 +3662,264 @@
     }, timing.exitStart);
   }
 
+
+  function quizTransitionScoreTuneSliderHTML(field) {
+    const tune = getQuizTransitionScoreTune();
+    const value = Number(tune[field.key]);
+    return `
+      <label class="quiz-transition-score-slider">
+        <span><strong>${escapeHTML(field.label)}</strong><em data-score-tune-value="${escapeAttr(field.key)}">${Number.isFinite(value) ? value : 0}${escapeHTML(field.unit || '')}</em></span>
+        <input type="range" min="${field.min}" max="${field.max}" step="${field.step || 1}" value="${Number.isFinite(value) ? value : 0}" data-quiz-transition-score-tune="${escapeAttr(field.key)}" />
+      </label>
+    `;
+  }
+
+  function shouldShowQuizTransitionScore(itemNumber = state.quizQuestionIndex + 1) {
+    return Math.max(1, Number(itemNumber) || 1) > 1;
+  }
+
+  function quizTransitionScoreHTML(itemNumber = 1, quiz = getActiveQuiz()) {
+    if (!shouldShowQuizTransitionScore(itemNumber)) return '';
+    const score = getQuizCumulativeScoreBeforeTransition(itemNumber, quiz);
+    const tune = getQuizTransitionScoreTune();
+    return `
+      <section class="quiz-transition-score-wrap" data-quiz-transition-score-wrap data-score-from="${Number(score.from) || 0}" data-score-to="${Number(score.to) || 0}" aria-label="Puntaje acumulado">
+        <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(tune.y) || 0}px;--score-counter-zoom:${(Number(tune.zoom) || 100) / 100};"></div>
+        <div class="quiz-transition-score-controls" data-quiz-transition-score-controls>
+          <button type="button" data-quiz-score-counter-action="replay">Repetir animación</button>
+          <button type="button" data-quiz-score-counter-action="continue">Seguir</button>
+          <button class="quiz-transition-score-gear" type="button" data-quiz-score-panel-toggle aria-label="Ajustar contador de puntos">⚙️ Puntos</button>
+        </div>
+        <section class="quiz-transition-score-panel" data-quiz-transition-score-panel ${state.quizTransitionScorePanelOpen ? '' : 'hidden'} aria-label="Ajustes del contador de puntos">
+          <div class="quiz-transition-score-panel-head">
+            <strong>Contador de puntos</strong>
+            <button type="button" data-quiz-score-panel-close aria-label="Cerrar ajustes de puntos">×</button>
+          </div>
+          <div class="quiz-transition-score-panel-grid">
+            ${QUIZ_TRANSITION_SCORE_TUNE_FIELDS.map(quizTransitionScoreTuneSliderHTML).join('')}
+          </div>
+        </section>
+      </section>
+    `;
+  }
+
+  function playScoreCounter({ target, from = 0, score = 0 } = {}) {
+    const container = typeof target === 'string' ? document.querySelector(target) : target;
+    if (!container) return;
+    if (container._scoreCounterCleanup) container._scoreCounterCleanup();
+    container.innerHTML = '';
+
+    const stage = document.createElement('div');
+    stage.className = 'score-counter-stage';
+    stage.innerHTML = `
+      <svg class="score-counter-svg" viewBox="0 0 560 270" aria-hidden="true">
+        <polygon class="score-counter-polygon"></polygon>
+      </svg>
+      <div class="score-counter-text"></div>
+    `;
+    container.appendChild(stage);
+
+    const polygon = stage.querySelector('.score-counter-polygon');
+    const scoreText = stage.querySelector('.score-counter-text');
+    const CENTER = [280, 135];
+    const BASE_POINTS = [[78, 62], [484, 54], [468, 212], [88, 220]];
+    const LIMITS = [
+      { minX: 48, maxX: 112, minY: 44, maxY: 82 },
+      { minX: 448, maxX: 512, minY: 44, maxY: 82 },
+      { minX: 430, maxX: 498, minY: 192, maxY: 232 },
+      { minX: 58, maxX: 126, minY: 192, maxY: 232 }
+    ];
+    const ENTER_DURATION = 390;
+    const EXIT_DURATION = 330;
+    const CHAR_IN_STAGGER = 22;
+    const CHAR_OUT_STAGGER = 18;
+    const COUNT_DURATION = 1250;
+    const HOLD_TIME = 2000;
+    const POLYGON_OPEN_DURATION = 300;
+    const POLYGON_OPEN_STAGGER = 18;
+    const POLYGON_CLOSE_DURATION = 230;
+    const POLYGON_CLOSE_STAGGER = 24;
+
+    let timeouts = [];
+    let countFrame = null;
+    let polygonAnimationFrame = null;
+    let currentPoints = [[...CENTER], [...CENTER], [...CENTER], [...CENTER]];
+
+    function clearAllTimeouts() { timeouts.forEach((timeout) => clearTimeout(timeout)); timeouts = []; }
+    function later(callback, delay) { const timeout = setTimeout(callback, delay); timeouts.push(timeout); return timeout; }
+    function clonePoints(points) { return points.map(([x, y]) => [x, y]); }
+    function randomBetween(min, max) { return min + Math.random() * (max - min); }
+    function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+    function pointsToString(points) { return points.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' '); }
+    function easeOutBackFast(t) { const c1 = 2.15; const c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+    function easeInBackFast(t) { const c1 = 1.9; const c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
+    function easeInOutCubic(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+    function createRandomOpenShape() {
+      return BASE_POINTS.map(([x, y], index) => {
+        const limit = LIMITS[index];
+        return [clamp(x + randomBetween(-24, 24), limit.minX, limit.maxX), clamp(y + randomBetween(-12, 12), limit.minY, limit.maxY)];
+      });
+    }
+    function createTinyLivingShapeAround(points) {
+      return points.map(([x, y], index) => {
+        const limit = LIMITS[index];
+        return [clamp(x + randomBetween(-8, 8), limit.minX, limit.maxX), clamp(y + randomBetween(-5, 5), limit.minY, limit.maxY)];
+      });
+    }
+    function animatePolygonTo(targetPoints, options = {}) {
+      const { duration = 300, stagger = 0, easing = easeOutBackFast, onComplete = null } = options;
+      if (polygonAnimationFrame) cancelAnimationFrame(polygonAnimationFrame);
+      const fromPoints = clonePoints(currentPoints);
+      const startTime = performance.now();
+      const totalDuration = duration + stagger * (targetPoints.length - 1);
+      function tick(now) {
+        const elapsed = now - startTime;
+        currentPoints = fromPoints.map(([x, y], index) => {
+          const pointDelay = stagger * index;
+          const progress = clamp((elapsed - pointDelay) / duration, 0, 1);
+          const eased = easing(progress);
+          const [targetX, targetY] = targetPoints[index];
+          return [x + (targetX - x) * eased, y + (targetY - y) * eased];
+        });
+        polygon.setAttribute('points', pointsToString(currentPoints));
+        if (elapsed < totalDuration) polygonAnimationFrame = requestAnimationFrame(tick);
+        else {
+          currentPoints = clonePoints(targetPoints);
+          polygon.setAttribute('points', pointsToString(currentPoints));
+          polygonAnimationFrame = null;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      }
+      polygonAnimationFrame = requestAnimationFrame(tick);
+    }
+    function formatScore(value) { return Math.max(0, Math.round(Number(value) || 0)).toLocaleString('es-CO'); }
+    function createScoreText(text) {
+      scoreText.innerHTML = '';
+      const cleanText = String(text).trim() || '0';
+      [...cleanText].forEach((char, index) => {
+        const span = document.createElement('span');
+        span.className = char === ' ' ? 'score-counter-char score-counter-space' : 'score-counter-char';
+        span.style.setProperty('--i', index);
+        if (char === ' ') span.innerHTML = '&nbsp;';
+        else { span.textContent = char; span.setAttribute('data-char', char); }
+        scoreText.appendChild(span);
+      });
+      return cleanText.length;
+    }
+    function createReadyScoreText(text) {
+      scoreText.innerHTML = '';
+      const cleanText = String(text).trim() || '0';
+      [...cleanText].forEach((char, index) => {
+        const span = document.createElement('span');
+        span.className = char === ' ' ? 'score-counter-char ready score-counter-space' : 'score-counter-char ready';
+        span.style.setProperty('--i', index);
+        if (char === ' ') span.innerHTML = '&nbsp;';
+        else { span.textContent = char; span.setAttribute('data-char', char); }
+        scoreText.appendChild(span);
+      });
+    }
+    function updateScoreTextWithoutRestart(text) {
+      const cleanText = String(text);
+      const chars = scoreText.querySelectorAll('.score-counter-char');
+      if (chars.length !== cleanText.length) { createReadyScoreText(cleanText); return; }
+      chars.forEach((span, index) => {
+        const char = cleanText[index];
+        span.classList.add('ready');
+        span.classList.remove('out');
+        span.style.setProperty('--i', index);
+        if (char === ' ') { span.innerHTML = '&nbsp;'; span.removeAttribute('data-char'); }
+        else { span.textContent = char; span.setAttribute('data-char', char); }
+      });
+    }
+    function exitScoreText() {
+      scoreText.querySelectorAll('.score-counter-char').forEach((char, index) => {
+        char.classList.remove('ready', 'out');
+        char.style.setProperty('--i', index);
+        void char.offsetWidth;
+        char.classList.add('out');
+      });
+    }
+    function resetPolygonToCenter() {
+      currentPoints = [[...CENTER], [...CENTER], [...CENTER], [...CENTER]];
+      polygon.setAttribute('points', pointsToString(currentPoints));
+    }
+    function playStagePop() {
+      stage.classList.remove('stage-pop');
+      void stage.offsetWidth;
+      stage.classList.add('stage-pop');
+      later(() => stage.classList.remove('stage-pop'), 300);
+    }
+    function startCountingTo(startNumber, targetNumber, onComplete) {
+      if (countFrame) cancelAnimationFrame(countFrame);
+      const fromNumber = Math.max(0, Math.round(Number(startNumber) || 0));
+      const toNumber = Math.max(0, Math.round(Number(targetNumber) || 0));
+      const diff = toNumber - fromNumber;
+      const startTime = performance.now();
+      function tick(now) {
+        const elapsed = now - startTime;
+        const progress = clamp(elapsed / COUNT_DURATION, 0, 1);
+        const eased = easeOutExpo(progress);
+        const currentValue = Math.round(fromNumber + (diff * eased));
+        updateScoreTextWithoutRestart(formatScore(currentValue));
+        if (progress < 1) countFrame = requestAnimationFrame(tick);
+        else {
+          updateScoreTextWithoutRestart(formatScore(toNumber));
+          countFrame = null;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      }
+      countFrame = requestAnimationFrame(tick);
+    }
+    function closePolygonDuringTextExit(finalText) {
+      const finalLength = String(finalText).length;
+      const totalExitTime = EXIT_DURATION + ((finalLength - 1) * CHAR_OUT_STAGGER);
+      const totalPolygonCloseTime = POLYGON_CLOSE_DURATION + ((4 - 1) * POLYGON_CLOSE_STAGGER);
+      later(() => {
+        animatePolygonTo([[...CENTER], [...CENTER], [...CENTER], [...CENTER]], { duration: POLYGON_CLOSE_DURATION, stagger: POLYGON_CLOSE_STAGGER, easing: easeInBackFast });
+      }, 90);
+      later(() => { container.innerHTML = ''; }, Math.max(totalExitTime, 90 + totalPolygonCloseTime) + 120);
+    }
+    function cleanup() {
+      clearAllTimeouts();
+      if (countFrame) { cancelAnimationFrame(countFrame); countFrame = null; }
+      if (polygonAnimationFrame) { cancelAnimationFrame(polygonAnimationFrame); polygonAnimationFrame = null; }
+    }
+    container._scoreCounterCleanup = cleanup;
+    resetPolygonToCenter();
+    playStagePop();
+    const fromNumber = Math.max(0, Math.round(Number(from) || 0));
+    const targetNumber = Math.max(0, Math.round(Number(score) || 0));
+    const finalText = formatScore(targetNumber);
+    const openShape = createRandomOpenShape();
+    animatePolygonTo(openShape, {
+      duration: POLYGON_OPEN_DURATION,
+      stagger: POLYGON_OPEN_STAGGER,
+      easing: easeOutBackFast,
+      onComplete: () => animatePolygonTo(createTinyLivingShapeAround(openShape), { duration: 260, stagger: 12, easing: easeInOutCubic })
+    });
+    later(() => {
+      const textLength = createScoreText(formatScore(fromNumber));
+      const totalEntranceTime = ENTER_DURATION + ((textLength - 1) * CHAR_IN_STAGGER);
+      later(() => {
+        startCountingTo(fromNumber, targetNumber, () => {
+          later(() => {
+            exitScoreText();
+            closePolygonDuringTextExit(finalText);
+          }, HOLD_TIME);
+        });
+      }, totalEntranceTime);
+    }, 120);
+  }
+
+  function playQuizTransitionScoreCounter(layer = document.getElementById('quizFullscreenLayer')) {
+    const wrap = layer?.querySelector?.('[data-quiz-transition-score-wrap]');
+    const slot = wrap?.querySelector?.('[data-score-counter-slot]');
+    if (!wrap || !slot) return;
+    applyQuizTransitionScoreTune();
+    playScoreCounter({ target: slot, from: Number(wrap.dataset.scoreFrom) || 0, score: Number(wrap.dataset.scoreTo) || 0 });
+  }
+
   function quizTransitionTuneSwitchHTML(key, label, help = '') {
     const tune = getQuizTransitionTune();
     const checked = tune[key] ? 'checked' : '';
@@ -3930,6 +3976,7 @@
   }
 
   function scheduleQuizTransitionContinuousAdvance() {
+    if (shouldShowQuizTransitionScore(state.quizQuestionIndex + 1)) return;
     const tune = getQuizTransitionTune();
     if (!tune.continuous) return;
     const layer = document.getElementById('quizFullscreenLayer');
@@ -3986,6 +4033,51 @@
         if (state.prefs.quizSounds !== false) {
           preloadQuizSounds();
           if (state.quizFullscreenActive && getQuizSession().phase === 'question' && !getQuizSession().locked) startQuizQuestionMusic(getCurrentQuizQuestion());
+        }
+      });
+    });
+
+
+    const scorePanel = layer.querySelector('[data-quiz-transition-score-panel]');
+    const syncScorePanel = () => {
+      if (!scorePanel) return;
+      scorePanel.hidden = !state.quizTransitionScorePanelOpen;
+      scorePanel.setAttribute('aria-hidden', state.quizTransitionScorePanelOpen ? 'false' : 'true');
+    };
+    syncScorePanel();
+    layer.querySelectorAll('[data-quiz-score-panel-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.quizTransitionScorePanelOpen = !state.quizTransitionScorePanelOpen;
+        syncScorePanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-score-panel-close]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.quizTransitionScorePanelOpen = false;
+        syncScorePanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-transition-score-tune]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.quizTransitionScoreTune;
+        const tune = getQuizTransitionScoreTune();
+        tune[key] = Number(input.value);
+        const safe = applyQuizTransitionScoreTune(saveQuizTransitionScoreTune(tune));
+        layer.querySelectorAll(`[data-score-tune-value="${key}"]`).forEach((label) => {
+          const field = QUIZ_TRANSITION_SCORE_TUNE_FIELDS.find((item) => item.key === key);
+          label.textContent = `${safe[key]}${field?.unit || ''}`;
+        });
+      });
+    });
+    layer.querySelectorAll('[data-quiz-score-counter-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const action = button.dataset.quizScoreCounterAction;
+        if (action === 'replay') {
+          playQuizTransitionScoreCounter(layer);
+          return;
+        }
+        if (action === 'continue') {
+          goToQuizQuestionFromTransition();
         }
       });
     });
@@ -4453,7 +4545,6 @@
     bindQuizLayoutTunePanel();
     bindQuizTransitionTunePanel();
     bindQuizRankingPodiumTunePanel();
-    bindQuizScoreTunePanel();
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
@@ -4752,14 +4843,14 @@
 
     const selectedCorrect = button.dataset.correct === 'true';
     scheduleQuizTimer(() => {
-      const answerRecord = recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
-      revealQuizAnswer(stage, button, selectedCorrect, answerRecord);
+      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId });
+      revealQuizAnswer(stage, button, selectedCorrect);
       playQuizSound(selectedCorrect ? 'correct' : 'wrong');
-      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
+      showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
     }, 1000);
   }
 
-  function revealQuizAnswer(stage, selectedButton, selectedCorrect, answerRecord = null) {
+  function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
     const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
@@ -4777,7 +4868,6 @@
       scheduleQuizTimer(() => {
         item.classList.remove('is-dimmed');
         item.classList.add(isCorrect ? 'correct-reveal' : 'wrong-reveal', 'kahoot-reveal-pop', isCorrect ? 'kahoot-reveal-correct' : 'kahoot-reveal-wrong');
-        if (item === selectedButton) showQuizPointsCascade(item, answerRecord, 120);
       }, 90 * index);
     });
   }
@@ -4995,7 +5085,6 @@
 
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
-    removeQuizScoreTunePanel(false);
     removeQuizGlobalFeedback();
     ensureQuizGlobalFeedbackStyles();
     const parts = quizFeedbackParts(correct, neutralText, question);
@@ -5035,8 +5124,7 @@
     if (window.__encisomathQuizFeedbackShowTimer) window.clearTimeout(window.__encisomathQuizFeedbackShowTimer);
     window.__encisomathQuizFeedbackShowTimer = window.setTimeout(() => {
       window.__encisomathQuizFeedbackShowTimer = null;
-      if (QUIZ_SCORE_TUNE_ENABLED) showQuizScoreTuneGate(stage, correct, question, neutralText);
-      else showQuizFeedbackBand(stage, correct, question, neutralText);
+      showQuizFeedbackBand(stage, correct, question, neutralText);
     }, effectiveDelay);
   }
 
@@ -5048,17 +5136,17 @@
       safeExtra.correctAnswer = safeExtra.correct;
       delete safeExtra.correct;
     }
-    const timing = safeExtra?.timing && typeof safeExtra.timing === 'object' ? safeExtra.timing : getQuizAnswerTimingSnapshot();
-    const score = calculateQuizAnswerScore(question, correct, { ...safeExtra, timing }, getActiveQuiz());
+    const timing = safeExtra.timing || getQuizAnswerTimingSnapshot();
+    safeExtra.timing = timing;
+    const score = calculateQuizAnswerScore(question, correct, safeExtra, index, getActiveQuiz());
     const answerRecord = {
       index,
       questionId: question?.id || `q${index + 1}`,
       type: question?.type || 'unknown',
       ...safeExtra,
-      correct,
-      timing,
       score,
-      points: score.total
+      points: score,
+      correct
     };
     session.answers = session.answers.filter((answer) => Number(answer.index) !== index);
     session.answers.push(answerRecord);
@@ -5113,9 +5201,8 @@
     window.requestAnimationFrame(() => {
       form.classList.add('is-open-submitted');
     });
-    const answerRecord = recordQuizAnswer(question, null, { text: value });
-    showQuizPointsCascade(form, answerRecord, 120);
-    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', Math.max(720, QUIZ_SCORE_CASCADE_BEFORE_FEEDBACK_MS));
+    recordQuizAnswer(question, null, { text: value });
+    showQuizFeedbackBandAfterDelay(stage, null, question, value ? 'Tu respuesta quedó registrada en este intento.' : 'Enviada sin texto. La próxima escribe alguito, profe.', 720);
   }
 
   function startQuiz(quizId) {
@@ -5182,8 +5269,6 @@
 
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
     removeQuizGlobalFeedback();
-    clearQuizFloatingScoreStages();
-    removeQuizScoreTunePanel(true);
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
     if (!layer) {
@@ -5231,6 +5316,7 @@
       });
     } else if (phase === 'transition') {
       playQuizTransitionNumberMotion(layer);
+      playQuizTransitionScoreCounter(layer);
       scheduleQuizTransitionContinuousAdvance();
     } else if (phase === 'results') {
       stopQuizQuestionMusic(true);
@@ -5314,6 +5400,7 @@
         <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
         ${infoHTML}
         <div class="quiz-transition-count"><span class="quiz-transition-number"><strong>${current}</strong><small>/${count}</small></span></div>
+        ${quizTransitionScoreHTML(current, quiz)}
         <div class="quiz-transition-progress"><span></span></div>
       </section>
     `;
@@ -6354,7 +6441,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.187', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.190', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
