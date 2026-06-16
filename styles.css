@@ -16296,3 +16296,36 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
   background-color: #58cc02 !important;
   background-image: none !important;
 }
+
+/* v0.24.222 - Selector de puntuación por tiempo en modal de inicio */
+.quiz-time-scoring-picker {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.quiz-time-scoring-picker span {
+  color: rgba(255,255,255,.82);
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .01em;
+}
+.quiz-time-scoring-picker select {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: #111827;
+  color: #ffffff;
+  font: 900 .92rem 'Montserrat', system-ui, sans-serif;
+  padding: 0 10px;
+  outline: none;
+}
+.quiz-time-scoring-picker small {
+  color: rgba(255,255,255,.58);
+  font-size: .68rem;
+  font-weight: 760;
+  line-height: 1.25;
+}

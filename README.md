@@ -1,31 +1,39 @@
-## v0.24.221
+## v0.24.222
+
+- Cambios en puntuación de Quizzes: los puntos por tiempo ahora solo se otorgan si la respuesta es correcta; si la respuesta es incorrecta, puntos por ítem y puntos por tiempo quedan en 0.
+- Se agregó modo alternativo de puntuación por tiempo `Rapidez`, donde responder más rápido suma más puntos. Se conserva el modo `Curva` existente.
+- El modal inicial del quiz, donde aparece `Empezar quiz`, ahora incluye selector `Tipo de puntos por tiempo` con opciones `Curva` y `Rapidez`. La selección se guarda en `localStorage` con clave `encisomath:quizTimeScoringMode:v0.24.222`.
+- No se tocaron tipos de pregunta, hero, countdown visual, Flip, Organizar visual, ranking/podio, música, clases, estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.222`.
+
+## v0.24.222
 
 - Ajuste puntual en Quizzes: las opciones no usadas/dimmed de ABCD y True/False ahora quedan en gris sólido `#6b7280`, sin opacidad ni filtro que las oscurezca visualmente.
 - En Organizar, la tarjeta correcta durante validación ahora usa el verde sólido `#58cc02`, igual que ABCD/True-False, manteniendo incorrecta en rojo sólido.
 - No se tocaron Flip, hero, countdown, puntos, música, ranking/podio, contenedores del quiz, datos base ni demás estilos.
-- Versión/cache busting actualizado a `0.24.221`.
+- Versión/cache busting actualizado a `0.24.222`.
 
-## v0.24.221
+## v0.24.222
 
 - Cambio puntual en Quizzes: el valor inicial del slider `Countdown X` quedó en `23px`.
-- Se usa una clave nueva de localStorage `encisomath:quizCountdownTune:v0.24.221` para aplicar el nuevo valor por defecto sin arrastrar ajustes viejos.
+- Se usa una clave nueva de localStorage `encisomath:quizCountdownTune:v0.24.222` para aplicar el nuevo valor por defecto sin arrastrar ajustes viejos.
 - No se tocaron contenedores del quiz, respuestas, Flip, Organizar, puntos, música, ranking, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.221`.
+- Versión/cache busting actualizado a `0.24.222`.
 
-## v0.24.221
+## v0.24.222
 
 - Cambio puntual en Quizzes: se agregó en la tuerquita del quiz un control `Countdown X` para mover horizontalmente el countdown del hero superior.
-- El slider guarda su valor en `localStorage` con la clave `encisomath:quizCountdownTune:v0.24.221` y aplica el desplazamiento en vivo al contador del hero.
+- El slider guarda su valor en `localStorage` con la clave `encisomath:quizCountdownTune:v0.24.222` y aplica el desplazamiento en vivo al contador del hero.
 - Valor inicial conservado: `6px` hacia la derecha, tal como venía en v0.24.218.
 - No se tocaron contenedores del quiz, respuestas, Flip, Organizar, puntos, música, ranking/podio, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.221`.
+- Versión/cache busting actualizado a `0.24.222`.
 
-## v0.24.221
+## v0.24.222
 
 - Cambio puntual en Quizzes: se retiró la barrita horizontal de countdown que se había agregado dentro del hero superior del quiz en v0.24.216.
 - Se conserva el hero superior compacto y el countdown poligonal normal; no se tocó el contenedor de elementos del quiz ni los contenedores de respuestas.
 - No se tocaron Flip, Organizar, botones, jello, hero de transición, puntos, música, ranking/podio, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.221`.
+- Versión/cache busting actualizado a `0.24.222`.
 
 ## v0.24.216
 

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.221';
+  const APP_VERSION = '0.24.222';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.221';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.222';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.221';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.222';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -340,11 +340,14 @@
     { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
   ];
-  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.221';
+  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.222';
   const QUIZ_COUNTDOWN_TUNE_DEFAULTS = { x: 23 };
   const QUIZ_COUNTDOWN_TUNE_FIELDS = [
     { key: 'x', label: 'Countdown X', min: -36, max: 64, step: 1, unit: 'px' }
   ];
+  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.222';
+  const QUIZ_TIME_SCORING_MODE_DEFAULT = 'curve';
+  const QUIZ_TIME_SCORING_MODES = new Set(['curve', 'speed']);
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
     p1x: 5, p1y: -45, p1rot: 0,
@@ -422,6 +425,7 @@
     rockstarPeriod: Number(localStorage.getItem('encisomath:rockstarPeriod') || 1),
     quizPeriod: Number(localStorage.getItem('encisomath:quizPeriod') || 1),
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
+    quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
     quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '', securityEvents: [], securityWarningOpen: false, securityTerminated: false },
@@ -3337,7 +3341,8 @@
       securityEvents: [],
       securityWarningOpen: false,
       securityTerminated: false,
-      securityPausedFeedback: false
+      securityPausedFeedback: false,
+      timeScoringMode: normalizeQuizTimeScoringMode(state.quizTimeScoringMode)
     };
     return state.quizSession;
   }
@@ -3429,6 +3434,29 @@
   }
 
 
+  function normalizeQuizTimeScoringMode(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'rapidez' || raw === 'rapido' || raw === 'rápido' || raw === 'speed' || raw === 'fast') return 'speed';
+    return QUIZ_TIME_SCORING_MODES.has(raw) ? raw : QUIZ_TIME_SCORING_MODE_DEFAULT;
+  }
+
+  function getQuizTimeScoringMode() {
+    const session = state.quizSession && typeof state.quizSession === 'object' ? state.quizSession : null;
+    return normalizeQuizTimeScoringMode(session?.timeScoringMode || state.quizTimeScoringMode || localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY));
+  }
+
+  function saveQuizTimeScoringMode(value) {
+    const mode = normalizeQuizTimeScoringMode(value);
+    state.quizTimeScoringMode = mode;
+    if (state.quizSession && typeof state.quizSession === 'object') state.quizSession.timeScoringMode = mode;
+    try { localStorage.setItem(QUIZ_TIME_SCORING_MODE_KEY, mode); } catch (_) {}
+    return mode;
+  }
+
+  function quizTimeScoringLabel(mode = getQuizTimeScoringMode()) {
+    return normalizeQuizTimeScoringMode(mode) === 'speed' ? 'Rapidez' : 'Curva';
+  }
+
   function quizScorePointsForIndex(totalItems = 1, index = 0, totalPoints = QUIZ_SCORE_TOTAL_ITEM_POINTS) {
     const count = Math.max(1, Number(totalItems) || 1);
     const safeIndex = Math.max(0, Math.min(count - 1, Number(index) || 0));
@@ -3447,6 +3475,15 @@
     }
     const lateProgress = (r - sweetSpot) / (1 - sweetSpot);
     return Math.max(0.08, 1 - Math.pow(lateProgress, 1.45) * 0.92);
+  }
+
+  function quizTimeScoreSpeed(elapsedRatio = 0) {
+    const r = clampQuizNumber(elapsedRatio, 0, 1);
+    return clampQuizNumber(1 - r, 0, 1);
+  }
+
+  function quizTimeScoreFactor(elapsedRatio = 0, mode = getQuizTimeScoringMode()) {
+    return normalizeQuizTimeScoringMode(mode) === 'speed' ? quizTimeScoreSpeed(elapsedRatio) : quizTimeScoreCurve(elapsedRatio);
   }
 
   function calculateQuizAnswerScore(question, correct, extra = {}, index = state.quizQuestionIndex, quiz = getActiveQuiz()) {
@@ -3473,17 +3510,20 @@
     const hasFlipAnswer = String(extra?.selectedCard || extra?.selectedFlip || extra?.selected || '').trim().length > 0;
     const isTimeout = extra?.timeout === true;
     const madeAttempt = !isTimeout && (isCorrect || correct === false || hasTextAnswer || hasSelectedAnswer || hasOrderAnswer || hasFlipAnswer);
-    const curveRaw = madeAttempt ? quizTimeScoreCurve(elapsedRatio) : 0;
+    const timeScoringMode = normalizeQuizTimeScoringMode(extra?.timeScoreMode || extra?.timeScoringMode || getQuizTimeScoringMode());
+    const curveRaw = isCorrect && madeAttempt ? quizTimeScoreFactor(elapsedRatio, timeScoringMode) : 0;
     const curve = Math.round(curveRaw * 10000) / 10000;
     const item = isCorrect ? itemMax : 0;
-    const time = madeAttempt ? Math.round(timeMax * curveRaw) : 0;
+    const time = isCorrect && madeAttempt ? Math.round(timeMax * curveRaw) : 0;
     const total = item + time;
     const noReadLimit = 0.18;
     const sweetSpot = 0.75;
-    const branch = !madeAttempt ? 'sin intento real / timeout' : elapsedRatio <= noReadLimit ? 'demasiado rapido' : elapsedRatio <= sweetSpot ? 'subida hacia punto dulce' : 'bajada por respuesta tardia';
-    const formula = madeAttempt
-      ? `r = tiempoDemorado / tiempoLimite = ${timing.elapsedSeconds}s / ${timing.totalSeconds}s = ${timing.elapsedRatio}; curva = r <= 0.18 ? 0 : r <= 0.75 ? ((r - 0.18) / (0.75 - 0.18))^0.72 : max(0.08, 1 - ((r - 0.75) / (1 - 0.75))^1.45 * 0.92); puntosTiempo = redondear(${timeMax} * ${curve}) = ${time}`
-      : `sin intento real o timeout; puntosTiempo = 0`;
+    const branch = !madeAttempt ? 'sin intento real / timeout' : !isCorrect ? 'respuesta incorrecta: item y tiempo en 0' : timeScoringMode === 'speed' ? 'rapidez: mas rapido suma mas' : elapsedRatio <= noReadLimit ? 'demasiado rapido' : elapsedRatio <= sweetSpot ? 'subida hacia punto dulce' : 'bajada por respuesta tardia';
+    const formula = isCorrect && madeAttempt
+      ? (timeScoringMode === 'speed'
+        ? `r = tiempoDemorado / tiempoLimite = ${timing.elapsedSeconds}s / ${timing.totalSeconds}s = ${timing.elapsedRatio}; rapidez = 1 - r = ${curve}; puntosTiempo = redondear(${timeMax} * ${curve}) = ${time}`
+        : `r = tiempoDemorado / tiempoLimite = ${timing.elapsedSeconds}s / ${timing.totalSeconds}s = ${timing.elapsedRatio}; curva = r <= 0.18 ? 0 : r <= 0.75 ? ((r - 0.18) / (0.75 - 0.18))^0.72 : max(0.08, 1 - ((r - 0.75) / (1 - 0.75))^1.45 * 0.92); puntosTiempo = redondear(${timeMax} * ${curve}) = ${time}`)
+      : `respuesta incorrecta, sin intento real o timeout; puntosItem = 0 y puntosTiempo = 0`;
     return {
       item,
       time,
@@ -3491,6 +3531,7 @@
       maxItem: itemMax,
       maxTime: timeMax,
       curve,
+      timeScoringMode,
       timing,
       debug: {
         itemIndex: safeIndex + 1,
@@ -3498,6 +3539,7 @@
         correct: isCorrect,
         madeAttempt,
         timeout: isTimeout,
+        timeScoringMode,
         branch,
         formula
       }
@@ -4705,6 +4747,9 @@
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
       button.addEventListener('click', beginQuizFromConfirm);
     });
+    document.querySelectorAll('[data-quiz-time-scoring-mode]').forEach((select) => {
+      select.addEventListener('change', () => saveQuizTimeScoringMode(select.value));
+    });
     document.querySelectorAll('[data-quiz-result-target]').forEach((button) => {
       button.addEventListener('click', () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
     });
@@ -5335,6 +5380,7 @@
     }
     const timing = safeExtra.timing || getQuizAnswerTimingSnapshot();
     safeExtra.timing = timing;
+    safeExtra.timeScoreMode = normalizeQuizTimeScoringMode(safeExtra.timeScoreMode || safeExtra.timeScoringMode || getQuizTimeScoringMode());
     const score = calculateQuizAnswerScore(question, correct, safeExtra, index, getActiveQuiz());
     const answerRecord = {
       index,
@@ -5416,6 +5462,10 @@
   function beginQuizFromConfirm() {
     const quiz = getActiveQuiz();
     if (!quiz) return;
+    const selectedMode = document.querySelector('[data-quiz-time-scoring-mode]')?.value || getQuizTimeScoringMode();
+    saveQuizTimeScoringMode(selectedMode);
+    const session = getQuizSession();
+    session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
     closeModal(false);
     preloadQuizSounds();
     clearQuizTimers();
@@ -5534,6 +5584,20 @@
     return `<div class="quiz-security-watermark" aria-hidden="true">${escapeHTML(text)}</div>`;
   }
 
+  function quizTimeScoringSelectorHTML() {
+    const mode = getQuizTimeScoringMode();
+    return `
+      <label class="quiz-time-scoring-picker">
+        <span>Tipo de puntos por tiempo</span>
+        <select data-quiz-time-scoring-mode>
+          <option value="curve" ${mode === 'curve' ? 'selected' : ''}>Curva</option>
+          <option value="speed" ${mode === 'speed' ? 'selected' : ''}>Rapidez</option>
+        </select>
+        <small>Curva premia el punto dulce; rapidez premia responder más rápido.</small>
+      </label>
+    `;
+  }
+
   function quizStartModalHTML(quiz) {
     const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
     return `
@@ -5549,6 +5613,7 @@
           <h3>${escapeHTML(quiz.title || 'Quiz')}</h3>
           <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
           <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
+          ${quizTimeScoringSelectorHTML()}
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
         </div>
       </div>
@@ -6612,7 +6677,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.221', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.222', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
