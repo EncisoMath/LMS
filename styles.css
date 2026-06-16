@@ -16182,86 +16182,6 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   outline: none !important;
 }
 
-/* Flip: matar la sombra exterior de las caras con la misma especificidad de las reglas viejas y recortar el spill del giro. */
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close {
-  box-shadow: none !important;
-  filter: none !important;
-  outline: none !important;
-  overflow: hidden !important;
-  contain: paint !important;
-  clip-path: inset(0 round 6px) !important;
-  isolation: isolate !important;
-}
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-inner,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner {
-  box-shadow: none !important;
-  filter: none !important;
-  overflow: hidden !important;
-  clip-path: inset(0 round 6px) !important;
-}
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-back {
-  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset !important;
-  filter: none !important;
-}
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close:not(.flip-unused):not(.is-dimmed):not(.flip-correct-reveal):not(.flip-wrong-reveal) .quiz-flip-front {
-  box-shadow: 0 0 0 3px var(--flip-color, rgba(255,255,255,.18)) inset !important;
-  filter: none !important;
-}
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-face,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face {
-  filter: none !important;
-  overflow: hidden !important;
-  clip-path: inset(0 round 6px) !important;
-  text-shadow: none !important;
-}
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back {
-  box-shadow: 0 0 0 3px #58cc02 inset !important;
-  filter: none !important;
-}
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
-.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back {
-  box-shadow: 0 0 0 3px #e21b3c inset !important;
-  filter: none !important;
-}
-
 /* Organizar: recuperar gris al pulsar Enviar antes del reveal; validacion final solida. */
 body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-pending-dim,
 .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-pending-dim,
@@ -16300,146 +16220,6 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
   background-image: none !important;
 }
 
-/* ===== v0.24.211 - restaurar flip 3D sin sombra exterior ===== */
-/* La v0.24.210 recortó el contenedor del flip y eso aplanó la tarjeta. Aquí se restaura el 3D real. */
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner {
-  overflow: visible !important;
-  contain: none !important;
-  clip-path: none !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card {
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-  outline: none !important;
-  isolation: auto !important;
-  perspective: 900px !important;
-  transform-style: preserve-3d !important;
-  -webkit-tap-highlight-color: transparent !important;
-  touch-action: manipulation !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close {
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
-  outline: none !important;
-  overflow: visible !important;
-  contain: none !important;
-  clip-path: none !important;
-  isolation: auto !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner {
-  box-shadow: none !important;
-  filter: none !important;
-  overflow: visible !important;
-  contain: none !important;
-  clip-path: none !important;
-  transform-style: preserve-3d !important;
-  -webkit-transform-style: preserve-3d !important;
-  backface-visibility: visible !important;
-  -webkit-backface-visibility: visible !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipped .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipped .quiz-flip-inner {
-  transform: rotateY(180deg) !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner {
-  animation: flip-vertical-right .4s cubic-bezier(.455,.03,.515,.955) both !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner {
-  animation: flip-vertical-right .4s cubic-bezier(.455,.03,.515,.955) reverse both !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face {
-  filter: none !important;
-  text-shadow: none !important;
-  clip-path: none !important;
-  contain: none !important;
-  overflow: hidden !important;
-  backface-visibility: hidden !important;
-  -webkit-backface-visibility: hidden !important;
-  transform-style: preserve-3d !important;
-  -webkit-transform-style: preserve-3d !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-back,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-back {
-  transform: rotateY(0deg) translateZ(0) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-front {
-  transform: rotateY(180deg) translateZ(0) !important;
-  box-shadow: 0 0 0 3px var(--flip-color, rgba(255,255,255,.18)) inset !important;
-  filter: none !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back {
-  box-shadow: 0 0 0 3px #58cc02 inset !important;
-  filter: none !important;
-}
-
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
-body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
-.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back {
-  box-shadow: 0 0 0 3px #e21b3c inset !important;
-  filter: none !important;
-}
-
-
 /* ===== v0.24.212 - fixes puntuales: jello en Enviar Flip y gris intermedio Organizar ===== */
 /* Flip: el botón Enviar respuesta usa la misma clase jello que Organizar, sin tocar el flip de tarjetas. */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-submit.is-order-submit-jello,
@@ -16463,3 +16243,139 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset !important;
   filter: none !important;
 }
+
+/* ===== v0.24.213 - restaurar Flip original 3D y quitar solo sombras exteriores ===== */
+/* No usar overflow hidden, contain ni clip-path sobre card/inner: eso aplana el 3D y muestra los ? invertidos. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-board,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner {
+  overflow: visible !important;
+  contain: none !important;
+  clip-path: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-grid {
+  perspective: 900px !important;
+  transform-style: preserve-3d !important;
+  -webkit-transform-style: preserve-3d !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close {
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: none !important;
+  perspective: 900px !important;
+  transform-style: preserve-3d !important;
+  -webkit-transform-style: preserve-3d !important;
+  isolation: auto !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner {
+  box-shadow: none !important;
+  filter: none !important;
+  transform-style: preserve-3d !important;
+  -webkit-transform-style: preserve-3d !important;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipped .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipped .quiz-flip-inner {
+  transform: rotateY(180deg) !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner {
+  animation: flip-vertical-right .4s cubic-bezier(.455,.03,.515,.955) both !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner {
+  animation: flip-vertical-right .4s cubic-bezier(.455,.03,.515,.955) reverse both !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face {
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset !important;
+  filter: none !important;
+  text-shadow: none !important;
+  contain: none !important;
+  clip-path: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-back {
+  transform: rotateY(0deg) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset !important;
+  filter: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-front {
+  transform: rotateY(180deg) !important;
+  box-shadow: 0 0 0 3px var(--flip-color, rgba(255,255,255,.18)) inset !important;
+  filter: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back {
+  box-shadow: 0 0 0 3px #58cc02 inset !important;
+  filter: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back {
+  box-shadow: 0 0 0 3px #e21b3c inset !important;
+  filter: none !important;
+}
+

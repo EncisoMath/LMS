@@ -1,8 +1,16 @@
-## v0.24.212
+## v0.24.213
+
+- Corrección puntual de Flip: se eliminaron las reglas de `overflow: hidden`, `contain: paint` y `clip-path` agregadas en versiones anteriores sobre `.quiz-flip-card` / `.quiz-flip-inner`, porque aplanaban el 3D y dejaban visibles los signos `?` invertidos.
+- Se restauró el Flip 3D real de dos caras manteniendo `perspective`, `transform-style: preserve-3d`, `backface-visibility: hidden` en las caras y los `rotateY` originales.
+- Se mantiene la eliminación de sombra/resplandor exterior en Flip usando solo `box-shadow` interno y `filter: none`, sin recortar ni aplanar la tarjeta.
+- No se tocaron jello de botones, Organizar, hero, countdown, puntos, música, ranking/podio, padding ni datos base.
+- Versión/cache busting actualizado a `0.24.213`.
+
+## v0.24.213
 - Corrección puntual en Quizzes/Flip: el botón `Enviar respuesta` del tipo Flip ahora ejecuta `jello-horizontal` al pulsarlo, reutilizando la clase existente sin tocar la animación de las tarjetas.
 - Corrección puntual en Quizzes/Organizar: al pulsar `Enviar respuesta`, las tarjetas vuelven a pasar por estado gris intermedio mientras se valida; al revelar, se limpian estilos inline para conservar verde/rojo sólidos sin degradado.
 - No se tocaron hero, countdown, puntos, música, ranking/podio, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.212`.
+- Versión/cache busting actualizado a `0.24.213`.
 
 ## v0.24.211
 - Correccion puntual de Flip sobre v0.24.210: se restaura el comportamiento 3D real de dos caras, quitando el recorte/clip que dejaba visibles solo las espaldas.
