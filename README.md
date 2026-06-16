@@ -1,3 +1,10 @@
+## v0.24.217
+
+- Cambio puntual en Quizzes: se retiró la barrita horizontal de countdown que se había agregado dentro del hero superior del quiz en v0.24.216.
+- Se conserva el hero superior compacto y el countdown poligonal normal; no se tocó el contenedor de elementos del quiz ni los contenedores de respuestas.
+- No se tocaron Flip, Organizar, botones, jello, hero de transición, puntos, música, ranking/podio, padding ni datos base.
+- Versión/cache busting actualizado a `0.24.217`.
+
 ## v0.24.216
 
 - Ajuste puntual en Quizzes: se agrega una barra horizontal de countdown dentro del hero superior de la pantalla de pregunta.
