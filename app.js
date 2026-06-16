@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.215';
+  const APP_VERSION = '0.24.216';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.215';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.216';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.215';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.216';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -3576,6 +3576,7 @@
     const wrap = layer.querySelector('[data-quiz-countdown-poly]');
     const polygon = wrap?.querySelector?.('[data-quiz-moving-polygon]');
     const number = wrap?.querySelector?.('[data-quiz-countdown-number]');
+    const progressBar = layer.querySelector('[data-quiz-countdown-progress-bar]');
     if (!wrap || !polygon || !number) return;
 
     const BASE_POINTS = [
@@ -3599,6 +3600,12 @@
     const questionIndex = Number(state.quizQuestionIndex) || 0;
     const totalSeconds = normalizeQuizItemSeconds(wrap.dataset.quizCountdownTotal || getQuizQuestionTimeLimit(getCurrentQuizQuestion(), quiz));
     let remainingSeconds = totalSeconds;
+
+    function updateProgressBar() {
+      if (!progressBar) return;
+      const ratio = totalSeconds > 0 ? Math.max(0, Math.min(1, remainingSeconds / totalSeconds)) : 0;
+      progressBar.style.width = `${ratio * 100}%`;
+    }
     let countdownInterval = null;
     let isRunning = true;
     let currentPoints = createSecondShape();
@@ -3712,6 +3719,7 @@
     }
 
     number.textContent = String(totalSeconds);
+    updateProgressBar();
     polygon.setAttribute('points', pointsToString(currentPoints));
     wrap.classList.remove('danger', 'beat', 'is-answered', 'is-timeup');
     startIdleMovement();
@@ -3743,6 +3751,7 @@
       remainingSeconds -= 1;
       active.remainingSeconds = remainingSeconds;
       number.textContent = String(Math.max(0, remainingSeconds));
+      updateProgressBar();
       moveToNewSecondShape();
       handleSecondEffects();
       if (remainingSeconds <= 0) {
@@ -5405,6 +5414,7 @@
           <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
         </div>
         <div class="quiz-countdown-slot">${quizCountdownHTML(currentSeconds)}</div>
+        <div class="quiz-countdown-progress" data-quiz-countdown-progress aria-hidden="true"><span data-quiz-countdown-progress-bar></span></div>
       </div>` : ''}
       <div class="quiz-fullscreen-content ${phase === 'transition' ? 'quiz-fullscreen-transition-content' : ''}">
         ${content}
@@ -6519,7 +6529,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.215', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.216', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
