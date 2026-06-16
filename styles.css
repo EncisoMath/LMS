@@ -16000,7 +16000,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 
-/* ===== v0.24.208 - probar separacion lateral hero 8px ===== */
+/* ===== v0.24.209 - probar separacion lateral hero 8px ===== */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top,
@@ -16010,4 +16010,121 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   margin-left: 8px !important;
   margin-right: 8px !important;
   box-sizing: border-box !important;
+}
+
+/* ===== v0.24.209 - ajustes puntuales solicitados ===== */
+/* 1) Botones Enviar respuesta: eliminar azul/cian al pulsar o quedar disabled, sin tocar jello. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn:disabled,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit:disabled,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-submit:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-submit:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn:active,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-submit-btn:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit:active,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-submit:disabled,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-submit:active,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-submit:disabled {
+  background: #111827 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* 2) Flip: eliminar resplandor/sombra exterior durante giro/activacion. Mantener solo borde interno. */
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-inner,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-inner {
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:active .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card:focus-visible .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-face,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-face {
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset !important;
+  filter: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flip-animating .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-open .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.is-flipping-close .quiz-flip-front {
+  box-shadow: 0 0 0 3px var(--flip-color, rgba(255,255,255,.18)) inset !important;
+  filter: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-correct-reveal .quiz-flip-back {
+  box-shadow: 0 0 0 3px #58cc02 inset !important;
+  filter: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-front,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-card.flip-wrong-reveal .quiz-flip-back {
+  box-shadow: 0 0 0 3px #e21b3c inset !important;
+  filter: none !important;
+}
+
+/* 3) Organizar: validacion con colores solidos, sin degradados. */
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct {
+  background: #26890c !important;
+  background-image: none !important;
+}
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.wrong,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.wrong,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-wrong,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.wrong,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.wrong,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.wrong,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-wrong {
+  background: #e21b3c !important;
+  background-image: none !important;
 }
