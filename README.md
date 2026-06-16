@@ -1,39 +1,45 @@
-## v0.24.210
+## v0.24.211
+- Correccion puntual de Flip sobre v0.24.210: se restaura el comportamiento 3D real de dos caras, quitando el recorte/clip que dejaba visibles solo las espaldas.
+- Se mantienen las sombras exteriores eliminadas en Flip mediante bordes internos y `filter: none`, sin usar `clip-path` ni `contain: paint` sobre la tarjeta.
+- No se tocaron jello de botones, hero, countdown, puntos, musica, ranking/podio, padding ni datos base.
+- Version/cache busting actualizado a `0.24.211`.
+
+## v0.24.211
 - Cambio puntual en Quizzes: se eliminó el color azul/cian que aparecía al pulsar o deshabilitar los botones `Enviar respuesta` del flujo de quiz, sin tocar su animación `jello`.
 - En Quiz Flip se eliminaron sombras/resplandores exteriores durante la animación de giro (`is-flip-animating`, `is-flipping-open`, `is-flipping-close`), conservando solo bordes internos.
 - En Organizar, los estados de validación verde/rojo ahora usan colores sólidos sin degradados.
 - No se tocaron jello de botones, hero, countdown, puntos, música, ranking/podio, datos base, Rockstars, Clases ni Estudiantes.
-- Versión/cache busting actualizado a `0.24.210`.
+- Versión/cache busting actualizado a `0.24.211`.
 
-## v0.24.210
+## v0.24.211
 
 - Ajuste visual puntual en Quizzes: se prueba separación lateral del hero superior en `8px` por lado, manteniendo `quiz-fullscreen-layer` sin padding horizontal (`0px`) y el contenido del quiz con `4px`, para conservar la corrección del recorte de animaciones sin dejar el hero pegado al borde.
 - No se tocaron preguntas, countdown, puntos, música, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.210`.
+- Versión/cache busting actualizado a `0.24.211`.
 
-## v0.24.210
+## v0.24.211
 - Corrección puntual del hero superior en pantalla de pregunta: se mantiene `quiz-fullscreen-layer` sin padding lateral para que las animaciones de opciones no se recorten, pero el hero ahora recibe margen externo real de `4px` a izquierda y derecha mediante selector directo sobre `.quiz-fullscreen-top.quiz-fullscreen-top-countdown`.
 - Se conserva `quiz-fullscreen-content` con padding lateral `4px`, countdown normal activo y sin paneles debug visibles.
 - No se tocaron preguntas, tipos de quiz, countdown, puntos de transición, música, ranking/podio, Rockstars, Clases ni Estudiantes.
-- Versión/cache busting actualizado a `0.24.210`.
+- Versión/cache busting actualizado a `0.24.211`.
 
-## v0.24.210
+## v0.24.211
 
 - Se fijaron los valores encontrados en el debug de paddings: pantalla completa X en `0px` y contenido del quiz X en `4px`.
 - Se retiró el panel temporal `Debug paddings` de la tuerquita y se reactivó el countdown normal.
 - Para que el hero superior no quede de extremo a extremo con la pantalla completa en `0px`, se le aplicó separación lateral de `4px` a cada lado.
 - No se tocaron preguntas, tipos de quiz, puntos de transición, música random, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.210`.
+- Versión/cache busting actualizado a `0.24.211`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
-## v0.24.210
+## v0.24.211
 
 - Corrección puntual en Quizzes sobre v0.24.200.
 - Se reparó el recorte real de las animaciones `jello-horizontal` y `wobble-hor-bottom` en correcto/incorrecto, especialmente visible en el tipo `order`/Organizar cuando las tarjetas rotan o se desplazan durante la validación.
 - Se agregó una clase temporal global `quiz-reveal-overflow-active` durante el reveal para abrir el overflow de `quiz-fullscreen-content`, `quiz-stage-fullscreen`, `quiz-question-content`, `quiz-answer-zone` y contenedores específicos de ABCD, Verdadero/Falso, Abierta, Organizar y Flip.
 - En Organizar se añadió un colchón lateral temporal solo durante la animación para que las tarjetas de ancho completo no se corten al inclinarse.
 - No se tocaron el fondo negro, hero flat con malla, countdown, música random, puntos de transición, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.210`.
+- Versión/cache busting actualizado a `0.24.211`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
 ## v0.24.200
@@ -1083,7 +1089,7 @@ unzip -t encisomath-pwa-v0.24.52.zip
 - Se mantiene la lógica de puntos de v0.24.184-v0.24.185, la música random por ítem y el countdown por pregunta.
 - Version/cache busting actualizado a 0.24.187.
 
-## v0.24.210
+## v0.24.211
 - Correccion puntual en Quizzes desde v0.24.209: botones Enviar respuesta del quiz quedan con estado solido neutro y sin tap azul/cian, sin tocar jello.
 - Flip: se reforzo la eliminacion de sombras/resplandores exteriores durante el giro con selectores de mayor especificidad y recorte local de la tarjeta.
 - Organizar: se recupero el estado gris intermedio al pulsar Enviar y se mantiene validacion verde/roja con colores solidos sin degradados.
