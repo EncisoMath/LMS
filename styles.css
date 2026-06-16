@@ -16264,3 +16264,35 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot {
   transform: translateX(var(--quiz-countdown-tune-x, 23px)) !important;
 }
+
+/* ===== v0.24.221 - ajustes puntuales de colores: gris ABCD/TF y correcta Organizar ===== */
+/* ABCD y True/False: las opciones no usadas quedan en gris solido real, sin opacidad ni filtro. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-option.unused-reveal,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-option.is-dimmed,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-option.unused-reveal,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-option.is-dimmed,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-option.unused-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-multiple_choice .kahoot-option.is-dimmed,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-option.unused-reveal,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-true_false .kahoot-option.is-dimmed {
+  background: #6b7280 !important;
+  background-color: #6b7280 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Organizar: acierto validado con el mismo verde solido de ABCD/TF. */
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-js-revealing.matched,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct {
+  background: #58cc02 !important;
+  background-color: #58cc02 !important;
+  background-image: none !important;
+}
