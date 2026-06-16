@@ -1,9 +1,12 @@
-## v0.24.199
+## v0.24.200
 
-- Cambio puntual en Quizzes: en la banda global de feedback (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo!`) se quitó solo el efecto de degradado/blur/opacidad de la entrada y salida.
-- Se conserva la animación lateral con estiramiento, la malla visible, los colores sólidos 100% opacos y el estilo flat de la banda.
-- No se tocaron hero, countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
-- Version/cache busting actualizado a `0.24.199`.
+- Ajustes finos en Quizzes sobre v0.24.199.
+- Se quitó la sombra/resplandor del número del countdown; conserva el color del tema (`--maincolor`) sin `text-shadow`.
+- En el tipo Flip se quitó la sombra inferior/drop-shadow de las tarjetas al tocar y girar; se mantienen solo los bordes internos/inset necesarios.
+- Se restauró la malla animada del hero superior manteniendo el estilo flat y el color sólido basado en el tema.
+- Se corrigieron recortes visuales de las animaciones de correcto/incorrecto (`jello`/`wobble`) en los tipos de quiz, dejando visibles los desbordes necesarios durante la revelación.
+- No se tocaron puntos de transición, música random, ranking/podio, datos base, Rockstars, Clases ni Estudiantes.
+- Versión/cache busting actualizado a `0.24.200`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
 ## v0.24.198
