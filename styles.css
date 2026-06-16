@@ -15553,3 +15553,52 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   animation: encisoFeedbackSlideBlurFull150 4.2s cubic-bezier(.23, 1, .32, 1) both !important;
   will-change: transform, opacity, filter !important;
 }
+
+/* ===== v0.24.198 - hero flat, countdown tematico y ordenar solido ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown {
+  background: color-mix(in srgb, var(--maincolor) 34%, #02030a 66%) !important;
+  background-color: color-mix(in srgb, var(--maincolor) 34%, #02030a 66%) !important;
+  border-color: color-mix(in srgb, var(--maincolor) 42%, rgba(255,255,255,.10)) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.045) inset !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown::before {
+  opacity: .48 !important;
+  background-image:
+    linear-gradient(color-mix(in srgb, #ffffff 16%, var(--maincolor) 44%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, #ffffff 10%, var(--maincolor) 38%, transparent) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  animation: lessonGridDrift 14s linear infinite !important;
+}
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top::after,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-top-countdown::after {
+  display: none !important;
+}
+.countdown-poly.quiz-countdown-poly .countdown-poly__number,
+.countdown-poly.quiz-countdown-poly.danger .countdown-poly__number,
+.countdown-poly.quiz-countdown-poly.is-answered .countdown-poly__number,
+.countdown-poly.quiz-countdown-poly.is-timeup .countdown-poly__number {
+  color: var(--maincolor) !important;
+  text-shadow:
+    0 2px 0 rgba(0,0,0,.20),
+    0 0 10px color-mix(in srgb, var(--maincolor) 36%, transparent) !important;
+}
+.quiz-order-card.quiz-order-red { --order-card-solid: #e21b3c; }
+.quiz-order-card.quiz-order-blue { --order-card-solid: #1368ce; }
+.quiz-order-card.quiz-order-yellow { --order-card-solid: #d89e00; }
+.quiz-order-card.quiz-order-green { --order-card-solid: #26890c; }
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card:not(.matched):not(.wrong):not(.order-js-revealing):not(.order-reveal-correct):not(.order-reveal-wrong),
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-card:not(.matched):not(.wrong):not(.order-js-revealing):not(.order-reveal-correct):not(.order-reveal-wrong),
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-card:not(.matched):not(.wrong):not(.order-js-revealing):not(.order-reveal-correct):not(.order-reveal-wrong),
+body > .quiz-order-card.is-pointer-dragging {
+  background: var(--order-card-solid, var(--order-card-a, #1368ce)) !important;
+  background-color: var(--order-card-solid, var(--order-card-a, #1368ce)) !important;
+  background-image: none !important;
+}

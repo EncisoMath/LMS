@@ -1,3 +1,11 @@
+## v0.24.198
+
+- Ajuste visual en Quizzes: el hero superior de pregunta ahora es mas flat, con color solido basado en `--maincolor` pero oscurecido, conservando la malla animada.
+- El numero del countdown dentro del poligono usa ahora el color del tema (`--maincolor`).
+- Las tarjetas del tipo de pregunta Organizar/Ordenar dejan de usar degradado y quedan con color solido por tarjeta.
+- Version/cache busting actualizado a `0.24.198`.
+- Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
+
 ## v0.24.197
 
 - Se restauró en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo!`) el efecto de entrada/salida tipo slide lateral con estiramiento, blur y degradado de opacidad.
