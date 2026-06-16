@@ -15532,9 +15532,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 .enciso-quiz-feedback-band-v102.quiz-feedback-band.wrong,
 .enciso-quiz-feedback-band-v102.quiz-feedback-band.neutral,
 .enciso-quiz-feedback-band-v102.quiz-feedback-band.timeout {
-  opacity: 1 !important;
   backdrop-filter: none !important;
-  filter: none !important;
 }
 .enciso-quiz-feedback-band-v102.quiz-feedback-band .enciso-quiz-feedback-mesh-v102 {
   display: block !important;
@@ -15548,4 +15546,10 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   opacity: .66 !important;
   animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
   will-change: transform !important;
+}
+
+/* ===== v0.24.197 - restaura slide/estiramiento/blur de la banda ===== */
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.play-feedback {
+  animation: encisoFeedbackSlideBlurFull150 4.2s cubic-bezier(.23, 1, .32, 1) both !important;
+  will-change: transform, opacity, filter !important;
 }

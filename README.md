@@ -1,3 +1,11 @@
+## v0.24.197
+
+- Se restauró en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo!`) el efecto de entrada/salida tipo slide lateral con estiramiento, blur y degradado de opacidad.
+- La corrección elimina el bloqueo visual introducido por reglas `opacity: 1 !important` y `filter: none !important`, que impedían que la animación `encisoFeedbackSlideBlurFull150` mostrara el estiramiento/blur.
+- Se mantiene la banda flat de v0.24.195/v0.24.196: colores sólidos 100% opacos y malla animada visible encima del color.
+- No se tocaron countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.197`.
+
 ## v0.24.196
 
 - Se restaura la malla visible en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo`).
