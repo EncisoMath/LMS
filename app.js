@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.222';
+  const APP_VERSION = '0.24.223';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.222';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.223';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.222';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.223';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -340,12 +340,12 @@
     { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
   ];
-  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.222';
+  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.223';
   const QUIZ_COUNTDOWN_TUNE_DEFAULTS = { x: 23 };
   const QUIZ_COUNTDOWN_TUNE_FIELDS = [
     { key: 'x', label: 'Countdown X', min: -36, max: 64, step: 1, unit: 'px' }
   ];
-  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.222';
+  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.223';
   const QUIZ_TIME_SCORING_MODE_DEFAULT = 'curve';
   const QUIZ_TIME_SCORING_MODES = new Set(['curve', 'speed']);
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
@@ -3546,11 +3546,39 @@
     };
   }
 
+  function zeroQuizAnswerScore(answer = null, quiz = getActiveQuiz()) {
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const count = Math.max(1, questions.length || 1);
+    const rawIndex = Number(answer?.index);
+    const safeIndex = Math.max(0, Math.min(count - 1, Number.isFinite(rawIndex) ? rawIndex : 0));
+    return {
+      item: 0,
+      time: 0,
+      total: 0,
+      maxItem: quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_ITEM_POINTS),
+      maxTime: quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_TIME_POINTS),
+      curve: 0,
+      timeScoringMode: normalizeQuizTimeScoringMode(answer?.timeScoreMode || answer?.timeScoringMode || getQuizTimeScoringMode()),
+      timing: answer?.timing || null,
+      debug: {
+        itemIndex: safeIndex + 1,
+        itemCount: count,
+        correct: false,
+        madeAttempt: false,
+        timeout: answer?.timeout === true,
+        timeScoringMode: normalizeQuizTimeScoringMode(answer?.timeScoreMode || answer?.timeScoringMode || getQuizTimeScoringMode()),
+        branch: 'respuesta incorrecta: item y tiempo en 0',
+        formula: 'respuesta incorrecta, sin intento real o timeout; puntosItem = 0 y puntosTiempo = 0'
+      }
+    };
+  }
+
   function getQuizAnswerScore(answer, quiz = getActiveQuiz()) {
     if (!answer) return { item: 0, time: 0, total: 0 };
+    if (answer.correct !== true) return zeroQuizAnswerScore(answer, quiz);
     const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
     const question = questions[Number(answer.index)] || null;
-    return calculateQuizAnswerScore(question, answer.correct === true, answer, Number(answer.index), quiz);
+    return calculateQuizAnswerScore(question, true, answer, Number(answer.index), quiz);
   }
 
   function getQuizCumulativeScoreBeforeTransition(itemNumber = 1, quiz = getActiveQuiz()) {
@@ -5381,7 +5409,10 @@
     const timing = safeExtra.timing || getQuizAnswerTimingSnapshot();
     safeExtra.timing = timing;
     safeExtra.timeScoreMode = normalizeQuizTimeScoringMode(safeExtra.timeScoreMode || safeExtra.timeScoringMode || getQuizTimeScoringMode());
-    const score = calculateQuizAnswerScore(question, correct, safeExtra, index, getActiveQuiz());
+    let score = calculateQuizAnswerScore(question, correct, safeExtra, index, getActiveQuiz());
+    if (correct !== true) {
+      score = zeroQuizAnswerScore({ ...safeExtra, index, correct }, getActiveQuiz());
+    }
     const answerRecord = {
       index,
       questionId: question?.id || `q${index + 1}`,
@@ -6677,7 +6708,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.222', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.223', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
