@@ -15781,19 +15781,15 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-car
   z-index: 30 !important;
 }
 
-/* ===== v0.24.201 - reparar recorte real de jello/wobble durante reveal ===== */
-/* El recorte venia de contenedores de layout con overflow hidden/auto que siguen vivos
-   aunque la tarjeta tenga overflow visible. Durante la comprobacion se abre todo el
-   arbol visual del quiz por una ventana corta controlada desde JS. */
-body.quiz-reveal-overflow-active,
-body.quiz-reveal-overflow-active .app-shell,
+
+/* ===== v0.24.203 - restaurar reveal limpio y sin recorte ===== */
+/* Layout intacto: tarjetas al 100% y solo overflow visible durante el reveal. */
 body.quiz-reveal-overflow-active .quiz-fullscreen-layer,
 body.quiz-reveal-overflow-active .quiz-fullscreen-layer:not(.quiz-phase-transition),
 body.quiz-reveal-overflow-active .quiz-fullscreen-content,
 body.quiz-reveal-overflow-active .quiz-stage.quiz-stage-fullscreen,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-question-content,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-tune-box,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone > *,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-grid,
@@ -15811,6 +15807,7 @@ body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-open-input,
 body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-submit-btn {
   overflow: visible !important;
   contain: none !important;
+  clip-path: none !important;
 }
 
 body.quiz-reveal-overflow-active .quiz-fullscreen-content {
@@ -15818,34 +15815,57 @@ body.quiz-reveal-overflow-active .quiz-fullscreen-content {
   overflow-y: visible !important;
 }
 
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone > *,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-board,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-stack,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-grid,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-grid {
-  position: relative !important;
-  z-index: 20 !important;
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-question-content,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-question-content,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-answer-zone,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-answer-zone,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-board,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-board,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-stack,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-stack,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-validating,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-validating,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-validating .quiz-order-stack,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-validating .quiz-order-stack {
+  overflow: visible !important;
+  contain: none !important;
+  clip-path: none !important;
 }
 
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-option.correct-reveal,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-option.wrong-reveal,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-card.order-reveal-correct,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-card.order-reveal-wrong,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-card.flip-correct-reveal,
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-card.flip-wrong-reveal,
-body.quiz-reveal-overflow-active .quiz-open-form.is-open-submitted .quiz-open-input,
-body.quiz-reveal-overflow-active .quiz-open-form.is-open-submitted .quiz-submit-btn {
-  position: relative !important;
-  z-index: 60 !important;
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-stack,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-stack,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-stack {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-card,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  transform-origin: center center !important;
   will-change: transform !important;
 }
 
-/* Organizar necesita un pequeno colchon lateral durante la animacion porque wobble
-   desplaza y rota tarjetas de ancho completo. El margen solo se activa en reveal. */
-body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-stack {
-  margin-left: max(-18px, -4vw) !important;
-  margin-right: max(-18px, -4vw) !important;
-  padding-left: 18px !important;
-  padding-right: 18px !important;
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-card.order-reveal-correct,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-correct {
+  animation: jello-horizontal .585s both !important;
+  z-index: 80 !important;
+}
+
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-wrong,
+.quiz-stage-fullscreen.quiz-type-order.order-reveal-active .quiz-order-card.order-reveal-wrong,
+body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-card.order-reveal-wrong {
+  animation: wobble-hor-bottom .52s both !important;
+  z-index: 80 !important;
 }
