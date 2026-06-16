@@ -15998,3 +15998,16 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   margin-right: 4px !important;
   box-sizing: border-box !important;
 }
+
+
+/* ===== v0.24.208 - probar separacion lateral hero 8px ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top {
+  width: auto !important;
+  max-width: none !important;
+  margin-left: 8px !important;
+  margin-right: 8px !important;
+  box-sizing: border-box !important;
+}
