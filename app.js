@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.205';
+  const APP_VERSION = '0.24.206';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,15 +323,15 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.205';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.206';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
-  const QUIZ_DEBUG_PAUSE_COUNTDOWN = true;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.205';
-  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 10, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
+  const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.206';
+  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
     { key: 'contentX', label: 'Contenido quiz X', min: 0, max: 16, step: 1, unit: 'px' },
@@ -2387,23 +2387,9 @@
   }
 
   function quizPaddingDebugControlsHTML() {
-    const tune = getQuizPaddingDebugTune();
-    const controls = QUIZ_PADDING_DEBUG_FIELDS.map((field) => `
-          <label class="quiz-layout-tune-row quiz-quick-range-row quiz-padding-debug-row">
-            <span>${escapeHTML(field.label)} <b data-quiz-padding-debug-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
-            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-padding-debug="${escapeAttr(field.key)}" />
-          </label>`).join('');
-    return `
-      <div class="quiz-padding-debug-box quiz-quick-padding-box" data-quiz-padding-debug-box>
-        <div class="quiz-layout-tune-nav-head">
-          <strong>Debug paddings</strong>
-          <span>Temporal: countdown pausado. Estos sliders aplican en vivo con prioridad para revisar qué padding/ancho recorta opciones/animaciones.</span>
-        </div>
-        <div class="quiz-padding-debug-grid">${controls}</div>
-        <small class="quiz-padding-debug-note">Clave: ${escapeHTML(QUIZ_PADDING_DEBUG_KEY)}</small>
-      </div>
-    `;
+    return '';
   }
+
 
   function quizTypographyQuickControlsHTML() {
     const tune = getQuizTypographyTune();
@@ -6527,7 +6513,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.205', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.206', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
