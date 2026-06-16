@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.194';
+  const APP_VERSION = '0.24.204';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,11 +323,21 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.194';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.204';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
+  ];
+  const QUIZ_DEBUG_PAUSE_COUNTDOWN = true;
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.204';
+  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 10, contentX: 4, questionX: 0, answerX: 0, optionsX: 0 };
+  const QUIZ_PADDING_DEBUG_FIELDS = [
+    { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
+    { key: 'contentX', label: 'Contenido quiz X', min: 0, max: 16, step: 1, unit: 'px' },
+    { key: 'questionX', label: 'Pregunta interna X', min: 0, max: 16, step: 1, unit: 'px' },
+    { key: 'answerX', label: 'Zona opciones X', min: 0, max: 16, step: 1, unit: 'px' },
+    { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' }
   ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
@@ -2304,6 +2314,68 @@
   }
 
 
+  function normalizeQuizPaddingDebugTune(tune = {}) {
+    const safe = { ...QUIZ_PADDING_DEBUG_DEFAULTS };
+    QUIZ_PADDING_DEBUG_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_PADDING_DEBUG_DEFAULTS[field.key];
+    });
+    return safe;
+  }
+
+  function getQuizPaddingDebugTune() {
+    try {
+      return normalizeQuizPaddingDebugTune(JSON.parse(localStorage.getItem(QUIZ_PADDING_DEBUG_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_PADDING_DEBUG_DEFAULTS };
+    }
+  }
+
+  function saveQuizPaddingDebugTune(tune) {
+    const safe = normalizeQuizPaddingDebugTune(tune);
+    try { localStorage.setItem(QUIZ_PADDING_DEBUG_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function updateQuizPaddingDebugOutput(key, value) {
+    const field = QUIZ_PADDING_DEBUG_FIELDS.find((item) => item.key === key);
+    if (!field) return;
+    document.querySelectorAll(`[data-quiz-padding-debug-value="${escapeSelector(key)}"]`).forEach((node) => {
+      node.textContent = `${value}${field.unit}`;
+    });
+  }
+
+  function applyQuizPaddingDebugTune(tune = getQuizPaddingDebugTune()) {
+    const safe = normalizeQuizPaddingDebugTune(tune);
+    const root = document.documentElement;
+    root.style.setProperty('--quiz-debug-layer-pad-x', `${safe.layerX}px`);
+    root.style.setProperty('--quiz-debug-content-pad-x', `${safe.contentX}px`);
+    root.style.setProperty('--quiz-debug-question-pad-x', `${safe.questionX}px`);
+    root.style.setProperty('--quiz-debug-answer-pad-x', `${safe.answerX}px`);
+    root.style.setProperty('--quiz-debug-options-pad-x', `${safe.optionsX}px`);
+    QUIZ_PADDING_DEBUG_FIELDS.forEach((field) => updateQuizPaddingDebugOutput(field.key, safe[field.key]));
+    return safe;
+  }
+
+  function quizPaddingDebugControlsHTML() {
+    const tune = getQuizPaddingDebugTune();
+    const controls = QUIZ_PADDING_DEBUG_FIELDS.map((field) => `
+          <label class="quiz-layout-tune-row quiz-quick-range-row quiz-padding-debug-row">
+            <span>${escapeHTML(field.label)} <b data-quiz-padding-debug-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
+            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-padding-debug="${escapeAttr(field.key)}" />
+          </label>`).join('');
+    return `
+      <div class="quiz-padding-debug-box quiz-quick-padding-box" data-quiz-padding-debug-box>
+        <div class="quiz-layout-tune-nav-head">
+          <strong>Debug paddings</strong>
+          <span>Temporal: el countdown queda pausado. Usa estos sliders para revisar qué padding recorta opciones/animaciones.</span>
+        </div>
+        <div class="quiz-padding-debug-grid">${controls}</div>
+        <small class="quiz-padding-debug-note">Clave: ${escapeHTML(QUIZ_PADDING_DEBUG_KEY)}</small>
+      </div>
+    `;
+  }
+
   function quizTypographyQuickControlsHTML() {
     const tune = getQuizTypographyTune();
     return `
@@ -2375,6 +2447,7 @@
           ${imageToggleHTML}
           ${quizTypographyQuickControlsHTML()}
           ${quizSoundQuickControlsHTML()}
+          ${quizPaddingDebugControlsHTML()}
         </div>
       </section>
     `;
@@ -2494,6 +2567,25 @@
         input.addEventListener('input', handleTypographyChange);
         input.addEventListener('change', handleTypographyChange);
       });
+
+      panel.querySelectorAll('[data-quiz-padding-debug]').forEach((input) => {
+        if (input.dataset.boundPaddingDebug === 'true') return;
+        input.dataset.boundPaddingDebug = 'true';
+        const handlePaddingDebugChange = () => {
+          const key = input.dataset.quizPaddingDebug;
+          if (!key) return;
+          const current = getQuizPaddingDebugTune();
+          const safe = saveQuizPaddingDebugTune({ ...current, [key]: Number(input.value) });
+          applyQuizPaddingDebugTune(safe);
+          panel.querySelectorAll('[data-quiz-padding-debug]').forEach((slider) => {
+            const sliderKey = slider.dataset.quizPaddingDebug;
+            if (sliderKey && sliderKey in safe) slider.value = String(safe[sliderKey]);
+          });
+        };
+        input.addEventListener('input', handlePaddingDebugChange);
+        input.addEventListener('change', handlePaddingDebugChange);
+      });
+      applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
     });
   }
 
@@ -2791,6 +2883,7 @@
           if (!board.isConnected) return;
           board.classList.remove('flip-pending');
           board.classList.add('flip-validating');
+          keepQuizRevealOverflowOpen(1850);
           const runRevealAnimation = (card, ok) => {
             if (!card) return;
             if (typeof card.getAnimations === 'function') card.getAnimations().forEach((animation) => animation.cancel());
@@ -3054,6 +3147,7 @@
           board.classList.add('order-validating');
           stage?.classList.add('order-reveal-active');
           const revealTotal = orderCards.length ? ((orderCards.length - 1) * revealGap + revealDuration) : 0;
+          keepQuizRevealOverflowOpen(revealTotal + 1250);
           orderCards.forEach((card, index) => {
             window.setTimeout(() => {
               revealOneCard(card, index);
@@ -3147,6 +3241,11 @@
   function clearQuizTimers() {
     (state.quizTimers || []).forEach((timer) => window.clearTimeout(timer));
     state.quizTimers = [];
+    if (window.__encisomathQuizRevealOverflowTimer) {
+      window.clearTimeout(window.__encisomathQuizRevealOverflowTimer);
+      window.__encisomathQuizRevealOverflowTimer = null;
+    }
+    document.body.classList.remove('quiz-reveal-overflow-active');
     stopQuizCountdown();
   }
 
@@ -3157,6 +3256,18 @@
     }, delay);
     state.quizTimers = [...(state.quizTimers || []), timer];
     return timer;
+  }
+
+  function keepQuizRevealOverflowOpen(duration = 1600) {
+    const safeDuration = Math.max(480, Number(duration) || 1600);
+    document.body.classList.add('quiz-reveal-overflow-active');
+    if (window.__encisomathQuizRevealOverflowTimer) {
+      window.clearTimeout(window.__encisomathQuizRevealOverflowTimer);
+    }
+    window.__encisomathQuizRevealOverflowTimer = window.setTimeout(() => {
+      window.__encisomathQuizRevealOverflowTimer = null;
+      document.body.classList.remove('quiz-reveal-overflow-active');
+    }, safeDuration);
   }
 
 
@@ -3588,6 +3699,15 @@
     updateDangerState();
     moveToNewSecondShape();
 
+    if (QUIZ_DEBUG_PAUSE_COUNTDOWN) {
+      isRunning = false;
+      state.quizCountdown.isRunning = false;
+      state.quizCountdown.remainingSeconds = totalSeconds;
+      wrap.classList.add('is-debug-paused');
+      number.textContent = String(totalSeconds);
+      return;
+    }
+
     countdownInterval = window.setInterval(() => {
       const active = state.quizCountdown;
       if (!active || active.wrap !== wrap || !wrap.isConnected) {
@@ -3727,9 +3847,6 @@
     return `
       <section class="quiz-transition-score-wrap" data-quiz-transition-score-wrap data-score-from="${Number(score.from) || 0}" data-score-to="${Number(score.to) || 0}" aria-label="Puntaje acumulado">
         <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(tune.y) || 0}px;--score-counter-zoom:${(Number(tune.zoom) || 100) / 100};"></div>
-        <div class="quiz-transition-score-controls quiz-transition-score-controls-clean" data-quiz-transition-score-controls>
-          <button type="button" data-quiz-score-counter-action="continue">Seguir</button>
-        </div>
       </section>
     `;
   }
@@ -3766,7 +3883,7 @@
     const CHAR_IN_STAGGER = 22;
     const CHAR_OUT_STAGGER = 18;
     const COUNT_DURATION = 1250;
-    const HOLD_TIME = 2000;
+    const HOLD_TIME = 1800;
     const POLYGON_OPEN_DURATION = 300;
     const POLYGON_OPEN_STAGGER = 18;
     const POLYGON_CLOSE_DURATION = 230;
@@ -3964,12 +4081,7 @@
   }
 
   function quizTransitionTunePanelHTML(item = 1, total = 1) {
-    if (shouldShowQuizTransitionScore(item)) return '';
-    return `
-      <div class="quiz-transition-clean-actions" data-quiz-transition-clean-actions>
-        <button type="button" data-quiz-transition-action="question">Seguir</button>
-      </div>
-    `;
+    return '';
   }
 
 
@@ -3986,9 +4098,6 @@
   }
 
   function scheduleQuizTransitionContinuousAdvance() {
-    if (shouldShowQuizTransitionScore(state.quizQuestionIndex + 1)) return;
-    const tune = getQuizTransitionTune();
-    if (!tune.continuous) return;
     const layer = document.getElementById('quizFullscreenLayer');
     const timing = getQuizTransitionTiming(layer);
     const startedAt = Number(state.quizTransitionStartedAt) || Date.now();
@@ -3996,7 +4105,6 @@
     scheduleQuizTimer(() => {
       const layer = document.getElementById('quizFullscreenLayer');
       if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
-      if (!getQuizTransitionTune().continuous) return;
       goToQuizQuestionFromTransition();
     }, remaining);
   }
@@ -4522,6 +4630,7 @@
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
+    applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
   }
 
 
@@ -4827,6 +4936,7 @@
   function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
+    keepQuizRevealOverflowOpen(1700);
     const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
     const revealItems = [];
     items.forEach((item) => {
@@ -4945,11 +5055,9 @@
     const isCorrect = kind === 'correct';
     const isWrong = kind === 'wrong';
     const isTimeout = kind === 'timeout';
-    const baseA = isTimeout ? '#ffffff' : isCorrect ? 'rgba(88,204,2,.92)' : isWrong ? 'rgba(226,27,60,.92)' : 'rgba(19,104,206,.90)';
-    const baseB = isTimeout ? '#f7f7f7' : isCorrect ? 'rgba(15,95,24,.96)' : isWrong ? 'rgba(96,9,28,.96)' : 'rgba(8,31,77,.96)';
-    const glow = isTimeout ? 'rgba(255,255,255,.34)' : isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
-    const line = isTimeout ? 'rgba(0,0,0,.09)' : isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
-    const shine = isTimeout ? 'rgba(255,255,255,.80)' : isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
+    const solid = isTimeout ? '#ffffff' : isCorrect ? '#58cc02' : isWrong ? '#e21b3c' : '#1368ce';
+    const glow = isTimeout ? 'rgba(255,255,255,.28)' : isCorrect ? 'rgba(88,204,2,.24)' : isWrong ? 'rgba(226,27,60,.24)' : 'rgba(19,104,206,.20)';
+    const line = isTimeout ? 'rgba(0,0,0,.12)' : isCorrect ? 'rgba(214,255,201,.34)' : isWrong ? 'rgba(255,216,224,.32)' : 'rgba(219,234,254,.30)';
     const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
     const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
@@ -4982,7 +5090,7 @@
       'justify-content:center',
       'row-gap:clamp(6px,1.2vh,10px)',
       'overflow:hidden',
-      isTimeout ? `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), linear-gradient(135deg, #ffffff 0%, ${baseB} 48%, ${baseA} 100%)` : `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), radial-gradient(circle at 82% 18%, ${glow}, transparent 34%), linear-gradient(135deg, rgba(6,8,16,.98) 0%, ${baseB} 42%, ${baseA} 100%)`,
+      `background:${solid}`,
       isTimeout ? 'color:#000' : 'color:#fff',
       `box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 52px ${glow}, 0 12px 34px rgba(0,0,0,.42)`,
       'filter:none',
@@ -5002,12 +5110,13 @@
     const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
     if (mesh) {
       mesh.style.cssText = [
-        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.72',
-        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px), radial-gradient(circle at 18% 30%, ${glow}, transparent 32%), radial-gradient(circle at 82% 70%, ${glow}, transparent 34%)`,
-        'background-size:42px 42px, 42px 42px, 100% 100%, 100% 100%',
+        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.66',
+        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px)`,
+        'background-size:42px 42px, 42px 42px',
         'transform:translate3d(0,0,0)',
         'backface-visibility:hidden',
-        'will-change:auto'
+        'will-change:transform',
+        'mix-blend-mode:normal'
       ].join(';') + ';';
       try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     }
@@ -5273,7 +5382,6 @@
         <div class="quiz-fullscreen-hero-copy">
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
-          <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
         </div>
         <div class="quiz-countdown-slot">${quizCountdownHTML(currentSeconds)}</div>
       </div>` : ''}
@@ -6390,7 +6498,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.194', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.204', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

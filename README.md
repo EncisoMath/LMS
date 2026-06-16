@@ -1,3 +1,57 @@
+## v0.24.204
+
+- Corrección puntual en Quizzes sobre v0.24.200.
+- Se reparó el recorte real de las animaciones `jello-horizontal` y `wobble-hor-bottom` en correcto/incorrecto, especialmente visible en el tipo `order`/Organizar cuando las tarjetas rotan o se desplazan durante la validación.
+- Se agregó una clase temporal global `quiz-reveal-overflow-active` durante el reveal para abrir el overflow de `quiz-fullscreen-content`, `quiz-stage-fullscreen`, `quiz-question-content`, `quiz-answer-zone` y contenedores específicos de ABCD, Verdadero/Falso, Abierta, Organizar y Flip.
+- En Organizar se añadió un colchón lateral temporal solo durante la animación para que las tarjetas de ancho completo no se corten al inclinarse.
+- No se tocaron el fondo negro, hero flat con malla, countdown, música random, puntos de transición, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.204`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.200
+
+- Ajustes finos en Quizzes sobre v0.24.199.
+- Se quitó la sombra/resplandor del número del countdown; conserva el color del tema (`--maincolor`) sin `text-shadow`.
+- En el tipo Flip se quitó la sombra inferior/drop-shadow de las tarjetas al tocar y girar; se mantienen solo los bordes internos/inset necesarios.
+- Se restauró la malla animada del hero superior manteniendo el estilo flat y el color sólido basado en el tema.
+- Se corrigieron recortes visuales de las animaciones de correcto/incorrecto (`jello`/`wobble`) en los tipos de quiz, dejando visibles los desbordes necesarios durante la revelación.
+- No se tocaron puntos de transición, música random, ranking/podio, datos base, Rockstars, Clases ni Estudiantes.
+- Versión/cache busting actualizado a `0.24.200`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
+## v0.24.198
+
+- Ajuste visual en Quizzes: el hero superior de pregunta ahora es mas flat, con color solido basado en `--maincolor` pero oscurecido, conservando la malla animada.
+- El numero del countdown dentro del poligono usa ahora el color del tema (`--maincolor`).
+- Las tarjetas del tipo de pregunta Organizar/Ordenar dejan de usar degradado y quedan con color solido por tarjeta.
+- Version/cache busting actualizado a `0.24.198`.
+- Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
+
+## v0.24.197
+
+- Se restauró en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo!`) el efecto de entrada/salida tipo slide lateral con estiramiento, blur y degradado de opacidad.
+- La corrección elimina el bloqueo visual introducido por reglas `opacity: 1 !important` y `filter: none !important`, que impedían que la animación `encisoFeedbackSlideBlurFull150` mostrara el estiramiento/blur.
+- Se mantiene la banda flat de v0.24.195/v0.24.196: colores sólidos 100% opacos y malla animada visible encima del color.
+- No se tocaron countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.197`.
+
+## v0.24.196
+
+- Se restaura la malla visible en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo`).
+- La banda conserva el ajuste de v0.24.195: color sólido/flat y 100% opaco, pero vuelve a mostrar la malla animada encima del color.
+- Para `Tiempo`, la malla queda en líneas oscuras sobre fondo blanco; para correcto/incorrecto/enviado, la malla queda en líneas claras sobre el color sólido.
+- No se tocaron countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a `0.24.196`.
+
+## v0.24.195
+
+- Se ajusta la pantalla de preguntas del quiz: `.quiz-stage.quiz-stage-fullscreen` queda sin fondo y sin borde, y el fondo general de `.quiz-fullscreen-layer` queda negro puro.
+- Se elimina el recuadro superior `Ítem X/Y` del hero del quiz y se compacta el hero desde abajo para ganar espacio; el countdown queda centrado verticalmente.
+- La transición vuelve a avanzar automáticamente sin botón `Seguir`; el contador acumulado de puntos conserva la lógica de puntos por ítem + tiempo, pero el tiempo visible del contador se reduce 0.2 s.
+- La banda global de `Correcto`, `Incorrecto`, `Enviado` y `Tiempo` queda con color sólido 100% opaco, estilo flat, sin degradados ni malla visible.
+- El ítem ABCD/multiple choice del quiz demo queda con `timeLimit: 30` segundos.
+- Version/cache busting actualizado a `0.24.195`.
+
 ## v0.24.194
 
 - Se fija el acumulador/contador de puntos de transición con posición Y inicial `300px` y zoom `55%`, usando clave nueva `encisomath:quizTransitionScoreTune:v0.24.194` para no arrastrar calibraciones anteriores.
