@@ -1,17 +1,24 @@
-## v0.24.219
+## v0.24.220
+
+- Cambio puntual en Quizzes: el valor inicial del slider `Countdown X` quedó en `23px`.
+- Se usa una clave nueva de localStorage `encisomath:quizCountdownTune:v0.24.220` para aplicar el nuevo valor por defecto sin arrastrar ajustes viejos.
+- No se tocaron contenedores del quiz, respuestas, Flip, Organizar, puntos, música, ranking, padding ni datos base.
+- Versión/cache busting actualizado a `0.24.220`.
+
+## v0.24.220
 
 - Cambio puntual en Quizzes: se agregó en la tuerquita del quiz un control `Countdown X` para mover horizontalmente el countdown del hero superior.
-- El slider guarda su valor en `localStorage` con la clave `encisomath:quizCountdownTune:v0.24.219` y aplica el desplazamiento en vivo al contador del hero.
+- El slider guarda su valor en `localStorage` con la clave `encisomath:quizCountdownTune:v0.24.220` y aplica el desplazamiento en vivo al contador del hero.
 - Valor inicial conservado: `6px` hacia la derecha, tal como venía en v0.24.218.
 - No se tocaron contenedores del quiz, respuestas, Flip, Organizar, puntos, música, ranking/podio, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.219`.
+- Versión/cache busting actualizado a `0.24.220`.
 
-## v0.24.219
+## v0.24.220
 
 - Cambio puntual en Quizzes: se retiró la barrita horizontal de countdown que se había agregado dentro del hero superior del quiz en v0.24.216.
 - Se conserva el hero superior compacto y el countdown poligonal normal; no se tocó el contenedor de elementos del quiz ni los contenedores de respuestas.
 - No se tocaron Flip, Organizar, botones, jello, hero de transición, puntos, música, ranking/podio, padding ni datos base.
-- Versión/cache busting actualizado a `0.24.219`.
+- Versión/cache busting actualizado a `0.24.220`.
 
 ## v0.24.216
 

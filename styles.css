@@ -16259,8 +16259,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   line-height: .86 !important;
 }
 
-/* ===== v0.24.219 - slider en tuerquita para ajustar countdown del hero ===== */
+/* ===== v0.24.220 - slider en tuerquita para ajustar countdown del hero ===== */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot,
 .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot {
-  transform: translateX(var(--quiz-countdown-tune-x, 6px)) !important;
+  transform: translateX(var(--quiz-countdown-tune-x, 23px)) !important;
 }
