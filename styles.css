@@ -16438,3 +16438,28 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   box-shadow: 0 0 0 3px #e21b3c inset !important;
   filter: none !important;
 }
+
+
+/* ===== v0.24.212 - fixes puntuales: jello en Enviar Flip y gris intermedio Organizar ===== */
+/* Flip: el botón Enviar respuesta usa la misma clase jello que Organizar, sin tocar el flip de tarjetas. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-submit.is-order-submit-jello,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-submit.is-order-submit-jello,
+.quiz-stage-fullscreen.quiz-type-flip .quiz-flip-submit.is-order-submit-jello {
+  animation: jello-horizontal .585s both !important;
+  transform-origin: center center !important;
+  opacity: 1 !important;
+}
+
+/* Organizar: mientras el tablero está en pending, forzar gris antes de revelar verde/rojo sólido. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card.order-pending-dim,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card:not(.order-js-revealing):not(.matched):not(.wrong):not(.order-reveal-correct):not(.order-reveal-wrong),
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card.order-pending-dim,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card:not(.order-js-revealing):not(.matched):not(.wrong):not(.order-reveal-correct):not(.order-reveal-wrong),
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card.order-pending-dim,
+.quiz-stage-fullscreen.quiz-type-order .quiz-order-board.order-pending .quiz-order-card:not(.order-js-revealing):not(.matched):not(.wrong):not(.order-reveal-correct):not(.order-reveal-wrong) {
+  background: #6b7280 !important;
+  background-color: #6b7280 !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset !important;
+  filter: none !important;
+}

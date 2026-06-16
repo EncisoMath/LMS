@@ -1,3 +1,9 @@
+## v0.24.212
+- Corrección puntual en Quizzes/Flip: el botón `Enviar respuesta` del tipo Flip ahora ejecuta `jello-horizontal` al pulsarlo, reutilizando la clase existente sin tocar la animación de las tarjetas.
+- Corrección puntual en Quizzes/Organizar: al pulsar `Enviar respuesta`, las tarjetas vuelven a pasar por estado gris intermedio mientras se valida; al revelar, se limpian estilos inline para conservar verde/rojo sólidos sin degradado.
+- No se tocaron hero, countdown, puntos, música, ranking/podio, padding ni datos base.
+- Versión/cache busting actualizado a `0.24.212`.
+
 ## v0.24.211
 - Correccion puntual de Flip sobre v0.24.210: se restaura el comportamiento 3D real de dos caras, quitando el recorte/clip que dejaba visibles solo las espaldas.
 - Se mantienen las sombras exteriores eliminadas en Flip mediante bordes internos y `filter: none`, sin usar `clip-path` ni `contain: paint` sobre la tarjeta.
