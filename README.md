@@ -1,3 +1,11 @@
+## v0.24.199
+
+- Cambio puntual en Quizzes: en la banda global de feedback (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo!`) se quitó solo el efecto de degradado/blur/opacidad de la entrada y salida.
+- Se conserva la animación lateral con estiramiento, la malla visible, los colores sólidos 100% opacos y el estilo flat de la banda.
+- No se tocaron hero, countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a `0.24.199`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.198
 
 - Ajuste visual en Quizzes: el hero superior de pregunta ahora es mas flat, con color solido basado en `--maincolor` pero oscurecido, conservando la malla animada.

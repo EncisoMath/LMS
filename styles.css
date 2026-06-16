@@ -15602,3 +15602,31 @@ body > .quiz-order-card.is-pointer-dragging {
   background-color: var(--order-card-solid, var(--order-card-a, #1368ce)) !important;
   background-image: none !important;
 }
+
+
+/* ===== v0.24.199 - banda feedback sin degradado/blur en entrada y salida ===== */
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.play-feedback {
+  animation: encisoFeedbackSlideStretchNoFade199 4.2s cubic-bezier(.23, 1, .32, 1) both !important;
+  filter: none !important;
+  opacity: 1 !important;
+  will-change: transform !important;
+}
+
+@keyframes encisoFeedbackSlideStretchNoFade199 {
+  0% {
+    transform: translate(-50%, -50%) translateX(-130vw) rotate(var(--quiz-feedback-band-rotation, -2deg)) scaleX(2.5) scaleY(.2);
+    transform-origin: 100% 50%;
+  }
+  14.285% {
+    transform: translate(-50%, -50%) translateX(0) rotate(var(--quiz-feedback-band-rotation, -2deg)) scaleX(1) scaleY(1);
+    transform-origin: 50% 50%;
+  }
+  85.715% {
+    transform: translate(-50%, -50%) translateX(0) rotate(var(--quiz-feedback-band-rotation, -2deg)) scaleX(1) scaleY(1);
+    transform-origin: 50% 50%;
+  }
+  100% {
+    transform: translate(-50%, -50%) translateX(130vw) rotate(var(--quiz-feedback-band-rotation, -2deg)) scaleX(2.5) scaleY(.2);
+    transform-origin: 0% 50%;
+  }
+}
