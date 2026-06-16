@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.218';
+  const APP_VERSION = '0.24.219';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.218';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.219';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.218';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.219';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -339,6 +339,11 @@
     { key: 'answerX', label: 'Zona opciones X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
+  ];
+  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.219';
+  const QUIZ_COUNTDOWN_TUNE_DEFAULTS = { x: 6 };
+  const QUIZ_COUNTDOWN_TUNE_FIELDS = [
+    { key: 'x', label: 'Countdown X', min: -36, max: 64, step: 1, unit: 'px' }
   ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
@@ -2390,6 +2395,64 @@
     return '';
   }
 
+  function normalizeQuizCountdownTune(tune = {}) {
+    const safe = { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
+    QUIZ_COUNTDOWN_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_COUNTDOWN_TUNE_DEFAULTS[field.key];
+    });
+    return safe;
+  }
+
+  function getQuizCountdownTune() {
+    try {
+      return normalizeQuizCountdownTune(JSON.parse(localStorage.getItem(QUIZ_COUNTDOWN_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
+    }
+  }
+
+  function saveQuizCountdownTune(tune) {
+    const safe = normalizeQuizCountdownTune(tune);
+    try { localStorage.setItem(QUIZ_COUNTDOWN_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function updateQuizCountdownTuneOutput(key, value) {
+    const field = QUIZ_COUNTDOWN_TUNE_FIELDS.find((item) => item.key === key);
+    if (!field) return;
+    document.querySelectorAll(`[data-quiz-countdown-tune-value="${escapeSelector(key)}"]`).forEach((node) => {
+      node.textContent = `${value}${field.unit}`;
+    });
+  }
+
+  function applyQuizCountdownTune(tune = getQuizCountdownTune()) {
+    const safe = normalizeQuizCountdownTune(tune);
+    const value = `${safe.x}px`;
+    document.documentElement.style.setProperty('--quiz-countdown-tune-x', value);
+    document.querySelectorAll('.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot').forEach((node) => {
+      node.style.setProperty('transform', `translateX(${value})`, 'important');
+    });
+    QUIZ_COUNTDOWN_TUNE_FIELDS.forEach((field) => updateQuizCountdownTuneOutput(field.key, safe[field.key]));
+    return safe;
+  }
+
+  function quizCountdownQuickControlsHTML() {
+    const tune = getQuizCountdownTune();
+    return `
+      <div class="quiz-countdown-tune-box quiz-quick-countdown-box" data-quiz-countdown-tune-box>
+        <div class="quiz-layout-tune-nav-head">
+          <strong>Countdown</strong>
+          <span>Mueve solo la posición horizontal del contador del hero.</span>
+        </div>
+        <label class="quiz-layout-tune-row quiz-quick-range-row">
+          <span>Countdown X <b data-quiz-countdown-tune-value="x">${tune.x}px</b></span>
+          <input type="range" min="-36" max="64" step="1" value="${tune.x}" data-quiz-countdown-tune="x" />
+        </label>
+      </div>
+    `;
+  }
+
 
   function quizTypographyQuickControlsHTML() {
     const tune = getQuizTypographyTune();
@@ -2461,6 +2524,7 @@
           ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
           ${imageToggleHTML}
           ${quizTypographyQuickControlsHTML()}
+          ${quizCountdownQuickControlsHTML()}
           ${quizSoundQuickControlsHTML()}
           ${quizPaddingDebugControlsHTML()}
         </div>
@@ -2583,6 +2647,24 @@
         input.addEventListener('change', handleTypographyChange);
       });
 
+      panel.querySelectorAll('[data-quiz-countdown-tune]').forEach((input) => {
+        if (input.dataset.boundCountdownTune === 'true') return;
+        input.dataset.boundCountdownTune = 'true';
+        const handleCountdownTuneChange = () => {
+          const key = input.dataset.quizCountdownTune;
+          if (!key) return;
+          const current = getQuizCountdownTune();
+          const safe = saveQuizCountdownTune({ ...current, [key]: Number(input.value) });
+          applyQuizCountdownTune(safe);
+          panel.querySelectorAll('[data-quiz-countdown-tune]').forEach((slider) => {
+            const sliderKey = slider.dataset.quizCountdownTune;
+            if (sliderKey && sliderKey in safe) slider.value = String(safe[sliderKey]);
+          });
+        };
+        input.addEventListener('input', handleCountdownTuneChange);
+        input.addEventListener('change', handleCountdownTuneChange);
+      });
+
       panel.querySelectorAll('[data-quiz-padding-debug]').forEach((input) => {
         if (input.dataset.boundPaddingDebug === 'true') return;
         input.dataset.boundPaddingDebug = 'true';
@@ -2600,6 +2682,7 @@
         input.addEventListener('input', handlePaddingDebugChange);
         input.addEventListener('change', handlePaddingDebugChange);
       });
+      applyQuizCountdownTune(getQuizCountdownTune());
       applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
     });
   }
@@ -4660,6 +4743,7 @@
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
+    applyQuizCountdownTune(getQuizCountdownTune());
     applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
   }
 
@@ -6528,7 +6612,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.218', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.219', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
