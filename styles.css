@@ -15780,3 +15780,72 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-flip .quiz-flip-car
   position: relative !important;
   z-index: 30 !important;
 }
+
+/* ===== v0.24.201 - reparar recorte real de jello/wobble durante reveal ===== */
+/* El recorte venia de contenedores de layout con overflow hidden/auto que siguen vivos
+   aunque la tarjeta tenga overflow visible. Durante la comprobacion se abre todo el
+   arbol visual del quiz por una ventana corta controlada desde JS. */
+body.quiz-reveal-overflow-active,
+body.quiz-reveal-overflow-active .app-shell,
+body.quiz-reveal-overflow-active .quiz-fullscreen-layer,
+body.quiz-reveal-overflow-active .quiz-fullscreen-layer:not(.quiz-phase-transition),
+body.quiz-reveal-overflow-active .quiz-fullscreen-content,
+body.quiz-reveal-overflow-active .quiz-stage.quiz-stage-fullscreen,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-question-content,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-tune-box,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone > *,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-grid,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-option,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-board,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-stack,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-card,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-board,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-grid,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-card,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-inner,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-open-card,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-open-form,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-open-input,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-submit-btn {
+  overflow: visible !important;
+  contain: none !important;
+}
+
+body.quiz-reveal-overflow-active .quiz-fullscreen-content {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-answer-zone > *,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-board,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-stack,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-grid,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-grid {
+  position: relative !important;
+  z-index: 20 !important;
+}
+
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-option.correct-reveal,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .kahoot-option.wrong-reveal,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-card.order-reveal-correct,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-order-card.order-reveal-wrong,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-card.flip-correct-reveal,
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen .quiz-flip-card.flip-wrong-reveal,
+body.quiz-reveal-overflow-active .quiz-open-form.is-open-submitted .quiz-open-input,
+body.quiz-reveal-overflow-active .quiz-open-form.is-open-submitted .quiz-submit-btn {
+  position: relative !important;
+  z-index: 60 !important;
+  will-change: transform !important;
+}
+
+/* Organizar necesita un pequeno colchon lateral durante la animacion porque wobble
+   desplaza y rota tarjetas de ancho completo. El margen solo se activa en reveal. */
+body.quiz-reveal-overflow-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-stack {
+  margin-left: max(-18px, -4vw) !important;
+  margin-right: max(-18px, -4vw) !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}

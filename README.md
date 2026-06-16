@@ -1,3 +1,13 @@
+## v0.24.201
+
+- Corrección puntual en Quizzes sobre v0.24.200.
+- Se reparó el recorte real de las animaciones `jello-horizontal` y `wobble-hor-bottom` en correcto/incorrecto, especialmente visible en el tipo `order`/Organizar cuando las tarjetas rotan o se desplazan durante la validación.
+- Se agregó una clase temporal global `quiz-reveal-overflow-active` durante el reveal para abrir el overflow de `quiz-fullscreen-content`, `quiz-stage-fullscreen`, `quiz-question-content`, `quiz-answer-zone` y contenedores específicos de ABCD, Verdadero/Falso, Abierta, Organizar y Flip.
+- En Organizar se añadió un colchón lateral temporal solo durante la animación para que las tarjetas de ancho completo no se corten al inclinarse.
+- No se tocaron el fondo negro, hero flat con malla, countdown, música random, puntos de transición, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.201`.
+- Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.200
 
 - Ajustes finos en Quizzes sobre v0.24.199.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.200';
+  const APP_VERSION = '0.24.201';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,7 +323,7 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.200';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.201';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
@@ -2791,6 +2791,7 @@
           if (!board.isConnected) return;
           board.classList.remove('flip-pending');
           board.classList.add('flip-validating');
+          keepQuizRevealOverflowOpen(1850);
           const runRevealAnimation = (card, ok) => {
             if (!card) return;
             if (typeof card.getAnimations === 'function') card.getAnimations().forEach((animation) => animation.cancel());
@@ -3054,6 +3055,7 @@
           board.classList.add('order-validating');
           stage?.classList.add('order-reveal-active');
           const revealTotal = orderCards.length ? ((orderCards.length - 1) * revealGap + revealDuration) : 0;
+          keepQuizRevealOverflowOpen(revealTotal + 1250);
           orderCards.forEach((card, index) => {
             window.setTimeout(() => {
               revealOneCard(card, index);
@@ -3147,6 +3149,11 @@
   function clearQuizTimers() {
     (state.quizTimers || []).forEach((timer) => window.clearTimeout(timer));
     state.quizTimers = [];
+    if (window.__encisomathQuizRevealOverflowTimer) {
+      window.clearTimeout(window.__encisomathQuizRevealOverflowTimer);
+      window.__encisomathQuizRevealOverflowTimer = null;
+    }
+    document.body.classList.remove('quiz-reveal-overflow-active');
     stopQuizCountdown();
   }
 
@@ -3157,6 +3164,18 @@
     }, delay);
     state.quizTimers = [...(state.quizTimers || []), timer];
     return timer;
+  }
+
+  function keepQuizRevealOverflowOpen(duration = 1600) {
+    const safeDuration = Math.max(480, Number(duration) || 1600);
+    document.body.classList.add('quiz-reveal-overflow-active');
+    if (window.__encisomathQuizRevealOverflowTimer) {
+      window.clearTimeout(window.__encisomathQuizRevealOverflowTimer);
+    }
+    window.__encisomathQuizRevealOverflowTimer = window.setTimeout(() => {
+      window.__encisomathQuizRevealOverflowTimer = null;
+      document.body.classList.remove('quiz-reveal-overflow-active');
+    }, safeDuration);
   }
 
 
@@ -4815,6 +4834,7 @@
   function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
+    keepQuizRevealOverflowOpen(1700);
     const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
     const revealItems = [];
     items.forEach((item) => {
@@ -6376,7 +6396,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.200', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.201', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
