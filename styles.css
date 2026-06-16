@@ -15870,7 +15870,7 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
   z-index: 80 !important;
 }
 
-/* ===== v0.24.204 debug: sliders para paddings laterales y countdown pausado ===== */
+/* ===== v0.24.205 debug: sliders para paddings laterales y countdown pausado ===== */
 .quiz-fullscreen-layer:not(.quiz-phase-transition) {
   padding-left: var(--quiz-debug-layer-pad-x, 10px) !important;
   padding-right: var(--quiz-debug-layer-pad-x, 10px) !important;
@@ -15925,4 +15925,39 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
   color: rgba(255,255,255,.86);
   text-shadow: 0 1px 3px rgba(0,0,0,.65);
   white-space: nowrap;
+}
+
+
+/* ===== v0.24.205 debug: paddings con prioridad real en vivo ===== */
+.quiz-fullscreen-layer:not(.quiz-phase-transition) {
+  padding-left: var(--quiz-debug-layer-pad-x, 10px) !important;
+  padding-right: var(--quiz-debug-layer-pad-x, 10px) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content {
+  padding-left: var(--quiz-debug-content-pad-x, 4px) !important;
+  padding-right: var(--quiz-debug-content-pad-x, 4px) !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-question-content {
+  padding-left: var(--quiz-debug-question-pad-x, 0px) !important;
+  padding-right: var(--quiz-debug-question-pad-x, 0px) !important;
+  box-sizing: border-box !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-zone {
+  padding-left: var(--quiz-debug-answer-pad-x, 0px) !important;
+  padding-right: var(--quiz-debug-answer-pad-x, 0px) !important;
+  box-sizing: border-box !important;
+}
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-board,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-stack,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-grid,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-open-form {
+  padding-left: var(--quiz-debug-options-pad-x, 0px) !important;
+  padding-right: var(--quiz-debug-options-pad-x, 0px) !important;
+  margin-left: var(--quiz-debug-options-pull-x, 0px) !important;
+  margin-right: var(--quiz-debug-options-pull-x, 0px) !important;
+  width: calc(100% - (var(--quiz-debug-options-pull-x, 0px) * 2)) !important;
+  max-width: calc(100% - (var(--quiz-debug-options-pull-x, 0px) * 2)) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
 }

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.204';
+  const APP_VERSION = '0.24.205';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,21 +323,22 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.204';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.205';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = true;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.204';
-  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 10, contentX: 4, questionX: 0, answerX: 0, optionsX: 0 };
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.205';
+  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 10, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
     { key: 'contentX', label: 'Contenido quiz X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'questionX', label: 'Pregunta interna X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'answerX', label: 'Zona opciones X', min: 0, max: 16, step: 1, unit: 'px' },
-    { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' }
+    { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
+    { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
   ];
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
   const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
@@ -2353,6 +2354,34 @@
     root.style.setProperty('--quiz-debug-question-pad-x', `${safe.questionX}px`);
     root.style.setProperty('--quiz-debug-answer-pad-x', `${safe.answerX}px`);
     root.style.setProperty('--quiz-debug-options-pad-x', `${safe.optionsX}px`);
+    root.style.setProperty('--quiz-debug-options-pull-x', `${safe.optionsPullX}px`);
+
+    const setInlinePadding = (selector, value) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        node.style.setProperty('padding-left', `${value}px`, 'important');
+        node.style.setProperty('padding-right', `${value}px`, 'important');
+        node.style.setProperty('box-sizing', 'border-box', 'important');
+      });
+    };
+    const setInlineOptions = (selector) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        node.style.setProperty('padding-left', `${safe.optionsX}px`, 'important');
+        node.style.setProperty('padding-right', `${safe.optionsX}px`, 'important');
+        node.style.setProperty('margin-left', `${safe.optionsPullX}px`, 'important');
+        node.style.setProperty('margin-right', `${safe.optionsPullX}px`, 'important');
+        node.style.setProperty('width', safe.optionsPullX ? `calc(100% - ${safe.optionsPullX * 2}px)` : '100%', 'important');
+        node.style.setProperty('max-width', safe.optionsPullX ? `calc(100% - ${safe.optionsPullX * 2}px)` : '100%', 'important');
+        node.style.setProperty('box-sizing', 'border-box', 'important');
+        node.style.setProperty('overflow', 'visible', 'important');
+      });
+    };
+
+    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition)', safe.layerX);
+    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content', safe.contentX);
+    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-question-content', safe.questionX);
+    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-zone', safe.answerX);
+    setInlineOptions('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-board, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-stack, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-open-form');
+
     QUIZ_PADDING_DEBUG_FIELDS.forEach((field) => updateQuizPaddingDebugOutput(field.key, safe[field.key]));
     return safe;
   }
@@ -2368,7 +2397,7 @@
       <div class="quiz-padding-debug-box quiz-quick-padding-box" data-quiz-padding-debug-box>
         <div class="quiz-layout-tune-nav-head">
           <strong>Debug paddings</strong>
-          <span>Temporal: el countdown queda pausado. Usa estos sliders para revisar qué padding recorta opciones/animaciones.</span>
+          <span>Temporal: countdown pausado. Estos sliders aplican en vivo con prioridad para revisar qué padding/ancho recorta opciones/animaciones.</span>
         </div>
         <div class="quiz-padding-debug-grid">${controls}</div>
         <small class="quiz-padding-debug-note">Clave: ${escapeHTML(QUIZ_PADDING_DEBUG_KEY)}</small>
@@ -6498,7 +6527,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.204', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.205', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
