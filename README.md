@@ -1,20 +1,26 @@
-## v0.24.206
+## v0.24.207
+- Corrección puntual del hero superior en pantalla de pregunta: se mantiene `quiz-fullscreen-layer` sin padding lateral para que las animaciones de opciones no se recorten, pero el hero ahora recibe margen externo real de `4px` a izquierda y derecha mediante selector directo sobre `.quiz-fullscreen-top.quiz-fullscreen-top-countdown`.
+- Se conserva `quiz-fullscreen-content` con padding lateral `4px`, countdown normal activo y sin paneles debug visibles.
+- No se tocaron preguntas, tipos de quiz, countdown, puntos de transición, música, ranking/podio, Rockstars, Clases ni Estudiantes.
+- Versión/cache busting actualizado a `0.24.207`.
+
+## v0.24.207
 
 - Se fijaron los valores encontrados en el debug de paddings: pantalla completa X en `0px` y contenido del quiz X en `4px`.
 - Se retiró el panel temporal `Debug paddings` de la tuerquita y se reactivó el countdown normal.
 - Para que el hero superior no quede de extremo a extremo con la pantalla completa en `0px`, se le aplicó separación lateral de `4px` a cada lado.
 - No se tocaron preguntas, tipos de quiz, puntos de transición, música random, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.206`.
+- Versión/cache busting actualizado a `0.24.207`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
-## v0.24.206
+## v0.24.207
 
 - Corrección puntual en Quizzes sobre v0.24.200.
 - Se reparó el recorte real de las animaciones `jello-horizontal` y `wobble-hor-bottom` en correcto/incorrecto, especialmente visible en el tipo `order`/Organizar cuando las tarjetas rotan o se desplazan durante la validación.
 - Se agregó una clase temporal global `quiz-reveal-overflow-active` durante el reveal para abrir el overflow de `quiz-fullscreen-content`, `quiz-stage-fullscreen`, `quiz-question-content`, `quiz-answer-zone` y contenedores específicos de ABCD, Verdadero/Falso, Abierta, Organizar y Flip.
 - En Organizar se añadió un colchón lateral temporal solo durante la animación para que las tarjetas de ancho completo no se corten al inclinarse.
 - No se tocaron el fondo negro, hero flat con malla, countdown, música random, puntos de transición, ranking/podio, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.206`.
+- Versión/cache busting actualizado a `0.24.207`.
 - Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
 
 ## v0.24.200

@@ -15986,3 +15986,15 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen.quiz-type-order .quiz-order-c
   width: calc(100% - 8px) !important;
   box-sizing: border-box !important;
 }
+
+/* ===== v0.24.207 - corregir separacion lateral real del hero superior ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top {
+  width: auto !important;
+  max-width: none !important;
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+  box-sizing: border-box !important;
+}

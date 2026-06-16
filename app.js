@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.206';
+  const APP_VERSION = '0.24.207';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.206';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.207';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.206';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.207';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -6513,7 +6513,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.206', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.207', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
