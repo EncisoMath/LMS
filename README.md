@@ -1,3 +1,12 @@
+## v0.24.195
+
+- Se ajusta la pantalla de preguntas del quiz: `.quiz-stage.quiz-stage-fullscreen` queda sin fondo y sin borde, y el fondo general de `.quiz-fullscreen-layer` queda negro puro.
+- Se elimina el recuadro superior `Ítem X/Y` del hero del quiz y se compacta el hero desde abajo para ganar espacio; el countdown queda centrado verticalmente.
+- La transición vuelve a avanzar automáticamente sin botón `Seguir`; el contador acumulado de puntos conserva la lógica de puntos por ítem + tiempo, pero el tiempo visible del contador se reduce 0.2 s.
+- La banda global de `Correcto`, `Incorrecto`, `Enviado` y `Tiempo` queda con color sólido 100% opaco, estilo flat, sin degradados ni malla visible.
+- El ítem ABCD/multiple choice del quiz demo queda con `timeLimit: 30` segundos.
+- Version/cache busting actualizado a `0.24.195`.
+
 ## v0.24.194
 
 - Se fija el acumulador/contador de puntos de transición con posición Y inicial `300px` y zoom `55%`, usando clave nueva `encisomath:quizTransitionScoreTune:v0.24.194` para no arrastrar calibraciones anteriores.

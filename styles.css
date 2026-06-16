@@ -15479,3 +15479,66 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-resu
     width: 100%;
   }
 }
+
+
+/* ===== v0.24.195 ajustes solicitados: quiz limpio, hero compacto y feedback flat ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer,
+.quiz-fullscreen-layer {
+  background: #000000 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-bg,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-bg {
+  opacity: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage.quiz-stage-fullscreen,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage.quiz-stage-fullscreen,
+.quiz-stage.quiz-stage-fullscreen {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.quiz-fullscreen-top-countdown {
+  min-height: 58px !important;
+  padding: 5px 8px 4px !important;
+  align-items: center !important;
+}
+.quiz-fullscreen-top-countdown .quiz-fullscreen-hero-copy {
+  align-content: center !important;
+  gap: 1px !important;
+}
+.quiz-fullscreen-top-countdown .quiz-top-counter {
+  display: none !important;
+}
+.quiz-fullscreen-top-countdown .quiz-countdown-slot {
+  align-self: center !important;
+  place-items: center !important;
+  transform: translateY(-1px) !important;
+}
+.quiz-fullscreen-top-countdown + .quiz-fullscreen-content {
+  padding-top: 12px !important;
+}
+.quiz-fullscreen-top-countdown + .quiz-fullscreen-content .quiz-stage-fullscreen {
+  min-height: calc(100dvh - 92px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+}
+
+.enciso-quiz-feedback-band-v102.quiz-feedback-band,
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.correct,
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.wrong,
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.neutral,
+.enciso-quiz-feedback-band-v102.quiz-feedback-band.timeout {
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+.enciso-quiz-feedback-band-v102.quiz-feedback-band .enciso-quiz-feedback-mesh-v102 {
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+  animation: none !important;
+}

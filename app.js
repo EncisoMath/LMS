@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.194';
+  const APP_VERSION = '0.24.195';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,7 +323,7 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.194';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.195';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
@@ -3727,9 +3727,6 @@
     return `
       <section class="quiz-transition-score-wrap" data-quiz-transition-score-wrap data-score-from="${Number(score.from) || 0}" data-score-to="${Number(score.to) || 0}" aria-label="Puntaje acumulado">
         <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(tune.y) || 0}px;--score-counter-zoom:${(Number(tune.zoom) || 100) / 100};"></div>
-        <div class="quiz-transition-score-controls quiz-transition-score-controls-clean" data-quiz-transition-score-controls>
-          <button type="button" data-quiz-score-counter-action="continue">Seguir</button>
-        </div>
       </section>
     `;
   }
@@ -3766,7 +3763,7 @@
     const CHAR_IN_STAGGER = 22;
     const CHAR_OUT_STAGGER = 18;
     const COUNT_DURATION = 1250;
-    const HOLD_TIME = 2000;
+    const HOLD_TIME = 1800;
     const POLYGON_OPEN_DURATION = 300;
     const POLYGON_OPEN_STAGGER = 18;
     const POLYGON_CLOSE_DURATION = 230;
@@ -3964,12 +3961,7 @@
   }
 
   function quizTransitionTunePanelHTML(item = 1, total = 1) {
-    if (shouldShowQuizTransitionScore(item)) return '';
-    return `
-      <div class="quiz-transition-clean-actions" data-quiz-transition-clean-actions>
-        <button type="button" data-quiz-transition-action="question">Seguir</button>
-      </div>
-    `;
+    return '';
   }
 
 
@@ -3986,9 +3978,6 @@
   }
 
   function scheduleQuizTransitionContinuousAdvance() {
-    if (shouldShowQuizTransitionScore(state.quizQuestionIndex + 1)) return;
-    const tune = getQuizTransitionTune();
-    if (!tune.continuous) return;
     const layer = document.getElementById('quizFullscreenLayer');
     const timing = getQuizTransitionTiming(layer);
     const startedAt = Number(state.quizTransitionStartedAt) || Date.now();
@@ -3996,7 +3985,6 @@
     scheduleQuizTimer(() => {
       const layer = document.getElementById('quizFullscreenLayer');
       if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
-      if (!getQuizTransitionTune().continuous) return;
       goToQuizQuestionFromTransition();
     }, remaining);
   }
@@ -4945,11 +4933,9 @@
     const isCorrect = kind === 'correct';
     const isWrong = kind === 'wrong';
     const isTimeout = kind === 'timeout';
-    const baseA = isTimeout ? '#ffffff' : isCorrect ? 'rgba(88,204,2,.92)' : isWrong ? 'rgba(226,27,60,.92)' : 'rgba(19,104,206,.90)';
-    const baseB = isTimeout ? '#f7f7f7' : isCorrect ? 'rgba(15,95,24,.96)' : isWrong ? 'rgba(96,9,28,.96)' : 'rgba(8,31,77,.96)';
-    const glow = isTimeout ? 'rgba(255,255,255,.34)' : isCorrect ? 'rgba(88,204,2,.30)' : isWrong ? 'rgba(226,27,60,.30)' : 'rgba(19,104,206,.24)';
-    const line = isTimeout ? 'rgba(0,0,0,.09)' : isCorrect ? 'rgba(214,255,201,.30)' : isWrong ? 'rgba(255,216,224,.28)' : 'rgba(219,234,254,.28)';
-    const shine = isTimeout ? 'rgba(255,255,255,.80)' : isCorrect ? 'rgba(210,255,191,.30)' : isWrong ? 'rgba(255,210,218,.30)' : 'rgba(219,234,254,.22)';
+    const solid = isTimeout ? '#ffffff' : isCorrect ? '#58cc02' : isWrong ? '#e21b3c' : '#1368ce';
+    const glow = isTimeout ? 'rgba(255,255,255,.28)' : isCorrect ? 'rgba(88,204,2,.24)' : isWrong ? 'rgba(226,27,60,.24)' : 'rgba(19,104,206,.20)';
+    const line = 'transparent';
     const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
     const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
@@ -4982,7 +4968,7 @@
       'justify-content:center',
       'row-gap:clamp(6px,1.2vh,10px)',
       'overflow:hidden',
-      isTimeout ? `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), linear-gradient(135deg, #ffffff 0%, ${baseB} 48%, ${baseA} 100%)` : `background:radial-gradient(circle at 18% 24%, ${shine}, transparent 32%), radial-gradient(circle at 82% 18%, ${glow}, transparent 34%), linear-gradient(135deg, rgba(6,8,16,.98) 0%, ${baseB} 42%, ${baseA} 100%)`,
+      `background:${solid}`,
       isTimeout ? 'color:#000' : 'color:#fff',
       `box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 52px ${glow}, 0 12px 34px rgba(0,0,0,.42)`,
       'filter:none',
@@ -5002,9 +4988,8 @@
     const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
     if (mesh) {
       mesh.style.cssText = [
-        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.72',
-        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px), radial-gradient(circle at 18% 30%, ${glow}, transparent 32%), radial-gradient(circle at 82% 70%, ${glow}, transparent 34%)`,
-        'background-size:42px 42px, 42px 42px, 100% 100%, 100% 100%',
+        'position:absolute', 'inset:0', 'display:none', 'z-index:0', 'pointer-events:none', 'opacity:0',
+        'background:none',
         'transform:translate3d(0,0,0)',
         'backface-visibility:hidden',
         'will-change:auto'
@@ -5273,7 +5258,6 @@
         <div class="quiz-fullscreen-hero-copy">
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
-          <span class="quiz-top-counter">${phase === 'results' ? '<strong>FIN</strong>' : `<small>Ítem</small><strong>${Math.min(state.quizQuestionIndex + 1, questions.length)}/${questions.length}</strong>`}</span>
         </div>
         <div class="quiz-countdown-slot">${quizCountdownHTML(currentSeconds)}</div>
       </div>` : ''}
@@ -6390,7 +6374,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.194', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.195', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
