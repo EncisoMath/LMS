@@ -15537,8 +15537,15 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
   filter: none !important;
 }
 .enciso-quiz-feedback-band-v102.quiz-feedback-band .enciso-quiz-feedback-mesh-v102 {
-  display: none !important;
-  opacity: 0 !important;
-  background: none !important;
-  animation: none !important;
+  display: block !important;
+  opacity: .66 !important;
+  animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
+}
+
+/* ===== v0.24.196 - feedback flat con malla visible ===== */
+.enciso-quiz-feedback-band-v102.quiz-feedback-band .enciso-quiz-feedback-mesh-v102 {
+  display: block !important;
+  opacity: .66 !important;
+  animation: encisoFeedbackMeshDrift140 9s linear infinite !important;
+  will-change: transform !important;
 }

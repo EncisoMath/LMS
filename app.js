@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.195';
+  const APP_VERSION = '0.24.196';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,7 +323,7 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.195';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.196';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
@@ -4935,7 +4935,7 @@
     const isTimeout = kind === 'timeout';
     const solid = isTimeout ? '#ffffff' : isCorrect ? '#58cc02' : isWrong ? '#e21b3c' : '#1368ce';
     const glow = isTimeout ? 'rgba(255,255,255,.28)' : isCorrect ? 'rgba(88,204,2,.24)' : isWrong ? 'rgba(226,27,60,.24)' : 'rgba(19,104,206,.20)';
-    const line = 'transparent';
+    const line = isTimeout ? 'rgba(0,0,0,.12)' : isCorrect ? 'rgba(214,255,201,.34)' : isWrong ? 'rgba(255,216,224,.32)' : 'rgba(219,234,254,.30)';
     const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
     const zoom = (Number(safe.bandZoom) || 100) / 100;
     const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
@@ -4988,11 +4988,13 @@
     const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
     if (mesh) {
       mesh.style.cssText = [
-        'position:absolute', 'inset:0', 'display:none', 'z-index:0', 'pointer-events:none', 'opacity:0',
-        'background:none',
+        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.66',
+        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px)`,
+        'background-size:42px 42px, 42px 42px',
         'transform:translate3d(0,0,0)',
         'backface-visibility:hidden',
-        'will-change:auto'
+        'will-change:transform',
+        'mix-blend-mode:normal'
       ].join(';') + ';';
       try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
     }
@@ -6374,7 +6376,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.195', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.196', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

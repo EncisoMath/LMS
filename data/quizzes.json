@@ -1,6 +1,6 @@
 {
   "version": "1.13",
-  "description": "Base de quizzes por asignatura y periodo. v0.24.195 fija ABCD/multiple_choice a 30 segundos en el demo.",
+  "description": "Base de quizzes por asignatura y periodo. v0.24.196 fija ABCD/multiple_choice a 30 segundos en el demo.",
   "quizzes": [
     {
       "id": "quiz-demo-estadistica-p1",

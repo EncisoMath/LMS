@@ -1,3 +1,11 @@
+## v0.24.196
+
+- Se restaura la malla visible en la banda global de feedback del quiz (`Correcto`, `Incorrecto`, `Enviado` y `Tiempo`).
+- La banda conserva el ajuste de v0.24.195: color sólido/flat y 100% opaco, pero vuelve a mostrar la malla animada encima del color.
+- Para `Tiempo`, la malla queda en líneas oscuras sobre fondo blanco; para correcto/incorrecto/enviado, la malla queda en líneas claras sobre el color sólido.
+- No se tocaron countdown, puntos de transición, música random, ranking/podio, preguntas, Rockstars, Clases, Estudiantes ni datos base.
+- Version/cache busting actualizado a `0.24.196`.
+
 ## v0.24.195
 
 - Se ajusta la pantalla de preguntas del quiz: `.quiz-stage.quiz-stage-fullscreen` queda sin fondo y sin borde, y el fondo general de `.quiz-fullscreen-layer` queda negro puro.
