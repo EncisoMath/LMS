@@ -16258,3 +16258,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   font-size: clamp(1.72rem, 7.3vw, 2.55rem) !important;
   line-height: .86 !important;
 }
+
+/* ===== v0.24.218 - ajuste puntual: countdown del hero un poco mas a la derecha ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot {
+  transform: translateX(6px) !important;
+}
