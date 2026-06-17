@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.263';
+  const APP_VERSION = '0.24.264';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1768,40 +1768,38 @@
     const eyebrow = `${emQzEscapeHtml(subjectName)} • ${emQzEscapeHtml(gradeCourse)}`;
 
     return `
-      <div class="em-qz-heroSkin" data-em-quizzes-hero>
-        <div class="em-qz-shapesLayer" aria-hidden="true"></div>
+      <div class="em-qz-shapesLayer" aria-hidden="true"></div>
 
-        <div class="em-qz-quizBoard" aria-hidden="true">
-          <div class="em-qz-answerTile em-qz-red" data-em-qz-tile="0" style="--em-qz-tile-delay: 0s;">
-            <div class="em-qz-answerTileInner">
-              <span class="em-qz-iconTriangle"></span>
-            </div>
-          </div>
-
-          <div class="em-qz-answerTile em-qz-blue" data-em-qz-tile="1" style="--em-qz-tile-delay: 0.18s;">
-            <div class="em-qz-answerTileInner">
-              <span class="em-qz-iconX"></span>
-            </div>
-          </div>
-
-          <div class="em-qz-answerTile em-qz-yellow" data-em-qz-tile="2" style="--em-qz-tile-delay: 0.36s;">
-            <div class="em-qz-answerTileInner">
-              <span class="em-qz-iconCircle"></span>
-            </div>
-          </div>
-
-          <div class="em-qz-answerTile em-qz-green" data-em-qz-tile="3" style="--em-qz-tile-delay: 0.54s;">
-            <div class="em-qz-answerTileInner">
-              <span class="em-qz-iconSquare"></span>
-            </div>
+      <div class="em-qz-quizBoard" aria-hidden="true">
+        <div class="em-qz-answerTile em-qz-red" data-em-qz-tile="0" style="--em-qz-tile-delay: 0s;">
+          <div class="em-qz-answerTileInner">
+            <span class="em-qz-iconTriangle"></span>
           </div>
         </div>
 
-        <div class="em-qz-content">
-          <span class="em-qz-eyebrow">${eyebrow}</span>
-          <h1 class="em-qz-title">QUIZZES</h1>
-          <p class="em-qz-subtitle">Retos rápidos para aprender jugando.</p>
+        <div class="em-qz-answerTile em-qz-blue" data-em-qz-tile="1" style="--em-qz-tile-delay: 0.18s;">
+          <div class="em-qz-answerTileInner">
+            <span class="em-qz-iconX"></span>
+          </div>
         </div>
+
+        <div class="em-qz-answerTile em-qz-yellow" data-em-qz-tile="2" style="--em-qz-tile-delay: 0.36s;">
+          <div class="em-qz-answerTileInner">
+            <span class="em-qz-iconCircle"></span>
+          </div>
+        </div>
+
+        <div class="em-qz-answerTile em-qz-green" data-em-qz-tile="3" style="--em-qz-tile-delay: 0.54s;">
+          <div class="em-qz-answerTileInner">
+            <span class="em-qz-iconSquare"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="em-qz-content">
+        <span class="em-qz-eyebrow">${eyebrow}</span>
+        <h1 class="em-qz-title">QUIZZES</h1>
+        <p class="em-qz-subtitle">Retos rápidos para aprender jugando.</p>
       </div>
     `;
   }
@@ -2240,7 +2238,7 @@
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
     $content.innerHTML = `
-      <section class="quiz-hero em-qz-hero-host" aria-label="Quizzes de la asignatura">
+      <section class="quiz-hero em-qz-hero-host" data-em-quizzes-hero aria-label="Quizzes de la asignatura">
         ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
@@ -9654,7 +9652,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.263', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.264', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

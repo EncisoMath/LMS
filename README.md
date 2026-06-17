@@ -1,20 +1,5 @@
-## v0.24.263
+## v0.24.264
 
-Base: v0.24.262.
+Correccion puntual sobre v0.24.263: el hero de QUIZZES ya no usa un wrapper interno tipo segundo hero. El fondo navy, las figuras, el tablero y los textos se renderizan directamente dentro del contenedor existente `.quiz-hero.em-qz-hero-host`, conservando el tamano/posicion/layout base del contenedor original. Se mantuvo el menu de periodo, listado de quizzes, navegacion, datos, preguntas, respuestas, countdown, musica, ranking, podio, clases y estudiantes sin cambios.
 
-Cambio visual limitado a la pestaña Quizzes: se reemplazó el contenido interno del hero de QUIZZES por un hero flat navy tipo quiz board con figuras geométricas oscuras animadas, tablero de 4 tarjetas de colores sólidos con símbolos blancos y texto ASIGNATURA • GRADOCURSO / QUIZZES / Retos rápidos para aprender jugando. Se conserva el contenedor principal `.quiz-hero` y no se modifican menú de periodo, listado de quizzes, lógica, datos, preguntas, respuestas, countdown, música, resultados, ranking, podio, clases ni estudiantes.
-
-Version/cache busting actualizado a 0.24.263.
-
-Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
-
-## v0.24.262
-
-Base: v0.24.261.
-
-Cambio visual puntual en Rockstars:
-- Se ajusto solo la escala interna del nuevo hero ROCKSTARS para que el cohete, el titulo, el eyebrow y el subtitulo sean responsivos y no se vean sobredimensionados en pantallas estrechas o heroes bajos.
-- Se conserva el contenedor padre `.rockstar-hero` sin cambiar su tamano, posicion ni layout general.
-- No se tocaron navegacion, logica de Rockstars, estudiantes, clases, quizzes, resultados, ranking, podio, musica, countdown, puntajes ni datos.
-
-Version/cache busting actualizado a 0.24.262.
+Version/cache busting actualizado a 0.24.264.
