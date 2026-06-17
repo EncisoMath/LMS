@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.225';
+  const APP_VERSION = '0.24.226';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4781,6 +4781,12 @@
     document.querySelectorAll('[data-quiz-result-target]').forEach((button) => {
       button.addEventListener('click', () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
     });
+    document.querySelectorAll('[data-enciso-result-replay]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const quiz = getActiveQuiz();
+        if (quiz) renderQuizFullscreen(quiz);
+      });
+    });
     document.querySelectorAll('[data-quiz-restart]').forEach((button) => {
       button.addEventListener('click', () => restartQuiz());
     });
@@ -6360,6 +6366,7 @@
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
+          <button class="enciso-replay-btn" type="button" data-enciso-result-replay>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
       </section>
@@ -7174,7 +7181,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.225', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.226', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

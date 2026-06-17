@@ -1,3 +1,9 @@
+## v0.24.226
+- Corrección enfocada únicamente en la pantalla final `enciso-final-results`: se ajustó el responsive para evitar recortes/overflow horizontal en móviles y pantallas pequeñas, usando anchos con `box-sizing`, `clamp()` y tamaños adaptativos para banda, tarjeta de puntaje, polígono, estadísticas, podio y resumen por pregunta.
+- Se agregó botón `Repetir animación` en la pantalla final para volver a ejecutar toda la animación de resultados sin reiniciar el quiz ni tocar el flujo previo.
+- No se tocaron el anuncio de empezar quiz, transición de ítems, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.226`.
+
 ## v0.24.225
 
 - Recuperación desde la base estable `v0.24.223` para evitar arrastrar el daño de `v0.24.224`.
