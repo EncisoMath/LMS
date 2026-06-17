@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.237';
+  const APP_VERSION = '0.24.238';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4779,12 +4779,20 @@
       select.addEventListener('change', () => saveQuizTimeScoringMode(select.value));
     });
     document.querySelectorAll('[data-quiz-result-target]').forEach((button) => {
-      button.addEventListener('click', () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
+      button.addEventListener('click', () => {
+        const root = button.closest?.('[data-final-results]');
+        encisoPlayResultButtonJello(button);
+        if (root) encisoPlayFinalResultsFlowOut(root, () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
+        else closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes');
+      });
     });
     document.querySelectorAll('[data-enciso-result-replay]').forEach((button) => {
       button.addEventListener('click', () => {
         const quiz = getActiveQuiz();
-        if (quiz) renderQuizFullscreen(quiz);
+        const root = button.closest?.('[data-final-results]');
+        encisoPlayResultButtonJello(button);
+        if (root) encisoPlayFinalResultsFlowOut(root, () => { if (quiz) renderQuizFullscreen(quiz); });
+        else if (quiz) renderQuizFullscreen(quiz);
       });
     });
     document.querySelectorAll('[data-quiz-restart]').forEach((button) => {
@@ -6203,6 +6211,65 @@
     });
   }
 
+  function encisoFinalFlowItems(root) {
+    if (!root) return [];
+    return [
+      root.querySelector('[data-actions-section]'),
+      root.querySelector('[data-review-section]'),
+      root.querySelector('[data-podium-section]'),
+      root.querySelector('[data-score-card]'),
+      root.querySelector('.enciso-result-band')
+    ].filter(Boolean);
+  }
+
+  function encisoResetFinalFlow(root) {
+    encisoFinalFlowItems(root).forEach((el) => {
+      el.classList.remove('play', 'leaving');
+      if (el.matches('[data-actions-section]')) el.classList.remove('show');
+      void el.offsetWidth;
+    });
+  }
+
+  function encisoPlayFinalResultsFlowIn(root) {
+    encisoResetFinalFlow(root);
+    encisoFinalFlowItems(root).forEach((el, index) => {
+      setTimeout(() => {
+        if (!root.isConnected) return;
+        if (el.matches('[data-actions-section]')) el.classList.add('show');
+        el.classList.add('play');
+      }, index * 90);
+    });
+  }
+
+  function encisoPlayFinalResultsFlowOut(root, done) {
+    if (!root) {
+      if (typeof done === 'function') done();
+      return;
+    }
+    if (root.dataset.encisoFinalLeaving === 'true') return;
+    root.dataset.encisoFinalLeaving = 'true';
+    const items = encisoFinalFlowItems(root);
+    items.forEach((el, index) => {
+      setTimeout(() => {
+        if (!root.isConnected) return;
+        el.classList.remove('play');
+        if (el.matches('[data-actions-section]')) el.classList.add('show');
+        el.classList.add('leaving');
+      }, index * 70);
+    });
+    setTimeout(() => {
+      if (typeof done === 'function') done();
+    }, 70 * Math.max(0, items.length - 1) + 560);
+  }
+
+  function encisoPlayResultButtonJello(button) {
+    if (!button) return;
+    button.classList.remove('enciso-result-button-jello');
+    void button.offsetWidth;
+    button.classList.add('enciso-result-button-jello');
+    setTimeout(() => button.classList.remove('enciso-result-button-jello'), 680);
+  }
+
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
@@ -6218,8 +6285,7 @@
       bonusGrade: Number(root.dataset.bonusGrade) || 0,
       extraPoints: Number(root.dataset.extraPoints) || 0
     };
-    root.querySelectorAll('.enciso-score-card, .enciso-podium-section, .enciso-review-section').forEach((el) => el.classList.add('play'));
-    setTimeout(() => root.querySelector('[data-actions-section]')?.classList.add('show'), 1180);
+    encisoPlayFinalResultsFlowIn(root);
     ['first', 'second', 'third'].forEach((place, placeIndex) => {
       const player = root.querySelector(`[data-place="${place}"]`);
       if (!player) return;
@@ -6336,7 +6402,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.237';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.238';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -7534,7 +7600,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.237', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.238', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
