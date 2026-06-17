@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.268';
+  const APP_VERSION = '0.24.269';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2004,9 +2004,9 @@
     cardSwapMs: 2300,
     cardPositions: [
       { x: 0, y: 0, r: -5 },
-      { x: 26, y: 18, r: 4 },
-      { x: 4, y: 38, r: 3 },
-      { x: 30, y: 56, r: -4 }
+      { x: 17, y: 14, r: 4 },
+      { x: 3, y: 29, r: 3 },
+      { x: 19, y: 45, r: -4 }
     ]
   };
 
@@ -9891,7 +9891,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.268', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.269', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

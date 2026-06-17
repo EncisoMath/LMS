@@ -1,3 +1,13 @@
+## v0.24.269
+
+Base: v0.24.268.
+
+Corrección limitada solo al hero de CLASES: se redujo el footprint real de `.em-cl-lessonsBoard` de 132x104px a 91x91px para que no empuje el alto del contenedor; se compactaron las tarjetas internas, líneas e íconos de CLASES y se ajustaron sus posiciones para caber dentro de ese footprint. No se tocaron ROCKSTARS, QUIZZES, listados, navegación, lógica, datos, quizzes, countdown, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.269.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.268
 
 Base: v0.24.267.

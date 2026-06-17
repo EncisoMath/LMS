@@ -12141,8 +12141,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 }
 
 .quiz-transition-tune-head button {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: var(--radius);
   border: 1px solid rgba(255,255,255,.13);
   background: rgba(255,255,255,.08);
@@ -12194,7 +12194,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 .quiz-transition-tune-switch small {
   color: rgba(255,255,255,.58);
-  font-size: 9px;
+  font-size: 7px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -16986,7 +16986,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-full
   background: var(--maincolor, #1368ce) !important;
   color: #fff;
   font: inherit;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 1000;
   letter-spacing: .2px;
   box-shadow: inset 0 -6px 0 rgba(0,0,0,.24), 0 0 22px rgba(19,104,206,.45), 0 14px 24px rgba(0,0,0,.38);
@@ -22096,7 +22096,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   left: 50%;
   top: 50%;
   width: 19px;
-  height: 5px;
+  height: 3px;
   border-radius: 999px;
   background: #ffffff;
   transform-origin: center;
@@ -22291,7 +22291,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH HERO ROCKSTARS + QUIZZES ALIGNMENT
-   v0.24.268 - Misma escala interna, mismas posiciones relativas,
+   v0.24.269 - Misma escala interna, mismas posiciones relativas,
    sin cortes de texto. No cambia contenedor padre ni listas.
 ========================================================= */
 
@@ -22469,7 +22469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO FLAT
-   v0.24.268 - Solo hero visual de la pestaña CLASES.
+   v0.24.269 - Solo hero visual de la pestaña CLASES.
    No modifica listados, datos ni lógica.
 ========================================================= */
 
@@ -22605,12 +22605,12 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 .em-cl-lessonsBoard {
   position: relative;
   z-index: 2;
-  width: 132px;
-  height: 104px;
+  width: 91px;
+  height: 91px;
   justify-self: center;
   align-self: center;
   margin-right: clamp(2px, 0.8vw, 8px);
-  transform: rotate(-2deg) scale(0.58);
+  transform: rotate(-2deg) scale(0.92);
   transform-origin: center;
 }
 
@@ -22618,14 +22618,14 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   position: absolute;
   left: 0;
   top: 0;
-  width: 108px;
-  height: 56px;
-  border-radius: 13px;
-  padding: 8px 9px;
+  width: 74px;
+  height: 42px;
+  border-radius: 10px;
+  padding: 6px 7px;
   display: grid;
-  grid-template-columns: 1fr 26px;
+  grid-template-columns: 1fr 19px;
   grid-template-rows: auto 1fr;
-  gap: 5px 7px;
+  gap: 4px 5px;
   border: none;
   box-shadow: none;
   filter: none;
@@ -22643,7 +22643,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 .em-cl-lessonLabel {
   align-self: start;
   font-family: "Montserrat", Arial, sans-serif;
-  font-size: 9px;
+  font-size: 7px;
   line-height: 1;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -22657,13 +22657,13 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   grid-row: 1 / span 2;
   align-self: center;
   justify-self: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   color: #ffffff;
   font-family: "Montserrat", Arial, sans-serif;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1;
   text-shadow: none;
@@ -22671,19 +22671,19 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 .em-cl-lessonLines {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   align-self: end;
 }
 
 .em-cl-lessonLine {
   display: block;
-  height: 5px;
+  height: 3px;
   border-radius: 999px;
   background: #ffffff;
 }
 
-.em-cl-lessonLine.em-cl-one { width: 48px; }
-.em-cl-lessonLine.em-cl-two { width: 34px; opacity: 0.72; }
+.em-cl-lessonLine.em-cl-one { width: 32px; }
+.em-cl-lessonLine.em-cl-two { width: 23px; opacity: 0.72; }
 .em-cl-lessonCard.is-moving { z-index: 5; }
 
 .em-cl-lessonCard.is-moving .em-cl-lessonLabel,
@@ -22694,8 +22694,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 .em-cl-iconBook {
   position: relative;
-  width: 22px;
-  height: 18px;
+  width: 16px;
+  height: 13px;
 }
 
 .em-cl-iconBook::before,
@@ -22703,8 +22703,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   content: "";
   position: absolute;
   top: 0;
-  width: 10px;
-  height: 18px;
+  width: 7px;
+  height: 13px;
   background: #ffffff;
   border-radius: 3px 3px 2px 2px;
 }
@@ -22714,39 +22714,39 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 .em-cl-iconChart {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: end;
-  gap: 3px;
+  gap: 2px;
 }
 
 .em-cl-iconChart span {
   display: block;
-  width: 5px;
+  width: 4px;
   border-radius: 999px 999px 2px 2px;
   background: #ffffff;
 }
 
-.em-cl-iconChart span:nth-child(1) { height: 9px; }
-.em-cl-iconChart span:nth-child(2) { height: 15px; }
-.em-cl-iconChart span:nth-child(3) { height: 20px; }
+.em-cl-iconChart span:nth-child(1) { height: 7px; }
+.em-cl-iconChart span:nth-child(2) { height: 11px; }
+.em-cl-iconChart span:nth-child(3) { height: 15px; }
 
 .em-cl-iconList {
   display: grid;
-  gap: 4px;
-  width: 23px;
+  gap: 3px;
+  width: 17px;
 }
 
 .em-cl-iconList span {
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
   background: #ffffff;
 }
 
-.em-cl-iconList span:nth-child(1) { width: 22px; }
-.em-cl-iconList span:nth-child(2) { width: 16px; }
-.em-cl-iconList span:nth-child(3) { width: 20px; }
+.em-cl-iconList span:nth-child(1) { width: 16px; }
+.em-cl-iconList span:nth-child(2) { width: 12px; }
+.em-cl-iconList span:nth-child(3) { width: 15px; }
 
 @keyframes emClLessonPop {
   0% { transform: scale(1); }
@@ -22844,7 +22844,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   .em-cl-lessonsBoard {
     width: 132px;
     height: 104px;
-    transform: rotate(-2deg) scale(0.44);
+    transform: rotate(-2deg) scale(0.72);
   }
 
   .em-cl-content { padding-left: 6px; }
@@ -22874,7 +22874,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   }
 
   .em-cl-lessonsBoard {
-    transform: rotate(-2deg) scale(0.38);
+    transform: rotate(-2deg) scale(0.62);
   }
 
   .em-cl-title {
@@ -22901,7 +22901,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO ALIGNMENT FIX
-   v0.24.268 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
+   v0.24.269 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
    Solo afecta el hero visual de CLASES.
 ========================================================= */
 
@@ -22974,9 +22974,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   align-self: center !important;
   transform-origin: center !important;
   margin-right: clamp(2px, 0.8vw, 8px) !important;
-  width: 132px !important;
-  height: 104px !important;
-  transform: rotate(-2deg) scale(0.58) !important;
+  width: 91px !important;
+  height: 91px !important;
+  transform: rotate(-2deg) scale(0.92) !important;
 }
 
 @media (max-width: 560px) {
@@ -22989,7 +22989,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   .em-cl-lessonsBoard {
     width: 132px !important;
     height: 104px !important;
-    transform: rotate(-2deg) scale(0.44) !important;
+    transform: rotate(-2deg) scale(0.72) !important;
   }
 
   .em-cl-content {
@@ -23021,7 +23021,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   }
 
   .em-cl-lessonsBoard {
-    transform: rotate(-2deg) scale(0.38) !important;
+    transform: rotate(-2deg) scale(0.62) !important;
   }
 
   .em-cl-title {
