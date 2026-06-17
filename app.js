@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.241';
+  const APP_VERSION = '0.24.242';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6314,6 +6314,7 @@
       bonusGrade: Number(root.dataset.bonusGrade) || 0,
       extraPoints: Number(root.dataset.extraPoints) || 0
     };
+    encisoInitRetoCompletedHero(root);
     encisoPlayFinalResultsFlowIn(root);
     setTimeout(() => encisoPlayRankingResultsAnimation(root), 170);
     root.querySelectorAll('.enciso-review-item').forEach((item, index) => {
@@ -6707,6 +6708,150 @@
     return Array.from({ length: count }, () => '<span></span>').join('');
   }
 
+  const ENCISO_RETO_HERO_FIGURAS_TOTAL = 10;
+  const ENCISO_RETO_HERO_VELOCIDAD = 0.4;
+  const ENCISO_RETO_HERO_TIPOS = ['circulo', 'cuadrado', 'triangulo', 'equis'];
+
+  function encisoRetoRandom(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function encisoRetoRandomInt(min, max) {
+    return Math.floor(encisoRetoRandom(min, max + 1));
+  }
+
+  function encisoRetoShuffle(array) {
+    const copy = [...array];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function encisoRetoBuildFigureTypes(count) {
+    const list = [];
+    while (list.length < count) list.push(...encisoRetoShuffle(ENCISO_RETO_HERO_TIPOS));
+    return list.slice(0, count);
+  }
+
+  function encisoRetoEdgePosition(index) {
+    const zone = index % 8;
+    if (zone === 0) return { x: encisoRetoRandom(-5, 105), y: encisoRetoRandom(-4, 16) };
+    if (zone === 1) return { x: encisoRetoRandom(-5, 105), y: encisoRetoRandom(84, 104) };
+    if (zone === 2) return { x: encisoRetoRandom(-5, 16), y: encisoRetoRandom(0, 100) };
+    if (zone === 3) return { x: encisoRetoRandom(84, 105), y: encisoRetoRandom(0, 100) };
+    if (zone === 4) return { x: encisoRetoRandom(-5, 18), y: encisoRetoRandom(-5, 18) };
+    if (zone === 5) return { x: encisoRetoRandom(82, 105), y: encisoRetoRandom(-5, 18) };
+    if (zone === 6) return { x: encisoRetoRandom(-5, 18), y: encisoRetoRandom(82, 105) };
+    return { x: encisoRetoRandom(82, 105), y: encisoRetoRandom(82, 105) };
+  }
+
+  function encisoRetoInnerPosition() {
+    return { x: encisoRetoRandom(18, 82), y: encisoRetoRandom(18, 82) };
+  }
+
+  function encisoCleanPreviousRetoHeroDecorations(hero) {
+    if (!hero) return;
+    hero.querySelectorAll('.enciso-band-sparkles, .star, .stars, .dot, .dots, .blind, .blinds, .bubble, .bubbles, .particle, .particles, .sparkle, .sparkles').forEach((el) => {
+      if (!el.classList.contains('em-reto-figura') && !el.classList.contains('em-reto-figuras-layer')) el.remove();
+    });
+  }
+
+  function encisoEnsureRetoHeroLayer(hero) {
+    let layer = hero?.querySelector?.('.em-reto-figuras-layer');
+    if (!hero) return null;
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'em-reto-figuras-layer';
+      layer.setAttribute('aria-hidden', 'true');
+      hero.insertBefore(layer, hero.firstChild);
+    }
+    return layer;
+  }
+
+  function encisoCreateRetoHeroFigures(hero) {
+    const layer = encisoEnsureRetoHeroLayer(hero);
+    if (!layer) return;
+    layer.innerHTML = '';
+    const count = ENCISO_RETO_HERO_FIGURAS_TOTAL;
+    const edgeCount = Math.ceil(count * 0.75);
+    const types = encisoRetoBuildFigureTypes(count);
+    for (let i = 0; i < count; i++) {
+      const figure = document.createElement('span');
+      const type = types[i];
+      const edge = i < edgeCount;
+      const pos = edge ? encisoRetoEdgePosition(i) : encisoRetoInnerPosition();
+      const size = edge ? encisoRetoRandomInt(62, 142) : encisoRetoRandomInt(48, 112);
+      const alpha = encisoRetoRandom(0.40, 0.64);
+      const alphaLow = Math.max(0.24, alpha * 0.68);
+      const alphaMid = Math.max(0.30, alpha * 0.86);
+      const baseDuration = edge ? encisoRetoRandom(10, 14) : encisoRetoRandom(9, 13);
+      const duration = baseDuration / ENCISO_RETO_HERO_VELOCIDAD;
+      const delay = -((i / count) * duration);
+      const forceX = edge ? encisoRetoRandom(50, 145) : encisoRetoRandom(45, 120);
+      const forceY = edge ? encisoRetoRandom(38, 120) : encisoRetoRandom(35, 100);
+      const x0 = encisoRetoRandom(-18, 18);
+      const y0 = encisoRetoRandom(-18, 18);
+      const x1 = encisoRetoRandom(-forceX, forceX);
+      const y1 = encisoRetoRandom(-forceY, forceY);
+      const x2 = encisoRetoRandom(-forceX * 1.2, forceX * 1.2);
+      const y2 = encisoRetoRandom(-forceY * 1.2, forceY * 1.2);
+      const x3 = encisoRetoRandom(-forceX * 1.35, forceX * 1.35);
+      const y3 = encisoRetoRandom(-forceY * 1.35, forceY * 1.35);
+      const x4 = encisoRetoRandom(-forceX, forceX);
+      const y4 = encisoRetoRandom(-forceY, forceY);
+      const r0 = encisoRetoRandomInt(-80, 80);
+      const r1 = encisoRetoRandomInt(80, 220);
+      const r2 = encisoRetoRandomInt(220, 420);
+      const r3 = encisoRetoRandomInt(420, 650);
+      const r4 = encisoRetoRandomInt(650, 860);
+      const r5 = r0 + 360;
+      figure.className = `em-reto-figura ${type}`;
+      figure.style.setProperty('--x', `${pos.x.toFixed(1)}%`);
+      figure.style.setProperty('--y', `${pos.y.toFixed(1)}%`);
+      figure.style.setProperty('--size', `${size}px`);
+      figure.style.setProperty('--alpha', alpha.toFixed(2));
+      figure.style.setProperty('--alpha-low', alphaLow.toFixed(2));
+      figure.style.setProperty('--alpha-mid', alphaMid.toFixed(2));
+      figure.style.setProperty('--duration', `${duration.toFixed(2)}s`);
+      figure.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+      figure.style.setProperty('--x0', `${x0.toFixed(1)}px`);
+      figure.style.setProperty('--y0', `${y0.toFixed(1)}px`);
+      figure.style.setProperty('--x1', `${x1.toFixed(1)}px`);
+      figure.style.setProperty('--y1', `${y1.toFixed(1)}px`);
+      figure.style.setProperty('--x2', `${x2.toFixed(1)}px`);
+      figure.style.setProperty('--y2', `${y2.toFixed(1)}px`);
+      figure.style.setProperty('--x3', `${x3.toFixed(1)}px`);
+      figure.style.setProperty('--y3', `${y3.toFixed(1)}px`);
+      figure.style.setProperty('--x4', `${x4.toFixed(1)}px`);
+      figure.style.setProperty('--y4', `${y4.toFixed(1)}px`);
+      figure.style.setProperty('--r0', `${r0}deg`);
+      figure.style.setProperty('--r1', `${r1}deg`);
+      figure.style.setProperty('--r2', `${r2}deg`);
+      figure.style.setProperty('--r3', `${r3}deg`);
+      figure.style.setProperty('--r4', `${r4}deg`);
+      figure.style.setProperty('--r5', `${r5}deg`);
+      layer.appendChild(figure);
+    }
+  }
+
+  function encisoRestartRetoHeroAnimation(hero) {
+    if (!hero) return;
+    hero.classList.remove('is-em-reto-animating');
+    void hero.offsetWidth;
+    hero.classList.add('is-em-reto-animating');
+  }
+
+  function encisoInitRetoCompletedHero(root = document) {
+    const hero = root.querySelector?.('.em-reto-hero-animado') || root.querySelector?.('.enciso-result-band');
+    if (!hero) return;
+    hero.classList.add('em-reto-hero-animado');
+    encisoCleanPreviousRetoHeroDecorations(hero);
+    encisoCreateRetoHeroFigures(hero);
+    encisoRestartRetoHeroAnimation(hero);
+  }
+
   function encisoPodiumSparklesHTML(count = 4) {
     return Array.from({ length: count }, () => '<span class="ranking-sparkle"></span>').join('');
   }
@@ -6730,8 +6875,8 @@
     return `
       <section class="enciso-final-results results-screen ranking-results-screen enciso-result-state-${escapeAttr(data.stateKey)}" data-final-results data-correct-points="${data.correctPoints}" data-time-points="${data.timePoints}" data-global-score="${data.globalScore}" data-final-grade="${data.finalGrade}" data-fake-grade="${data.fakeGrade}" data-bonus-grade="${data.bonusGrade}" data-extra-points="${data.extraPoints}" style="${escapeAttr(rootStyle)}">
         ${securedOut ? `<div class="enciso-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
-        <section class="enciso-result-band">
-          <div class="enciso-band-sparkles" aria-hidden="true">${encisoHeroSparklesHTML(24)}</div>
+        <section class="enciso-result-band em-reto-hero-animado">
+          <div class="em-reto-figuras-layer" aria-hidden="true"></div>
           <div class="enciso-result-content">
             <div class="enciso-result-kicker">Reto completado</div>
             <h2 class="enciso-result-title">${escapeHTML(data.title)}</h2>
@@ -7620,7 +7765,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.241', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.242', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -18981,3 +18981,226 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .ranking-a
   48% { opacity: 1; transform: scale(1.25); }
   70% { opacity: .18; transform: scale(.35); }
 }
+
+
+/* =========================================================
+   v0.24.242 - HERO/BANDA RETO COMPLETADO - SOLO ANIMACION
+   No toca tamano, layout ni posicion del contenedor.
+   ========================================================= */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado {
+  overflow: hidden !important;
+  isolation: isolate;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado:not([style*="position"]) {
+  position: relative;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figuras-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado > *:not(.em-reto-figuras-layer) {
+  position: relative;
+  z-index: 5;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado * {
+  text-shadow: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado .enciso-band-sparkles {
+  display: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 1;
+  width: var(--size);
+  height: var(--size);
+  opacity: var(--alpha-low);
+  pointer-events: none;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.circulo {
+  border-radius: 50%;
+  background: rgba(45, 22, 8, var(--alpha));
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.cuadrado {
+  border-radius: 12px;
+  background: rgba(45, 22, 8, var(--alpha));
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.triangulo {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: calc(var(--size) / 2) solid transparent;
+  border-right: calc(var(--size) / 2) solid transparent;
+  border-bottom: var(--size) solid rgba(45, 22, 8, var(--alpha));
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.equis {
+  background: transparent;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.equis::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.equis::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: max(12px, calc(var(--size) * 0.2));
+  border-radius: 999px;
+  background: rgba(45, 22, 8, var(--alpha));
+  transform-origin: center;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.equis::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-figura.equis::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado.is-em-reto-animating.play {
+  animation:
+    emRetoBandaGelatinaVertical 1.25s cubic-bezier(.16, 1.45, .28, 1) both,
+    encisoBandGlow 2.7s ease-in-out infinite !important;
+  animation-delay: 0ms, 0ms !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado.is-em-reto-animating > *:not(.em-reto-figuras-layer) {
+  animation: emRetoContenidoPop 0.85s 0.18s cubic-bezier(.18, 1.7, .35, 1) both;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado.is-em-reto-animating .em-reto-figura {
+  animation: emRetoFiguraFlotanteContinua var(--duration) var(--delay) ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado.leaving {
+  animation: encisoFinalResultsFlowOut var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) both !important;
+  animation-delay: 0ms !important;
+}
+
+@keyframes emRetoBandaGelatinaVertical {
+  0% {
+    opacity: 0;
+    translate: 0 -55px;
+    scale: 1.08 .55;
+  }
+  22% {
+    opacity: 1;
+    translate: 0 12px;
+    scale: .94 1.24;
+  }
+  38% {
+    translate: 0 -10px;
+    scale: 1.04 .88;
+  }
+  52% {
+    translate: 0 6px;
+    scale: .98 1.10;
+  }
+  66% {
+    translate: 0 -4px;
+    scale: 1.02 .95;
+  }
+  80% {
+    translate: 0 2px;
+    scale: .995 1.03;
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1 1;
+  }
+}
+
+@keyframes emRetoContenidoPop {
+  0% {
+    opacity: 0;
+    translate: 0 30px;
+    scale: .82;
+    filter: blur(4px);
+  }
+  55% {
+    opacity: 1;
+    translate: 0 -10px;
+    scale: 1.08;
+    filter: blur(0);
+  }
+  75% {
+    translate: 0 4px;
+    scale: .98;
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes emRetoFiguraFlotanteContinua {
+  0% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r0))
+      scale(0.86);
+  }
+  16% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x1), var(--y1))
+      rotate(var(--r1))
+      scale(1.06);
+  }
+  38% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x2), var(--y2))
+      rotate(var(--r2))
+      scale(0.94);
+  }
+  62% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x3), var(--y3))
+      rotate(var(--r3))
+      scale(1.12);
+  }
+  84% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x4), var(--y4))
+      rotate(var(--r4))
+      scale(0.98);
+  }
+  100% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r5))
+      scale(0.86);
+  }
+}
