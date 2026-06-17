@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.262';
+  const APP_VERSION = '0.24.263';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1722,6 +1722,281 @@
     });
   }
 
+  const EM_QZ_HERO_CONFIG = {
+    shapesTotal: 7,
+    shapesSpeed: 0.38,
+    shapeTypes: ['square', 'triangle', 'x', 'circle'],
+    tileSwapMs: 2100,
+    tilePositions: [
+      { x: 0, y: 0, r: -2 },
+      { x: 47, y: 0, r: 2 },
+      { x: 0, y: 47, r: 2 },
+      { x: 47, y: 47, r: -2 }
+    ]
+  };
+
+  let emQzTileOrder = [0, 1, 2, 3];
+  let emQzSwapTimer = null;
+
+  function emQzEscapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function emQzNormalizeGradeCourse(value) {
+    return String(value ?? '')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+
+  function emQzGetAssignmentGradeCourse(assignment = {}) {
+    const direct = assignment.gradeCourse || assignment.gradeCourseLabel || assignment.group || assignment.groupLabel;
+    if (direct) return emQzNormalizeGradeCourse(direct) || '113PPAL';
+
+    const grade = emQzNormalizeGradeCourse(assignment.grade);
+    const course = emQzNormalizeGradeCourse(assignment.course);
+    const combined = `${grade}${course}`;
+
+    return combined || '113PPAL';
+  }
+
+  function emQzQuizzesHeroHTML(subjectName = 'ESTADÍSTICA', gradeCourse = '113PPAL') {
+    const eyebrow = `${emQzEscapeHtml(subjectName)} • ${emQzEscapeHtml(gradeCourse)}`;
+
+    return `
+      <div class="em-qz-heroSkin" data-em-quizzes-hero>
+        <div class="em-qz-shapesLayer" aria-hidden="true"></div>
+
+        <div class="em-qz-quizBoard" aria-hidden="true">
+          <div class="em-qz-answerTile em-qz-red" data-em-qz-tile="0" style="--em-qz-tile-delay: 0s;">
+            <div class="em-qz-answerTileInner">
+              <span class="em-qz-iconTriangle"></span>
+            </div>
+          </div>
+
+          <div class="em-qz-answerTile em-qz-blue" data-em-qz-tile="1" style="--em-qz-tile-delay: 0.18s;">
+            <div class="em-qz-answerTileInner">
+              <span class="em-qz-iconX"></span>
+            </div>
+          </div>
+
+          <div class="em-qz-answerTile em-qz-yellow" data-em-qz-tile="2" style="--em-qz-tile-delay: 0.36s;">
+            <div class="em-qz-answerTileInner">
+              <span class="em-qz-iconCircle"></span>
+            </div>
+          </div>
+
+          <div class="em-qz-answerTile em-qz-green" data-em-qz-tile="3" style="--em-qz-tile-delay: 0.54s;">
+            <div class="em-qz-answerTileInner">
+              <span class="em-qz-iconSquare"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="em-qz-content">
+          <span class="em-qz-eyebrow">${eyebrow}</span>
+          <h1 class="em-qz-title">QUIZZES</h1>
+          <p class="em-qz-subtitle">Retos rápidos para aprender jugando.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function emQzRandom(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function emQzRandomInt(min, max) {
+    return Math.floor(emQzRandom(min, max + 1));
+  }
+
+  function emQzShuffle(array) {
+    const copy = [...array];
+
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+
+    return copy;
+  }
+
+  function emQzBuildShapeTypeList(amount) {
+    const list = [];
+
+    while (list.length < amount) {
+      list.push(...emQzShuffle(EM_QZ_HERO_CONFIG.shapeTypes));
+    }
+
+    return list.slice(0, amount);
+  }
+
+  function emQzShapePosition(index) {
+    const zones = [
+      { xMin: 4, xMax: 14, yMin: 10, yMax: 32 },
+      { xMin: 18, xMax: 32, yMin: 62, yMax: 92 },
+      { xMin: 38, xMax: 52, yMin: 6, yMax: 26 },
+      { xMin: 54, xMax: 68, yMin: 60, yMax: 90 },
+      { xMin: 70, xMax: 84, yMin: 10, yMax: 34 },
+      { xMin: 82, xMax: 96, yMin: 54, yMax: 86 },
+      { xMin: 92, xMax: 104, yMin: 10, yMax: 36 }
+    ];
+
+    const zone = zones[index % zones.length];
+
+    return {
+      x: emQzRandom(zone.xMin, zone.xMax),
+      y: emQzRandom(zone.yMin, zone.yMax)
+    };
+  }
+
+  function emQzCreateShapes(heroSkin) {
+    const shapesLayer = heroSkin.querySelector('.em-qz-shapesLayer');
+
+    if (!shapesLayer) return;
+
+    shapesLayer.innerHTML = '';
+
+    const types = emQzBuildShapeTypeList(EM_QZ_HERO_CONFIG.shapesTotal);
+
+    for (let i = 0; i < EM_QZ_HERO_CONFIG.shapesTotal; i += 1) {
+      const shape = document.createElement('span');
+      const type = types[i];
+
+      shape.className = `em-qz-shape em-qz-shape-${type}`;
+
+      const pos = emQzShapePosition(i);
+      const size = emQzRandomInt(58, 138);
+      const alpha = emQzRandom(0.18, 0.36);
+
+      const baseDuration = emQzRandom(11, 16);
+      const duration = baseDuration / EM_QZ_HERO_CONFIG.shapesSpeed;
+      const delay = -(emQzRandom(0, duration));
+
+      const forceX = emQzRandom(14, 44);
+      const forceY = emQzRandom(7, 20);
+
+      const x0 = emQzRandom(-5, 5);
+      const y0 = emQzRandom(-4, 4);
+
+      const x1 = emQzRandom(-forceX, forceX);
+      const y1 = emQzRandom(-forceY, forceY);
+
+      const x2 = emQzRandom(-forceX * 1.12, forceX * 1.12);
+      const y2 = emQzRandom(-forceY * 1.12, forceY * 1.12);
+
+      const x3 = emQzRandom(-forceX, forceX);
+      const y3 = emQzRandom(-forceY, forceY);
+
+      const r0 = emQzRandomInt(-50, 50);
+      const r1 = emQzRandomInt(90, 220);
+      const r2 = emQzRandomInt(220, 420);
+      const r3 = emQzRandomInt(420, 640);
+      const r4 = r0 + 360;
+
+      shape.style.setProperty('--em-qz-shape-x', `${pos.x.toFixed(1)}%`);
+      shape.style.setProperty('--em-qz-shape-y', `${pos.y.toFixed(1)}%`);
+      shape.style.setProperty('--em-qz-shape-size', `${size}px`);
+      shape.style.setProperty('--em-qz-shape-alpha', alpha.toFixed(2));
+
+      shape.style.setProperty('--em-qz-shape-duration', `${duration.toFixed(2)}s`);
+      shape.style.setProperty('--em-qz-shape-delay', `${delay.toFixed(2)}s`);
+
+      shape.style.setProperty('--em-qz-x0', `${x0.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-y0', `${y0.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-x1', `${x1.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-y1', `${y1.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-x2', `${x2.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-y2', `${y2.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-x3', `${x3.toFixed(1)}px`);
+      shape.style.setProperty('--em-qz-y3', `${y3.toFixed(1)}px`);
+
+      shape.style.setProperty('--em-qz-r0', `${r0}deg`);
+      shape.style.setProperty('--em-qz-r1', `${r1}deg`);
+      shape.style.setProperty('--em-qz-r2', `${r2}deg`);
+      shape.style.setProperty('--em-qz-r3', `${r3}deg`);
+      shape.style.setProperty('--em-qz-r4', `${r4}deg`);
+
+      shapesLayer.appendChild(shape);
+    }
+  }
+
+  function emQzApplyTilePositions(heroSkin) {
+    const tiles = heroSkin.querySelectorAll('.em-qz-answerTile');
+
+    tiles.forEach((tile) => {
+      const tileIndex = Number(tile.dataset.emQzTile);
+      const positionIndex = emQzTileOrder.indexOf(tileIndex);
+      const pos = EM_QZ_HERO_CONFIG.tilePositions[positionIndex];
+
+      tile.style.setProperty('--em-qz-tile-x', `${pos.x}px`);
+      tile.style.setProperty('--em-qz-tile-y', `${pos.y}px`);
+      tile.style.setProperty('--em-qz-tile-rotate', `${pos.r}deg`);
+
+      tile.classList.add('is-moving');
+
+      window.setTimeout(() => {
+        tile.classList.remove('is-moving');
+      }, 620);
+    });
+  }
+
+  function emQzSwapTiles(heroSkin) {
+    const newOrder = [...emQzTileOrder];
+
+    const a = emQzRandomInt(0, 3);
+    let b = emQzRandomInt(0, 3);
+
+    while (b === a) {
+      b = emQzRandomInt(0, 3);
+    }
+
+    [newOrder[a], newOrder[b]] = [newOrder[b], newOrder[a]];
+
+    emQzTileOrder = newOrder;
+    emQzApplyTilePositions(heroSkin);
+  }
+
+  function emQzStartTileSwap(heroSkin) {
+    if (emQzSwapTimer) {
+      clearInterval(emQzSwapTimer);
+    }
+
+    emQzSwapTimer = setInterval(() => {
+      if (!document.body.contains(heroSkin)) {
+        clearInterval(emQzSwapTimer);
+        emQzSwapTimer = null;
+        return;
+      }
+
+      emQzSwapTiles(heroSkin);
+    }, EM_QZ_HERO_CONFIG.tileSwapMs);
+  }
+
+  function emQzInitQuizzesHero(root = document) {
+    const heroes = root.querySelectorAll
+      ? root.querySelectorAll('[data-em-quizzes-hero]')
+      : [];
+
+    heroes.forEach((heroSkin) => {
+      if (heroSkin.dataset.emQzReady === '1') {
+        return;
+      }
+
+      heroSkin.dataset.emQzReady = '1';
+
+      emQzTileOrder = [0, 1, 2, 3];
+
+      emQzCreateShapes(heroSkin);
+      emQzApplyTilePositions(heroSkin);
+      emQzStartTileSwap(heroSkin);
+    });
+  }
+
   function renderRockstarsTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -1965,17 +2240,8 @@
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
     $content.innerHTML = `
-      <section class="quiz-hero" aria-label="Quizzes de la asignatura">
-        <div class="quiz-hero-grid" aria-hidden="true"></div>
-        <div class="quiz-podium" aria-hidden="true">
-          <span class="quiz-tile tile-red">▲</span>
-          <span class="quiz-tile tile-blue">◆</span>
-          <span class="quiz-tile tile-yellow">●</span>
-          <span class="quiz-tile tile-green">■</span>
-        </div>
-        <div class="quiz-title-block is-centered-title">
-          <div class="quiz-title-neon" data-text="QUIZZES">QUIZZES</div>
-        </div>
+      <section class="quiz-hero em-qz-hero-host" aria-label="Quizzes de la asignatura">
+        ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
@@ -1986,6 +2252,7 @@
       <div class="quiz-launch-note" id="quizLaunchNote" ${activeQuiz ? '' : 'hidden'}>Toca un quiz para ver el aviso de inicio.</div>
     `;
     bindQuizTabEvents();
+    emQzInitQuizzesHero($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
@@ -9387,7 +9654,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.262', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.263', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
