@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.234';
+  const APP_VERSION = '0.24.236';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6342,10 +6342,16 @@
     heroX: 0,
     heroY: 0,
     heroZoom: 90,
+    heroKickerX: 0,
+    heroKickerY: 0,
     heroTitleSize: 100,
     heroTitleY: 0,
     heroMessageSize: 100,
     heroMessageY: 0,
+    heroSparklesX: 0,
+    heroSparklesY: 0,
+    heroSparklesZoom: 100,
+    heroSparklesCount: 6,
     scoreHeight: 22,
     scoreX: 0,
     scoreY: 0,
@@ -6383,10 +6389,16 @@
         ['heroX', 'Posición X'],
         ['heroY', 'Posición Y'],
         ['heroZoom', 'Zoom'],
+        ['heroKickerX', 'Posición X reto'],
+        ['heroKickerY', 'Posición Y reto'],
         ['heroTitleSize', 'Tamaño título'],
         ['heroTitleY', 'Posición Y título'],
         ['heroMessageSize', 'Tamaño subtítulo'],
-        ['heroMessageY', 'Posición Y subtítulo']
+        ['heroMessageY', 'Posición Y subtítulo'],
+        ['heroSparklesX', 'Posición X estrellas'],
+        ['heroSparklesY', 'Posición Y estrellas'],
+        ['heroSparklesZoom', 'Zoom estrellas'],
+        ['heroSparklesCount', 'Cantidad estrellas']
       ]
     },
     {
@@ -6415,16 +6427,17 @@
   ];
 
   function encisoFinalTuneFieldMeta(key) {
-    if (key === 'actionsHeight') return { min: 4, max: 18, step: 1, unit: '%' };
-    if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 55, max: 120, step: 1, unit: '%' };
-    if (key.endsWith('Height')) return { min: 6, max: 52, step: 1, unit: '%' };
-    if (key === 'heroZoom') return { min: 55, max: 190, step: 1, unit: '%' };
-    if (key === 'gradePolyZoom') return { min: 60, max: 190, step: 1, unit: '%' };
-    if (key.endsWith('Zoom')) return { min: 55, max: 135, step: 1, unit: '%' };
-    if (key.endsWith('Size')) return { min: 60, max: 180, step: 1, unit: '%' };
-    if (key.endsWith('X')) return { min: -60, max: 60, step: 1, unit: '%' };
-    if (key.endsWith('Y')) return { min: -60, max: 60, step: 1, unit: '%' };
-    return { min: 0, max: 100, step: 1, unit: '%' };
+    if (key === 'heroSparklesCount') return { min: 0, max: 24, step: 1, unit: '' };
+    if (key === 'actionsHeight') return { min: 1, max: 60, step: 1, unit: '%' };
+    if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 25, max: 260, step: 1, unit: '%' };
+    if (key.endsWith('Height')) return { min: 1, max: 120, step: 1, unit: '%' };
+    if (key === 'heroZoom') return { min: 20, max: 420, step: 1, unit: '%' };
+    if (key === 'gradePolyZoom') return { min: 20, max: 420, step: 1, unit: '%' };
+    if (key.endsWith('Zoom')) return { min: 20, max: 360, step: 1, unit: '%' };
+    if (key.endsWith('Size')) return { min: 20, max: 360, step: 1, unit: '%' };
+    if (key.endsWith('X')) return { min: -220, max: 220, step: 1, unit: '%' };
+    if (key.endsWith('Y')) return { min: -220, max: 220, step: 1, unit: '%' };
+    return { min: -220, max: 220, step: 1, unit: '%' };
   }
 
   function normalizeEncisoFinalTune(raw = {}) {
@@ -6468,6 +6481,14 @@
     root.style.setProperty('--enciso-review-y', `${safe.reviewY}%`);
     root.style.setProperty('--enciso-hero-y', `${safe.heroY}%`);
     root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
+    root.style.setProperty('--enciso-hero-kicker-x', `${safe.heroKickerX}%`);
+    root.style.setProperty('--enciso-hero-kicker-y', `${safe.heroKickerY}%`);
+    root.style.setProperty('--enciso-hero-sparkles-x', `${safe.heroSparklesX}%`);
+    root.style.setProperty('--enciso-hero-sparkles-y', `${safe.heroSparklesY}%`);
+    root.style.setProperty('--enciso-hero-sparkles-zoom', `${safe.heroSparklesZoom / 100}`);
+    root.querySelectorAll('.enciso-band-sparkles span').forEach((sparkle, index) => {
+      sparkle.hidden = index >= safe.heroSparklesCount;
+    });
     root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
     root.style.setProperty('--enciso-score-label-x', `${safe.scoreLabelX}%`);
     root.style.setProperty('--enciso-score-label-y', `${safe.scoreLabelY}%`);
@@ -6596,6 +6617,10 @@
     });
   }
 
+  function encisoHeroSparklesHTML(count = 24) {
+    return Array.from({ length: count }, () => '<span></span>').join('');
+  }
+
   function encisoPodiumSparklesHTML(count = 4) {
     return Array.from({ length: count }, () => '<span></span>').join('');
   }
@@ -6620,7 +6645,7 @@
       <section class="enciso-final-results results-screen ranking-results-screen enciso-result-state-${escapeAttr(data.stateKey)}" data-final-results data-correct-points="${data.correctPoints}" data-time-points="${data.timePoints}" data-global-score="${data.globalScore}" data-final-grade="${data.finalGrade}" data-fake-grade="${data.fakeGrade}" data-bonus-grade="${data.bonusGrade}" data-extra-points="${data.extraPoints}" style="${escapeAttr(rootStyle)}">
         ${securedOut ? `<div class="enciso-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
         <section class="enciso-result-band">
-          <div class="enciso-band-sparkles" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="enciso-band-sparkles" aria-hidden="true">${encisoHeroSparklesHTML(24)}</div>
           <div class="enciso-result-content">
             <div class="enciso-result-kicker">Reto completado</div>
             <h2 class="enciso-result-title">${escapeHTML(data.title)}</h2>
@@ -7509,7 +7534,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.234', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.236', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

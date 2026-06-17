@@ -1,3 +1,17 @@
+## v0.24.236
+
+Cambios v0.24.236:
+- Pantalla final de resultados: se ampliaron los rangos de todos los sliders de la tuerquita para permitir valores mucho más grandes en alturas, posiciones X/Y, zooms y tamaños.
+- Se mantuvo la clave de calibración existente para no borrar ajustes guardados del usuario.
+- No se tocaron flujo del quiz, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.236`.
+
+Validación:
+- `node --check app.js`
+- `node --check sw.js`
+- JSON/manifest válidos
+- `unzip -t`
+
 ## v0.24.234
 
 - Ajuste puntual solo en pantalla final de resultados.
