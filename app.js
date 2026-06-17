@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.255';
+  const APP_VERSION = '0.24.256';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3990,7 +3990,7 @@
   function normalizeQuizTransitionTune(tune = {}) {
     const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
     return {
-      // v0.24.255: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
+      // v0.24.256: ajuste visual puntual de textos Quiz y timing/flujo de bandas de transición.
       radials: false,
       sceneGlow: false,
       shapeGlow: false,
@@ -4084,7 +4084,7 @@
     const VELOCIDAD_FIGURAS = 0.4;
 
     const QUIZ_INFO_HOLD_MS = 3000;
-    const ITEM_HOLD_MS = 2200;
+    const ITEM_HOLD_MS = 1900;
     const EXIT_MS = 1180;
     const START_BLACK_MS = 350;
 
@@ -4191,7 +4191,7 @@
       if (layer) clearLayer(layer);
     }
 
-    function createBand({ type, title, subtitle, itemNumber }) {
+    function createBand({ type, title, subtitle, itemNumber, avoidColor = '' }) {
       const band = document.createElement('section');
       band.className = `em-transition-band ${type || ''}`.trim();
 
@@ -4208,7 +4208,7 @@
       if (type === 'band-quiz') {
         const kicker = document.createElement('div');
         kicker.className = 'em-transition-quiz-kicker';
-        kicker.textContent = 'Nuevo reto';
+        kicker.textContent = 'Nuevo quiz';
 
         const titleEl = document.createElement('div');
         titleEl.className = 'em-transition-quiz-title';
@@ -4241,13 +4241,14 @@
       band.appendChild(figurasLayer);
       band.appendChild(copy);
 
-      prepareBandVisuals(band, figurasLayer);
+      prepareBandVisuals(band, figurasLayer, { avoidColor });
 
       return band;
     }
 
-    function prepareBandVisuals(band, figurasLayer) {
-      const color = elegir(COLORES);
+    function prepareBandVisuals(band, figurasLayer, { avoidColor = '' } = {}) {
+      const availableColors = COLORES.filter((color) => String(color).toLowerCase() !== String(avoidColor).toLowerCase());
+      const color = elegir(availableColors.length ? availableColors : COLORES);
       const entrada = elegir(DIRECCIONES);
       const salida = elegir(DIRECCIONES);
       const rotacion = random(-5, 5);
@@ -4440,7 +4441,8 @@
 
       const itemBand = createBand({
         type: 'band-item-over',
-        itemNumber: options.itemNumber || 1
+        itemNumber: options.itemNumber || 1,
+        avoidColor: quizBand.style.getPropertyValue('--band-color')
       });
 
       layer.appendChild(itemBand);
@@ -6114,11 +6116,6 @@
       });
     } else if (phase === 'transition') {
       const transitionRoot = layer.querySelector('.quiz-item-transition');
-      const continueButton = transitionRoot?.querySelector?.('[data-quiz-transition-continue]');
-      if (continueButton) {
-        continueButton.hidden = true;
-        continueButton.disabled = false;
-      }
       let bandPromise = null;
       try {
         if (transitionWithIntro) {
@@ -6136,7 +6133,9 @@
         }
       } catch (_) {}
       Promise.resolve(bandPromise).finally(() => {
-        if (continueButton?.isConnected) continueButton.hidden = false;
+        const liveLayer = document.getElementById('quizFullscreenLayer');
+        if (!liveLayer || !liveLayer.classList.contains('quiz-phase-transition')) return;
+        goToQuizQuestionFromTransition();
       });
       playQuizTransitionNumberMotion(layer);
       playQuizTransitionScoreCounter(layer);
@@ -6188,7 +6187,7 @@
         </div>
         <div class="quiz-start-modal-body">
           <h3>${escapeHTML(quiz.title || 'Quiz')}</h3>
-          <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
+          <p>${escapeHTML(quiz.description || quiz.mode || 'Quiz interactivo de práctica.')}</p>
           <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
           ${quizTimeScoringSelectorHTML()}
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
@@ -6205,7 +6204,7 @@
         <div class="quiz-kahoot-mark" aria-hidden="true"><span>▲</span><span>◆</span><span>●</span><span>■</span></div>
         <p class="section-kicker">Antes de empezar</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
-        <p>${escapeHTML(quiz.description || quiz.mode || 'Reto interactivo de práctica.')}</p>
+        <p>${escapeHTML(quiz.description || quiz.mode || 'Quiz interactivo de práctica.')}</p>
         <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
         <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
         <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
@@ -6217,7 +6216,7 @@
     return `
       <section class="quiz-intro-splash quiz-burst-scene">
         <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="section-kicker">Preparando reto</p>
+        <p class="section-kicker">Preparando quiz</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
         <p>${escapeHTML(quiz.description || quiz.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
       </section>
@@ -6230,7 +6229,7 @@
     return `
       <section class="quiz-item-transition quiz-transition-minimal em-transition-host" aria-live="polite">
         ${quizTransitionScoreHTML(current, quiz)}
-        <button class="quiz-transition-continue-btn" type="button" data-quiz-transition-continue hidden>Continuar</button>
+
       </section>
     `;
   }
@@ -7265,8 +7264,8 @@
         ['heroX', 'Posición X'],
         ['heroY', 'Posición Y'],
         ['heroZoom', 'Zoom'],
-        ['heroKickerX', 'Posición X reto'],
-        ['heroKickerY', 'Posición Y reto'],
+        ['heroKickerX', 'Posición X quiz'],
+        ['heroKickerY', 'Posición Y quiz'],
         ['heroTitleSize', 'Tamaño título'],
         ['heroTitleY', 'Posición Y título'],
         ['heroMessageSize', 'Tamaño subtítulo'],
@@ -7731,7 +7730,7 @@
         <section class="enciso-result-band em-reto-hero-animado">
           <div class="em-reto-figuras-layer" aria-hidden="true"></div>
           <div class="enciso-result-content">
-            <div class="enciso-result-kicker">Reto completado</div>
+            <div class="enciso-result-kicker">Quiz completado</div>
             <h2 class="enciso-result-title">${escapeHTML(data.title)}</h2>
             <p class="enciso-result-message">${escapeHTML(data.phrase)}</p>
           </div>
@@ -7770,7 +7769,7 @@
         </section>
 
         <section class="enciso-podium-section ranking-animation-root" data-podium-section>
-          <div class="enciso-section-title">Ranking del reto</div>
+          <div class="enciso-section-title">Ranking del quiz</div>
           <div class="enciso-podium">
             <article class="enciso-podium-player second ranking-place-2" data-place="second">
               <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(4)}</div>
@@ -8619,7 +8618,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.255', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.256', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

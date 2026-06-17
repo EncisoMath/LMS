@@ -1,7 +1,8 @@
-## v0.24.255
+## v0.24.256
 
-Cambios v0.24.255:
-- Corrección puntual solo en la transición inicial info del quiz + ITEM 1: se elimina el padding del contenedor padre `.quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro` para que no recorte/achique esa pantalla.
-- No se tocaron las transiciones normales ITEM 2, ITEM 3, etc.
-- No se tocaron preguntas, opciones, resultados, ranking, podio, música, datos ni lógica de puntaje.
-- Version/cache busting actualizado a 0.24.255.
+Cambios v0.24.256:
+- Textos visibles cambiados de Reto/reto a Quiz/quiz donde aparecían en resultados/transición/contextos visibles relacionados.
+- En la transición inicial, la banda de info del quiz y la banda ITEM 1 evitan repetir el mismo color.
+- Transiciones vuelven a avanzar automáticamente sin botón Continuar.
+- Tiempo visible de bandas ITEM 2+ ajustado a 1.9 segundos.
+- Version/cache busting actualizado a 0.24.256.
