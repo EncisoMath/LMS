@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.229';
+  const APP_VERSION = '0.24.230';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6071,6 +6071,30 @@
     requestAnimationFrame(frame);
   }
 
+  function encisoSetGradeNoteText(note, text, extraClass = '') {
+    if (!note) return;
+    const cleanText = String(text).trim() || '?';
+    note.innerHTML = '';
+    [...cleanText].forEach((char, index) => {
+      const span = document.createElement('span');
+      span.className = char === ' ' ? 'enciso-grade-char enciso-grade-space' : 'enciso-grade-char';
+      span.style.setProperty('--i', index);
+      if (char === ' ') span.innerHTML = '&nbsp;';
+      else {
+        span.textContent = char;
+        span.setAttribute('data-char', char);
+      }
+      note.appendChild(span);
+    });
+    note.className = `enciso-grade-note show ${extraClass}`.trim();
+  }
+
+  function encisoResetGradeNote(note) {
+    if (!note) return;
+    note.className = 'enciso-grade-note';
+    note.textContent = '?';
+  }
+
   function encisoStartFinalPolygon(root, payload) {
     const stage = root.querySelector('[data-grade-stage]');
     const polygon = root.querySelector('[data-grade-polygon]');
@@ -6090,8 +6114,10 @@
     const cascadeDelay = 130;
     encisoSetPolygonPoints(polygon, center);
     stage.classList.add('active');
-    note.className = 'enciso-grade-note';
-    note.textContent = '?';
+    encisoResetGradeNote(note);
+    stage.classList.remove('score-intro');
+    void stage.offsetWidth;
+    stage.classList.add('score-intro');
     caption.textContent = '';
 
     function floatFrame(floatStart, basePoints) {
@@ -6124,13 +6150,11 @@
         requestAnimationFrame(() => floatFrame(performance.now(), finalPoints));
         setTimeout(() => {
           if (!root.isConnected) return;
-          note.textContent = encisoFormatGrade(payload.fakeGrade);
-          note.className = 'enciso-grade-note show fake';
+          encisoSetGradeNoteText(note, encisoFormatGrade(payload.fakeGrade), 'fake');
         }, 180);
         setTimeout(() => {
           if (!root.isConnected) return;
-          note.textContent = encisoFormatGrade(payload.finalGrade);
-          note.className = 'enciso-grade-note show final';
+          encisoSetGradeNoteText(note, encisoFormatGrade(payload.finalGrade), 'final');
           caption.textContent = '';
         }, 1350);
       }
@@ -6271,33 +6295,53 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.229';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.230';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 9,
     heroX: 0,
     heroZoom: 90,
+    heroTitleSize: 100,
+    heroTitleY: 0,
+    heroMessageSize: 100,
+    heroMessageY: 0,
     scoreHeight: 22,
     scoreX: 0,
     scoreZoom: 96,
     podiumHeight: 44,
     podiumX: 0,
     podiumZoom: 96,
+    podiumStarsY: 0,
     reviewHeight: 10,
     reviewX: 0,
     reviewZoom: 96
   };
   const ENCISO_FINAL_TUNE_TABS = [
-    { key: 'hero', label: 'Hero', height: 'heroHeight', x: 'heroX', zoom: 'heroZoom' },
-    { key: 'score', label: 'Puntaje', height: 'scoreHeight', x: 'scoreX', zoom: 'scoreZoom' },
-    { key: 'podium', label: 'Ranking', height: 'podiumHeight', x: 'podiumX', zoom: 'podiumZoom' },
-    { key: 'review', label: 'Preguntas', height: 'reviewHeight', x: 'reviewX', zoom: 'reviewZoom' }
+    {
+      key: 'hero',
+      label: 'Hero',
+      fields: [
+        ['heroHeight', 'Altura'],
+        ['heroX', 'Posición X'],
+        ['heroZoom', 'Zoom'],
+        ['heroTitleSize', 'Tamaño título'],
+        ['heroTitleY', 'Posición Y título'],
+        ['heroMessageSize', 'Tamaño subtítulo'],
+        ['heroMessageY', 'Posición Y subtítulo']
+      ]
+    },
+    { key: 'score', label: 'Puntaje', fields: [['scoreHeight', 'Altura'], ['scoreX', 'Posición X'], ['scoreZoom', 'Zoom']] },
+    { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
+    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewZoom', 'Zoom']] }
   ];
 
   function encisoFinalTuneFieldMeta(key) {
-    if (key.endsWith('Height')) return { min: 8, max: 48, step: 1, unit: 'fr' };
-    if (key.endsWith('X')) return { min: -80, max: 80, step: 1, unit: 'px' };
-    if (key.endsWith('Zoom')) return { min: 55, max: 125, step: 1, unit: '%' };
-    return { min: 0, max: 100, step: 1, unit: '' };
+    if (key.endsWith('Height')) return { min: 6, max: 52, step: 1, unit: '%' };
+    if (key.endsWith('X')) return { min: -35, max: 35, step: 1, unit: '%' };
+    if (key === 'heroZoom') return { min: 55, max: 190, step: 1, unit: '%' };
+    if (key.endsWith('Zoom')) return { min: 55, max: 135, step: 1, unit: '%' };
+    if (key.endsWith('Size')) return { min: 60, max: 180, step: 1, unit: '%' };
+    if (key.endsWith('Y')) return { min: -60, max: 60, step: 1, unit: '%' };
+    return { min: 0, max: 100, step: 1, unit: '%' };
   }
 
   function normalizeEncisoFinalTune(raw = {}) {
@@ -6331,14 +6375,19 @@
     root.style.setProperty('--enciso-score-row', `${safe.scoreHeight}fr`);
     root.style.setProperty('--enciso-podium-row', `${safe.podiumHeight}fr`);
     root.style.setProperty('--enciso-review-row', `${safe.reviewHeight}fr`);
-    root.style.setProperty('--enciso-hero-x', `${safe.heroX}px`);
-    root.style.setProperty('--enciso-score-x', `${safe.scoreX}px`);
-    root.style.setProperty('--enciso-podium-x', `${safe.podiumX}px`);
-    root.style.setProperty('--enciso-review-x', `${safe.reviewX}px`);
+    root.style.setProperty('--enciso-hero-x', `${safe.heroX}%`);
+    root.style.setProperty('--enciso-score-x', `${safe.scoreX}%`);
+    root.style.setProperty('--enciso-podium-x', `${safe.podiumX}%`);
+    root.style.setProperty('--enciso-review-x', `${safe.reviewX}%`);
     root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
     root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
     root.style.setProperty('--enciso-podium-zoom', `${safe.podiumZoom / 100}`);
     root.style.setProperty('--enciso-review-zoom', `${safe.reviewZoom / 100}`);
+    root.style.setProperty('--enciso-hero-title-size', `${safe.heroTitleSize / 100}`);
+    root.style.setProperty('--enciso-hero-title-y', `${safe.heroTitleY}%`);
+    root.style.setProperty('--enciso-hero-message-size', `${safe.heroMessageSize / 100}`);
+    root.style.setProperty('--enciso-hero-message-y', `${safe.heroMessageY}%`);
+    root.style.setProperty('--enciso-podium-stars-y', `${safe.podiumStarsY}%`);
     return safe;
   }
 
@@ -6381,9 +6430,7 @@
           <div class="enciso-final-tune-body">
             ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
               <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
-                ${encisoFinalTuneSliderHTML(tab.height, 'Altura')}
-                ${encisoFinalTuneSliderHTML(tab.x, 'Posición X')}
-                ${encisoFinalTuneSliderHTML(tab.zoom, 'Zoom')}
+                ${(tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
               </section>
             `).join('')}
           </div>
@@ -7357,7 +7404,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.229', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.230', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -1,3 +1,12 @@
+## v0.24.230
+
+- Ajuste puntual en pantalla final de resultados/ranking: botones `Repetir animación` y `Continuar` más compactos verticalmente.
+- Los contenedores de puntaje, ranking y resumen por pregunta ahora entran en cascada de arriba hacia abajo con una animación tipo `encisoFlowIn`, manteniendo los ajustes de zoom/X.
+- Se amplió el zoom del Hero en la tuerquita y se agregaron sliders porcentuales para tamaño/Y del título, tamaño/Y del subtítulo y posición Y de las estrellitas del ranking.
+- El polígono de la nota conserva la lógica existente pero añade intro tipo contador de transición con pop y texto con glitch azul/rojo.
+- No se tocaron inicio del quiz, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.230`.
+
 ## v0.24.229
 
 - Ajuste visual solo en la pantalla final de resultados: se redujo verticalmente el hero, se compactó el padding superior del contenedor de puntaje, se agrandó y alineó el polígono/nota con el puntaje global y se eliminó el texto inferior de nota.
