@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.230';
+  const APP_VERSION = '0.24.231';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6074,18 +6074,7 @@
   function encisoSetGradeNoteText(note, text, extraClass = '') {
     if (!note) return;
     const cleanText = String(text).trim() || '?';
-    note.innerHTML = '';
-    [...cleanText].forEach((char, index) => {
-      const span = document.createElement('span');
-      span.className = char === ' ' ? 'enciso-grade-char enciso-grade-space' : 'enciso-grade-char';
-      span.style.setProperty('--i', index);
-      if (char === ' ') span.innerHTML = '&nbsp;';
-      else {
-        span.textContent = char;
-        span.setAttribute('data-char', char);
-      }
-      note.appendChild(span);
-    });
+    note.textContent = cleanText;
     note.className = `enciso-grade-note show ${extraClass}`.trim();
   }
 
@@ -6101,18 +6090,92 @@
     const note = root.querySelector('[data-grade-note]');
     const caption = root.querySelector('[data-grade-caption]');
     if (!stage || !polygon || !note || !caption) return;
-    const center = [
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 }
+
+    const CENTER = { x: 68, y: 64 };
+    const BASE_POINTS = [
+      { x: 21, y: 29 },
+      { x: 128, y: 26 },
+      { x: 124, y: 101 },
+      { x: 23, y: 104 }
     ];
-    const finalPoints = encisoRandomPolygon();
-    const currentPoints = center.map((point) => ({ ...point }));
-    const start = performance.now();
-    const vertexDuration = 460;
-    const cascadeDelay = 130;
-    encisoSetPolygonPoints(polygon, center);
+    const LIMITS = [
+      { minX: 13, maxX: 30, minY: 21, maxY: 39 },
+      { minX: 118, maxX: 138, minY: 21, maxY: 39 },
+      { minX: 114, maxX: 132, minY: 91, maxY: 111 },
+      { minX: 15, maxX: 33, minY: 91, maxY: 111 }
+    ];
+    const OPEN_DURATION = 300;
+    const OPEN_STAGGER = 18;
+
+    let currentPoints = [CENTER, CENTER, CENTER, CENTER].map((point) => ({ ...point }));
+    const centerPoints = currentPoints.map((point) => ({ ...point }));
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clonePoints(points) {
+      return points.map((point) => ({ ...point }));
+    }
+
+    function createRandomOpenShape() {
+      return BASE_POINTS.map((point, index) => {
+        const limit = LIMITS[index];
+        return {
+          x: encisoClamp(point.x + randomBetween(-6.3, 6.3), limit.minX, limit.maxX),
+          y: encisoClamp(point.y + randomBetween(-5.7, 5.7), limit.minY, limit.maxY)
+        };
+      });
+    }
+
+    function createTinyLivingShapeAround(points, t = 0) {
+      return points.map((point, index) => {
+        const limit = LIMITS[index];
+        return {
+          x: encisoClamp(point.x + Math.sin(t * 1.6 + index * 1.7) * 1.8, limit.minX, limit.maxX),
+          y: encisoClamp(point.y + Math.cos(t * 1.35 + index * 1.45) * 1.35, limit.minY, limit.maxY)
+        };
+      });
+    }
+
+    function animatePolygonTo(targetPoints, options = {}) {
+      const duration = Number(options.duration) || OPEN_DURATION;
+      const stagger = Number(options.stagger) || OPEN_STAGGER;
+      const easing = typeof options.easing === 'function' ? options.easing : encisoEaseOutBack;
+      const onComplete = typeof options.onComplete === 'function' ? options.onComplete : null;
+      const fromPoints = clonePoints(currentPoints);
+      const startTime = performance.now();
+      const totalDuration = duration + stagger * (targetPoints.length - 1);
+      function tick(now) {
+        const elapsed = now - startTime;
+        currentPoints = fromPoints.map((point, index) => {
+          const progress = encisoClamp((elapsed - stagger * index) / duration, 0, 1);
+          const eased = easing(progress);
+          const target = targetPoints[index];
+          return {
+            x: point.x + (target.x - point.x) * eased,
+            y: point.y + (target.y - point.y) * eased
+          };
+        });
+        encisoSetPolygonPoints(polygon, currentPoints);
+        if (elapsed < totalDuration) requestAnimationFrame(tick);
+        else {
+          currentPoints = clonePoints(targetPoints);
+          encisoSetPolygonPoints(polygon, currentPoints);
+          if (onComplete) onComplete();
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function floatFrame(floatStart, basePoints) {
+      const now = performance.now();
+      const t = (now - floatStart) / 1000;
+      encisoSetPolygonPoints(polygon, createTinyLivingShapeAround(basePoints, t));
+      if (root.isConnected) requestAnimationFrame(() => floatFrame(floatStart, basePoints));
+    }
+
+    encisoSetPolygonPoints(polygon, centerPoints);
     stage.classList.add('active');
     encisoResetGradeNote(note);
     stage.classList.remove('score-intro');
@@ -6120,34 +6183,13 @@
     stage.classList.add('score-intro');
     caption.textContent = '';
 
-    function floatFrame(floatStart, basePoints) {
-      const now = performance.now();
-      const t = (now - floatStart) / 1000;
-      const floating = basePoints.map((point, index) => ({
-        x: point.x + Math.sin(t * 1.35 + index * 1.8) * 2.4,
-        y: point.y + Math.cos(t * 1.15 + index * 1.5) * 2.4
-      }));
-      encisoSetPolygonPoints(polygon, floating);
-      if (root.isConnected) requestAnimationFrame(() => floatFrame(floatStart, basePoints));
-    }
-
-    function frame(now) {
-      let finished = true;
-      for (let i = 0; i < 4; i++) {
-        const localStart = start + i * cascadeDelay;
-        const progress = encisoClamp((now - localStart) / vertexDuration, 0, 1);
-        const eased = encisoEaseOutBack(progress);
-        currentPoints[i] = {
-          x: center[i].x + (finalPoints[i].x - center[i].x) * eased,
-          y: center[i].y + (finalPoints[i].y - center[i].y) * eased
-        };
-        if (progress < 1) finished = false;
-      }
-      encisoSetPolygonPoints(polygon, currentPoints);
-      if (!finished) requestAnimationFrame(frame);
-      else {
-        encisoSetPolygonPoints(polygon, finalPoints);
-        requestAnimationFrame(() => floatFrame(performance.now(), finalPoints));
+    const openShape = createRandomOpenShape();
+    animatePolygonTo(openShape, {
+      duration: OPEN_DURATION,
+      stagger: OPEN_STAGGER,
+      easing: encisoEaseOutBack,
+      onComplete: () => {
+        requestAnimationFrame(() => floatFrame(performance.now(), openShape));
         setTimeout(() => {
           if (!root.isConnected) return;
           encisoSetGradeNoteText(note, encisoFormatGrade(payload.fakeGrade), 'fake');
@@ -6158,8 +6200,7 @@
           caption.textContent = '';
         }, 1350);
       }
-    }
-    requestAnimationFrame(frame);
+    });
   }
 
   function startEncisoFinalResultsScreen(layer) {
@@ -6295,7 +6336,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.230';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.231';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 9,
     heroX: 0,
@@ -6307,6 +6348,16 @@
     scoreHeight: 22,
     scoreX: 0,
     scoreZoom: 96,
+    scoreLabelX: 0,
+    scoreLabelY: 0,
+    scoreNumberX: 0,
+    scoreNumberY: 0,
+    gradePolyZoom: 100,
+    gradePolyX: 0,
+    gradePolyY: 0,
+    gradeNoteSize: 100,
+    gradeNoteX: 0,
+    gradeNoteY: 0,
     podiumHeight: 44,
     podiumX: 0,
     podiumZoom: 96,
@@ -6329,17 +6380,36 @@
         ['heroMessageY', 'Posición Y subtítulo']
       ]
     },
-    { key: 'score', label: 'Puntaje', fields: [['scoreHeight', 'Altura'], ['scoreX', 'Posición X'], ['scoreZoom', 'Zoom']] },
+    {
+      key: 'score',
+      label: 'Puntaje',
+      fields: [
+        ['scoreHeight', 'Altura'],
+        ['scoreX', 'Posición X'],
+        ['scoreZoom', 'Zoom'],
+        ['scoreLabelX', 'Posición X texto'],
+        ['scoreLabelY', 'Posición Y texto'],
+        ['scoreNumberX', 'Posición X número'],
+        ['scoreNumberY', 'Posición Y número'],
+        ['gradePolyZoom', 'Zoom polígono'],
+        ['gradePolyX', 'Posición X polígono'],
+        ['gradePolyY', 'Posición Y polígono'],
+        ['gradeNoteSize', 'Tamaño número nota'],
+        ['gradeNoteX', 'Posición X número nota'],
+        ['gradeNoteY', 'Posición Y número nota']
+      ]
+    },
     { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
     { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewZoom', 'Zoom']] }
   ];
 
   function encisoFinalTuneFieldMeta(key) {
     if (key.endsWith('Height')) return { min: 6, max: 52, step: 1, unit: '%' };
-    if (key.endsWith('X')) return { min: -35, max: 35, step: 1, unit: '%' };
     if (key === 'heroZoom') return { min: 55, max: 190, step: 1, unit: '%' };
+    if (key === 'gradePolyZoom') return { min: 60, max: 190, step: 1, unit: '%' };
     if (key.endsWith('Zoom')) return { min: 55, max: 135, step: 1, unit: '%' };
     if (key.endsWith('Size')) return { min: 60, max: 180, step: 1, unit: '%' };
+    if (key.endsWith('X')) return { min: -60, max: 60, step: 1, unit: '%' };
     if (key.endsWith('Y')) return { min: -60, max: 60, step: 1, unit: '%' };
     return { min: 0, max: 100, step: 1, unit: '%' };
   }
@@ -6381,6 +6451,16 @@
     root.style.setProperty('--enciso-review-x', `${safe.reviewX}%`);
     root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
     root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
+    root.style.setProperty('--enciso-score-label-x', `${safe.scoreLabelX}%`);
+    root.style.setProperty('--enciso-score-label-y', `${safe.scoreLabelY}%`);
+    root.style.setProperty('--enciso-score-number-x', `${safe.scoreNumberX}%`);
+    root.style.setProperty('--enciso-score-number-y', `${safe.scoreNumberY}%`);
+    root.style.setProperty('--enciso-grade-poly-zoom', `${safe.gradePolyZoom / 100}`);
+    root.style.setProperty('--enciso-grade-poly-x', `${safe.gradePolyX}%`);
+    root.style.setProperty('--enciso-grade-poly-y', `${safe.gradePolyY}%`);
+    root.style.setProperty('--enciso-grade-note-size', `${safe.gradeNoteSize / 100}`);
+    root.style.setProperty('--enciso-grade-note-x', `${safe.gradeNoteX}%`);
+    root.style.setProperty('--enciso-grade-note-y', `${safe.gradeNoteY}%`);
     root.style.setProperty('--enciso-podium-zoom', `${safe.podiumZoom / 100}`);
     root.style.setProperty('--enciso-review-zoom', `${safe.reviewZoom / 100}`);
     root.style.setProperty('--enciso-hero-title-size', `${safe.heroTitleSize / 100}`);
@@ -7404,7 +7484,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.230', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.231', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

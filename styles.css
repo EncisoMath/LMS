@@ -18384,3 +18384,91 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-po
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-section.play {
   translate: 0 0;
 }
+
+/* v0.24.231 - correcciones puntuales resultados: poligono sin glitch en numero, sliders de nota/puntaje y botones normalizados. Alcance: solo fase results. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+  --enciso-score-label-x: 0%;
+  --enciso-score-label-y: 0%;
+  --enciso-score-number-x: 0%;
+  --enciso-score-number-y: 0%;
+  --enciso-grade-poly-zoom: 1;
+  --enciso-grade-poly-x: 0%;
+  --enciso-grade-poly-y: 0%;
+  --enciso-grade-note-size: 1;
+  --enciso-grade-note-x: 0%;
+  --enciso-grade-note-y: 0%;
+  --enciso-actions-row: 7fr;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-label {
+  transform: translate(var(--enciso-score-label-x), var(--enciso-score-label-y)) !important;
+  transform-origin: left center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-number {
+  transform: translate(var(--enciso-score-number-x), var(--enciso-score-number-y)) !important;
+  transform-origin: left center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-poly-svg {
+  transform: translate(var(--enciso-grade-poly-x), var(--enciso-grade-poly-y)) scale(var(--enciso-grade-poly-zoom)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note.show,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note.fake,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note.final {
+  transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(var(--enciso-grade-note-size)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note.fake {
+  animation: encisoNoteSuspenseTuned .75s ease-in-out infinite !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note.final {
+  animation: encisoNoteRevealTuned .55s cubic-bezier(.2, 1.7, .2, 1) both !important;
+}
+
+@keyframes encisoNoteSuspenseTuned {
+  0%, 100% {
+    transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(var(--enciso-grade-note-size)) rotate(-2deg);
+  }
+  50% {
+    transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(calc(var(--enciso-grade-note-size) * 1.04)) rotate(2deg);
+  }
+}
+
+@keyframes encisoNoteRevealTuned {
+  0% {
+    transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(calc(var(--enciso-grade-note-size) * .72)) rotate(-10deg);
+  }
+  65% {
+    transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(calc(var(--enciso-grade-note-size) * 1.16)) rotate(5deg);
+  }
+  100% {
+    transform: translate(var(--enciso-grade-note-x), var(--enciso-grade-note-y)) scale(var(--enciso-grade-note-size)) rotate(0deg);
+  }
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-char::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-char::after {
+  display: none !important;
+  animation: none !important;
+  content: "" !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section {
+  align-items: stretch !important;
+  align-content: stretch !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding-block: min(1svh, 2vw) !important;
+  padding-inline: min(2.2vw, 1.15svh) !important;
+  font-size: min(1.62svh, 3.3vw) !important;
+  line-height: 1.05 !important;
+}
