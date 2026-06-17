@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.242';
+  const APP_VERSION = '0.24.243';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6299,6 +6299,17 @@
   window.playRankingAnimation = encisoPlayRankingResultsAnimation;
   window.restartRankingAnimation = encisoPlayRankingResultsAnimation;
 
+  function playSummaryQuestionEntryAnimation(trackElement) {
+    if (!trackElement) return;
+    const cards = trackElement.querySelectorAll('.summary-question-entry-card');
+    cards.forEach((card, index) => {
+      card.style.setProperty('--summary-question-entry-i', index);
+    });
+    trackElement.classList.remove('summary-question-entry-playing');
+    void trackElement.offsetWidth;
+    trackElement.classList.add('summary-question-entry-playing');
+  }
+
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
@@ -6317,9 +6328,10 @@
     encisoInitRetoCompletedHero(root);
     encisoPlayFinalResultsFlowIn(root);
     setTimeout(() => encisoPlayRankingResultsAnimation(root), 170);
-    root.querySelectorAll('.enciso-review-item').forEach((item, index) => {
-      setTimeout(() => item.classList.add('show'), 160 + index * 85);
-    });
+    const summaryTrack = root.querySelector('.summary-question-entry-track');
+    if (summaryTrack) {
+      setTimeout(() => playSummaryQuestionEntryAnimation(summaryTrack), 160);
+    }
     encisoAnimateValue({
       from: 0,
       to: payload.globalScore,
@@ -6417,7 +6429,7 @@
 
   function encisoReviewItemsHTML(items = []) {
     return items.map((item) => `
-      <div class="enciso-review-item ${escapeAttr(item.cssClass)}">
+      <div class="enciso-review-item summary-question-entry-card ${escapeAttr(item.cssClass)}">
         <small>${Number(item.index) + 1}</small>${escapeHTML(item.symbol)}
       </div>
     `).join('');
@@ -6945,7 +6957,7 @@
 
         <section class="enciso-review-section" data-review-section>
           <div class="enciso-section-title">Resumen por pregunta</div>
-          <div class="enciso-review-scroll">${encisoReviewItemsHTML(data.review)}</div>
+          <div class="enciso-review-scroll summary-question-entry-track">${encisoReviewItemsHTML(data.review)}</div>
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
@@ -7765,7 +7777,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.242', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.243', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

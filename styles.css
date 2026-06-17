@@ -19204,3 +19204,115 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-h
       scale(0.86);
   }
 }
+
+
+/* v0.24.243 - Resumen por pregunta: solo animación de entrada de tarjetas existentes en Resultados. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-track {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-track.summary-question-entry-nowrap {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-card {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-origin: center center;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-playing .summary-question-entry-card {
+  animation: summaryQuestionSmoothJellyEntry 1180ms cubic-bezier(.18, .95, .22, 1) both !important;
+  animation-delay: calc(var(--summary-question-entry-i, 0) * 115ms) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-icon {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-question-entry-playing .summary-question-entry-icon {
+  animation: summaryQuestionIconPopSmooth 620ms cubic-bezier(.18, 1.35, .3, 1) both !important;
+  animation-delay: calc((var(--summary-question-entry-i, 0) * 115ms) + 460ms) !important;
+}
+
+@keyframes summaryQuestionSmoothJellyEntry {
+  0% {
+    opacity: 0;
+    transform: translate3d(-130vw, 0, 0) scaleX(1);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translate3d(-70vw, 0, 0) scaleX(1.04);
+  }
+
+  38% {
+    opacity: 1;
+    transform: translate3d(42px, 0, 0) scaleX(1.12);
+  }
+
+  50% {
+    transform: translate3d(-28px, 0, 0) scaleX(.94);
+  }
+
+  61% {
+    transform: translate3d(18px, 0, 0) scaleX(1.07);
+  }
+
+  71% {
+    transform: translate3d(-11px, 0, 0) scaleX(.97);
+  }
+
+  80% {
+    transform: translate3d(6px, 0, 0) scaleX(1.035);
+  }
+
+  89% {
+    transform: translate3d(-3px, 0, 0) scaleX(.99);
+  }
+
+  95% {
+    transform: translate3d(1px, 0, 0) scaleX(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scaleX(1);
+  }
+}
+
+@keyframes summaryQuestionIconPopSmooth {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(.4);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.22);
+  }
+
+  62% {
+    transform: translate3d(0, 0, 0) scale(.92);
+  }
+
+  78% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+
+  90% {
+    transform: translate3d(0, 0, 0) scale(.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
