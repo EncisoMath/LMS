@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.248';
+  const APP_VERSION = '0.24.249';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5987,13 +5987,13 @@
       ]
     },
     green: {
-      color: '#58cc02',
-      glow: 'rgba(88,204,2,.55)',
-      bandBg: '#58cc02',
+      color: '#54c600',
+      glow: 'rgba(84,198,0,.55)',
+      bandBg: '#54c600',
       textColor: '#ffffff',
       noteColor: '#ffffff',
       fakeNoteColor: '#ffffff',
-      polygonFill: '#58cc02',
+      polygonFill: '#54c600',
       titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
         'El conocimiento entró con flow.',
@@ -8125,7 +8125,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.248', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.249', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

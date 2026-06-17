@@ -1,3 +1,11 @@
+## v0.24.249
+
+Cambios v0.24.249:
+- Resultados: se ajusta solo el color del rango 9.0 a 10.0 en hero/banda y poligono de nota a #54c600.
+- Se mantiene el texto del hero y el numero de nota en blanco.
+- No se tocaron layout, tamanos, posiciones, ranking, resumen, preguntas, datos, musica ni countdown.
+- Version/cache busting actualizado a 0.24.249.
+
 ## v0.24.248
 
 Cambios v0.24.248:

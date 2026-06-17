@@ -19661,9 +19661,9 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-fi
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green {
-  --enciso-state-color: #58cc02;
-  --enciso-state-glow: rgba(88,204,2,.55);
-  --enciso-state-band-bg: #58cc02;
+  --enciso-state-color: #54c600;
+  --enciso-state-glow: rgba(84,198,0,.55);
+  --enciso-state-band-bg: #54c600;
   --enciso-state-text: #ffffff;
   --enciso-state-note-text: #ffffff;
   --enciso-fake-note-color: #ffffff;
@@ -19691,7 +19691,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-fi
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .enciso-grade-poly-svg polygon,
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .em-grade-polygon-base {
-  fill: #58cc02 !important;
+  fill: #54c600 !important;
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado,
@@ -19707,3 +19707,5 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-h
   font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   font-weight: 500 !important;
 }
+
+/* v0.24.249 - Resultados: color verde alto ajustado a #54c600 en hero y poligono. */
