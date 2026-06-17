@@ -19712,7 +19712,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-h
 
 /* v0.24.251 - Resultados: corrige override CSS del estado 8.0 a 8.9 para poligono/hero a #24b49a y alinea 7.0 a 7.9 a #EBB513. */
 
-/* ===== v0.24.252 - Transicion limpia: solo puntaje + countdown ===== */
+/* ===== v0.24.253 - Transicion limpia: solo puntaje + countdown ===== */
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition,
 .quiz-fullscreen-layer.quiz-phase-transition {
   background: #000 !important;
@@ -19807,4 +19807,574 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition .quiz-i
   background: #fff !important;
   box-shadow: none !important;
   animation: quizTransitionBarHoldDrain var(--quiz-transition-total-duration) linear forwards !important;
+}
+
+/* =========================================================
+   v0.24.253 - ENCISOMATH - TRANSICIONES DE BANDA
+   SOLO ANIMACIÓN VISUAL.
+   No modifica countdown, polígono/puntaje ni layout del contenedor.
+========================================================= */
+.em-transition-host {
+  position: relative;
+}
+
+.em-transition-band-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.em-transition-band {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 125vw;
+  height: clamp(190px, 32vh, 280px);
+  background: var(--band-color, #ff7a00);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  isolation: isolate;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.em-transition-band[hidden] {
+  display: none;
+}
+
+.em-transition-band.band-quiz {
+  z-index: 2;
+}
+
+.em-transition-band.band-item-over {
+  z-index: 4;
+}
+
+.em-transition-band.band-single {
+  z-index: 3;
+}
+
+.em-transition-figuras-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.em-transition-figura {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 1;
+  width: var(--size);
+  height: var(--size);
+  opacity: var(--alpha-low);
+  pointer-events: none;
+  transform-origin: center;
+  will-change: transform, opacity;
+  animation: emTransitionFiguraFlotanteContinua var(--duration) var(--delay) ease-in-out infinite;
+}
+
+.em-transition-figura.circulo {
+  border-radius: 50%;
+  background: rgba(45, 22, 8, var(--alpha));
+}
+
+.em-transition-figura.cuadrado {
+  border-radius: 12px;
+  background: rgba(45, 22, 8, var(--alpha));
+}
+
+.em-transition-figura.triangulo {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: calc(var(--size) / 2) solid transparent;
+  border-right: calc(var(--size) / 2) solid transparent;
+  border-bottom: var(--size) solid rgba(45, 22, 8, var(--alpha));
+}
+
+.em-transition-figura.equis {
+  background: transparent;
+}
+
+.em-transition-figura.equis::before,
+.em-transition-figura.equis::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: max(12px, calc(var(--size) * 0.2));
+  border-radius: 999px;
+  background: rgba(45, 22, 8, var(--alpha));
+  transform-origin: center;
+}
+
+.em-transition-figura.equis::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.em-transition-figura.equis::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.em-transition-copy {
+  position: relative;
+  z-index: 5;
+  color: #ffffff;
+  text-shadow: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  padding: 0 24px;
+}
+
+.em-transition-copy,
+.em-transition-copy * {
+  text-shadow: none !important;
+}
+
+.em-transition-breath-wrap {
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.em-transition-item-word {
+  font-size: clamp(16px, 3vw, 28px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  text-shadow: none;
+}
+
+.em-transition-item-number {
+  font-size: clamp(92px, 20vw, 180px);
+  line-height: 0.82;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  text-shadow: none;
+}
+
+.em-transition-quiz-kicker {
+  font-size: clamp(13px, 2.2vw, 18px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-shadow: none;
+}
+
+.em-transition-quiz-title {
+  font-size: clamp(34px, 7vw, 72px);
+  line-height: 0.9;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  margin-bottom: 10px;
+  text-shadow: none;
+}
+
+.em-transition-quiz-subtitle {
+  font-size: clamp(15px, 3vw, 24px);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  text-shadow: none;
+}
+
+.em-transition-band.is-entering {
+  animation: emTransitionBandaEntradaReboteMejorado 1.35s cubic-bezier(.16, 1.55, .28, 1) both;
+}
+
+.em-transition-band.is-entering .em-transition-copy {
+  animation: emTransitionTextoEntradaPop 0.9s 0.22s cubic-bezier(.18, 1.7, .35, 1) both;
+}
+
+.em-transition-band.is-entering .em-transition-breath-wrap {
+  animation: emTransitionTextoBreath 5.8s 1.35s ease-in-out infinite;
+}
+
+.em-transition-band.is-entering .em-transition-item-word,
+.em-transition-band.is-entering .em-transition-quiz-kicker {
+  animation: emTransitionPalabraMiniBounce 0.65s 0.38s cubic-bezier(.2, 1.6, .35, 1) both;
+}
+
+.em-transition-band.is-entering .em-transition-item-number,
+.em-transition-band.is-entering .em-transition-quiz-title {
+  animation: emTransitionNumeroBounce 0.85s 0.48s cubic-bezier(.2, 1.8, .35, 1) both;
+}
+
+.em-transition-band.is-entering .em-transition-quiz-subtitle {
+  animation: emTransitionSubtituloBounce 0.72s 0.72s cubic-bezier(.2, 1.5, .35, 1) both;
+}
+
+.em-transition-band.is-exiting {
+  animation: emTransitionBandaSalidaReboteMejorado 1.18s cubic-bezier(.16, 1.35, .32, 1) both;
+}
+
+.em-transition-band.is-exiting .em-transition-copy {
+  animation: emTransitionTextoSalidaGelatina 0.72s cubic-bezier(.16, 1.35, .32, 1) both;
+}
+
+@keyframes emTransitionBandaEntradaReboteMejorado {
+  0% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--enter-x), var(--enter-y))
+      rotate(var(--band-rot))
+      scaleX(1.38)
+      scaleY(0.32);
+  }
+
+  18% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x1), var(--bounce-y1))
+      rotate(var(--band-rot))
+      scaleX(0.86)
+      scaleY(1.42);
+  }
+
+  32% {
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x2), var(--bounce-y2))
+      rotate(var(--band-rot))
+      scaleX(1.18)
+      scaleY(0.72);
+  }
+
+  46% {
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x3), var(--bounce-y3))
+      rotate(var(--band-rot))
+      scaleX(0.94)
+      scaleY(1.20);
+  }
+
+  60% {
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x4), var(--bounce-y4))
+      rotate(var(--band-rot))
+      scaleX(1.07)
+      scaleY(0.88);
+  }
+
+  74% {
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x5), var(--bounce-y5))
+      rotate(var(--band-rot))
+      scaleX(0.985)
+      scaleY(1.07);
+  }
+
+  88% {
+    transform:
+      translate(-50%, -50%)
+      translate(var(--bounce-x6), var(--bounce-y6))
+      rotate(var(--band-rot))
+      scaleX(1.015)
+      scaleY(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(0, 0)
+      rotate(var(--band-rot))
+      scaleX(1)
+      scaleY(1);
+  }
+}
+
+@keyframes emTransitionBandaSalidaReboteMejorado {
+  0% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(0, 0)
+      rotate(var(--band-rot))
+      scaleX(1)
+      scaleY(1);
+  }
+
+  14% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(0, 0)
+      rotate(var(--band-rot))
+      scaleX(0.88)
+      scaleY(1.32);
+  }
+
+  28% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(0, 0)
+      rotate(var(--band-rot))
+      scaleX(1.18)
+      scaleY(0.78);
+  }
+
+  42% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(0, 0)
+      rotate(var(--band-rot))
+      scaleX(0.96)
+      scaleY(1.12);
+  }
+
+  56% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--exit-pull-x), var(--exit-pull-y))
+      rotate(var(--band-rot))
+      scaleX(1.04)
+      scaleY(0.94);
+  }
+
+  74% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--exit-small-x), var(--exit-small-y))
+      rotate(var(--band-rot))
+      scaleX(1.22)
+      scaleY(0.62);
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--exit-x), var(--exit-y))
+      rotate(var(--band-rot))
+      scaleX(1.48)
+      scaleY(0.26);
+  }
+}
+
+@keyframes emTransitionTextoEntradaPop {
+  0% {
+    opacity: 0;
+    transform: translateY(34px) scale(0.78);
+    filter: blur(4px);
+  }
+
+  55% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1.10);
+    filter: blur(0);
+  }
+
+  75% {
+    transform: translateY(5px) scale(0.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes emTransitionPalabraMiniBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.75);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-7px) scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes emTransitionNumeroBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(58px) rotate(-4deg) scale(0.58);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateY(-22px) rotate(2deg) scale(1.16);
+  }
+
+  65% {
+    transform: translateY(9px) rotate(-1deg) scale(0.94);
+  }
+
+  82% {
+    transform: translateY(-4px) rotate(0deg) scale(1.04);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes emTransitionSubtituloBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.84);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.06);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes emTransitionTextoBreath {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-1px) scale(1.012);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes emTransitionTextoSalidaGelatina {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  24% {
+    opacity: 1;
+    transform: translateY(0) scale(1.10);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translateY(0) scale(0.92);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(0) scale(1.04);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(0.72);
+  }
+}
+
+@keyframes emTransitionFiguraFlotanteContinua {
+  0% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r0))
+      scale(0.86);
+  }
+
+  16% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x1), var(--y1))
+      rotate(var(--r1))
+      scale(1.06);
+  }
+
+  38% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x2), var(--y2))
+      rotate(var(--r2))
+      scale(0.94);
+  }
+
+  62% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x3), var(--y3))
+      rotate(var(--r3))
+      scale(1.12);
+  }
+
+  84% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x4), var(--y4))
+      rotate(var(--r4))
+      scale(0.98);
+  }
+
+  100% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r5))
+      scale(0.86);
+  }
+}
+
+@media (max-width: 560px) {
+  .em-transition-band {
+    width: 135vw;
+    height: clamp(170px, 30vh, 230px);
+  }
+
+  .em-transition-item-word {
+    font-size: 17px;
+  }
+
+  .em-transition-item-number {
+    font-size: clamp(96px, 34vw, 160px);
+  }
+
+  .em-transition-quiz-kicker {
+    font-size: 12px;
+  }
+
+  .em-transition-quiz-title {
+    font-size: clamp(30px, 9vw, 48px);
+  }
+
+  .em-transition-quiz-subtitle {
+    font-size: clamp(14px, 4vw, 18px);
+  }
 }

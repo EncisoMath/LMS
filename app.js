@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.252';
+  const APP_VERSION = '0.24.253';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -371,14 +371,15 @@
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
   const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.166';
-  const QUIZ_TRANSITION_ENTER_MS = 650;
+  const QUIZ_TRANSITION_ENTER_MS = 1350;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
-  const QUIZ_TRANSITION_EXIT_MS = 950;
-  const QUIZ_TRANSITION_EXIT_START_MS = QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
+  const QUIZ_TRANSITION_EXIT_MS = 1180;
+  const QUIZ_TRANSITION_START_BLACK_MS = 350;
+  const QUIZ_TRANSITION_EXIT_START_MS = QUIZ_TRANSITION_START_BLACK_MS + QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
   const QUIZ_TRANSITION_TOTAL_MS = QUIZ_TRANSITION_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
-  const QUIZ_TRANSITION_FIRST_INFO_MS = 4000;
-  const QUIZ_TRANSITION_FIRST_EXIT_START_MS = 6500;
-  const QUIZ_TRANSITION_FIRST_TOTAL_MS = 7000;
+  const QUIZ_TRANSITION_FIRST_INFO_MS = QUIZ_TRANSITION_START_BLACK_MS + QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
+  const QUIZ_TRANSITION_FIRST_EXIT_START_MS = QUIZ_TRANSITION_START_BLACK_MS + (QUIZ_TRANSITION_ENTER_MS * 2) + (QUIZ_TRANSITION_WAIT_MS * 2);
+  const QUIZ_TRANSITION_FIRST_TOTAL_MS = QUIZ_TRANSITION_FIRST_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
   const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
   const QUIZ_ITEM_TIME_LIMIT_DEFAULT = 20;
   const QUIZ_ITEM_TIME_LIMIT_MIN = 1;
@@ -3989,7 +3990,7 @@
   function normalizeQuizTransitionTune(tune = {}) {
     const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
     return {
-      // v0.24.252: transicion limpia sin radiales/glow/figuras. Se conserva solo el avance continuo si existia.
+      // v0.24.253: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
       radials: false,
       sceneGlow: false,
       shapeGlow: false,
@@ -4070,6 +4071,407 @@
       count.classList.add('quiz-transition-count-exiting');
     }, timing.exitStart);
   }
+
+
+  /* =========================================================
+     ENCISOMATH - TRANSICIONES DE BANDA
+     No toca countdown.
+     No toca polígono/puntaje.
+     No toca layout del contenedor.
+  ========================================================= */
+  (function setupEncisoTransitionBands() {
+    const FIGURAS_TOTAL = 10;
+    const VELOCIDAD_FIGURAS = 0.4;
+
+    const HOLD_MS = 3000;
+    const EXIT_MS = 1180;
+    const START_BLACK_MS = 350;
+
+    const COLORES = [
+      '#e21b3c',
+      '#ff7a00',
+      '#EBB513',
+      '#24b49a',
+      '#54c600'
+    ];
+
+    const TIPOS_BASE = ['circulo', 'cuadrado', 'triangulo', 'equis'];
+
+    const DIRECCIONES = [
+      { x: -135, y: 0 },
+      { x: 135, y: 0 },
+      { x: 0, y: -85 },
+      { x: 0, y: 85 },
+      { x: -135, y: -85 },
+      { x: 135, y: -85 },
+      { x: -135, y: 85 },
+      { x: 135, y: 85 }
+    ];
+
+    let timers = [];
+
+    function sleep(ms) {
+      return new Promise((resolve) => {
+        const timer = setTimeout(resolve, ms);
+        timers.push(timer);
+      });
+    }
+
+    function clearTimers() {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers = [];
+    }
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(random(min, max + 1));
+    }
+
+    function elegir(array) {
+      return array[randomInt(0, array.length - 1)];
+    }
+
+    function shuffle(array) {
+      const copia = [...array];
+
+      for (let i = copia.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copia[i], copia[j]] = [copia[j], copia[i]];
+      }
+
+      return copia;
+    }
+
+    function construirListaTipos(cantidad) {
+      const lista = [];
+
+      while (lista.length < cantidad) {
+        lista.push(...shuffle(TIPOS_BASE));
+      }
+
+      return lista.slice(0, cantidad);
+    }
+
+    function resolveRoot(root) {
+      if (root instanceof HTMLElement) return root;
+      if (typeof root === 'string') return document.querySelector(root);
+      return document.querySelector('.em-transition-host');
+    }
+
+    function ensureLayer(root) {
+      if (!root) return null;
+
+      root.classList.add('em-transition-host');
+
+      let layer = root.querySelector(':scope > .em-transition-band-layer');
+
+      if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'em-transition-band-layer';
+        root.insertBefore(layer, root.firstChild);
+      }
+
+      return layer;
+    }
+
+    function clearLayer(layer) {
+      if (!layer) return;
+      layer.innerHTML = '';
+    }
+
+    function resetAll(root) {
+      clearTimers();
+
+      const layer = ensureLayer(root);
+
+      if (layer) clearLayer(layer);
+    }
+
+    function createBand({ type, title, subtitle, itemNumber }) {
+      const band = document.createElement('section');
+      band.className = `em-transition-band ${type || ''}`.trim();
+
+      const figurasLayer = document.createElement('div');
+      figurasLayer.className = 'em-transition-figuras-layer';
+      figurasLayer.setAttribute('aria-hidden', 'true');
+
+      const copy = document.createElement('div');
+      copy.className = 'em-transition-copy';
+
+      const breath = document.createElement('div');
+      breath.className = 'em-transition-breath-wrap';
+
+      if (type === 'band-quiz') {
+        const kicker = document.createElement('div');
+        kicker.className = 'em-transition-quiz-kicker';
+        kicker.textContent = 'Nuevo reto';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'em-transition-quiz-title';
+        titleEl.textContent = title || 'Quiz';
+
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = 'em-transition-quiz-subtitle';
+        subtitleEl.textContent = subtitle || '';
+
+        breath.appendChild(kicker);
+        breath.appendChild(titleEl);
+
+        if (subtitleEl.textContent.trim()) {
+          breath.appendChild(subtitleEl);
+        }
+      } else {
+        const word = document.createElement('div');
+        word.className = 'em-transition-item-word';
+        word.textContent = 'ITEM';
+
+        const number = document.createElement('div');
+        number.className = 'em-transition-item-number';
+        number.textContent = String(itemNumber || 1);
+
+        breath.appendChild(word);
+        breath.appendChild(number);
+      }
+
+      copy.appendChild(breath);
+      band.appendChild(figurasLayer);
+      band.appendChild(copy);
+
+      prepareBandVisuals(band, figurasLayer);
+
+      return band;
+    }
+
+    function prepareBandVisuals(band, figurasLayer) {
+      const color = elegir(COLORES);
+      const entrada = elegir(DIRECCIONES);
+      const salida = elegir(DIRECCIONES);
+      const rotacion = random(-5, 5);
+
+      band.style.setProperty('--band-color', color);
+      band.style.setProperty('--band-rot', `${rotacion.toFixed(2)}deg`);
+
+      aplicarDireccionEntrada(band, entrada);
+      aplicarDireccionSalida(band, salida);
+      crearFiguras(figurasLayer);
+    }
+
+    function aplicarDireccionEntrada(band, dir) {
+      band.style.setProperty('--enter-x', `${dir.x}vw`);
+      band.style.setProperty('--enter-y', `${dir.y}vh`);
+      band.style.setProperty('--bounce-x1', `${-dir.x * 0.075}vw`);
+      band.style.setProperty('--bounce-y1', `${-dir.y * 0.075}vh`);
+      band.style.setProperty('--bounce-x2', `${dir.x * 0.042}vw`);
+      band.style.setProperty('--bounce-y2', `${dir.y * 0.042}vh`);
+      band.style.setProperty('--bounce-x3', `${-dir.x * 0.026}vw`);
+      band.style.setProperty('--bounce-y3', `${-dir.y * 0.026}vh`);
+      band.style.setProperty('--bounce-x4', `${dir.x * 0.016}vw`);
+      band.style.setProperty('--bounce-y4', `${dir.y * 0.016}vh`);
+      band.style.setProperty('--bounce-x5', `${-dir.x * 0.009}vw`);
+      band.style.setProperty('--bounce-y5', `${-dir.y * 0.009}vh`);
+      band.style.setProperty('--bounce-x6', `${dir.x * 0.004}vw`);
+      band.style.setProperty('--bounce-y6', `${dir.y * 0.004}vh`);
+    }
+
+    function aplicarDireccionSalida(band, dir) {
+      band.style.setProperty('--exit-x', `${dir.x}vw`);
+      band.style.setProperty('--exit-y', `${dir.y}vh`);
+      band.style.setProperty('--exit-pull-x', `${-dir.x * 0.035}vw`);
+      band.style.setProperty('--exit-pull-y', `${-dir.y * 0.035}vh`);
+      band.style.setProperty('--exit-small-x', `${dir.x * 0.18}vw`);
+      band.style.setProperty('--exit-small-y', `${dir.y * 0.18}vh`);
+    }
+
+    function posicionExtremo(index) {
+      const zona = index % 8;
+
+      if (zona === 0) return { x: random(-5, 105), y: random(-4, 16) };
+      if (zona === 1) return { x: random(-5, 105), y: random(84, 104) };
+      if (zona === 2) return { x: random(-5, 16), y: random(0, 100) };
+      if (zona === 3) return { x: random(84, 105), y: random(0, 100) };
+      if (zona === 4) return { x: random(-5, 18), y: random(-5, 18) };
+      if (zona === 5) return { x: random(82, 105), y: random(-5, 18) };
+      if (zona === 6) return { x: random(-5, 18), y: random(82, 105) };
+
+      return { x: random(82, 105), y: random(82, 105) };
+    }
+
+    function posicionInterior() {
+      return {
+        x: random(18, 82),
+        y: random(18, 82)
+      };
+    }
+
+    function crearFiguras(layer) {
+      if (!layer) return;
+
+      layer.innerHTML = '';
+
+      const cantidad = FIGURAS_TOTAL;
+      const cantidadExtremos = Math.ceil(cantidad * 0.75);
+      const listaTipos = construirListaTipos(cantidad);
+
+      for (let i = 0; i < cantidad; i += 1) {
+        const figura = document.createElement('span');
+        const tipo = listaTipos[i];
+
+        figura.className = `em-transition-figura ${tipo}`;
+
+        const naceEnExtremo = i < cantidadExtremos;
+        const pos = naceEnExtremo ? posicionExtremo(i) : posicionInterior();
+        const size = naceEnExtremo ? randomInt(62, 142) : randomInt(48, 112);
+        const alpha = random(0.40, 0.64);
+        const alphaLow = Math.max(0.24, alpha * 0.68);
+        const alphaMid = Math.max(0.30, alpha * 0.86);
+        const baseDuration = naceEnExtremo ? random(10, 14) : random(9, 13);
+        const duration = baseDuration / VELOCIDAD_FIGURAS;
+        const delay = -((i / cantidad) * duration);
+        const fuerzaX = naceEnExtremo ? random(50, 145) : random(45, 120);
+        const fuerzaY = naceEnExtremo ? random(38, 120) : random(35, 100);
+        const x0 = random(-18, 18);
+        const y0 = random(-18, 18);
+        const x1 = random(-fuerzaX, fuerzaX);
+        const y1 = random(-fuerzaY, fuerzaY);
+        const x2 = random(-fuerzaX * 1.2, fuerzaX * 1.2);
+        const y2 = random(-fuerzaY * 1.2, fuerzaY * 1.2);
+        const x3 = random(-fuerzaX * 1.35, fuerzaX * 1.35);
+        const y3 = random(-fuerzaY * 1.35, fuerzaY * 1.35);
+        const x4 = random(-fuerzaX, fuerzaX);
+        const y4 = random(-fuerzaY, fuerzaY);
+        const r0 = randomInt(-80, 80);
+        const r1 = randomInt(80, 220);
+        const r2 = randomInt(220, 420);
+        const r3 = randomInt(420, 650);
+        const r4 = randomInt(650, 860);
+        const r5 = r0 + 360;
+
+        figura.style.setProperty('--x', `${pos.x.toFixed(1)}%`);
+        figura.style.setProperty('--y', `${pos.y.toFixed(1)}%`);
+        figura.style.setProperty('--size', `${size}px`);
+        figura.style.setProperty('--alpha', alpha.toFixed(2));
+        figura.style.setProperty('--alpha-low', alphaLow.toFixed(2));
+        figura.style.setProperty('--alpha-mid', alphaMid.toFixed(2));
+        figura.style.setProperty('--duration', `${duration.toFixed(2)}s`);
+        figura.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+        figura.style.setProperty('--x0', `${x0.toFixed(1)}px`);
+        figura.style.setProperty('--y0', `${y0.toFixed(1)}px`);
+        figura.style.setProperty('--x1', `${x1.toFixed(1)}px`);
+        figura.style.setProperty('--y1', `${y1.toFixed(1)}px`);
+        figura.style.setProperty('--x2', `${x2.toFixed(1)}px`);
+        figura.style.setProperty('--y2', `${y2.toFixed(1)}px`);
+        figura.style.setProperty('--x3', `${x3.toFixed(1)}px`);
+        figura.style.setProperty('--y3', `${y3.toFixed(1)}px`);
+        figura.style.setProperty('--x4', `${x4.toFixed(1)}px`);
+        figura.style.setProperty('--y4', `${y4.toFixed(1)}px`);
+        figura.style.setProperty('--r0', `${r0}deg`);
+        figura.style.setProperty('--r1', `${r1}deg`);
+        figura.style.setProperty('--r2', `${r2}deg`);
+        figura.style.setProperty('--r3', `${r3}deg`);
+        figura.style.setProperty('--r4', `${r4}deg`);
+        figura.style.setProperty('--r5', `${r5}deg`);
+
+        layer.appendChild(figura);
+      }
+    }
+
+    async function enterBand(band) {
+      band.classList.remove('is-exiting');
+      band.classList.add('is-entering');
+      await sleep(1350);
+    }
+
+    async function exitBand(band) {
+      band.classList.remove('is-entering');
+      band.classList.add('is-exiting');
+      await sleep(EXIT_MS);
+    }
+
+    async function playItemOnly(options = {}) {
+      const root = resolveRoot(options.root);
+      if (!root) return;
+
+      resetAll(root);
+
+      const layer = ensureLayer(root);
+      if (!layer) return;
+
+      await sleep(START_BLACK_MS);
+
+      const band = createBand({
+        type: 'band-single',
+        itemNumber: options.itemNumber || 1
+      });
+
+      layer.appendChild(band);
+
+      await enterBand(band);
+      await sleep(HOLD_MS);
+      await exitBand(band);
+
+      band.remove();
+    }
+
+    async function playQuizIntroThenItem(options = {}) {
+      const root = resolveRoot(options.root);
+      if (!root) return;
+
+      resetAll(root);
+
+      const layer = ensureLayer(root);
+      if (!layer) return;
+
+      await sleep(START_BLACK_MS);
+
+      const quizBand = createBand({
+        type: 'band-quiz',
+        title: options.quizTitle || 'Quiz',
+        subtitle: options.quizSubtitle || ''
+      });
+
+      layer.appendChild(quizBand);
+
+      await enterBand(quizBand);
+      await sleep(HOLD_MS);
+
+      const itemBand = createBand({
+        type: 'band-item-over',
+        itemNumber: options.itemNumber || 1
+      });
+
+      layer.appendChild(itemBand);
+
+      await enterBand(itemBand);
+      await sleep(HOLD_MS);
+
+      await Promise.all([
+        exitBand(quizBand),
+        exitBand(itemBand)
+      ]);
+
+      quizBand.remove();
+      itemBand.remove();
+    }
+
+    function stop(options = {}) {
+      const root = resolveRoot(options.root);
+      clearTimers();
+
+      if (root) {
+        const layer = ensureLayer(root);
+        clearLayer(layer);
+      }
+    }
+
+    window.EncisoTransitionBands = {
+      playItemOnly,
+      playQuizIntroThenItem,
+      stop
+    };
+  })();
 
 
   function quizTransitionScoreTuneSliderHTML(field) {
@@ -5670,8 +6072,8 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    const transitionWithIntro = false;
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
+    const transitionWithIntro = phase === 'transition' && Boolean(session.transitionFromIntro) && (Number(state.quizQuestionIndex) || 0) === 0;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}${transitionWithIntro ? ' quiz-transition-with-intro' : ''}` : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
@@ -5704,6 +6106,22 @@
         startQuizCountdownForCurrentQuestion(layer, quiz);
       });
     } else if (phase === 'transition') {
+      const transitionRoot = layer.querySelector('.quiz-item-transition');
+      try {
+        if (transitionWithIntro) {
+          window.EncisoTransitionBands?.playQuizIntroThenItem?.({
+            root: transitionRoot,
+            quizTitle: quiz.title || quiz.name || 'Quiz',
+            quizSubtitle: quiz.subtitle || quiz.description || '',
+            itemNumber: 1
+          });
+        } else {
+          window.EncisoTransitionBands?.playItemOnly?.({
+            root: transitionRoot,
+            itemNumber: state.quizQuestionIndex + 1
+          });
+        }
+      } catch (_) {}
       playQuizTransitionNumberMotion(layer);
       playQuizTransitionScoreCounter(layer);
       scheduleQuizTransitionContinuousAdvance();
@@ -5795,7 +6213,7 @@
     const current = Math.max(1, Number(item) || 1);
     const count = Math.max(1, Number(total) || 1);
     return `
-      <section class="quiz-item-transition quiz-transition-minimal" aria-live="polite">
+      <section class="quiz-item-transition quiz-transition-minimal em-transition-host" aria-live="polite">
         ${quizTransitionScoreHTML(current, quiz)}
         <div class="quiz-transition-progress" aria-hidden="true"><span></span></div>
       </section>
@@ -8186,7 +8604,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.252', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.253', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
