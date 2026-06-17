@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.250';
+  const APP_VERSION = '0.24.251';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -81,7 +81,7 @@
   }
   const QUIZ_TIMED_MUSIC_SECONDS = [20, 30, 60, 90, 120];
   const QUIZ_TIMED_MUSIC_DISCOVERY_LIMIT = 3;
-  const QUIZ_TIMED_MUSIC_EXTENSIONS = ['.mp3', '.m4a', '.ogg', '.wav', ''];
+  const QUIZ_TIMED_MUSIC_EXTENSIONS = ['.mp3'];
   const QUIZ_TIMED_MUSIC_LIBRARY = {
       "20": [],
       "30": [],
@@ -91,11 +91,16 @@
   };
   const QUIZ_MUSIC_VOLUME = 0.28;
   const QUIZ_MUSIC_FADE_MS = 160;
+  const QUIZ_RESULTS_MUSIC_PATH = './assets/music_quiz/results.mp3';
+  const QUIZ_RESULTS_MUSIC_VOLUME = 0.28;
+  const QUIZ_RESULTS_MUSIC_FADE_MS = 420;
   const quizTimedMusicDiscoveryCache = new Map();
   let quizQuestionMusicAudio = null;
   let quizQuestionMusicKey = '';
   let quizQuestionMusicFadeTimer = null;
   let quizQuestionMusicRequestId = 0;
+  let quizResultsMusicAudio = null;
+  let quizResultsMusicFadeTimer = null;
 
   function quizTimedMusicBucket(seconds) {
     const value = Number.parseInt(seconds, 10);
@@ -149,6 +154,64 @@
     return '';
   }
 
+  function stopQuizResultsMusic(fade = true) {
+    const audio = quizResultsMusicAudio;
+    if (quizResultsMusicFadeTimer) {
+      window.clearInterval(quizResultsMusicFadeTimer);
+      quizResultsMusicFadeTimer = null;
+    }
+    if (!audio) return;
+    const finish = () => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (_) {}
+      if (quizResultsMusicAudio === audio) quizResultsMusicAudio = null;
+    };
+    if (!fade) {
+      finish();
+      return;
+    }
+    const startVolume = Number.isFinite(audio.volume) ? audio.volume : QUIZ_RESULTS_MUSIC_VOLUME;
+    const started = Date.now();
+    quizResultsMusicFadeTimer = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - started) / QUIZ_RESULTS_MUSIC_FADE_MS);
+      try { audio.volume = Math.max(0, startVolume * (1 - progress)); } catch (_) {}
+      if (progress >= 1) {
+        window.clearInterval(quizResultsMusicFadeTimer);
+        quizResultsMusicFadeTimer = null;
+        finish();
+      }
+    }, 20);
+  }
+
+  function startQuizResultsMusic() {
+    if (!quizSoundsEnabled()) return;
+    stopQuizQuestionMusic(false);
+    if (quizResultsMusicFadeTimer) stopQuizResultsMusic(false);
+    if (quizResultsMusicAudio) {
+      try {
+        quizResultsMusicAudio.loop = true;
+        quizResultsMusicAudio.volume = QUIZ_RESULTS_MUSIC_VOLUME;
+        if (quizResultsMusicAudio.paused) {
+          const playPromise = quizResultsMusicAudio.play();
+          if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+        }
+      } catch (_) {}
+      return;
+    }
+    try {
+      const audio = new Audio(QUIZ_RESULTS_MUSIC_PATH);
+      audio.preload = 'auto';
+      audio.loop = true;
+      audio.volume = QUIZ_RESULTS_MUSIC_VOLUME;
+      audio.currentTime = 0;
+      quizResultsMusicAudio = audio;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+    } catch (_) {}
+  }
+
   function stopQuizQuestionMusic(fade = true, cancelPending = true) {
     if (cancelPending) quizQuestionMusicRequestId += 1;
     const audio = quizQuestionMusicAudio;
@@ -194,6 +257,7 @@
   }
 
   async function startQuizQuestionMusic(question = getCurrentQuizQuestion()) {
+    stopQuizResultsMusic(false);
     if (!quizSoundsEnabled() || !questionAllowsQuizMusic(question)) {
       stopQuizQuestionMusic(false);
       return;
@@ -4785,6 +4849,7 @@
     document.querySelectorAll('[data-quiz-result-target]').forEach((button) => {
       button.addEventListener('click', () => {
         const root = button.closest?.('[data-final-results]');
+        stopQuizResultsMusic(true);
         encisoPlayResultButtonJello(button);
         const target = button.dataset.quizResultTarget || 'quizzes';
         if (root) {
@@ -4800,6 +4865,7 @@
       button.addEventListener('click', () => {
         const quiz = getActiveQuiz();
         const root = button.closest?.('[data-final-results]');
+        stopQuizResultsMusic(true);
         encisoPlayResultButtonJello(button);
         if (root) encisoPlayFinalResultsFlowOut(root, () => { if (quiz) renderQuizFullscreen(quiz); });
         else if (quiz) renderQuizFullscreen(quiz);
@@ -6596,6 +6662,7 @@
 
   function encisoRunFinalResultsAnimations(root, payload) {
     if (!root || !payload) return;
+    startQuizResultsMusic();
     if (root.__encisoFinalGradeAnimation?.stop) root.__encisoFinalGradeAnimation.stop();
     encisoApplyFinalPayloadToRoot(root, payload);
     encisoResetFinalDynamicTexts(root);
@@ -6999,7 +7066,8 @@
       modal.setAttribute('aria-hidden', 'true');
       modal.classList.remove('open');
     }
-    encisoRunFinalResultsAnimations(root, payload);
+    stopQuizResultsMusic(true);
+    window.setTimeout(() => encisoRunFinalResultsAnimations(root, payload), QUIZ_RESULTS_MUSIC_FADE_MS);
   }
 
   function bindEncisoFinalTunePanel(root) {
@@ -7327,6 +7395,7 @@
 
   function closeQuizFullscreen(target = 'quizzes') {
     stopQuizQuestionMusic(false);
+    stopQuizResultsMusic(false);
     removeQuizGlobalFeedback();
     clearQuizTimers();
     unlockQuizHistory();
@@ -8125,7 +8194,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.250', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.251', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
