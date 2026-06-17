@@ -1,3 +1,10 @@
+## v0.24.228
+
+- Corrección enfocada únicamente en la pantalla final `enciso-final-results`: se compactó verticalmente el hero, se alineó mejor el polígono de nota con el puntaje global, se redujo el contenedor de resumen por pregunta y se redistribuyó más altura al ranking para evitar podios cortados y estrellitas demasiado arriba.
+- Se agregó un panel temporal flotante `⚙️` de calibración de resultados con pestañas `Hero`, `Puntaje`, `Ranking` y `Preguntas`; cada pestaña permite ajustar altura proporcional, posición X y zoom del bloque correspondiente, guardando los valores en `localStorage` con la clave `encisomath:finalResultsTune:v0.24.228`.
+- No se tocaron inicio del quiz, transiciones, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.228`.
+
 ## v0.24.227
 
 - Pantalla final de resultados ajustada para encajar en el viewport completo sin scroll de página, escalando vertical y horizontalmente con `svh`, `vw`, porcentajes y grillas proporcionales.

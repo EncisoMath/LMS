@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.227';
+  const APP_VERSION = '0.24.228';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6142,6 +6142,8 @@
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
     root.dataset.encisoFinalStarted = 'true';
+    applyEncisoFinalTune(root, getEncisoFinalTune());
+    bindEncisoFinalTunePanel(root);
     const payload = {
       correctPoints: Number(root.dataset.correctPoints) || 0,
       timePoints: Number(root.dataset.timePoints) || 0,
@@ -6269,6 +6271,179 @@
     `).join('');
   }
 
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.228';
+  const ENCISO_FINAL_TUNE_DEFAULTS = {
+    heroHeight: 12,
+    heroX: 0,
+    heroZoom: 92,
+    scoreHeight: 23,
+    scoreX: 0,
+    scoreZoom: 94,
+    podiumHeight: 38,
+    podiumX: 0,
+    podiumZoom: 93,
+    reviewHeight: 13,
+    reviewX: 0,
+    reviewZoom: 94
+  };
+  const ENCISO_FINAL_TUNE_TABS = [
+    { key: 'hero', label: 'Hero', height: 'heroHeight', x: 'heroX', zoom: 'heroZoom' },
+    { key: 'score', label: 'Puntaje', height: 'scoreHeight', x: 'scoreX', zoom: 'scoreZoom' },
+    { key: 'podium', label: 'Ranking', height: 'podiumHeight', x: 'podiumX', zoom: 'podiumZoom' },
+    { key: 'review', label: 'Preguntas', height: 'reviewHeight', x: 'reviewX', zoom: 'reviewZoom' }
+  ];
+
+  function encisoFinalTuneFieldMeta(key) {
+    if (key.endsWith('Height')) return { min: 8, max: 48, step: 1, unit: 'fr' };
+    if (key.endsWith('X')) return { min: -80, max: 80, step: 1, unit: 'px' };
+    if (key.endsWith('Zoom')) return { min: 55, max: 125, step: 1, unit: '%' };
+    return { min: 0, max: 100, step: 1, unit: '' };
+  }
+
+  function normalizeEncisoFinalTune(raw = {}) {
+    const out = { ...ENCISO_FINAL_TUNE_DEFAULTS };
+    Object.keys(out).forEach((key) => {
+      const meta = encisoFinalTuneFieldMeta(key);
+      const value = Number(raw?.[key]);
+      if (Number.isFinite(value)) out[key] = encisoClamp(value, meta.min, meta.max);
+    });
+    return out;
+  }
+
+  function getEncisoFinalTune() {
+    try {
+      return normalizeEncisoFinalTune(JSON.parse(localStorage.getItem(ENCISO_FINAL_TUNE_STORAGE_KEY) || '{}'));
+    } catch (_) {
+      return normalizeEncisoFinalTune();
+    }
+  }
+
+  function saveEncisoFinalTune(tune) {
+    const safe = normalizeEncisoFinalTune(tune);
+    try { localStorage.setItem(ENCISO_FINAL_TUNE_STORAGE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function applyEncisoFinalTune(root, tune = getEncisoFinalTune()) {
+    if (!root) return normalizeEncisoFinalTune(tune);
+    const safe = normalizeEncisoFinalTune(tune);
+    root.style.setProperty('--enciso-hero-row', `${safe.heroHeight}fr`);
+    root.style.setProperty('--enciso-score-row', `${safe.scoreHeight}fr`);
+    root.style.setProperty('--enciso-podium-row', `${safe.podiumHeight}fr`);
+    root.style.setProperty('--enciso-review-row', `${safe.reviewHeight}fr`);
+    root.style.setProperty('--enciso-hero-x', `${safe.heroX}px`);
+    root.style.setProperty('--enciso-score-x', `${safe.scoreX}px`);
+    root.style.setProperty('--enciso-podium-x', `${safe.podiumX}px`);
+    root.style.setProperty('--enciso-review-x', `${safe.reviewX}px`);
+    root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
+    root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
+    root.style.setProperty('--enciso-podium-zoom', `${safe.podiumZoom / 100}`);
+    root.style.setProperty('--enciso-review-zoom', `${safe.reviewZoom / 100}`);
+    return safe;
+  }
+
+  function updateEncisoFinalTuneOutputs(root, tune = getEncisoFinalTune()) {
+    const safe = normalizeEncisoFinalTune(tune);
+    root?.querySelectorAll?.('[data-enciso-final-tune-output]').forEach((output) => {
+      const key = output.dataset.encisoFinalTuneOutput;
+      const meta = encisoFinalTuneFieldMeta(key);
+      output.textContent = `${safe[key]}${meta.unit}`;
+    });
+    root?.querySelectorAll?.('[data-enciso-final-tune-field]').forEach((input) => {
+      const key = input.dataset.encisoFinalTuneField;
+      if (Object.prototype.hasOwnProperty.call(safe, key)) input.value = String(safe[key]);
+    });
+  }
+
+  function encisoFinalTuneSliderHTML(key, label) {
+    const meta = encisoFinalTuneFieldMeta(key);
+    const value = ENCISO_FINAL_TUNE_DEFAULTS[key];
+    return `
+      <label class="enciso-final-tune-slider">
+        <span>${escapeHTML(label)} <b data-enciso-final-tune-output="${escapeAttr(key)}">${value}${escapeHTML(meta.unit)}</b></span>
+        <input type="range" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" data-enciso-final-tune-field="${escapeAttr(key)}">
+      </label>
+    `;
+  }
+
+  function encisoFinalTunePanelHTML() {
+    return `
+      <button class="enciso-final-tune-toggle" type="button" data-enciso-final-tune-toggle aria-label="Ajustar pantalla final">⚙️</button>
+      <div class="enciso-final-tune-modal" data-enciso-final-tune-modal hidden aria-hidden="true">
+        <div class="enciso-final-tune-card" role="dialog" aria-modal="true" aria-label="Ajustes pantalla final">
+          <div class="enciso-final-tune-head">
+            <strong>Ajustar resultados</strong>
+            <button type="button" data-enciso-final-tune-close aria-label="Cerrar">×</button>
+          </div>
+          <div class="enciso-final-tune-tabs" role="tablist">
+            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-enciso-final-tune-tab="${escapeAttr(tab.key)}">${escapeHTML(tab.label)}</button>`).join('')}
+          </div>
+          <div class="enciso-final-tune-body">
+            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
+              <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
+                ${encisoFinalTuneSliderHTML(tab.height, 'Altura')}
+                ${encisoFinalTuneSliderHTML(tab.x, 'Posición X')}
+                ${encisoFinalTuneSliderHTML(tab.zoom, 'Zoom')}
+              </section>
+            `).join('')}
+          </div>
+          <div class="enciso-final-tune-foot">
+            <button type="button" data-enciso-final-tune-reset>Restablecer</button>
+            <button type="button" data-enciso-final-tune-close>Listo</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindEncisoFinalTunePanel(root) {
+    if (!root || root.dataset.encisoFinalTuneBound === 'true') return;
+    root.dataset.encisoFinalTuneBound = 'true';
+    let tune = applyEncisoFinalTune(root, getEncisoFinalTune());
+    updateEncisoFinalTuneOutputs(root, tune);
+    const modal = root.querySelector('[data-enciso-final-tune-modal]');
+    const openModal = () => {
+      if (!modal) return;
+      modal.hidden = false;
+      modal.setAttribute('aria-hidden', 'false');
+      modal.classList.add('open');
+    };
+    const closeModal = () => {
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      modal.classList.remove('open');
+    };
+    root.querySelectorAll('[data-enciso-final-tune-toggle]').forEach((button) => button.addEventListener('click', openModal));
+    root.querySelectorAll('[data-enciso-final-tune-close]').forEach((button) => button.addEventListener('click', closeModal));
+    root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.encisoFinalTuneTab;
+        root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((item) => item.classList.toggle('active', item === button));
+        root.querySelectorAll('[data-enciso-final-tune-pane]').forEach((pane) => pane.classList.toggle('active', pane.dataset.encisoFinalTunePane === key));
+      });
+    });
+    root.querySelectorAll('[data-enciso-final-tune-field]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.encisoFinalTuneField;
+        tune = normalizeEncisoFinalTune({ ...tune, [key]: Number(input.value) });
+        saveEncisoFinalTune(tune);
+        applyEncisoFinalTune(root, tune);
+        updateEncisoFinalTuneOutputs(root, tune);
+      });
+    });
+    root.querySelectorAll('[data-enciso-final-tune-reset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        tune = saveEncisoFinalTune(ENCISO_FINAL_TUNE_DEFAULTS);
+        applyEncisoFinalTune(root, tune);
+        updateEncisoFinalTuneOutputs(root, tune);
+      });
+    });
+    modal?.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal();
+    });
+  }
+
   function encisoPodiumSparklesHTML(count = 4) {
     return Array.from({ length: count }, () => '<span></span>').join('');
   }
@@ -6369,6 +6544,7 @@
           <button class="enciso-replay-btn" type="button" data-enciso-result-replay>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
+        ${encisoFinalTunePanelHTML()}
       </section>
     `;
   }
@@ -7181,7 +7357,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.227', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.228', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
