@@ -19537,3 +19537,43 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-
     transform: scale(1) rotate(0deg);
   }
 }
+
+/* v0.24.245 - acceso directo a resultados y controles de puntos en ajustes finales */
+.quiz-start-modal .quiz-start-results-shortcut {
+  width: 100%;
+  color: #ffffff;
+  background: #111827;
+  border-color: rgba(255,255,255,.14);
+}
+
+.enciso-final-tune-tabs {
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+}
+
+.enciso-final-points-tune {
+  display: grid;
+  gap: 12px;
+}
+
+.enciso-final-points-tune input[type="number"] {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: #0b1020;
+  color: #ffffff;
+  font: 900 14px 'Montserrat', system-ui, sans-serif;
+  padding: 0 10px;
+  outline: none;
+}
+
+.enciso-final-points-replay {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--maincolor, #1368ce);
+  color: #ffffff;
+  font: 950 12px 'Montserrat', system-ui, sans-serif;
+  padding: 10px;
+}

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.244';
+  const APP_VERSION = '0.24.245';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3342,6 +3342,7 @@
       securityWarningOpen: false,
       securityTerminated: false,
       securityPausedFeedback: false,
+      manualResultPoints: null,
       timeScoringMode: normalizeQuizTimeScoringMode(state.quizTimeScoringMode)
     };
     return state.quizSession;
@@ -4775,6 +4776,9 @@
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
       button.addEventListener('click', beginQuizFromConfirm);
     });
+    document.querySelectorAll('[data-quiz-skip-results]').forEach((button) => {
+      button.addEventListener('click', showQuizResultsFromConfirm);
+    });
     document.querySelectorAll('[data-quiz-time-scoring-mode]').forEach((select) => {
       select.addEventListener('change', () => saveQuizTimeScoringMode(select.value));
     });
@@ -5527,6 +5531,27 @@
     requestQuizFullscreenMode();
   }
 
+  function showQuizResultsFromConfirm() {
+    const quiz = getActiveQuiz();
+    if (!quiz) return;
+    const selectedMode = document.querySelector('[data-quiz-time-scoring-mode]')?.value || getQuizTimeScoringMode();
+    saveQuizTimeScoringMode(selectedMode);
+    const session = getQuizSession();
+    session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
+    session.phase = 'results';
+    session.locked = false;
+    session.feedback = null;
+    session.transitionFromIntro = false;
+    session.manualResultPoints = null;
+    closeModal(false);
+    stopQuizQuestionMusic(false);
+    removeQuizGlobalFeedback();
+    clearQuizTimers();
+    state.quizFullscreenActive = false;
+    unlockQuizHistory();
+    renderQuizFullscreen(quiz);
+  }
+
   function showQuizItemTransition(index = 0, options = {}) {
     const quiz = getActiveQuiz();
     if (!quiz) return;
@@ -5667,6 +5692,7 @@
           <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
           ${quizTimeScoringSelectorHTML()}
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
+          <button class="ghost-btn quiz-start-results-shortcut" type="button" data-quiz-skip-results>Pasar a resultados</button>
         </div>
       </div>
     `;
@@ -6512,28 +6538,71 @@
     trackElement.classList.add('summary-question-entry-playing');
   }
 
-  function startEncisoFinalResultsScreen(layer) {
-    const root = layer?.querySelector?.('[data-final-results]');
-    if (!root || root.dataset.encisoFinalStarted === 'true') return;
-    root.dataset.encisoFinalStarted = 'true';
-    applyEncisoFinalTune(root, getEncisoFinalTune());
-    bindEncisoFinalTunePanel(root);
-    const payload = {
-      correctPoints: Number(root.dataset.correctPoints) || 0,
-      timePoints: Number(root.dataset.timePoints) || 0,
-      globalScore: Number(root.dataset.globalScore) || 0,
-      finalGrade: Number(root.dataset.finalGrade) || 0,
-      fakeGrade: Number(root.dataset.fakeGrade) || 0,
-      bonusGrade: Number(root.dataset.bonusGrade) || 0,
-      extraPoints: Number(root.dataset.extraPoints) || 0
+  function encisoReadFinalPayloadFromRoot(root) {
+    return {
+      correctPoints: Number(root?.dataset.correctPoints) || 0,
+      timePoints: Number(root?.dataset.timePoints) || 0,
+      globalScore: Number(root?.dataset.globalScore) || 0,
+      finalGrade: Number(root?.dataset.finalGrade) || 0,
+      fakeGrade: Number(root?.dataset.fakeGrade) || 0,
+      bonusGrade: Number(root?.dataset.bonusGrade) || 0,
+      extraPoints: Number(root?.dataset.extraPoints) || 0
     };
+  }
+
+  function encisoBuildFinalPayloadFromPoints(correctPoints, timePoints) {
+    const result = encisoCalculateFinalScore(Math.round(Number(correctPoints) || 0), Math.round(Number(timePoints) || 0));
+    const stateKey = encisoGetResultStateKeyByGrade(result.finalGrade);
+    const stateInfo = ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
+    return { ...result, fakeGrade: encisoMakeFakeGrade(result.finalGrade), stateKey, stateInfo };
+  }
+
+  function encisoApplyFinalPayloadToRoot(root, payload) {
+    if (!root || !payload) return;
+    const stateKey = payload.stateKey || encisoGetResultStateKeyByGrade(payload.finalGrade);
+    const stateInfo = payload.stateInfo || ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
+    Object.keys(ENCISO_RESULT_STATES).forEach((key) => root.classList.remove(`enciso-result-state-${key}`));
+    root.classList.add(`enciso-result-state-${stateKey}`);
+    root.dataset.correctPoints = String(Math.round(Number(payload.correctPoints) || 0));
+    root.dataset.timePoints = String(Math.round(Number(payload.timePoints) || 0));
+    root.dataset.globalScore = String(Math.round(Number(payload.globalScore) || 0));
+    root.dataset.finalGrade = String(Number(payload.finalGrade) || 0);
+    root.dataset.fakeGrade = String(Number(payload.fakeGrade) || 0);
+    root.dataset.bonusGrade = String(Number(payload.bonusGrade) || 0);
+    root.dataset.extraPoints = String(Number(payload.extraPoints) || 0);
+    root.style.setProperty('--enciso-state-color', stateInfo.color);
+    root.style.setProperty('--enciso-state-glow', stateInfo.glow);
+    root.style.setProperty('--enciso-state-band-bg', stateInfo.bandBg);
+    root.style.setProperty('--enciso-state-text', stateInfo.textColor);
+    root.style.setProperty('--enciso-state-note-text', stateInfo.noteColor);
+    root.style.setProperty('--enciso-fake-note-color', stateInfo.fakeNoteColor);
+  }
+
+  function encisoResetFinalDynamicTexts(root) {
+    if (!root) return;
+    const setText = (selector, text) => {
+      const el = root.querySelector(selector);
+      if (el) el.textContent = text;
+    };
+    setText('[data-global-score]', '0');
+    setText('[data-my-podium-points]', '0 pts');
+    setText('[data-correct-points]', '0');
+    setText('[data-time-points]', '0');
+    setText('[data-bonus-grade]', '+0.0');
+    setText('[data-extra-points]', '0');
+    setText('[data-grade-note]', '?');
+  }
+
+  function encisoRunFinalResultsAnimations(root, payload) {
+    if (!root || !payload) return;
+    if (root.__encisoFinalGradeAnimation?.stop) root.__encisoFinalGradeAnimation.stop();
+    encisoApplyFinalPayloadToRoot(root, payload);
+    encisoResetFinalDynamicTexts(root);
     encisoInitRetoCompletedHero(root);
     encisoPlayFinalResultsFlowIn(root);
     setTimeout(() => encisoPlayRankingResultsAnimation(root), 170);
     const summaryTrack = root.querySelector('.summary-question-entry-track');
-    if (summaryTrack) {
-      setTimeout(() => playSummaryQuestionEntryAnimation(summaryTrack), 160);
-    }
+    if (summaryTrack) setTimeout(() => playSummaryQuestionEntryAnimation(summaryTrack), 160);
     encisoAnimateValue({
       from: 0,
       to: payload.globalScore,
@@ -6585,12 +6654,25 @@
     });
   }
 
+  function startEncisoFinalResultsScreen(layer) {
+    const root = layer?.querySelector?.('[data-final-results]');
+    if (!root || root.dataset.encisoFinalStarted === 'true') return;
+    root.dataset.encisoFinalStarted = 'true';
+    applyEncisoFinalTune(root, getEncisoFinalTune());
+    bindEncisoFinalTunePanel(root);
+    encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
+  }
+
   function encisoBuildFinalResultsData(quiz) {
     const session = getQuizSession();
     const answers = Array.isArray(session.answers) ? session.answers : [];
     const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
     const answerMap = new Map(answers.map((answer) => [Number(answer.index), answer]));
-    const totals = answers.reduce((acc, answer) => {
+    const manualPoints = session.manualResultPoints && typeof session.manualResultPoints === 'object' ? session.manualResultPoints : null;
+    const totals = manualPoints ? {
+      correctPoints: Number(manualPoints.correctPoints) || 0,
+      timePoints: Number(manualPoints.timePoints) || 0
+    } : answers.reduce((acc, answer) => {
       const score = getQuizAnswerScore(answer, quiz);
       acc.correctPoints += Number(score.item) || 0;
       acc.timePoints += Number(score.time) || 0;
@@ -6724,7 +6806,8 @@
     },
     { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumY', 'Posición Y'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
     { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewY', 'Posición Y'], ['reviewZoom', 'Zoom']] },
-    { key: 'buttons', label: 'Botones', fields: [['actionsHeight', 'Altura contenedor'], ['actionsY', 'Posición Y'], ['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] }
+    { key: 'buttons', label: 'Botones', fields: [['actionsHeight', 'Altura contenedor'], ['actionsY', 'Posición Y'], ['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] },
+    { key: 'points', label: 'Puntos', fields: [] }
   ];
 
   function encisoFinalTuneFieldMeta(key) {
@@ -6842,6 +6925,22 @@
     `;
   }
 
+  function encisoFinalPointsTuneHTML() {
+    return `
+      <div class="enciso-final-points-tune">
+        <label class="enciso-final-tune-slider">
+          <span>Correctas <b data-enciso-final-points-output="correct">0</b></span>
+          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="correct">
+        </label>
+        <label class="enciso-final-tune-slider">
+          <span>Tiempo <b data-enciso-final-points-output="time">0</b></span>
+          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="time">
+        </label>
+        <button class="enciso-final-points-replay" type="button" data-enciso-final-points-apply>Reiniciar animación con estos puntos</button>
+      </div>
+    `;
+  }
+
   function encisoFinalTunePanelHTML() {
     return `
       <button class="enciso-final-tune-toggle" type="button" data-enciso-final-tune-toggle aria-label="Ajustar pantalla final">⚙️</button>
@@ -6857,7 +6956,7 @@
           <div class="enciso-final-tune-body">
             ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
               <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
-                ${(tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
+                ${tab.key === 'points' ? encisoFinalPointsTuneHTML() : (tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
               </section>
             `).join('')}
           </div>
@@ -6870,11 +6969,44 @@
     `;
   }
 
+  function encisoClampFinalPointInput(value) {
+    return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
+  }
+
+  function syncEncisoFinalPointControls(root) {
+    if (!root) return;
+    const correct = encisoClampFinalPointInput(root.dataset.correctPoints);
+    const time = encisoClampFinalPointInput(root.dataset.timePoints);
+    root.querySelectorAll('[data-enciso-final-points-field="correct"]').forEach((input) => { input.value = String(correct); });
+    root.querySelectorAll('[data-enciso-final-points-field="time"]').forEach((input) => { input.value = String(time); });
+    root.querySelectorAll('[data-enciso-final-points-output="correct"]').forEach((output) => { output.textContent = encisoFormatNumber(correct); });
+    root.querySelectorAll('[data-enciso-final-points-output="time"]').forEach((output) => { output.textContent = encisoFormatNumber(time); });
+  }
+
+  function encisoApplyManualResultPoints(root) {
+    if (!root) return;
+    const correct = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="correct"]')?.value);
+    const time = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="time"]')?.value);
+    const session = getQuizSession();
+    session.manualResultPoints = { correctPoints: correct, timePoints: time };
+    const payload = encisoBuildFinalPayloadFromPoints(correct, time);
+    encisoApplyFinalPayloadToRoot(root, payload);
+    syncEncisoFinalPointControls(root);
+    const modal = root.querySelector('[data-enciso-final-tune-modal]');
+    if (modal) {
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      modal.classList.remove('open');
+    }
+    encisoRunFinalResultsAnimations(root, payload);
+  }
+
   function bindEncisoFinalTunePanel(root) {
     if (!root || root.dataset.encisoFinalTuneBound === 'true') return;
     root.dataset.encisoFinalTuneBound = 'true';
     let tune = applyEncisoFinalTune(root, getEncisoFinalTune());
     updateEncisoFinalTuneOutputs(root, tune);
+    syncEncisoFinalPointControls(root);
     const modal = root.querySelector('[data-enciso-final-tune-modal]');
     const openModal = () => {
       if (!modal) return;
@@ -6906,11 +7038,24 @@
         updateEncisoFinalTuneOutputs(root, tune);
       });
     });
+    root.querySelectorAll('[data-enciso-final-points-field]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const key = input.dataset.encisoFinalPointsField;
+        const value = encisoClampFinalPointInput(input.value);
+        root.querySelectorAll(`[data-enciso-final-points-output="${escapeSelector(key)}"]`).forEach((output) => {
+          output.textContent = encisoFormatNumber(value);
+        });
+      });
+    });
+    root.querySelectorAll('[data-enciso-final-points-apply]').forEach((button) => {
+      button.addEventListener('click', () => encisoApplyManualResultPoints(root));
+    });
     root.querySelectorAll('[data-enciso-final-tune-reset]').forEach((button) => {
       button.addEventListener('click', () => {
         tune = saveEncisoFinalTune(ENCISO_FINAL_TUNE_DEFAULTS);
         applyEncisoFinalTune(root, tune);
         updateEncisoFinalTuneOutputs(root, tune);
+        syncEncisoFinalPointControls(root);
       });
     });
     modal?.addEventListener('click', (event) => {
@@ -7979,7 +8124,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.244', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.245', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
