@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.247';
+  const APP_VERSION = '0.24.248';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5953,13 +5953,13 @@
       ]
     },
     yellow: {
-      color: '#f5c400',
-      glow: 'rgba(245,196,0,.55)',
-      bandBg: '#f5c400',
+      color: '#EBB513',
+      glow: 'rgba(235,181,19,.55)',
+      bandBg: '#EBB513',
       textColor: '#ffffff',
       noteColor: '#ffffff',
       fakeNoteColor: '#ffffff',
-      polygonFill: '#f5c400',
+      polygonFill: '#EBB513',
       titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
         'El conocimiento entró con flow.',
@@ -5970,13 +5970,13 @@
       ]
     },
     lime: {
-      color: '#a3d900',
-      glow: 'rgba(163,217,0,.55)',
-      bandBg: '#a3d900',
+      color: '#24b49a',
+      glow: 'rgba(36,180,154,.55)',
+      bandBg: '#24b49a',
       textColor: '#ffffff',
       noteColor: '#ffffff',
       fakeNoteColor: '#ffffff',
-      polygonFill: '#a3d900',
+      polygonFill: '#24b49a',
       titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
         'El conocimiento entró con flow.',
@@ -6720,7 +6720,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.247';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.248';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -8125,7 +8125,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.247', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.248', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

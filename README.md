@@ -1,8 +1,7 @@
-## v0.24.247
+## v0.24.248
 
-Cambios v0.24.247:
-- Se actualizaron únicamente los rangos de color del hero/banda y del polígono de nota final en Resultados.
-- Nuevos rangos: 0.0-5.9 rojo #e21b3c, 6.0-6.9 naranja #ff7a00, 7.0-7.9 amarillo #f5c400, 8.0-8.9 lima #a3d900, 9.0-10.0 verde #58cc02.
-- El texto del hero y el número de nota quedan blancos en todos los casos.
+Cambios v0.24.248:
+- Resultados: se ajustaron solo los colores del hero/banda y del polígono de nota final para los rangos 7.0-7.9 a #EBB513 y 8.0-8.9 a #24b49a, manteniendo 9.0-10.0 en #58cc02.
+- Resultados: texto y número de nota permanecen blancos; el subtítulo del hero queda en Montserrat Medium.
 - No se tocaron layout, tamaños, posiciones, ranking, resumen, preguntas, datos, música ni countdown.
-- Versión/cache busting actualizado a 0.24.247.
+- Versión/cache busting actualizado a 0.24.248.

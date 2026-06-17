@@ -19700,3 +19700,10 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-gr
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-base {
   color: #ffffff !important;
 }
+
+
+/* v0.24.248 - Resultados: subtitulo del hero en Montserrat Medium. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado .enciso-result-message {
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-weight: 500 !important;
+}
