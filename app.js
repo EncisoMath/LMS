@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.239';
+  const APP_VERSION = '0.24.240';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2386,7 +2386,7 @@
     };
 
     setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition)', safe.layerX);
-    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-fullscreen-content', safe.contentX);
+    setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results) .quiz-fullscreen-content', safe.contentX);
     setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-question-content', safe.questionX);
     setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-zone', safe.answerX);
     setInlineOptions('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-board, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-stack, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-open-form');
@@ -6220,11 +6220,11 @@
   function encisoFinalFlowItems(root) {
     if (!root) return [];
     return [
-      root.querySelector('[data-actions-section]'),
-      root.querySelector('[data-review-section]'),
-      root.querySelector('[data-podium-section]'),
+      root.querySelector('.enciso-result-band'),
       root.querySelector('[data-score-card]'),
-      root.querySelector('.enciso-result-band')
+      root.querySelector('[data-podium-section]'),
+      root.querySelector('[data-review-section]'),
+      root.querySelector('[data-actions-section]')
     ].filter(Boolean);
   }
 
@@ -6408,7 +6408,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.239';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.240';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -7606,7 +7606,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.239', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.240', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

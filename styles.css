@@ -18772,7 +18772,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-po
 }
 
 
-/* v0.24.239 - SOLO resultados: fade/scale reales en flow in/out sin bloquear fondos solidos. */
+/* v0.24.240 - SOLO resultados: fade/scale reales en flow in/out sin bloquear fondos solidos. */
 @keyframes encisoFinalResultsFlowIn {
   0% {
     opacity: 0;
