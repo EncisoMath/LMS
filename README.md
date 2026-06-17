@@ -1,11 +1,11 @@
-## v0.24.231
+## v0.24.232
 
-- Pantalla final de resultados: se eliminó el glitch azul/rojo del número de la nota.
-- El polígono de la nota usa una apertura inspirada en el polígono del contador de transición y permanece visible/flotando en resultados.
-- Se agregaron sliders porcentuales para ajustar polígono de nota, número de nota, texto/número de puntaje global.
-- Se normalizó la altura vertical de los botones `Repetir animación` y `Continuar`.
-- Alcance: solo pantalla final de resultados. No se tocaron inicio, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.231`.
+- Ajuste puntual solo en pantalla final de resultados.
+- Se agregó slider porcentual para mover el hero en posición Y.
+- Se agregó una pestaña `Botones` en la tuerquita con sliders para ajustar la altura de `Repetir animación` y `Continuar`.
+- No se tocaron inicio del quiz, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.232`.
+
 
 ## v0.24.230
 

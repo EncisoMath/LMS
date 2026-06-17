@@ -18472,3 +18472,25 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-re
   font-size: min(1.62svh, 3.3vw) !important;
   line-height: 1.05 !important;
 }
+
+
+/* v0.24.232 - ajustes pedidos: Y del hero y altura de botones en pantalla final. Alcance: solo fase results. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+  --enciso-hero-y: 0%;
+  --enciso-replay-button-height: 100%;
+  --enciso-continue-button-height: 100%;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-result-band {
+  transform: translate(var(--enciso-hero-x), var(--enciso-hero-y)) rotate(-2deg) scale(var(--enciso-hero-zoom)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn {
+  height: var(--enciso-replay-button-height) !important;
+  align-self: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn {
+  height: var(--enciso-continue-button-height) !important;
+  align-self: center !important;
+}

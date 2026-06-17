@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.231';
+  const APP_VERSION = '0.24.232';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6340,6 +6340,7 @@
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 9,
     heroX: 0,
+    heroY: 0,
     heroZoom: 90,
     heroTitleSize: 100,
     heroTitleY: 0,
@@ -6364,7 +6365,9 @@
     podiumStarsY: 0,
     reviewHeight: 10,
     reviewX: 0,
-    reviewZoom: 96
+    reviewZoom: 96,
+    replayButtonHeight: 100,
+    continueButtonHeight: 100
   };
   const ENCISO_FINAL_TUNE_TABS = [
     {
@@ -6373,6 +6376,7 @@
       fields: [
         ['heroHeight', 'Altura'],
         ['heroX', 'Posición X'],
+        ['heroY', 'Posición Y'],
         ['heroZoom', 'Zoom'],
         ['heroTitleSize', 'Tamaño título'],
         ['heroTitleY', 'Posición Y título'],
@@ -6400,10 +6404,12 @@
       ]
     },
     { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
-    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewZoom', 'Zoom']] }
+    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewZoom', 'Zoom']] },
+    { key: 'buttons', label: 'Botones', fields: [['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] }
   ];
 
   function encisoFinalTuneFieldMeta(key) {
+    if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 55, max: 120, step: 1, unit: '%' };
     if (key.endsWith('Height')) return { min: 6, max: 52, step: 1, unit: '%' };
     if (key === 'heroZoom') return { min: 55, max: 190, step: 1, unit: '%' };
     if (key === 'gradePolyZoom') return { min: 60, max: 190, step: 1, unit: '%' };
@@ -6449,6 +6455,7 @@
     root.style.setProperty('--enciso-score-x', `${safe.scoreX}%`);
     root.style.setProperty('--enciso-podium-x', `${safe.podiumX}%`);
     root.style.setProperty('--enciso-review-x', `${safe.reviewX}%`);
+    root.style.setProperty('--enciso-hero-y', `${safe.heroY}%`);
     root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
     root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
     root.style.setProperty('--enciso-score-label-x', `${safe.scoreLabelX}%`);
@@ -6468,6 +6475,8 @@
     root.style.setProperty('--enciso-hero-message-size', `${safe.heroMessageSize / 100}`);
     root.style.setProperty('--enciso-hero-message-y', `${safe.heroMessageY}%`);
     root.style.setProperty('--enciso-podium-stars-y', `${safe.podiumStarsY}%`);
+    root.style.setProperty('--enciso-replay-button-height', `${safe.replayButtonHeight}%`);
+    root.style.setProperty('--enciso-continue-button-height', `${safe.continueButtonHeight}%`);
     return safe;
   }
 
@@ -7484,7 +7493,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.231', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.232', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
