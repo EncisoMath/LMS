@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.240';
+  const APP_VERSION = '0.24.241';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6276,6 +6276,29 @@
     setTimeout(() => button.classList.remove('enciso-result-button-jello'), 680);
   }
 
+  function encisoResetRankingResultsAnimation(root = document) {
+    const ranking = root?.querySelector?.('.ranking-animation-root') || document.querySelector('.ranking-animation-root');
+    if (!ranking) return null;
+    ranking.classList.remove('ranking-animation-play');
+    ranking.classList.add('ranking-animation-ready');
+    delete ranking.dataset.rankingAnimationPlayed;
+    ranking.querySelectorAll('.enciso-podium-player').forEach((player) => {
+      player.classList.remove('show-block', 'show-points', 'show-name', 'show-avatar', 'show-sparkles');
+    });
+    void ranking.offsetWidth;
+    return ranking;
+  }
+
+  function encisoPlayRankingResultsAnimation(root = document) {
+    const ranking = encisoResetRankingResultsAnimation(root);
+    if (!ranking) return;
+    ranking.dataset.rankingAnimationPlayed = 'true';
+    ranking.classList.add('ranking-animation-play');
+  }
+
+  window.playRankingAnimation = encisoPlayRankingResultsAnimation;
+  window.restartRankingAnimation = encisoPlayRankingResultsAnimation;
+
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
@@ -6292,16 +6315,7 @@
       extraPoints: Number(root.dataset.extraPoints) || 0
     };
     encisoPlayFinalResultsFlowIn(root);
-    ['first', 'second', 'third'].forEach((place, placeIndex) => {
-      const player = root.querySelector(`[data-place="${place}"]`);
-      if (!player) return;
-      const startDelay = 180 + placeIndex * 340;
-      setTimeout(() => player.classList.add('show-block'), startDelay);
-      setTimeout(() => player.classList.add('show-points'), startDelay + 170);
-      setTimeout(() => player.classList.add('show-name'), startDelay + 320);
-      setTimeout(() => player.classList.add('show-avatar'), startDelay + 470);
-      setTimeout(() => player.classList.add('show-sparkles'), startDelay + 660);
-    });
+    setTimeout(() => encisoPlayRankingResultsAnimation(root), 170);
     root.querySelectorAll('.enciso-review-item').forEach((item, index) => {
       setTimeout(() => item.classList.add('show'), 160 + index * 85);
     });
@@ -6694,7 +6708,7 @@
   }
 
   function encisoPodiumSparklesHTML(count = 4) {
-    return Array.from({ length: count }, () => '<span></span>').join('');
+    return Array.from({ length: count }, () => '<span class="ranking-sparkle"></span>').join('');
   }
 
   function quizResultsHTML(quiz) {
@@ -6757,29 +6771,29 @@
           </div>
         </section>
 
-        <section class="enciso-podium-section" data-podium-section>
+        <section class="enciso-podium-section ranking-animation-root" data-podium-section>
           <div class="enciso-section-title">Ranking del reto</div>
           <div class="enciso-podium">
-            <article class="enciso-podium-player second" data-place="second">
+            <article class="enciso-podium-player second ranking-place-2" data-place="second">
               <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(4)}</div>
-              <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name">${escapeHTML(second.name)}</div>
-              <div class="enciso-podium-points">${encisoFormatNumber(second.points)} pts</div>
-              <div class="enciso-podium-block">2</div>
+              <div class="enciso-avatar ranking-avatar"></div>
+              <div class="enciso-podium-name ranking-name">${escapeHTML(second.name)}</div>
+              <div class="enciso-podium-points ranking-score">${encisoFormatNumber(second.points)} pts</div>
+              <div class="enciso-podium-block ranking-podium-block"><span class="ranking-rank-number">2</span></div>
             </article>
-            <article class="enciso-podium-player first" data-place="first">
+            <article class="enciso-podium-player first ranking-place-1" data-place="first">
               <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(8)}</div>
-              <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name">${escapeHTML(first.name)}</div>
-              <div class="enciso-podium-points" data-my-podium-points>0 pts</div>
-              <div class="enciso-podium-block">1</div>
+              <div class="enciso-avatar ranking-avatar"></div>
+              <div class="enciso-podium-name ranking-name">${escapeHTML(first.name)}</div>
+              <div class="enciso-podium-points ranking-score" data-my-podium-points>0 pts</div>
+              <div class="enciso-podium-block ranking-podium-block"><span class="ranking-rank-number">1</span></div>
             </article>
-            <article class="enciso-podium-player third" data-place="third">
+            <article class="enciso-podium-player third ranking-place-3" data-place="third">
               <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(2)}</div>
-              <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name">${escapeHTML(third.name)}</div>
-              <div class="enciso-podium-points">${encisoFormatNumber(third.points)} pts</div>
-              <div class="enciso-podium-block">3</div>
+              <div class="enciso-avatar ranking-avatar"></div>
+              <div class="enciso-podium-name ranking-name">${escapeHTML(third.name)}</div>
+              <div class="enciso-podium-points ranking-score">${encisoFormatNumber(third.points)} pts</div>
+              <div class="enciso-podium-block ranking-podium-block"><span class="ranking-rank-number">3</span></div>
             </article>
           </div>
         </section>
@@ -6790,7 +6804,7 @@
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
-          <button class="enciso-replay-btn" type="button" data-enciso-result-replay>Repetir animación</button>
+          <button class="enciso-replay-btn ranking-repeat-animation" type="button" data-enciso-result-replay data-repeat-ranking-animation>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
         ${encisoFinalTunePanelHTML()}
@@ -7606,7 +7620,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.240', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.241', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
