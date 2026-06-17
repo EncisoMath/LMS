@@ -19643,18 +19643,18 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-fi
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow {
-  --enciso-state-color: #f5c400;
-  --enciso-state-glow: rgba(245,196,0,.55);
-  --enciso-state-band-bg: #f5c400;
+  --enciso-state-color: #EBB513;
+  --enciso-state-glow: rgba(235,181,19,.55);
+  --enciso-state-band-bg: #EBB513;
   --enciso-state-text: #ffffff;
   --enciso-state-note-text: #ffffff;
   --enciso-fake-note-color: #ffffff;
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime {
-  --enciso-state-color: #a3d900;
-  --enciso-state-glow: rgba(163,217,0,.55);
-  --enciso-state-band-bg: #a3d900;
+  --enciso-state-color: #24b49a;
+  --enciso-state-glow: rgba(36,180,154,.55);
+  --enciso-state-band-bg: #24b49a;
   --enciso-state-text: #ffffff;
   --enciso-state-note-text: #ffffff;
   --enciso-fake-note-color: #ffffff;
@@ -19681,12 +19681,12 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-fi
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow .enciso-grade-poly-svg polygon,
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow .em-grade-polygon-base {
-  fill: #f5c400 !important;
+  fill: #EBB513 !important;
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime .enciso-grade-poly-svg polygon,
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime .em-grade-polygon-base {
-  fill: #a3d900 !important;
+  fill: #24b49a !important;
 }
 
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .enciso-grade-poly-svg polygon,
@@ -19709,3 +19709,5 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-h
 }
 
 /* v0.24.249 - Resultados: color verde alto ajustado a #54c600 en hero y poligono. */
+
+/* v0.24.250 - Resultados: corrige override CSS del estado 8.0 a 8.9 para poligono/hero a #24b49a y alinea 7.0 a 7.9 a #EBB513. */

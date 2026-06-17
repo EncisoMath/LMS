@@ -1,3 +1,11 @@
+## v0.24.250
+
+Cambios v0.24.250:
+- Corrección puntual en Resultados: se alinearon los overrides CSS del estado 8.0 a 8.9 para que el hero y el polígono usen #24b49a.
+- Se mantuvo 7.0 a 7.9 en #EBB513 y 9.0 a 10.0 en #54c600; textos del hero y número de nota siguen blancos.
+- No se tocaron layout, tamaños, posiciones, ranking, resumen, preguntas, datos, música ni countdown.
+- Version/cache busting actualizado a 0.24.250.
+
 ## v0.24.249
 
 Cambios v0.24.249:
