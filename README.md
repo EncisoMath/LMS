@@ -1,5 +1,7 @@
-## v0.24.264
+## v0.24.265
 
-Correccion puntual sobre v0.24.263: el hero de QUIZZES ya no usa un wrapper interno tipo segundo hero. El fondo navy, las figuras, el tablero y los textos se renderizan directamente dentro del contenedor existente `.quiz-hero.em-qz-hero-host`, conservando el tamano/posicion/layout base del contenedor original. Se mantuvo el menu de periodo, listado de quizzes, navegacion, datos, preguntas, respuestas, countdown, musica, ranking, podio, clases y estudiantes sin cambios.
+Base: v0.24.264.
 
-Version/cache busting actualizado a 0.24.264.
+Corrección visual limitada a los héroes de ROCKSTARS y QUIZZES: se alinearon tamaños de letra, posiciones relativas, eyebrow/subtítulo y escala de iconos para que ambos héroes mantengan proporciones consistentes y no se corten los textos. No se tocó el contenedor padre, navegación, menús, listados, lógica, datos, quizzes, resultados, música, countdown, ranking ni podio.
+
+Version/cache busting actualizado a 0.24.265.
