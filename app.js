@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.253';
+  const APP_VERSION = '0.24.254';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3990,7 +3990,7 @@
   function normalizeQuizTransitionTune(tune = {}) {
     const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
     return {
-      // v0.24.253: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
+      // v0.24.254: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
       radials: false,
       sceneGlow: false,
       shapeGlow: false,
@@ -4083,7 +4083,8 @@
     const FIGURAS_TOTAL = 10;
     const VELOCIDAD_FIGURAS = 0.4;
 
-    const HOLD_MS = 3000;
+    const QUIZ_INFO_HOLD_MS = 3000;
+    const ITEM_HOLD_MS = 2200;
     const EXIT_MS = 1180;
     const START_BLACK_MS = 350;
 
@@ -4409,7 +4410,7 @@
       layer.appendChild(band);
 
       await enterBand(band);
-      await sleep(HOLD_MS);
+      await sleep(ITEM_HOLD_MS);
       await exitBand(band);
 
       band.remove();
@@ -4435,7 +4436,7 @@
       layer.appendChild(quizBand);
 
       await enterBand(quizBand);
-      await sleep(HOLD_MS);
+      await sleep(QUIZ_INFO_HOLD_MS);
 
       const itemBand = createBand({
         type: 'band-item-over',
@@ -4445,7 +4446,7 @@
       layer.appendChild(itemBand);
 
       await enterBand(itemBand);
-      await sleep(HOLD_MS);
+      await sleep(ITEM_HOLD_MS);
 
       await Promise.all([
         exitBand(quizBand),
@@ -5280,6 +5281,12 @@
     document.querySelectorAll('[data-quiz-security-continue]').forEach((button) => {
       button.addEventListener('click', continueQuizAfterSecurityWarning);
     });
+    document.querySelectorAll('[data-quiz-transition-continue]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.disabled = true;
+        goToQuizQuestionFromTransition();
+      });
+    });
     document.querySelectorAll('[data-quiz-prev]').forEach((button) => {
       button.addEventListener('click', () => moveQuizQuestion(-1));
     });
@@ -6107,24 +6114,32 @@
       });
     } else if (phase === 'transition') {
       const transitionRoot = layer.querySelector('.quiz-item-transition');
+      const continueButton = transitionRoot?.querySelector?.('[data-quiz-transition-continue]');
+      if (continueButton) {
+        continueButton.hidden = true;
+        continueButton.disabled = false;
+      }
+      let bandPromise = null;
       try {
         if (transitionWithIntro) {
-          window.EncisoTransitionBands?.playQuizIntroThenItem?.({
+          bandPromise = window.EncisoTransitionBands?.playQuizIntroThenItem?.({
             root: transitionRoot,
             quizTitle: quiz.title || quiz.name || 'Quiz',
             quizSubtitle: quiz.subtitle || quiz.description || '',
             itemNumber: 1
           });
         } else {
-          window.EncisoTransitionBands?.playItemOnly?.({
+          bandPromise = window.EncisoTransitionBands?.playItemOnly?.({
             root: transitionRoot,
             itemNumber: state.quizQuestionIndex + 1
           });
         }
       } catch (_) {}
+      Promise.resolve(bandPromise).finally(() => {
+        if (continueButton?.isConnected) continueButton.hidden = false;
+      });
       playQuizTransitionNumberMotion(layer);
       playQuizTransitionScoreCounter(layer);
-      scheduleQuizTransitionContinuousAdvance();
     } else if (phase === 'results') {
       stopQuizQuestionMusic(true);
       try { startEncisoFinalResultsScreen(layer); } catch (_) {}
@@ -6215,7 +6230,7 @@
     return `
       <section class="quiz-item-transition quiz-transition-minimal em-transition-host" aria-live="polite">
         ${quizTransitionScoreHTML(current, quiz)}
-        <div class="quiz-transition-progress" aria-hidden="true"><span></span></div>
+        <button class="quiz-transition-continue-btn" type="button" data-quiz-transition-continue hidden>Continuar</button>
       </section>
     `;
   }
@@ -8604,7 +8619,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.253', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.254', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
