@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.256';
+  const APP_VERSION = '0.24.257';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -368,8 +368,8 @@
   const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
-  const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 4200;
-  const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3600;
+  const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 3500;
+  const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3000;
   const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.166';
   const QUIZ_TRANSITION_ENTER_MS = 1350;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
@@ -5677,7 +5677,455 @@
     return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${emoji}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
   }
 
+
+  // =========================================================
+  // ENCISOMATH - BANDA DE FEEDBACK QUIZ
+  // Reemplazo visual para Correcto / Incorrecto / Enviado / Tiempo.
+  // =========================================================
+  (function setupEncisoFeedbackBand() {
+    const FIGURAS_TOTAL = 10;
+    const VELOCIDAD_FIGURAS = 0.4;
+
+    const ENTER_MS = 500;
+    const HOLD_MS = 2500;
+    const EXIT_MS = 500;
+
+    const DEFAULT_POS_Y = 50;
+    const DEFAULT_TITLE_SIZE = 58;
+    const DEFAULT_SUBTITLE_SIZE = 22;
+
+    const DIRECCIONES = [
+      { x: -135, y: 0 },
+      { x: 135, y: 0 },
+      { x: 0, y: -85 },
+      { x: 0, y: 85 },
+      { x: -135, y: -85 },
+      { x: 135, y: -85 },
+      { x: -135, y: 85 },
+      { x: 135, y: 85 }
+    ];
+
+    const TIPOS_BASE = ['circulo', 'cuadrado', 'triangulo', 'equis'];
+
+    const ESTADOS = {
+      correcto: {
+        title: 'Correcto!',
+        bg: '#58cc02',
+        text: '#ffffff',
+        subtitles: [
+          'Eso era, sin hacer show.',
+          'Correcto y sin drama.',
+          'Hoy sí prendió la neurona.',
+          'La respuesta estaba en modo fino.',
+          'Se hizo lo que se tenía que hacer.',
+          'Entró como debía entrar.',
+          'Ni el profe lo vio venir.'
+        ]
+      },
+
+      incorrecto: {
+        title: 'Incorrecto!',
+        bg: '#e21b3c',
+        text: '#ffffff',
+        subtitles: [
+          'Peleaste solo y aun así perdiste.',
+          'La intención estaba, la respuesta no.',
+          'Casi, pero el casi no califica.',
+          'Esa respuesta venía en modo creativo.',
+          'Te fuiste por una ruta alterna.',
+          'El cálculo dijo: yo no fui.',
+          'No era por ahí, pero se respetó el intento.'
+        ]
+      },
+
+      enviado: {
+        title: 'Enviado!',
+        bg: '#1368ce',
+        text: '#ffffff',
+        subtitles: [
+          'Listo, eso ya viajó.',
+          'Se mandó con toda la fe.',
+          'Ya quedó en manos del destino.',
+          'Enviado, sin mirar atrás.',
+          'Eso ya está en el sistema.',
+          'Firmado, sellado y enviado.',
+          'Ya no hay botón de arrepentimiento.'
+        ]
+      },
+
+      tiempo: {
+        title: 'Tiempo!',
+        bg: '#ffffff',
+        text: '#111111',
+        subtitles: [
+          'Peleaste solo y aun así perdiste.',
+          'El reloj hizo speedrun.',
+          'Parpadeaste y se fue.',
+          'El tiempo no perdona.',
+          'Cronómetro: 1, tú: 0.',
+          'Se acabó el recreo.',
+          'El reloj llegó con pruebas.'
+        ]
+      }
+    };
+
+    let timers = [];
+
+    function clearTimers() {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers = [];
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => {
+        const timer = setTimeout(resolve, ms);
+        timers.push(timer);
+      });
+    }
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(random(min, max + 1));
+    }
+
+    function elegir(array) {
+      return array[randomInt(0, array.length - 1)];
+    }
+
+    function shuffle(array) {
+      const copia = [...array];
+
+      for (let i = copia.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copia[i], copia[j]] = [copia[j], copia[i]];
+      }
+
+      return copia;
+    }
+
+    function construirListaTipos(cantidad) {
+      const lista = [];
+
+      while (lista.length < cantidad) {
+        lista.push(...shuffle(TIPOS_BASE));
+      }
+
+      return lista.slice(0, cantidad);
+    }
+
+    function normalizeState(state) {
+      const value = String(state || '').toLowerCase().trim();
+
+      if (value === 'correcto' || value === 'correct' || value === 'right' || value === 'ok' || value === 'success') {
+        return 'correcto';
+      }
+
+      if (value === 'incorrecto' || value === 'incorrect' || value === 'wrong' || value === 'error' || value === 'fail') {
+        return 'incorrecto';
+      }
+
+      if (value === 'enviado' || value === 'submitted' || value === 'sent' || value === 'open' || value === 'manual' || value === 'neutral') {
+        return 'enviado';
+      }
+
+      if (value === 'tiempo' || value === 'tiempo!' || value === 'timeout' || value === 'time' || value === 'timeup') {
+        return 'tiempo';
+      }
+
+      return 'enviado';
+    }
+
+    function resolveRoot(root) {
+      if (root instanceof HTMLElement) {
+        return root;
+      }
+
+      if (typeof root === 'string') {
+        return document.querySelector(root);
+      }
+
+      return document.querySelector('.em-feedback-host');
+    }
+
+    function ensureHost(root) {
+      if (!root) return null;
+
+      root.classList.add('em-feedback-host');
+
+      const computed = window.getComputedStyle(root);
+
+      if (computed.position === 'static') {
+        root.style.position = 'relative';
+      }
+
+      return root;
+    }
+
+    function ensureLayer(root) {
+      const host = ensureHost(root);
+
+      if (!host) return null;
+
+      let layer = host.querySelector(':scope > .em-feedback-band-layer');
+
+      if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'em-feedback-band-layer';
+        host.insertBefore(layer, host.firstChild);
+      }
+
+      return layer;
+    }
+
+    function clearLayer(layer) {
+      if (!layer) return;
+      layer.innerHTML = '';
+    }
+
+    function aplicarDireccionEntrada(band, dir) {
+      band.style.setProperty('--enter-x', `${dir.x}vw`);
+      band.style.setProperty('--enter-y', `${dir.y}vh`);
+
+      band.style.setProperty('--bounce-x1', `${-dir.x * 0.075}vw`);
+      band.style.setProperty('--bounce-y1', `${-dir.y * 0.075}vh`);
+
+      band.style.setProperty('--bounce-x2', `${dir.x * 0.042}vw`);
+      band.style.setProperty('--bounce-y2', `${dir.y * 0.042}vh`);
+
+      band.style.setProperty('--bounce-x3', `${-dir.x * 0.026}vw`);
+      band.style.setProperty('--bounce-y3', `${-dir.y * 0.026}vh`);
+
+      band.style.setProperty('--bounce-x4', `${dir.x * 0.016}vw`);
+      band.style.setProperty('--bounce-y4', `${dir.y * 0.016}vh`);
+    }
+
+    function aplicarDireccionSalida(band, dir) {
+      band.style.setProperty('--exit-x', `${dir.x}vw`);
+      band.style.setProperty('--exit-y', `${dir.y}vh`);
+
+      band.style.setProperty('--exit-pull-x', `${-dir.x * 0.035}vw`);
+      band.style.setProperty('--exit-pull-y', `${-dir.y * 0.035}vh`);
+
+      band.style.setProperty('--exit-small-x', `${dir.x * 0.18}vw`);
+      band.style.setProperty('--exit-small-y', `${dir.y * 0.18}vh`);
+    }
+
+    function posicionExtremo(index) {
+      const zona = index % 8;
+
+      if (zona === 0) return { x: random(-5, 105), y: random(-4, 16) };
+      if (zona === 1) return { x: random(-5, 105), y: random(84, 104) };
+      if (zona === 2) return { x: random(-5, 16), y: random(0, 100) };
+      if (zona === 3) return { x: random(84, 105), y: random(0, 100) };
+      if (zona === 4) return { x: random(-5, 18), y: random(-5, 18) };
+      if (zona === 5) return { x: random(82, 105), y: random(-5, 18) };
+      if (zona === 6) return { x: random(-5, 18), y: random(82, 105) };
+
+      return { x: random(82, 105), y: random(82, 105) };
+    }
+
+    function posicionInterior() {
+      return {
+        x: random(18, 82),
+        y: random(18, 82)
+      };
+    }
+
+    function crearFiguras(layer) {
+      if (!layer) return;
+
+      layer.innerHTML = '';
+
+      const cantidad = FIGURAS_TOTAL;
+      const cantidadExtremos = Math.ceil(cantidad * 0.75);
+      const listaTipos = construirListaTipos(cantidad);
+
+      for (let i = 0; i < cantidad; i++) {
+        const figura = document.createElement('span');
+        const tipo = listaTipos[i];
+
+        figura.className = `em-feedback-figura ${tipo}`;
+
+        const naceEnExtremo = i < cantidadExtremos;
+        const pos = naceEnExtremo ? posicionExtremo(i) : posicionInterior();
+
+        const size = naceEnExtremo ? randomInt(52, 118) : randomInt(42, 92);
+
+        const alpha = random(0.36, 0.58);
+        const alphaLow = Math.max(0.22, alpha * 0.66);
+        const alphaMid = Math.max(0.28, alpha * 0.84);
+
+        const baseDuration = naceEnExtremo ? random(10, 14) : random(9, 13);
+        const duration = baseDuration / VELOCIDAD_FIGURAS;
+        const delay = -((i / cantidad) * duration);
+
+        const fuerzaX = naceEnExtremo ? random(42, 120) : random(35, 95);
+        const fuerzaY = naceEnExtremo ? random(24, 70) : random(20, 58);
+
+        const x0 = random(-16, 16);
+        const y0 = random(-12, 12);
+
+        const x1 = random(-fuerzaX, fuerzaX);
+        const y1 = random(-fuerzaY, fuerzaY);
+
+        const x2 = random(-fuerzaX * 1.2, fuerzaX * 1.2);
+        const y2 = random(-fuerzaY * 1.2, fuerzaY * 1.2);
+
+        const x3 = random(-fuerzaX * 1.35, fuerzaX * 1.35);
+        const y3 = random(-fuerzaY * 1.35, fuerzaY * 1.35);
+
+        const x4 = random(-fuerzaX, fuerzaX);
+        const y4 = random(-fuerzaY, fuerzaY);
+
+        const r0 = randomInt(-80, 80);
+        const r1 = randomInt(80, 220);
+        const r2 = randomInt(220, 420);
+        const r3 = randomInt(420, 650);
+        const r4 = randomInt(650, 860);
+        const r5 = r0 + 360;
+
+        figura.style.setProperty('--x', `${pos.x.toFixed(1)}%`);
+        figura.style.setProperty('--y', `${pos.y.toFixed(1)}%`);
+        figura.style.setProperty('--size', `${size}px`);
+
+        figura.style.setProperty('--alpha', alpha.toFixed(2));
+        figura.style.setProperty('--alpha-low', alphaLow.toFixed(2));
+        figura.style.setProperty('--alpha-mid', alphaMid.toFixed(2));
+
+        figura.style.setProperty('--duration', `${duration.toFixed(2)}s`);
+        figura.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+
+        figura.style.setProperty('--x0', `${x0.toFixed(1)}px`);
+        figura.style.setProperty('--y0', `${y0.toFixed(1)}px`);
+        figura.style.setProperty('--x1', `${x1.toFixed(1)}px`);
+        figura.style.setProperty('--y1', `${y1.toFixed(1)}px`);
+        figura.style.setProperty('--x2', `${x2.toFixed(1)}px`);
+        figura.style.setProperty('--y2', `${y2.toFixed(1)}px`);
+        figura.style.setProperty('--x3', `${x3.toFixed(1)}px`);
+        figura.style.setProperty('--y3', `${y3.toFixed(1)}px`);
+        figura.style.setProperty('--x4', `${x4.toFixed(1)}px`);
+        figura.style.setProperty('--y4', `${y4.toFixed(1)}px`);
+
+        figura.style.setProperty('--r0', `${r0}deg`);
+        figura.style.setProperty('--r1', `${r1}deg`);
+        figura.style.setProperty('--r2', `${r2}deg`);
+        figura.style.setProperty('--r3', `${r3}deg`);
+        figura.style.setProperty('--r4', `${r4}deg`);
+        figura.style.setProperty('--r5', `${r5}deg`);
+
+        layer.appendChild(figura);
+      }
+    }
+
+    function createBand(options) {
+      const stateKey = normalizeState(options && options.state);
+      const estado = ESTADOS[stateKey];
+
+      const band = document.createElement('section');
+      band.className = 'em-feedback-band';
+
+      band.style.setProperty('--em-feedback-pos-y', String(options.posY || DEFAULT_POS_Y));
+      band.style.setProperty('--em-feedback-title-size', String(options.titleSize || DEFAULT_TITLE_SIZE));
+      band.style.setProperty('--em-feedback-subtitle-size', String(options.subtitleSize || DEFAULT_SUBTITLE_SIZE));
+      band.style.setProperty('--em-feedback-band-color', estado.bg);
+      band.style.setProperty('--em-feedback-text-color', estado.text);
+
+      const entrada = elegir(DIRECCIONES);
+      const salida = elegir(DIRECCIONES);
+      const rotacion = random(-5, 5);
+
+      band.style.setProperty('--band-rot', `${rotacion.toFixed(2)}deg`);
+
+      aplicarDireccionEntrada(band, entrada);
+      aplicarDireccionSalida(band, salida);
+
+      const figurasLayer = document.createElement('div');
+      figurasLayer.className = 'em-feedback-figuras-layer';
+      figurasLayer.setAttribute('aria-hidden', 'true');
+
+      const copy = document.createElement('div');
+      copy.className = 'em-feedback-copy';
+
+      const breath = document.createElement('div');
+      breath.className = 'em-feedback-breath-wrap';
+
+      const title = document.createElement('div');
+      title.className = 'em-feedback-title';
+      title.textContent = estado.title;
+
+      const subtitle = document.createElement('div');
+      subtitle.className = 'em-feedback-subtitle';
+      subtitle.textContent = options && options.subtitle ? options.subtitle : elegir(estado.subtitles);
+
+      breath.appendChild(title);
+      breath.appendChild(subtitle);
+      copy.appendChild(breath);
+
+      band.appendChild(figurasLayer);
+      band.appendChild(copy);
+
+      crearFiguras(figurasLayer);
+
+      return band;
+    }
+
+    async function play(options) {
+      const root = resolveRoot(options && options.root);
+
+      if (!root) return;
+
+      clearTimers();
+
+      const layer = ensureLayer(root);
+
+      if (!layer) return;
+
+      clearLayer(layer);
+
+      const band = createBand(options || {});
+
+      layer.appendChild(band);
+      band.classList.remove('is-entering', 'is-exiting');
+
+      void band.offsetWidth;
+
+      band.classList.add('is-entering');
+
+      await sleep(ENTER_MS + HOLD_MS);
+
+      band.classList.remove('is-entering');
+      band.classList.add('is-exiting');
+
+      await sleep(EXIT_MS);
+
+      band.remove();
+    }
+
+    function stop(options) {
+      clearTimers();
+
+      const root = resolveRoot(options && options.root);
+
+      if (!root) return;
+
+      const layer = ensureLayer(root);
+
+      if (layer) {
+        clearLayer(layer);
+      }
+    }
+
+    window.EncisoFeedbackBand = {
+      play,
+      stop
+    };
+  })();
+
   function removeQuizGlobalFeedback() {
+    try { window.EncisoFeedbackBand?.stop?.(); } catch (_) {}
     if (window.__encisomathQuizFeedbackShowTimer) {
       window.clearTimeout(window.__encisomathQuizFeedbackShowTimer);
       window.__encisomathQuizFeedbackShowTimer = null;
@@ -5856,32 +6304,33 @@
   }
 
 
+  function feedbackStateFromKind(kind = 'neutral') {
+    if (kind === 'correct') return 'correcto';
+    if (kind === 'wrong') return 'incorrecto';
+    if (kind === 'timeout') return 'tiempo';
+    return 'enviado';
+  }
+
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
     ensureQuizGlobalFeedbackStyles();
     const parts = quizFeedbackParts(correct, neutralText, question);
-    const quiz = getActiveQuiz();
-    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
-    const last = state.quizQuestionIndex >= total - 1;
     const overlay = document.createElement('div');
-    overlay.className = 'enciso-quiz-feedback-overlay-v102 quiz-feedback-stage';
+    overlay.className = 'enciso-quiz-feedback-overlay-v102 quiz-feedback-stage em-feedback-host';
     overlay.dataset.quizGlobalFeedback = 'true';
     overlay.setAttribute('aria-live', 'assertive');
     overlay.style.cssText = [
       'position:fixed', 'inset:0', 'width:100vw', 'height:100dvh', 'z-index:2147482500', 'pointer-events:none', 'display:block', 'overflow:visible', 'background:transparent', 'contain:none', 'isolation:isolate', "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
     ].join(';') + ';';
-    const band = document.createElement('div');
-    band.className = 'enciso-quiz-feedback-band-v102 quiz-feedback-band ' + parts.kind;
-    band.dataset.quizGlobalFeedbackBand = 'true';
-    band.dataset.feedbackKind = parts.kind;
-    band.setAttribute('role', 'status');
-    band.innerHTML = quizGlobalFeedbackHTML(correct, neutralText, question);
-    overlay.appendChild(band);
     document.body.appendChild(overlay);
-    applyInlineFeedbackBandStyles(band, parts.kind);
     document.documentElement.dataset.encisoLastFeedback = String(Date.now());
     window.__encisomathLastFeedbackV102 = (window.__encisomathLastFeedbackV102 || 0) + 1;
-    playFeedbackBandAnimation(band);
+    try {
+      window.EncisoFeedbackBand?.play?.({
+        root: overlay,
+        state: feedbackStateFromKind(parts.kind)
+      });
+    } catch (_) {}
     playQuizItemExitDuringFeedback(stage);
     if (window.__encisomathQuizFeedbackTimer) window.clearTimeout(window.__encisomathQuizFeedbackTimer);
     window.__encisomathQuizFeedbackTimer = window.setTimeout(() => {
@@ -8618,7 +9067,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.256', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.257', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
