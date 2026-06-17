@@ -1,4 +1,4 @@
-## v0.24.259
+## v0.24.260
 
 Corrección puntual sobre v0.24.258:
 
@@ -7,4 +7,7 @@ Corrección puntual sobre v0.24.258:
 - Se mantiene el color sincronizado con la transición ITEM X y el número del countdown con ese mismo color.
 - No se tocaron preguntas, tipos de pregunta, feedback, transiciones, resultados, ranking, podio, música, puntajes ni lógica de respuestas.
 
-Versión/cache busting actualizado a 0.24.259.
+Versión/cache busting actualizado a 0.24.260.
+
+
+Cambio puntual v0.24.260: se corrigio solo el audio de la pantalla de transicion ITEM X para reproducir assets/sounds/item.mp3 al aparecer la banda ITEM, manteniendo intactos hero, preguntas, resultados, feedback, ranking, podio, musica, countdown, puntajes y datos.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.259';
+  const APP_VERSION = '0.24.260';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -78,6 +78,15 @@
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
     } catch (_) {}
+  }
+
+  let lastQuizItemTransitionSoundAt = 0;
+
+  function playQuizItemTransitionSound() {
+    const now = Date.now();
+    if (now - lastQuizItemTransitionSoundAt < 700) return;
+    lastQuizItemTransitionSoundAt = now;
+    playQuizSound('item');
   }
   const QUIZ_TIMED_MUSIC_SECONDS = [20, 30, 60, 90, 120];
   const QUIZ_TIMED_MUSIC_DISCOVERY_LIMIT = 3;
@@ -4059,7 +4068,7 @@
       count.style.animation = 'none';
       void count.offsetWidth;
       count.style.animation = '';
-      playQuizSound('item');
+      playQuizItemTransitionSound();
       count.classList.add('quiz-transition-count-entering');
     }, timing.numberEnterDelay);
     scheduleQuizTimer(() => {
@@ -4425,6 +4434,7 @@
 
       layer.appendChild(band);
 
+      playQuizItemTransitionSound();
       await enterBand(band);
       await sleep(ITEM_HOLD_MS);
       await exitBand(band);
@@ -4462,6 +4472,7 @@
 
       layer.appendChild(itemBand);
 
+      playQuizItemTransitionSound();
       await enterBand(itemBand);
       await sleep(ITEM_HOLD_MS);
 
@@ -9269,7 +9280,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.259', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.260', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

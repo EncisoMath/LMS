@@ -21142,7 +21142,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 
 
 /* =========================================================
-   v0.24.259 - Fix hero quiz live: override hero real con alta especificidad
+   v0.24.260 - Fix hero quiz live: override hero real con alta especificidad
    Solo corrige el enganche visual del hero de pregunta.
 ========================================================= */
 body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live,
