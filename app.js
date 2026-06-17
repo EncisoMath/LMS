@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.228';
+  const APP_VERSION = '0.24.229';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6092,7 +6092,7 @@
     stage.classList.add('active');
     note.className = 'enciso-grade-note';
     note.textContent = '?';
-    caption.textContent = 'Calculando...';
+    caption.textContent = '';
 
     function floatFrame(floatStart, basePoints) {
       const now = performance.now();
@@ -6131,7 +6131,7 @@
           if (!root.isConnected) return;
           note.textContent = encisoFormatGrade(payload.finalGrade);
           note.className = 'enciso-grade-note show final';
-          caption.textContent = payload.extraPoints > 0 ? `${payload.extraPoints} PUNTOS extra` : 'Nota final';
+          caption.textContent = '';
         }, 1350);
       }
     }
@@ -6271,20 +6271,20 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.228';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.229';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
-    heroHeight: 12,
+    heroHeight: 9,
     heroX: 0,
-    heroZoom: 92,
-    scoreHeight: 23,
+    heroZoom: 90,
+    scoreHeight: 22,
     scoreX: 0,
-    scoreZoom: 94,
-    podiumHeight: 38,
+    scoreZoom: 96,
+    podiumHeight: 44,
     podiumX: 0,
-    podiumZoom: 93,
-    reviewHeight: 13,
+    podiumZoom: 96,
+    reviewHeight: 10,
     reviewX: 0,
-    reviewZoom: 94
+    reviewZoom: 96
   };
   const ENCISO_FINAL_TUNE_TABS = [
     { key: 'hero', label: 'Hero', height: 'heroHeight', x: 'heroX', zoom: 'heroZoom' },
@@ -6497,7 +6497,7 @@
                 </svg>
                 <div class="enciso-grade-note" data-grade-note>?</div>
               </div>
-              <div class="enciso-grade-caption" data-grade-caption>Nota</div>
+              <div class="enciso-grade-caption" data-grade-caption aria-hidden="true"></div>
             </div>
           </div>
           <div class="enciso-stats-grid">
@@ -7357,7 +7357,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.228', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.229', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

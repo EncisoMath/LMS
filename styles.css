@@ -18002,3 +18002,216 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-ac
     font-size: min(1.3svh, 2.8vw) !important;
   }
 }
+
+
+/* v0.24.229 - ajuste fino pantalla final: puntaje compacto, nota grande, podio alto y tarjetas 1:1. Alcance: solo fase results. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+  --enciso-hero-row: 9fr;
+  --enciso-score-row: 22fr;
+  --enciso-podium-row: 44fr;
+  --enciso-review-row: 10fr;
+  --enciso-actions-row: 7fr;
+  gap: min(.62svh, 1.08vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-result-band {
+  padding: min(1.45svh, 3.45vw) min(3.6vw, 1.8svh) min(1.52svh, 3.6vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-result-kicker {
+  font-size: min(1.08svh, 2.36vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-result-title {
+  margin-top: min(.28svh, .6vw) !important;
+  font-size: min(4.15svh, 9.6vw) !important;
+  line-height: .84 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-result-message {
+  margin-top: min(.45svh, 1vw) !important;
+  font-size: min(1.28svh, 2.95vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-card {
+  padding: min(.48svh, 1.05vw) min(2.05vw, 1.05svh) min(.72svh, 1.55vw) !important;
+  grid-template-rows: minmax(0, 61fr) minmax(0, 39fr) !important;
+  gap: min(.48svh, 1vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-inner {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 35%) !important;
+  align-items: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-inner > div:first-child {
+  transform: none !important;
+  align-self: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-label {
+  line-height: 1 !important;
+  font-size: min(1.26svh, 2.75vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-number {
+  margin-top: min(.18svh, .4vw) !important;
+  font-size: min(7.65svh, 15.8vw) !important;
+  line-height: .82 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-wrap {
+  height: 100% !important;
+  align-content: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  transform: translateY(min(.12svh, .25vw)) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-poly-stage,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-poly-svg {
+  width: min(14.9svh, 34vw) !important;
+  height: min(13.6svh, 31vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note {
+  min-width: min(12.2svh, 27.5vw) !important;
+  font-size: min(4.25svh, 9.1vw) !important;
+  line-height: .92 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-caption {
+  display: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-stats-grid {
+  gap: min(.5svh, 1vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-stat {
+  padding: min(.58svh, 1.25vw) min(.5vw, .3svh) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-section {
+  padding: min(.78svh, 1.65vw) min(1.65vw, .88svh) min(.58svh, 1.22vw) !important;
+  overflow: hidden !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-section .enciso-section-title {
+  margin-bottom: min(.35svh, .75vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  align-items: end !important;
+  overflow: visible !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player {
+  position: relative !important;
+  height: 100% !important;
+  display: grid !important;
+  align-content: end !important;
+  justify-items: center !important;
+  overflow: visible !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-sparkles {
+  position: absolute !important;
+  top: auto !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: min(7.5svh, 16vw) !important;
+  overflow: visible !important;
+  z-index: 6 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.first .enciso-podium-sparkles {
+  bottom: min(15.2svh, 33vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.second .enciso-podium-sparkles {
+  bottom: min(12.1svh, 26vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.third .enciso-podium-sparkles {
+  bottom: min(10.15svh, 21.5vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.first .enciso-avatar {
+  width: min(6.9svh, 15.7vw) !important;
+  height: min(6.9svh, 15.7vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.second .enciso-avatar {
+  width: min(5.75svh, 13.3vw) !important;
+  height: min(5.75svh, 13.3vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.third .enciso-avatar {
+  width: min(4.85svh, 11.3vw) !important;
+  height: min(4.85svh, 11.3vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-name {
+  margin-bottom: min(.22svh, .5vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-points {
+  margin-bottom: min(.35svh, .75vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.first .enciso-podium-block {
+  width: 100% !important;
+  height: min(15.2svh, 33vw) !important;
+  font-size: min(6.15svh, 13.2vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.second .enciso-podium-block {
+  width: 100% !important;
+  height: min(12.1svh, 26vw) !important;
+  font-size: min(5.1svh, 11vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-player.third .enciso-podium-block {
+  width: 100% !important;
+  height: min(10.15svh, 21.5vw) !important;
+  font-size: min(4.35svh, 9.2vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-section {
+  padding: min(.62svh, 1.32vw) min(1.65vw, .88svh) min(.55svh, 1.15vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-section .enciso-section-title {
+  margin-bottom: min(.35svh, .75vw) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-scroll {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-rows: unset !important;
+  grid-auto-rows: auto !important;
+  align-content: start !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-item {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  align-self: start !important;
+  justify-self: stretch !important;
+}
+
+@media (max-height: 36rem), (max-width: 20rem) {
+  body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+    --enciso-hero-row: 8fr;
+    --enciso-score-row: 22fr;
+    --enciso-podium-row: 45fr;
+    --enciso-review-row: 10fr;
+    --enciso-actions-row: 7fr;
+  }
+}
