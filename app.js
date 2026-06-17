@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.266';
+  const APP_VERSION = '0.24.267';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1992,6 +1992,241 @@
       emQzCreateShapes(heroSkin);
       emQzApplyTilePositions(heroSkin);
       emQzStartTileSwap(heroSkin);
+    });
+  }
+
+
+
+  const EM_CL_HERO_CONFIG = {
+    shapesTotal: 7,
+    shapesSpeed: 0.38,
+    shapeTypes: ['square', 'triangle', 'x', 'circle'],
+    cardSwapMs: 2300,
+    cardPositions: [
+      { x: 0, y: 0, r: -5 },
+      { x: 26, y: 18, r: 4 },
+      { x: 4, y: 38, r: 3 },
+      { x: 30, y: 56, r: -4 }
+    ]
+  };
+
+  const emClHeroStates = new WeakMap();
+
+  function emClEscapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function emClClassesHeroHTML(
+    eyebrow = 'TEMAS Y CONTENIDOS',
+    title = 'CLASES',
+    subtitle = 'Aprende por rutas, temas y actividades.'
+  ) {
+    return `
+      <div class="em-cl-shapesLayer" aria-hidden="true"></div>
+
+      <div class="em-cl-lessonsBoard" aria-hidden="true">
+        <div class="em-cl-lessonCard em-cl-red" data-em-cl-card="0">
+          <span class="em-cl-lessonLabel">TEMA 1</span>
+          <span class="em-cl-lessonIcon"><span class="em-cl-iconBook"></span></span>
+          <span class="em-cl-lessonLines">
+            <span class="em-cl-lessonLine em-cl-one"></span>
+            <span class="em-cl-lessonLine em-cl-two"></span>
+          </span>
+        </div>
+
+        <div class="em-cl-lessonCard em-cl-blue" data-em-cl-card="1">
+          <span class="em-cl-lessonLabel">TEMA 2</span>
+          <span class="em-cl-lessonIcon">x²</span>
+          <span class="em-cl-lessonLines">
+            <span class="em-cl-lessonLine em-cl-one"></span>
+            <span class="em-cl-lessonLine em-cl-two"></span>
+          </span>
+        </div>
+
+        <div class="em-cl-lessonCard em-cl-yellow" data-em-cl-card="2">
+          <span class="em-cl-lessonLabel">TEMA 3</span>
+          <span class="em-cl-lessonIcon"><span class="em-cl-iconChart"><span></span><span></span><span></span></span></span>
+          <span class="em-cl-lessonLines">
+            <span class="em-cl-lessonLine em-cl-one"></span>
+            <span class="em-cl-lessonLine em-cl-two"></span>
+          </span>
+        </div>
+
+        <div class="em-cl-lessonCard em-cl-green" data-em-cl-card="3">
+          <span class="em-cl-lessonLabel">TEMA 4</span>
+          <span class="em-cl-lessonIcon"><span class="em-cl-iconList"><span></span><span></span><span></span></span></span>
+          <span class="em-cl-lessonLines">
+            <span class="em-cl-lessonLine em-cl-one"></span>
+            <span class="em-cl-lessonLine em-cl-two"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="em-cl-content">
+        <span class="em-cl-eyebrow">${emClEscapeHtml(eyebrow)}</span>
+        <h1 class="em-cl-title">${emClEscapeHtml(title)}</h1>
+        <p class="em-cl-subtitle">${emClEscapeHtml(subtitle)}</p>
+      </div>
+    `;
+  }
+
+  function emClRandom(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function emClRandomInt(min, max) {
+    return Math.floor(emClRandom(min, max + 1));
+  }
+
+  function emClShuffle(array) {
+    const copy = [...array];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function emClBuildShapeTypeList(amount) {
+    const list = [];
+    while (list.length < amount) list.push(...emClShuffle(EM_CL_HERO_CONFIG.shapeTypes));
+    return list.slice(0, amount);
+  }
+
+  function emClShapePosition(index) {
+    const zones = [
+      { xMin: 4, xMax: 14, yMin: 10, yMax: 32 },
+      { xMin: 18, xMax: 32, yMin: 62, yMax: 92 },
+      { xMin: 38, xMax: 52, yMin: 6, yMax: 26 },
+      { xMin: 54, xMax: 68, yMin: 60, yMax: 90 },
+      { xMin: 70, xMax: 84, yMin: 10, yMax: 34 },
+      { xMin: 82, xMax: 96, yMin: 54, yMax: 86 },
+      { xMin: 92, xMax: 104, yMin: 10, yMax: 36 }
+    ];
+    const zone = zones[index % zones.length];
+    return { x: emClRandom(zone.xMin, zone.xMax), y: emClRandom(zone.yMin, zone.yMax) };
+  }
+
+  function emClGetHeroState(heroSkin) {
+    let state = emClHeroStates.get(heroSkin);
+    if (!state) {
+      state = { cardOrder: [0, 1, 2, 3], timer: null };
+      emClHeroStates.set(heroSkin, state);
+    }
+    return state;
+  }
+
+  function emClCreateShapes(heroSkin) {
+    const shapesLayer = heroSkin.querySelector('.em-cl-shapesLayer');
+    if (!shapesLayer) return;
+    shapesLayer.innerHTML = '';
+    const types = emClBuildShapeTypeList(EM_CL_HERO_CONFIG.shapesTotal);
+    for (let i = 0; i < EM_CL_HERO_CONFIG.shapesTotal; i += 1) {
+      const shape = document.createElement('span');
+      const type = types[i];
+      shape.className = `em-cl-shape em-cl-shape-${type}`;
+      const pos = emClShapePosition(i);
+      const size = emClRandomInt(58, 138);
+      const alpha = emClRandom(0.18, 0.36);
+      const baseDuration = emClRandom(11, 16);
+      const duration = baseDuration / EM_CL_HERO_CONFIG.shapesSpeed;
+      const delay = -emClRandom(0, duration);
+      const forceX = emClRandom(14, 44);
+      const forceY = emClRandom(7, 20);
+      const x0 = emClRandom(-5, 5);
+      const y0 = emClRandom(-4, 4);
+      const x1 = emClRandom(-forceX, forceX);
+      const y1 = emClRandom(-forceY, forceY);
+      const x2 = emClRandom(-forceX * 1.12, forceX * 1.12);
+      const y2 = emClRandom(-forceY * 1.12, forceY * 1.12);
+      const x3 = emClRandom(-forceX, forceX);
+      const y3 = emClRandom(-forceY, forceY);
+      const r0 = emClRandomInt(-50, 50);
+      const r1 = emClRandomInt(90, 220);
+      const r2 = emClRandomInt(220, 420);
+      const r3 = emClRandomInt(420, 640);
+      const r4 = r0 + 360;
+
+      shape.style.setProperty('--em-cl-shape-x', `${pos.x.toFixed(1)}%`);
+      shape.style.setProperty('--em-cl-shape-y', `${pos.y.toFixed(1)}%`);
+      shape.style.setProperty('--em-cl-shape-size', `${size}px`);
+      shape.style.setProperty('--em-cl-shape-alpha', alpha.toFixed(2));
+      shape.style.setProperty('--em-cl-shape-duration', `${duration.toFixed(2)}s`);
+      shape.style.setProperty('--em-cl-shape-delay', `${delay.toFixed(2)}s`);
+      shape.style.setProperty('--em-cl-x0', `${x0.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-y0', `${y0.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-x1', `${x1.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-y1', `${y1.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-x2', `${x2.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-y2', `${y2.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-x3', `${x3.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-y3', `${y3.toFixed(1)}px`);
+      shape.style.setProperty('--em-cl-r0', `${r0}deg`);
+      shape.style.setProperty('--em-cl-r1', `${r1}deg`);
+      shape.style.setProperty('--em-cl-r2', `${r2}deg`);
+      shape.style.setProperty('--em-cl-r3', `${r3}deg`);
+      shape.style.setProperty('--em-cl-r4', `${r4}deg`);
+      shapesLayer.appendChild(shape);
+    }
+  }
+
+  function emClApplyCardPositions(heroSkin) {
+    const state = emClGetHeroState(heroSkin);
+    const cards = heroSkin.querySelectorAll('.em-cl-lessonCard');
+    cards.forEach((card) => {
+      const cardIndex = Number(card.dataset.emClCard);
+      const positionIndex = state.cardOrder.indexOf(cardIndex);
+      const pos = EM_CL_HERO_CONFIG.cardPositions[positionIndex] || EM_CL_HERO_CONFIG.cardPositions[0];
+      card.style.setProperty('--em-cl-card-x', `${pos.x}px`);
+      card.style.setProperty('--em-cl-card-y', `${pos.y}px`);
+      card.style.setProperty('--em-cl-card-r', `${pos.r}deg`);
+      card.classList.add('is-moving');
+      window.setTimeout(() => card.classList.remove('is-moving'), 660);
+    });
+  }
+
+  function emClSwapCards(heroSkin) {
+    const state = emClGetHeroState(heroSkin);
+    const newOrder = [...state.cardOrder];
+    const a = emClRandomInt(0, 3);
+    let b = emClRandomInt(0, 3);
+    while (b === a) b = emClRandomInt(0, 3);
+    [newOrder[a], newOrder[b]] = [newOrder[b], newOrder[a]];
+    state.cardOrder = newOrder;
+    emClApplyCardPositions(heroSkin);
+  }
+
+  function emClStartCardSwap(heroSkin) {
+    const state = emClGetHeroState(heroSkin);
+    if (state.timer) clearInterval(state.timer);
+    state.timer = setInterval(() => {
+      if (!document.body.contains(heroSkin)) {
+        clearInterval(state.timer);
+        state.timer = null;
+        return;
+      }
+      emClSwapCards(heroSkin);
+    }, EM_CL_HERO_CONFIG.cardSwapMs);
+  }
+
+  function emClInitClassesHero(root = document) {
+    const heroes = root.querySelectorAll
+      ? root.querySelectorAll('[data-em-classes-hero]')
+      : [];
+
+    heroes.forEach((heroSkin) => {
+      if (heroSkin.dataset.emClReady === '1') return;
+      heroSkin.dataset.emClReady = '1';
+      const state = emClGetHeroState(heroSkin);
+      state.cardOrder = [0, 1, 2, 3];
+      emClCreateShapes(heroSkin);
+      emClApplyCardPositions(heroSkin);
+      emClStartCardSwap(heroSkin);
     });
   }
 
@@ -8992,6 +9227,9 @@
     setActiveSubjectTabMeta('classes');
 
     $content.innerHTML = `
+      <section class="class-hero em-cl-hero-host" data-em-classes-hero aria-label="Clases de la asignatura">
+        ${emClClassesHeroHTML()}
+      </section>
       <div class="period-tabs" id="periodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.period) === period ? 'active' : ''}" data-period="${period}">${period}°</button>`).join('')}
       </div>
@@ -9010,6 +9248,7 @@
     bindPeriodButtons();
     bindClassViewButtons();
     bindClassCards();
+    emClInitClassesHero($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
@@ -9652,7 +9891,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.266', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.267', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

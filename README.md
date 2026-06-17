@@ -1,3 +1,13 @@
+## v0.24.267
+
+Base: v0.24.266.
+
+Cambio visual limitado a la pestaña Clases: se agregó un hero flat aguamarina para CLASES con figuras geométricas oscuras lentas, pila de tarjetas de temas/contenidos con colores EncisoMath, etiquetas TEMA 1-4, líneas simuladas e íconos de libro, x², gráfica y lista. Se conserva el contenido/listado de clases y no se modifica lógica, datos, quizzes, countdown, música, ranking, podio, estudiantes ni navegación.
+
+Version/cache busting actualizado a 0.24.267.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.266
 
 Base: v0.24.265.
