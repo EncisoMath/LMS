@@ -21879,7 +21879,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   --em-qz-amarillo: #EBB513;
   --em-qz-verde: #54c600;
   --em-qz-blanco: #ffffff;
-  --em-qz-main: #10264d;
+  --em-qz-main: #ff7a00;
   --em-qz-dark-shape: rgba(0, 0, 0, 0.26);
 
   background: var(--em-qz-main) !important;
@@ -22291,7 +22291,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH HERO ROCKSTARS + QUIZZES ALIGNMENT
-   v0.24.271 - Misma escala interna, mismas posiciones relativas,
+   v0.24.272 - Misma escala interna, mismas posiciones relativas,
    sin cortes de texto. No cambia contenedor padre ni listas.
 ========================================================= */
 
@@ -22469,7 +22469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO FLAT
-   v0.24.271 - Solo hero visual de la pestaña CLASES.
+   v0.24.272 - Solo hero visual de la pestaña CLASES.
    No modifica listados, datos ni lógica.
 ========================================================= */
 
@@ -22896,7 +22896,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO ALIGNMENT FIX
-   v0.24.271 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
+   v0.24.272 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
    Solo afecta el hero visual de CLASES.
 ========================================================= */
 
@@ -23029,7 +23029,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 
-/* v0.24.271 - Ajuste final CLASES mobile board footprint.
+/* v0.24.272 - Ajuste final CLASES mobile board footprint.
    Solo CLASES: evita que el board reserve 132x104 y empuje el alto del hero. */
 @media (max-width: 560px) {
   .class-hero.em-cl-hero-host .em-cl-lessonsBoard,

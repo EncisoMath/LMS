@@ -1,3 +1,13 @@
+## v0.24.272
+
+Base: v0.24.271.
+
+Cambio visual puntual: se actualizó únicamente el fondo del hero de QUIZZES a naranja `#ff7a00`. No se tocaron CLASES, ROCKSTARS, listados, navegación, lógica, datos, preguntas, countdown, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.272.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.271
 
 Base: v0.24.270.
