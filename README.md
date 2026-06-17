@@ -1,3 +1,13 @@
+## v0.24.270
+
+Base: v0.24.269.
+
+Corrección puntual solo en el hero de CLASES: se aplicó en el breakpoint `max-width: 560px` el footprint que funcionó en Chrome para `.em-cl-lessonsBoard`, dejando `width: 90px`, `height: 90px` y `transform: rotate(-2deg) scale(0.72)`, para que el board no empuje el alto del hero en responsive. No se tocaron ROCKSTARS, QUIZZES, listados, navegación, lógica, datos, quizzes, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.270.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.269
 
 Base: v0.24.268.

@@ -22291,7 +22291,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH HERO ROCKSTARS + QUIZZES ALIGNMENT
-   v0.24.269 - Misma escala interna, mismas posiciones relativas,
+   v0.24.270 - Misma escala interna, mismas posiciones relativas,
    sin cortes de texto. No cambia contenedor padre ni listas.
 ========================================================= */
 
@@ -22469,7 +22469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO FLAT
-   v0.24.269 - Solo hero visual de la pestaña CLASES.
+   v0.24.270 - Solo hero visual de la pestaña CLASES.
    No modifica listados, datos ni lógica.
 ========================================================= */
 
@@ -22603,15 +22603,10 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 .em-cl-lessonsBoard {
-  position: relative;
-  z-index: 2;
-  width: 91px;
-  height: 91px;
-  justify-self: center;
-  align-self: center;
-  margin-right: clamp(2px, 0.8vw, 8px);
-  transform: rotate(-2deg) scale(0.92);
-  transform-origin: center;
+    width: 90px !important;
+    height: 90px !important;
+    transform: rotate(-2deg) scale(0.72) !important;
+    transform-origin: center;
 }
 
 .em-cl-lessonCard {
@@ -22901,7 +22896,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO ALIGNMENT FIX
-   v0.24.269 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
+   v0.24.270 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
    Solo afecta el hero visual de CLASES.
 ========================================================= */
 
