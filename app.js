@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.254';
+  const APP_VERSION = '0.24.255';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3990,7 +3990,7 @@
   function normalizeQuizTransitionTune(tune = {}) {
     const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
     return {
-      // v0.24.254: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
+      // v0.24.255: bandas animadas nuevas conviven con puntaje/countdown; radiales/glow antiguos siguen apagados.
       radials: false,
       sceneGlow: false,
       shapeGlow: false,
@@ -8619,7 +8619,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.254', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.255', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

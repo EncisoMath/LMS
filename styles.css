@@ -20485,3 +20485,12 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition .em-tra
     max-width: 84vw;
   }
 }
+
+/* ===== v0.24.255 - Solo transición inicial info quiz + ITEM 1: sin padding del fullscreen layer ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro,
+.quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro {
+  padding: 0 !important;
+  padding-inline: 0 !important;
+  padding-block: 0 !important;
+  box-sizing: border-box !important;
+}
