@@ -1,3 +1,13 @@
+## v0.24.273
+
+Base: v0.24.272.
+
+Corrección puntual del hero de QUIZZES: se arregló el override posterior que mantenía el fondo navy con `background: #10264d !important`; el hero de QUIZZES ahora queda realmente en naranja `#ff7a00`. No se tocaron CLASES, ROCKSTARS, listados, navegación, lógica, datos, preguntas, countdown, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.273.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.272
 
 Base: v0.24.271.

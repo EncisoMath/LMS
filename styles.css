@@ -22291,13 +22291,12 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH HERO ROCKSTARS + QUIZZES ALIGNMENT
-   v0.24.272 - Misma escala interna, mismas posiciones relativas,
+   v0.24.273 - Misma escala interna, mismas posiciones relativas,
    sin cortes de texto. No cambia contenedor padre ni listas.
 ========================================================= */
 
 .rockstar-hero.em-rs-hero-host,
 .quiz-hero.em-qz-hero-host {
-  background: #10264d !important;
   border: none !important;
   box-shadow: none !important;
   filter: none !important;
@@ -22307,6 +22306,15 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   padding: clamp(10px, 2vw, 18px) clamp(12px, 3vw, 24px) !important;
   align-items: center !important;
   overflow: hidden !important;
+}
+
+.rockstar-hero.em-rs-hero-host {
+  background: #10264d !important;
+}
+
+.quiz-hero.em-qz-hero-host {
+  --em-qz-main: #ff7a00 !important;
+  background: #ff7a00 !important;
 }
 
 .em-rs-heroSkin {
@@ -22469,7 +22477,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO FLAT
-   v0.24.272 - Solo hero visual de la pestaña CLASES.
+   v0.24.273 - Solo hero visual de la pestaña CLASES.
    No modifica listados, datos ni lógica.
 ========================================================= */
 
@@ -22896,7 +22904,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO ALIGNMENT FIX
-   v0.24.272 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
+   v0.24.273 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
    Solo afecta el hero visual de CLASES.
 ========================================================= */
 
@@ -23029,7 +23037,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 
-/* v0.24.272 - Ajuste final CLASES mobile board footprint.
+/* v0.24.273 - Ajuste final CLASES mobile board footprint.
    Solo CLASES: evita que el board reserve 132x104 y empuje el alto del hero. */
 @media (max-width: 560px) {
   .class-hero.em-cl-hero-host .em-cl-lessonsBoard,
@@ -23039,3 +23047,10 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
     transform: rotate(-2deg) scale(0.72) !important;
   }
 }
+
+/* v0.24.273 - Correccion puntual: fondo naranja real para hero QUIZZES. */
+.quiz-hero.em-qz-hero-host {
+  --em-qz-main: #ff7a00 !important;
+  background: #ff7a00 !important;
+}
+
