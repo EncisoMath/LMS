@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.236';
+  const APP_VERSION = '0.24.237';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6336,47 +6336,47 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.234';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.237';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
-    heroHeight: 9,
+    heroHeight: 23,
     heroX: 0,
-    heroY: 0,
-    heroZoom: 90,
+    heroY: -12,
+    heroZoom: 133,
     heroKickerX: 0,
     heroKickerY: 0,
-    heroTitleSize: 100,
-    heroTitleY: 0,
-    heroMessageSize: 100,
-    heroMessageY: 0,
-    heroSparklesX: 0,
-    heroSparklesY: 0,
-    heroSparklesZoom: 100,
-    heroSparklesCount: 6,
-    scoreHeight: 22,
+    heroTitleSize: 68,
+    heroTitleY: 38,
+    heroMessageSize: 97,
+    heroMessageY: 60,
+    heroSparklesX: 1,
+    heroSparklesY: 24,
+    heroSparklesZoom: 138,
+    heroSparklesCount: 16,
+    scoreHeight: 14,
     scoreX: 0,
-    scoreY: 0,
+    scoreY: -36,
     scoreZoom: 100,
-    scoreLabelX: 0,
-    scoreLabelY: 0,
-    scoreNumberX: 0,
-    scoreNumberY: 0,
+    scoreLabelX: 4,
+    scoreLabelY: -153,
+    scoreNumberX: 3,
+    scoreNumberY: -27,
     gradePolyZoom: 100,
     gradePolyX: 0,
-    gradePolyY: 0,
-    gradeNoteSize: 100,
+    gradePolyY: -16,
+    gradeNoteSize: 132,
     gradeNoteX: 0,
-    gradeNoteY: 0,
-    podiumHeight: 44,
+    gradeNoteY: -50,
+    podiumHeight: 25,
     podiumX: 0,
-    podiumY: 0,
+    podiumY: -18,
     podiumZoom: 100,
-    podiumStarsY: 0,
-    reviewHeight: 10,
+    podiumStarsY: -50,
+    reviewHeight: 9,
     reviewX: 0,
-    reviewY: 0,
+    reviewY: -44,
     reviewZoom: 100,
-    actionsHeight: 7,
-    actionsY: 0,
+    actionsHeight: 4,
+    actionsY: 4,
     replayButtonHeight: 100,
     continueButtonHeight: 100
   };
@@ -7534,7 +7534,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.236', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.237', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

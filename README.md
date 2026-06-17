@@ -1,10 +1,10 @@
-## v0.24.236
+## v0.24.237
 
-Cambios v0.24.236:
-- Pantalla final de resultados: se ampliaron los rangos de todos los sliders de la tuerquita para permitir valores mucho más grandes en alturas, posiciones X/Y, zooms y tamaños.
-- Se mantuvo la clave de calibración existente para no borrar ajustes guardados del usuario.
+Cambios v0.24.237:
+- Pantalla final de resultados: se fijaron como valores definitivos por defecto los ajustes calibrados por el usuario para Hero, Puntaje, Ranking, Preguntas y Botones.
+- Se actualizó la clave de calibración a `encisomath:finalResultsTune:v0.24.237` para no arrastrar valores anteriores de pruebas.
 - No se tocaron flujo del quiz, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.236`.
+- Versión/cache busting actualizado a `0.24.237`.
 
 Validación:
 - `node --check app.js`
