@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.260';
+  const APP_VERSION = '0.24.261';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1591,6 +1591,137 @@
     renderStudentsTab({ animate: false });
   }
 
+
+  const EM_RS_HERO_CONFIG = {
+    rocketRotationDeg: -30,
+    starsAngleDeg: 45,
+    starDistancePx: 390,
+    starsTotal: 64,
+    starColors: ['#ffffff', '#edf3ff', '#d7e4ff', '#f6f9ff']
+  };
+
+  function emRsEscapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function emRsNormalizeGradeCourse(value) {
+    return String(value ?? '')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+
+  function emRsGetAssignmentGradeCourse(assignment = {}) {
+    const direct = assignment.gradeCourse || assignment.gradeCourseLabel || assignment.group || assignment.groupLabel;
+    if (direct) return emRsNormalizeGradeCourse(direct) || '113PPAL';
+
+    const grade = emRsNormalizeGradeCourse(assignment.grade);
+    const course = emRsNormalizeGradeCourse(assignment.course);
+    const combined = `${grade}${course}`;
+
+    return combined || '113PPAL';
+  }
+
+  function emRsRockstarsHeroHTML(subjectName = 'ESTADÍSTICA', gradeCourse = '113PPAL') {
+    const eyebrow = `${emRsEscapeHtml(subjectName)} • ${emRsEscapeHtml(gradeCourse)}`;
+
+    return `
+      <div class="em-rs-heroSkin" data-em-rockstars-hero>
+        <div class="em-rs-starsLayer" aria-hidden="true"></div>
+
+        <div class="em-rs-rocketWrap" aria-hidden="true">
+          <div class="em-rs-rocket">
+            <span class="em-rs-window"></span>
+            <span class="em-rs-fin em-rs-finLeft"></span>
+            <span class="em-rs-fin em-rs-finRight"></span>
+            <span class="em-rs-flame"></span>
+          </div>
+        </div>
+
+        <div class="em-rs-content">
+          <span class="em-rs-eyebrow">${eyebrow}</span>
+          <h1 class="em-rs-title">ROCKSTARS</h1>
+          <p class="em-rs-subtitle">Estudiantes destacados de EncisoMath.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function emRsRandom(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  function emRsPick(array) {
+    return array[Math.floor(Math.random() * array.length)];
+  }
+
+  function emRsSetStarVector(heroSkin) {
+    const degrees = EM_RS_HERO_CONFIG.starsAngleDeg;
+    const radians = degrees * Math.PI / 180;
+    const distance = EM_RS_HERO_CONFIG.starDistancePx;
+
+    const x = Math.cos(radians) * distance;
+    const y = Math.sin(radians) * distance;
+
+    heroSkin.style.setProperty('--em-rs-star-from-x', `${(-x).toFixed(2)}px`);
+    heroSkin.style.setProperty('--em-rs-star-from-y', `${(-y).toFixed(2)}px`);
+    heroSkin.style.setProperty('--em-rs-star-to-x', `${x.toFixed(2)}px`);
+    heroSkin.style.setProperty('--em-rs-star-to-y', `${y.toFixed(2)}px`);
+  }
+
+  function emRsCreateStars(heroSkin) {
+    const starsLayer = heroSkin.querySelector('.em-rs-starsLayer');
+
+    if (!starsLayer) return;
+
+    starsLayer.innerHTML = '';
+
+    for (let i = 0; i < EM_RS_HERO_CONFIG.starsTotal; i += 1) {
+      const star = document.createElement('span');
+
+      const x = emRsRandom(-8, 108);
+      const y = emRsRandom(-10, 110);
+
+      const size = emRsRandom(1.4, 4.8);
+      const alpha = emRsRandom(0.36, 0.94);
+      const duration = emRsRandom(4.2, 9.4);
+      const delay = -emRsRandom(0, duration);
+      const color = emRsPick(EM_RS_HERO_CONFIG.starColors);
+
+      star.className = 'em-rs-star';
+
+      star.style.setProperty('--em-rs-star-x', `${x.toFixed(2)}%`);
+      star.style.setProperty('--em-rs-star-y', `${y.toFixed(2)}%`);
+      star.style.setProperty('--em-rs-star-size', `${size.toFixed(2)}px`);
+      star.style.setProperty('--em-rs-star-alpha', alpha.toFixed(2));
+      star.style.setProperty('--em-rs-star-duration', `${duration.toFixed(2)}s`);
+      star.style.setProperty('--em-rs-star-delay', `${delay.toFixed(2)}s`);
+      star.style.setProperty('--em-rs-star-color', color);
+
+      starsLayer.appendChild(star);
+    }
+  }
+
+  function emRsInitRockstarsHero(root = document) {
+    const heroes = root.querySelectorAll
+      ? root.querySelectorAll('[data-em-rockstars-hero]')
+      : [];
+
+    heroes.forEach((heroSkin) => {
+      heroSkin.style.setProperty(
+        '--em-rs-rocket-tilt',
+        `${EM_RS_HERO_CONFIG.rocketRotationDeg}deg`
+      );
+
+      emRsSetStarVector(heroSkin);
+      emRsCreateStars(heroSkin);
+    });
+  }
+
   function renderRockstarsTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -1598,33 +1729,8 @@
     setActiveSubjectTabMeta('rockstars');
 
     $content.innerHTML = `
-      <section class="rockstar-hero" aria-label="Rockstars de participación">
-        <div class="rockstar-spotlights" aria-hidden="true">
-          <span class="rockstar-spotlight spotlight-left"></span>
-          <span class="rockstar-spotlight spotlight-right"></span>
-          <span class="rockstar-spotlight spotlight-center"></span>
-          <span class="rockstar-light-bulb bulb-left"></span>
-          <span class="rockstar-light-bulb bulb-right"></span>
-        </div>
-        <div class="rockstar-rocket-stage" aria-hidden="true">
-          <div class="rocket-wrap">
-            <div class="rocket-emoji">🚀</div>
-            <span class="flame-plume" aria-hidden="true"></span>
-            <span class="flame flame-a"></span>
-            <span class="flame flame-b"></span>
-            <span class="flame flame-c"></span>
-            <span class="flame flame-d"></span>
-            <span class="smoke smoke-a"></span>
-            <span class="smoke smoke-b"></span>
-            <span class="spark spark-a"></span>
-            <span class="spark spark-b"></span>
-            <span class="spark spark-c"></span>
-            <span class="spark spark-d"></span>
-          </div>
-        </div>
-        <div class="rockstar-title-block is-centered-title">
-          <div class="rockstar-title-neon" data-text="ROCKSTARS">ROCKSTARS</div>
-        </div>
+      <section class="rockstar-hero em-rs-hero-host" aria-label="Rockstars de participación">
+        ${emRsRockstarsHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
@@ -1641,6 +1747,7 @@
     `;
 
     bindRockstarTabEvents();
+    emRsInitRockstarsHero($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
@@ -9280,7 +9387,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.260', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.261', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
