@@ -19316,3 +19316,224 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .summary-q
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
+
+/* =========================================================
+   v0.24.244 - ANIMACION NOTA FINAL: SOLO POLIGONO + NUMERO
+   No toca layout, no toca tamano, no toca posicion del contenedor.
+   ========================================================= */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-base {
+  color: #ffffff !important;
+  opacity: 0;
+  transform: none;
+  transform-origin: center;
+  translate: var(--enciso-grade-note-x) var(--enciso-grade-note-y);
+  scale: var(--enciso-grade-note-size);
+  rotate: 0deg;
+  font-variant-numeric: tabular-nums;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-visible {
+  opacity: 1;
+  animation: emGradeNumberLevitate 2.6s ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-show {
+  animation:
+    emGradeNumberEntrance 760ms cubic-bezier(.13, 1.85, .22, 1) both,
+    emGradeNumberLevitate 2.6s ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-counting {
+  animation:
+    emGradeNumberCounting 340ms ease-in-out infinite alternate,
+    emGradeNumberLevitate 2.6s ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-fake-hit {
+  opacity: 1;
+  animation:
+    emGradeFakeHit 720ms cubic-bezier(.14, 1.85, .22, 1) both,
+    emGradeNumberLevitate 2.6s ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-real-lock {
+  opacity: 1;
+  animation:
+    emGradeRealJellyLock 1180ms cubic-bezier(.13, 1.95, .18, 1) both,
+    emGradeNumberLevitate 2.6s ease-in-out infinite;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-polygon-base {
+  stroke: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-polygon-fake-impact {
+  animation: emGradePolygonFakeImpact 720ms cubic-bezier(.13, 1.7, .22, 1) both;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-polygon-real-impact {
+  animation: emGradePolygonRealImpact 980ms cubic-bezier(.13, 1.9, .18, 1) both;
+}
+
+@keyframes emGradeNumberLevitate {
+  0%, 100% {
+    translate: var(--enciso-grade-note-x) var(--enciso-grade-note-y);
+    rotate: -0.35deg;
+  }
+
+  50% {
+    translate: var(--enciso-grade-note-x) calc(var(--enciso-grade-note-y) - 12px);
+    rotate: 0.35deg;
+  }
+}
+
+@keyframes emGradeNumberEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.08) rotate(-18deg);
+  }
+
+  38% {
+    opacity: 1;
+    transform: scale(1.36, 0.64) rotate(8deg);
+  }
+
+  56% {
+    transform: scale(0.70, 1.34) rotate(-6deg);
+  }
+
+  72% {
+    transform: scale(1.15, 0.87) rotate(3deg);
+  }
+
+  88% {
+    transform: scale(0.97, 1.05) rotate(-1deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes emGradeNumberCounting {
+  from {
+    transform: scale(0.985, 1.025) rotate(-0.4deg);
+  }
+
+  to {
+    transform: scale(1.035, 0.965) rotate(0.4deg);
+  }
+}
+
+@keyframes emGradeFakeHit {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  18% {
+    transform: scale(1.38, 0.62) rotate(-7deg);
+  }
+
+  36% {
+    transform: scale(0.67, 1.42) rotate(6deg);
+  }
+
+  54% {
+    transform: scale(1.22, 0.81) rotate(-4deg);
+  }
+
+  72% {
+    transform: scale(0.92, 1.1) rotate(2deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes emGradeRealJellyLock {
+  0% {
+    transform: scale(0.74) rotate(-10deg);
+  }
+
+  16% {
+    transform: scale(1.54, 0.53) rotate(9deg);
+  }
+
+  31% {
+    transform: scale(0.59, 1.56) rotate(-8deg);
+  }
+
+  47% {
+    transform: scale(1.32, 0.73) rotate(4deg);
+  }
+
+  63% {
+    transform: scale(0.85, 1.2) rotate(-3deg);
+  }
+
+  78% {
+    transform: scale(1.09, 0.94) rotate(1.5deg);
+  }
+
+  91% {
+    transform: scale(0.98, 1.02) rotate(-0.5deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes emGradePolygonFakeImpact {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  18% {
+    transform: scale(1.12, 0.9) rotate(-2.5deg);
+  }
+
+  36% {
+    transform: scale(0.94, 1.08) rotate(2deg);
+  }
+
+  56% {
+    transform: scale(1.04, 0.97) rotate(-1deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes emGradePolygonRealImpact {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  14% {
+    transform: scale(1.18, 0.84) rotate(-4deg);
+  }
+
+  30% {
+    transform: scale(0.88, 1.17) rotate(3deg);
+  }
+
+  48% {
+    transform: scale(1.08, 0.93) rotate(-2deg);
+  }
+
+  66% {
+    transform: scale(0.96, 1.04) rotate(1deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}

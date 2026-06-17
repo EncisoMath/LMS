@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.243';
+  const APP_VERSION = '0.24.244';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6098,122 +6098,324 @@
     note.textContent = '?';
   }
 
+  function encisoGradeRemoveClasses(el, classes) {
+    if (!el) return;
+    classes.forEach((className) => el.classList.remove(className));
+  }
+
+  function encisoGradeRestartClass(el, className) {
+    if (!el) return;
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+  }
+
+  function encisoGradeFormat(value, decimals = 1, decimalSeparator = '.') {
+    return Number(value || 0).toFixed(decimals).replace('.', decimalSeparator);
+  }
+
+  function encisoGradeColorByGrade(value) {
+    const n = Number(value) || 0;
+    if (n >= 9) return '#58cc02';
+    if (n >= 7) return '#d89e00';
+    if (n >= 6) return '#ff7900';
+    return '#ed174b';
+  }
+
+  function encisoParseGradePolygonPoints(polygonEl) {
+    const raw = polygonEl?.getAttribute?.('points') || '';
+    const points = raw.trim().split(/\s+/)
+      .map((pair) => pair.split(',').map(Number))
+      .filter((pair) => pair.length === 2 && pair.every(Number.isFinite));
+    if (points.length >= 4) return points.slice(0, 4);
+    return [
+      [21, 29],
+      [128, 26],
+      [124, 101],
+      [23, 104]
+    ];
+  }
+
+  function encisoGradePointsAreCollapsed(points) {
+    if (!Array.isArray(points) || points.length < 4) return true;
+    const [x0, y0] = points[0];
+    return points.every(([x, y]) => Math.abs(x - x0) < .01 && Math.abs(y - y0) < .01);
+  }
+
+  function encisoGetCenterFromGradePoints(points) {
+    const sum = points.reduce((acc, point) => {
+      acc[0] += point[0];
+      acc[1] += point[1];
+      return acc;
+    }, [0, 0]);
+    return [sum[0] / points.length, sum[1] / points.length];
+  }
+
+  function encisoSetGradePolygonPoints(polygonEl, points) {
+    if (!polygonEl) return;
+    polygonEl.setAttribute('points', points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '));
+  }
+
+  function encisoGradeEaseOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function encisoGradeEaseInOutCubic(t) {
+    return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function encisoGradeEaseOutElastic(t) {
+    const c4 = (2 * Math.PI) / 3;
+    if (t === 0) return 0;
+    if (t === 1) return 1;
+    return Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * c4) + 1;
+  }
+
+  function encisoGradeBounceCartoon(t) {
+    if (t < .45) {
+      const p = t / .45;
+      return 1.28 * encisoGradeEaseOutCubic(p);
+    }
+    if (t < .68) {
+      const p = (t - .45) / .23;
+      return 1.28 + (.84 - 1.28) * encisoGradeEaseOutCubic(p);
+    }
+    if (t < .84) {
+      const p = (t - .68) / .16;
+      return .84 + (1.08 - .84) * encisoGradeEaseOutCubic(p);
+    }
+    const p = (t - .84) / .16;
+    return 1.08 + (1 - 1.08) * encisoGradeEaseOutCubic(p);
+  }
+
+  function encisoGradePointOnBounce(center, target, progress) {
+    const scale = encisoGradeBounceCartoon(progress);
+    return [
+      center[0] + (target[0] - center[0]) * scale,
+      center[1] + (target[1] - center[1]) * scale
+    ];
+  }
+
+  function encisoPickExactFakeGrade(real, fallbackFake) {
+    const safeFallback = Number(fallbackFake);
+    if (Number.isFinite(safeFallback) && Math.abs(safeFallback - real) >= .2) {
+      return encisoClamp(safeFallback, 0, 10);
+    }
+    const direction = Math.random() > .5 ? 1 : -1;
+    let fake = real + direction * encisoRand(1.2, 2.7);
+    fake = encisoClamp(fake, 0, 10);
+    if (Math.abs(fake - real) < .8) fake = encisoClamp(real + direction * 1.5, 0, 10);
+    return fake;
+  }
+
+  function playFinalGradeAnimationExact({ grade, fakeGrade, polygonEl, numberEl, decimals = 1, decimalSeparator = '.', maxGrade = 10 }) {
+    if (!polygonEl || !numberEl) return null;
+
+    const ownedNumberClasses = [
+      'em-grade-number-base',
+      'em-grade-number-visible',
+      'em-grade-number-show',
+      'em-grade-number-counting',
+      'em-grade-number-fake-hit',
+      'em-grade-number-real-lock'
+    ];
+    const ownedPolygonClasses = [
+      'em-grade-polygon-base',
+      'em-grade-polygon-fake-impact',
+      'em-grade-polygon-real-impact'
+    ];
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const real = encisoClamp(Number(grade) || 0, 0, maxGrade);
+    const fake = encisoPickExactFakeGrade(real, fakeGrade);
+    let originalPoints = encisoParseGradePolygonPoints(polygonEl);
+    if (encisoGradePointsAreCollapsed(originalPoints)) {
+      originalPoints = [
+        [21, 29],
+        [128, 26],
+        [124, 101],
+        [23, 104]
+      ];
+    }
+    const center = encisoGetCenterFromGradePoints(originalPoints);
+    let currentValue = 0;
+    let floatingRAF = null;
+    let active = true;
+
+    function stopFloating() {
+      if (floatingRAF) cancelAnimationFrame(floatingRAF);
+      floatingRAF = null;
+    }
+
+    function setScore(value) {
+      currentValue = value;
+      numberEl.textContent = encisoGradeFormat(value, decimals, decimalSeparator);
+    }
+
+    function applyFlatGradeColor(value) {
+      const color = encisoGradeColorByGrade(value);
+      numberEl.style.color = '#ffffff';
+      polygonEl.style.fill = color;
+      polygonEl.style.stroke = 'none';
+      polygonEl.style.filter = 'none';
+    }
+
+    function countTo(target, duration = 900, elastic = false) {
+      const from = currentValue;
+      return new Promise((resolve) => {
+        const start = performance.now();
+        function frame(now) {
+          if (!active) return resolve();
+          const raw = encisoClamp((now - start) / duration, 0, 1);
+          const eased = elastic ? encisoGradeEaseOutElastic(raw) : encisoGradeEaseInOutCubic(raw);
+          const value = from + (target - from) * eased;
+          setScore(encisoClamp(value, 0, maxGrade));
+          if (raw < 1) requestAnimationFrame(frame);
+          else {
+            setScore(target);
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
+    function animatePolygonCascade(targets, onThirdVertexStart) {
+      return new Promise((resolve) => {
+        const durationPerVertex = 760;
+        const delayPerVertex = 210;
+        const totalDuration = durationPerVertex + delayPerVertex * 3;
+        const start = performance.now();
+        let thirdTriggered = false;
+        function frame(now) {
+          if (!active) return resolve();
+          const elapsed = now - start;
+          if (!thirdTriggered && elapsed >= delayPerVertex * 2) {
+            thirdTriggered = true;
+            if (onThirdVertexStart) onThirdVertexStart();
+          }
+          const points = targets.map((target, index) => {
+            const raw = encisoClamp((elapsed - delayPerVertex * index) / durationPerVertex, 0, 1);
+            if (raw <= 0) return center;
+            if (raw >= 1) return target;
+            return encisoGradePointOnBounce(center, target, raw);
+          });
+          encisoSetGradePolygonPoints(polygonEl, points);
+          if (elapsed < totalDuration) requestAnimationFrame(frame);
+          else {
+            encisoSetGradePolygonPoints(polygonEl, targets);
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
+    function startFloating(points) {
+      stopFloating();
+      const floatingBase = points.map((point) => [...point]);
+      const floatStartTime = performance.now();
+      const phases = [0, .8, 1.6, 2.4];
+      const ampX = [5, 6, 5, 6];
+      const ampY = [6, 5, 7, 5];
+      const speedX = [1.05, 1.18, 1.12, 1.22];
+      const speedY = [1, 1.14, 1.2, 1.08];
+      function frame(now) {
+        if (!active || !polygonEl.isConnected) return;
+        const t = (now - floatStartTime) / 1000;
+        const ramp = Math.min(1, t / .75);
+        const floatingPoints = floatingBase.map(([x, y], index) => {
+          const offsetX = ramp * ampX[index] * (Math.sin(t * speedX[index] * 2 + phases[index]) - Math.sin(phases[index]));
+          const offsetY = ramp * ampY[index] * (Math.cos(t * speedY[index] * 2 + phases[index]) - Math.cos(phases[index]));
+          return [x + offsetX, y + offsetY];
+        });
+        encisoSetGradePolygonPoints(polygonEl, floatingPoints);
+        floatingRAF = requestAnimationFrame(frame);
+      }
+      floatingRAF = requestAnimationFrame(frame);
+    }
+
+    async function run() {
+      stopFloating();
+      encisoGradeRemoveClasses(numberEl, ownedNumberClasses);
+      encisoGradeRemoveClasses(polygonEl, ownedPolygonClasses);
+      polygonEl.classList.add('em-grade-polygon-base');
+      numberEl.classList.add('em-grade-number-base');
+      applyFlatGradeColor(real);
+      setScore(0);
+      encisoSetGradePolygonPoints(polygonEl, [center, center, center, center]);
+
+      let fakeSequenceStarted = false;
+      let fakeSequenceResolve;
+      const fakeSequenceDone = new Promise((resolve) => { fakeSequenceResolve = resolve; });
+
+      const startNumberAtThirdVertex = async () => {
+        if (fakeSequenceStarted || !active) return;
+        fakeSequenceStarted = true;
+        numberEl.classList.add('em-grade-number-visible');
+        encisoGradeRestartClass(numberEl, 'em-grade-number-show');
+        await sleep(210);
+        if (!active) return;
+        numberEl.classList.remove('em-grade-number-show');
+        numberEl.classList.add('em-grade-number-counting');
+        await countTo(fake, 820, false);
+        if (!active) return;
+        numberEl.classList.remove('em-grade-number-counting');
+        encisoGradeRestartClass(numberEl, 'em-grade-number-fake-hit');
+        encisoGradeRestartClass(polygonEl, 'em-grade-polygon-fake-impact');
+        await sleep(740);
+        if (!active) return;
+        numberEl.classList.remove('em-grade-number-fake-hit');
+        polygonEl.classList.remove('em-grade-polygon-fake-impact');
+        numberEl.classList.add('em-grade-number-visible');
+        fakeSequenceResolve();
+      };
+
+      await sleep(120);
+      if (!active) return;
+      await animatePolygonCascade(originalPoints, startNumberAtThirdVertex);
+      if (!active) return;
+      startFloating(originalPoints);
+      await fakeSequenceDone;
+      if (!active) return;
+      numberEl.classList.add('em-grade-number-counting');
+      await countTo(real, 980, true);
+      if (!active) return;
+      numberEl.classList.remove('em-grade-number-counting');
+      numberEl.classList.remove('em-grade-number-visible');
+      encisoGradeRestartClass(numberEl, 'em-grade-number-real-lock');
+      encisoGradeRestartClass(polygonEl, 'em-grade-polygon-real-impact');
+    }
+
+    run();
+    return {
+      stop() {
+        active = false;
+        stopFloating();
+      }
+    };
+  }
+
   function encisoStartFinalPolygon(root, payload) {
     const stage = root.querySelector('[data-grade-stage]');
     const polygon = root.querySelector('[data-grade-polygon]');
     const note = root.querySelector('[data-grade-note]');
     const caption = root.querySelector('[data-grade-caption]');
-    if (!stage || !polygon || !note || !caption) return;
+    if (!stage || !polygon || !note) return;
 
-    const CENTER = { x: 68, y: 64 };
-    const BASE_POINTS = [
-      { x: 21, y: 29 },
-      { x: 128, y: 26 },
-      { x: 124, y: 101 },
-      { x: 23, y: 104 }
-    ];
-    const LIMITS = [
-      { minX: 13, maxX: 30, minY: 21, maxY: 39 },
-      { minX: 118, maxX: 138, minY: 21, maxY: 39 },
-      { minX: 114, maxX: 132, minY: 91, maxY: 111 },
-      { minX: 15, maxX: 33, minY: 91, maxY: 111 }
-    ];
-    const OPEN_DURATION = 300;
-    const OPEN_STAGGER = 18;
+    if (root.__encisoFinalGradeAnimation?.stop) root.__encisoFinalGradeAnimation.stop();
 
-    let currentPoints = [CENTER, CENTER, CENTER, CENTER].map((point) => ({ ...point }));
-    const centerPoints = currentPoints.map((point) => ({ ...point }));
-
-    function randomBetween(min, max) {
-      return min + Math.random() * (max - min);
-    }
-
-    function clonePoints(points) {
-      return points.map((point) => ({ ...point }));
-    }
-
-    function createRandomOpenShape() {
-      return BASE_POINTS.map((point, index) => {
-        const limit = LIMITS[index];
-        return {
-          x: encisoClamp(point.x + randomBetween(-6.3, 6.3), limit.minX, limit.maxX),
-          y: encisoClamp(point.y + randomBetween(-5.7, 5.7), limit.minY, limit.maxY)
-        };
-      });
-    }
-
-    function createTinyLivingShapeAround(points, t = 0) {
-      return points.map((point, index) => {
-        const limit = LIMITS[index];
-        return {
-          x: encisoClamp(point.x + Math.sin(t * 1.6 + index * 1.7) * 1.8, limit.minX, limit.maxX),
-          y: encisoClamp(point.y + Math.cos(t * 1.35 + index * 1.45) * 1.35, limit.minY, limit.maxY)
-        };
-      });
-    }
-
-    function animatePolygonTo(targetPoints, options = {}) {
-      const duration = Number(options.duration) || OPEN_DURATION;
-      const stagger = Number(options.stagger) || OPEN_STAGGER;
-      const easing = typeof options.easing === 'function' ? options.easing : encisoEaseOutBack;
-      const onComplete = typeof options.onComplete === 'function' ? options.onComplete : null;
-      const fromPoints = clonePoints(currentPoints);
-      const startTime = performance.now();
-      const totalDuration = duration + stagger * (targetPoints.length - 1);
-      function tick(now) {
-        const elapsed = now - startTime;
-        currentPoints = fromPoints.map((point, index) => {
-          const progress = encisoClamp((elapsed - stagger * index) / duration, 0, 1);
-          const eased = easing(progress);
-          const target = targetPoints[index];
-          return {
-            x: point.x + (target.x - point.x) * eased,
-            y: point.y + (target.y - point.y) * eased
-          };
-        });
-        encisoSetPolygonPoints(polygon, currentPoints);
-        if (elapsed < totalDuration) requestAnimationFrame(tick);
-        else {
-          currentPoints = clonePoints(targetPoints);
-          encisoSetPolygonPoints(polygon, currentPoints);
-          if (onComplete) onComplete();
-        }
-      }
-      requestAnimationFrame(tick);
-    }
-
-    function floatFrame(floatStart, basePoints) {
-      const now = performance.now();
-      const t = (now - floatStart) / 1000;
-      encisoSetPolygonPoints(polygon, createTinyLivingShapeAround(basePoints, t));
-      if (root.isConnected) requestAnimationFrame(() => floatFrame(floatStart, basePoints));
-    }
-
-    encisoSetPolygonPoints(polygon, centerPoints);
     stage.classList.add('active');
-    encisoResetGradeNote(note);
-    stage.classList.remove('score-intro');
-    void stage.offsetWidth;
-    stage.classList.add('score-intro');
-    caption.textContent = '';
+    if (caption) caption.textContent = '';
 
-    const openShape = createRandomOpenShape();
-    animatePolygonTo(openShape, {
-      duration: OPEN_DURATION,
-      stagger: OPEN_STAGGER,
-      easing: encisoEaseOutBack,
-      onComplete: () => {
-        requestAnimationFrame(() => floatFrame(performance.now(), openShape));
-        setTimeout(() => {
-          if (!root.isConnected) return;
-          encisoSetGradeNoteText(note, encisoFormatGrade(payload.fakeGrade), 'fake');
-        }, 180);
-        setTimeout(() => {
-          if (!root.isConnected) return;
-          encisoSetGradeNoteText(note, encisoFormatGrade(payload.finalGrade), 'final');
-          caption.textContent = '';
-        }, 1350);
-      }
+    root.__encisoFinalGradeAnimation = playFinalGradeAnimationExact({
+      grade: payload.finalGrade,
+      fakeGrade: payload.fakeGrade,
+      polygonEl: polygon,
+      numberEl: note,
+      decimals: 1,
+      decimalSeparator: '.',
+      maxGrade: 10
     });
   }
 
@@ -6913,7 +7115,7 @@
                       <stop offset="0%" stop-color="#fff4b8"></stop><stop offset="22%" stop-color="#f7c948"></stop><stop offset="48%" stop-color="#ffffff"></stop><stop offset="70%" stop-color="#d89e00"></stop><stop offset="100%" stop-color="#ffd86b"></stop>
                     </linearGradient>
                   </defs>
-                  <polygon data-grade-polygon points="68,64 68,64 68,64 68,64"></polygon>
+                  <polygon data-grade-polygon points="21,29 128,26 124,101 23,104"></polygon>
                 </svg>
                 <div class="enciso-grade-note" data-grade-note>?</div>
               </div>
@@ -7777,7 +7979,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.243', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.244', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
