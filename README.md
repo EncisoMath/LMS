@@ -1,10 +1,11 @@
-## v0.24.232
+## v0.24.234
 
 - Ajuste puntual solo en pantalla final de resultados.
-- Se agregó slider porcentual para mover el hero en posición Y.
-- Se agregó una pestaña `Botones` en la tuerquita con sliders para ajustar la altura de `Repetir animación` y `Continuar`.
+- Se agregaron sliders porcentuales de posición Y para los contenedores `Puntaje`, `Ranking`, `Preguntas/Resumen` y `Botones`.
+- Se agregó slider `Altura contenedor` para controlar el tamaño del bloque `enciso-actions-section.show`.
+- Los botones `Repetir animación` y `Continuar` se normalizaron al estilo/tamaño del botón `Enviar respuesta` usado en pregunta abierta/Ordenar: fondo `#111827`, radio 6px, borde sutil y altura base responsive `clamp(34px, 5.2dvh, 44px)`.
 - No se tocaron inicio del quiz, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.232`.
+- Versión/cache busting actualizado a `0.24.234`.
 
 
 ## v0.24.230
@@ -232,6 +233,12 @@
 - Se mantiene la posición inicial del contador en Y `220px` y zoom `55%`, con clave nueva `encisomath:quizTransitionScoreTune:v0.24.192` para no arrastrar calibraciones viejas.
 - No se tocaron ranking/podio, countdown visual, música random por pregunta, tipos de pregunta, Rockstars, Clases, Estudiantes ni datos base.
 - Versión/cache busting actualizado a `0.24.192`.
+
+
+Cambios v0.24.234:
+- Se agregaron sliders porcentuales de posición Y para Puntaje, Ranking, Preguntas/Resumen y Botones.
+- Se agregó slider para cambiar la altura del contenedor `enciso-actions-section.show`.
+- Los botones Repetir animación/Continuar se ajustaron para tomar el mismo estilo/tamaño base del botón Enviar respuesta de pregunta abierta/Ordenar.
 
 Validación:
 

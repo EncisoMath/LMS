@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.232';
+  const APP_VERSION = '0.24.234';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6336,7 +6336,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.231';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.234';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 9,
     heroX: 0,
@@ -6348,7 +6348,8 @@
     heroMessageY: 0,
     scoreHeight: 22,
     scoreX: 0,
-    scoreZoom: 96,
+    scoreY: 0,
+    scoreZoom: 100,
     scoreLabelX: 0,
     scoreLabelY: 0,
     scoreNumberX: 0,
@@ -6361,11 +6362,15 @@
     gradeNoteY: 0,
     podiumHeight: 44,
     podiumX: 0,
-    podiumZoom: 96,
+    podiumY: 0,
+    podiumZoom: 100,
     podiumStarsY: 0,
     reviewHeight: 10,
     reviewX: 0,
-    reviewZoom: 96,
+    reviewY: 0,
+    reviewZoom: 100,
+    actionsHeight: 7,
+    actionsY: 0,
     replayButtonHeight: 100,
     continueButtonHeight: 100
   };
@@ -6390,6 +6395,7 @@
       fields: [
         ['scoreHeight', 'Altura'],
         ['scoreX', 'Posición X'],
+        ['scoreY', 'Posición Y'],
         ['scoreZoom', 'Zoom'],
         ['scoreLabelX', 'Posición X texto'],
         ['scoreLabelY', 'Posición Y texto'],
@@ -6403,12 +6409,13 @@
         ['gradeNoteY', 'Posición Y número nota']
       ]
     },
-    { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
-    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewZoom', 'Zoom']] },
-    { key: 'buttons', label: 'Botones', fields: [['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] }
+    { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumY', 'Posición Y'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
+    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewY', 'Posición Y'], ['reviewZoom', 'Zoom']] },
+    { key: 'buttons', label: 'Botones', fields: [['actionsHeight', 'Altura contenedor'], ['actionsY', 'Posición Y'], ['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] }
   ];
 
   function encisoFinalTuneFieldMeta(key) {
+    if (key === 'actionsHeight') return { min: 4, max: 18, step: 1, unit: '%' };
     if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 55, max: 120, step: 1, unit: '%' };
     if (key.endsWith('Height')) return { min: 6, max: 52, step: 1, unit: '%' };
     if (key === 'heroZoom') return { min: 55, max: 190, step: 1, unit: '%' };
@@ -6451,10 +6458,14 @@
     root.style.setProperty('--enciso-score-row', `${safe.scoreHeight}fr`);
     root.style.setProperty('--enciso-podium-row', `${safe.podiumHeight}fr`);
     root.style.setProperty('--enciso-review-row', `${safe.reviewHeight}fr`);
+    root.style.setProperty('--enciso-actions-row', `${safe.actionsHeight}fr`);
     root.style.setProperty('--enciso-hero-x', `${safe.heroX}%`);
     root.style.setProperty('--enciso-score-x', `${safe.scoreX}%`);
+    root.style.setProperty('--enciso-score-y', `${safe.scoreY}%`);
     root.style.setProperty('--enciso-podium-x', `${safe.podiumX}%`);
+    root.style.setProperty('--enciso-podium-y', `${safe.podiumY}%`);
     root.style.setProperty('--enciso-review-x', `${safe.reviewX}%`);
+    root.style.setProperty('--enciso-review-y', `${safe.reviewY}%`);
     root.style.setProperty('--enciso-hero-y', `${safe.heroY}%`);
     root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
     root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
@@ -6477,6 +6488,11 @@
     root.style.setProperty('--enciso-podium-stars-y', `${safe.podiumStarsY}%`);
     root.style.setProperty('--enciso-replay-button-height', `${safe.replayButtonHeight}%`);
     root.style.setProperty('--enciso-continue-button-height', `${safe.continueButtonHeight}%`);
+    root.style.setProperty('--enciso-replay-button-scale', `${safe.replayButtonHeight / 100}`);
+    root.style.setProperty('--enciso-continue-button-scale', `${safe.continueButtonHeight / 100}`);
+    root.style.setProperty('--enciso-replay-button-height-live', `clamp(${(34 * safe.replayButtonHeight / 100).toFixed(2)}px, ${(5.2 * safe.replayButtonHeight / 100).toFixed(2)}dvh, ${(44 * safe.replayButtonHeight / 100).toFixed(2)}px)`);
+    root.style.setProperty('--enciso-continue-button-height-live', `clamp(${(34 * safe.continueButtonHeight / 100).toFixed(2)}px, ${(5.2 * safe.continueButtonHeight / 100).toFixed(2)}dvh, ${(44 * safe.continueButtonHeight / 100).toFixed(2)}px)`);
+    root.style.setProperty('--enciso-actions-y', `${safe.actionsY}%`);
     return safe;
   }
 
@@ -7493,7 +7509,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.232', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.234', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

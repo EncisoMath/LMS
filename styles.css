@@ -18494,3 +18494,135 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-co
   height: var(--enciso-continue-button-height) !important;
   align-self: center !important;
 }
+
+/* v0.24.233 - corrección puntual de centrado y ancho común en resultados. Alcance: solo fase results. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .quiz-fullscreen-content {
+  justify-items: center !important;
+  align-items: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+  box-sizing: border-box !important;
+  justify-self: center !important;
+  align-self: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  left: auto !important;
+  right: auto !important;
+  max-width: 100vw !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-card,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-self: stretch !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  transform-origin: center center !important;
+}
+
+/* v0.24.234 - ajustes solicitados solo para resultados finales:
+   sliders Y de secciones, altura real de enciso-actions-section y botones estilo Enviar respuesta. */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results {
+  --enciso-score-y: 0%;
+  --enciso-podium-y: 0%;
+  --enciso-review-y: 0%;
+  --enciso-actions-y: 0%;
+  --enciso-actions-row: 7fr;
+  --enciso-replay-button-scale: 1;
+  --enciso-continue-button-scale: 1;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-score-card {
+  transform: translate(var(--enciso-score-x), var(--enciso-score-y)) scale(var(--enciso-score-zoom)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-podium-section {
+  transform: translate(var(--enciso-podium-x), var(--enciso-podium-y)) scale(var(--enciso-podium-zoom)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-review-section {
+  transform: translate(var(--enciso-review-x), var(--enciso-review-y)) scale(var(--enciso-review-zoom)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section.show {
+  transform: translateY(var(--enciso-actions-y)) !important;
+  transform-origin: center center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  align-items: center !important;
+  align-content: center !important;
+  justify-items: stretch !important;
+  padding: 0 !important;
+  gap: min(1.2vw, .65svh) !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn:hover,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn:hover,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn:focus,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn:focus,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn:focus-visible,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn:focus-visible {
+  -webkit-tap-highlight-color: transparent !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  border-radius: 6px !important;
+  background: #111827 !important;
+  background-color: #111827 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset !important;
+  color: #ffffff !important;
+  filter: none !important;
+  opacity: 1 !important;
+  outline: none !important;
+  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  font-size: min(1.75svh, 3.35vw, 14px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+  padding: 0 min(1.2vw, .75svh) !important;
+  cursor: pointer !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn {
+  height: var(--enciso-replay-button-height-live, clamp(34px, 5.2dvh, 44px)) !important;
+  align-self: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn {
+  height: var(--enciso-continue-button-height-live, clamp(34px, 5.2dvh, 44px)) !important;
+  align-self: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-replay-btn:active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset !important;
+}
