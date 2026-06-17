@@ -1,12 +1,10 @@
-## v0.24.258
+## v0.24.259
 
-Cambios v0.24.258:
-- Reemplazo visual únicamente del hero superior durante la pregunta del quiz.
-- Hero flat, sin bordes, sombras, mallas ni degradados.
-- Se agregan 5 figuras geométricas grandes animadas dentro del hero, detrás del texto y del countdown.
-- El color del hero y del número del countdown toma el mismo color de la banda ITEM de la transición anterior.
-- El polígono/contenedor visual del countdown se agranda levemente sin moverlo ni cambiar su lógica.
-- No se tocaron preguntas, tipos, feedback, transición entre ítems, resultados, ranking, podio, música, puntajes ni lógica de respuestas.
-- Version/cache busting actualizado a 0.24.258.
+Corrección puntual sobre v0.24.258:
 
-Versión 0.24.258: hero live del quiz con estilo flat y color sincronizado con transición ITEM.
+- Se corrigió el enganche visual del hero superior durante la pregunta para que el estilo flat nuevo sí sobreescriba el hero anterior.
+- Se blindaron con selectores específicos el fondo flat, la eliminación de malla/sombras/bordes y la capa de 5 figuras detrás del texto y countdown.
+- Se mantiene el color sincronizado con la transición ITEM X y el número del countdown con ese mismo color.
+- No se tocaron preguntas, tipos de pregunta, feedback, transiciones, resultados, ranking, podio, música, puntajes ni lógica de respuestas.
+
+Versión/cache busting actualizado a 0.24.259.

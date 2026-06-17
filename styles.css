@@ -21139,3 +21139,80 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .
 .em-quiz-hero-live .countdown-poly.quiz-countdown-poly [data-quiz-moving-polygon] {
   fill: #ffffff !important;
 }
+
+
+/* =========================================================
+   v0.24.259 - Fix hero quiz live: override hero real con alta especificidad
+   Solo corrige el enganche visual del hero de pregunta.
+========================================================= */
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live {
+  background: var(--em-hero-bg, var(--em-current-item-color, #24b49a)) !important;
+  background-color: var(--em-hero-bg, var(--em-current-item-color, #24b49a)) !important;
+  background-image: none !important;
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  position: relative !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live > .em-quiz-hero-shapes-layer,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live > .em-quiz-hero-shapes-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live > *:not(.em-quiz-hero-shapes-layer),
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live > *:not(.em-quiz-hero-shapes-layer) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live [data-quiz-countdown-poly],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live [data-quiz-countdown-poly] {
+  transform-origin: center center !important;
+  scale: 1.08 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly .countdown-poly__number,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.danger .countdown-poly__number,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-answered .countdown-poly__number,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-timeup .countdown-poly__number,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live [data-quiz-countdown-number],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly .countdown-poly__number,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.danger .countdown-poly__number,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-answered .countdown-poly__number,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-timeup .countdown-poly__number,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live [data-quiz-countdown-number] {
+  color: var(--em-hero-countdown-color, var(--em-current-item-color, #24b49a)) !important;
+  fill: var(--em-hero-countdown-color, var(--em-current-item-color, #24b49a)) !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly [data-quiz-moving-polygon],
+.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown.em-quiz-hero-live .countdown-poly.quiz-countdown-poly [data-quiz-moving-polygon] {
+  fill: #ffffff !important;
+}
