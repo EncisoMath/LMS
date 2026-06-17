@@ -1,3 +1,11 @@
+## v0.24.227
+
+- Pantalla final de resultados ajustada para encajar en el viewport completo sin scroll de página, escalando vertical y horizontalmente con `svh`, `vw`, porcentajes y grillas proporcionales.
+- La pantalla final ahora reparte hero, tarjeta de puntaje, podio, resumen y acciones en filas proporcionales a la altura de pantalla; el resumen por pregunta pasa a grilla 5x2 para evitar scroll horizontal en los 10 ítems.
+- Los botones `Repetir animación` y `Continuar` quedan en una sola fila para ahorrar altura.
+- Alcance limitado a la fase final `results`; no se tocaron anuncio de inicio, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.227`.
+
 ## v0.24.226
 - Corrección enfocada únicamente en la pantalla final `enciso-final-results`: se ajustó el responsive para evitar recortes/overflow horizontal en móviles y pantallas pequeñas, usando anchos con `box-sizing`, `clamp()` y tamaños adaptativos para banda, tarjeta de puntaje, polígono, estadísticas, podio y resumen por pregunta.
 - Se agregó botón `Repetir animación` en la pantalla final para volver a ejecutar toda la animación de resultados sin reiniciar el quiz ni tocar el flujo previo.
