@@ -19577,3 +19577,48 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-
   font: 950 12px 'Montserrat', system-ui, sans-serif;
   padding: 10px;
 }
+
+
+/* v0.24.246 - resultados: fondos metalizados de nota alta y poligono con mismos rangos de la banda */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-silver {
+  --enciso-state-band-bg: linear-gradient(115deg, #697284 0%, #b4becd 11%, #f7fbff 22%, #9aa5b5 34%, #e9eef7 47%, #ffffff 55%, #818b9b 69%, #d8e0ec 84%, #6f7a89 100%);
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold {
+  --enciso-state-band-bg: linear-gradient(115deg, #8b5a00 0%, #c78600 10%, #f7c948 22%, #fff2a8 36%, #ffffff 48%, #e0a600 63%, #b77900 76%, #ffd86b 90%, #9c6a00 100%);
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-silver .enciso-result-band {
+  background: linear-gradient(115deg, #697284 0%, #b4becd 11%, #f7fbff 22%, #9aa5b5 34%, #e9eef7 47%, #ffffff 55%, #818b9b 69%, #d8e0ec 84%, #6f7a89 100%) !important;
+  background-color: #b4becd !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold .enciso-result-band {
+  background: linear-gradient(115deg, #8b5a00 0%, #c78600 10%, #f7c948 22%, #fff2a8 36%, #ffffff 48%, #e0a600 63%, #b77900 76%, #ffd86b 90%, #9c6a00 100%) !important;
+  background-color: #f7c948 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-red .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-red .em-grade-polygon-base {
+  fill: #e21b3c;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-orange .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-orange .em-grade-polygon-base {
+  fill: #ff7a00;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .em-grade-polygon-base {
+  fill: #58cc02;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-silver .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-silver .em-grade-polygon-base {
+  fill: url(#silverPolyGradient);
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold .em-grade-polygon-base {
+  fill: url(#goldPolyGradient);
+}

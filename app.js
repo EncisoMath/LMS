@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.245';
+  const APP_VERSION = '0.24.246';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5972,7 +5972,7 @@
     silver: {
       color: '#d7dde8',
       glow: 'rgba(215,221,232,.55)',
-      bandBg: 'linear-gradient(135deg, #8d98a8 0%, #f8fbff 22%, #bfc7d5 45%, #ffffff 58%, #7f8898 78%, #e7ecf5 100%)',
+      bandBg: 'linear-gradient(115deg, #697284 0%, #b4becd 11%, #f7fbff 22%, #9aa5b5 34%, #e9eef7 47%, #ffffff 55%, #818b9b 69%, #d8e0ec 84%, #6f7a89 100%)',
       textColor: '#697284',
       noteColor: '#697284',
       fakeNoteColor: '#697284',
@@ -5989,7 +5989,7 @@
     gold: {
       color: '#f7c948',
       glow: 'rgba(247,201,72,.62)',
-      bandBg: 'linear-gradient(135deg, #b77900 0%, #f7c948 22%, #fff4b8 42%, #ffffff 52%, #d89e00 72%, #ffd86b 100%)',
+      bandBg: 'linear-gradient(115deg, #8b5a00 0%, #c78600 10%, #f7c948 22%, #fff2a8 36%, #ffffff 48%, #e0a600 63%, #b77900 76%, #ffd86b 90%, #9c6a00 100%)',
       textColor: '#94731c',
       noteColor: '#94731c',
       fakeNoteColor: '#94731c',
@@ -6142,10 +6142,9 @@
 
   function encisoGradeColorByGrade(value) {
     const n = Number(value) || 0;
-    if (n >= 9) return '#58cc02';
-    if (n >= 7) return '#d89e00';
-    if (n >= 6) return '#ff7900';
-    return '#ed174b';
+    const stateKey = encisoGetResultStateKeyByGrade(n);
+    const stateInfo = ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
+    return stateInfo.polygonFill || stateInfo.color || '#e21b3c';
   }
 
   function encisoParseGradePolygonPoints(polygonEl) {
@@ -6279,10 +6278,12 @@
     }
 
     function applyFlatGradeColor(value) {
-      const color = encisoGradeColorByGrade(value);
+      const fill = encisoGradeColorByGrade(value);
       numberEl.style.color = '#ffffff';
-      polygonEl.style.fill = color;
+      polygonEl.style.fill = fill;
+      polygonEl.setAttribute('fill', fill);
       polygonEl.style.stroke = 'none';
+      polygonEl.setAttribute('stroke', 'none');
       polygonEl.style.filter = 'none';
     }
 
@@ -6719,7 +6720,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.240';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.246';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -6744,11 +6745,11 @@
     scoreNumberX: 3,
     scoreNumberY: -27,
     gradePolyZoom: 100,
-    gradePolyX: 0,
+    gradePolyX: 10,
     gradePolyY: -16,
-    gradeNoteSize: 102,
-    gradeNoteX: 0,
-    gradeNoteY: -50,
+    gradeNoteSize: 90,
+    gradeNoteX: 7,
+    gradeNoteY: -40,
     podiumHeight: 25,
     podiumX: 0,
     podiumY: -18,
@@ -7254,10 +7255,10 @@
                 <svg class="enciso-grade-poly-svg" viewBox="0 0 148 128" aria-hidden="true">
                   <defs>
                     <linearGradient id="silverPolyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#ffffff"></stop><stop offset="22%" stop-color="#bfc7d5"></stop><stop offset="45%" stop-color="#f8fbff"></stop><stop offset="68%" stop-color="#8d98a8"></stop><stop offset="100%" stop-color="#e7ecf5"></stop>
+                      <stop offset="0%" stop-color="#697284"></stop><stop offset="11%" stop-color="#b4becd"></stop><stop offset="22%" stop-color="#f7fbff"></stop><stop offset="34%" stop-color="#9aa5b5"></stop><stop offset="47%" stop-color="#e9eef7"></stop><stop offset="55%" stop-color="#ffffff"></stop><stop offset="69%" stop-color="#818b9b"></stop><stop offset="84%" stop-color="#d8e0ec"></stop><stop offset="100%" stop-color="#6f7a89"></stop>
                     </linearGradient>
                     <linearGradient id="goldPolyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#fff4b8"></stop><stop offset="22%" stop-color="#f7c948"></stop><stop offset="48%" stop-color="#ffffff"></stop><stop offset="70%" stop-color="#d89e00"></stop><stop offset="100%" stop-color="#ffd86b"></stop>
+                      <stop offset="0%" stop-color="#8b5a00"></stop><stop offset="10%" stop-color="#c78600"></stop><stop offset="22%" stop-color="#f7c948"></stop><stop offset="36%" stop-color="#fff2a8"></stop><stop offset="48%" stop-color="#ffffff"></stop><stop offset="63%" stop-color="#e0a600"></stop><stop offset="76%" stop-color="#b77900"></stop><stop offset="90%" stop-color="#ffd86b"></stop><stop offset="100%" stop-color="#9c6a00"></stop>
                     </linearGradient>
                   </defs>
                   <polygon data-grade-polygon points="21,29 128,26 124,101 23,104"></polygon>
@@ -8124,7 +8125,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.245', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.246', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
