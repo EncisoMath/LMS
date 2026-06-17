@@ -1,11 +1,12 @@
-## v0.24.257
+## v0.24.258
 
-Cambios v0.24.257:
-- Pantalla de transición sin padding en contenedores de transición.
-- Texto de la banda de información del quiz ajustado con tamaños responsivos para no cortarse.
-- Avance desde transición manual mediante botón Continuar; se eliminó el avance automático.
-- Se quitó la barra/countdown inferior de transición.
-- Espera de banda de ítems reducida a 2.2 segundos; info inicial del quiz conserva 3 segundos.
-- Version/cache busting actualizado a 0.24.257.
+Cambios v0.24.258:
+- Reemplazo visual únicamente del hero superior durante la pregunta del quiz.
+- Hero flat, sin bordes, sombras, mallas ni degradados.
+- Se agregan 5 figuras geométricas grandes animadas dentro del hero, detrás del texto y del countdown.
+- El color del hero y del número del countdown toma el mismo color de la banda ITEM de la transición anterior.
+- El polígono/contenedor visual del countdown se agranda levemente sin moverlo ni cambiar su lógica.
+- No se tocaron preguntas, tipos, feedback, transición entre ítems, resultados, ranking, podio, música, puntajes ni lógica de respuestas.
+- Version/cache busting actualizado a 0.24.258.
 
-Versión 0.24.257: reemplazo visual de banda de feedback del quiz.
+Versión 0.24.258: hero live del quiz con estilo flat y color sincronizado con transición ITEM.

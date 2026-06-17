@@ -20496,7 +20496,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition.quiz-tr
 }
 
 /* =========================================================
-   ENCISOMATH - BANDA DE FEEDBACK QUIZ v0.24.257
+   ENCISOMATH - BANDA DE FEEDBACK QUIZ v0.24.258
    Reemplazo visual para Correcto / Incorrecto / Enviado / Tiempo.
    NO modifica tamaño ni posición del contenedor actual.
 ========================================================= */
@@ -20955,4 +20955,187 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition.quiz-tr
       rotate(var(--r5))
       scale(0.86);
   }
+}
+
+/* =========================================================
+   ENCISOMATH - HERO DEL QUIZ EN VIVO v0.24.258
+   Flat total + 5 figuras grandes animadas.
+   NO modifica tamaño ni posición del contenedor actual.
+========================================================= */
+
+.em-quiz-hero-live {
+  --em-hero-bg: var(--em-current-item-color, #24b49a);
+  --em-hero-shape-color: rgba(0, 0, 0, 0.28);
+  --em-hero-countdown-color: var(--em-current-item-color, #24b49a);
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background: var(--em-hero-bg) !important;
+  background-color: var(--em-hero-bg) !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.em-quiz-hero-live::before,
+.em-quiz-hero-live::after,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .em-quiz-hero-live::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) .em-quiz-hero-live::after,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .em-quiz-hero-live::before,
+.quiz-fullscreen-layer:not(.quiz-phase-transition) .em-quiz-hero-live::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+.em-quiz-hero-shapes-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.em-quiz-hero-live > *:not(.em-quiz-hero-shapes-layer) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.em-hero-shape {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 0;
+  width: var(--size);
+  height: var(--size);
+  opacity: var(--alpha-low);
+  pointer-events: none;
+  transform-origin: center;
+  will-change: transform, opacity;
+  animation: emHeroFiguraFlotanteContinua var(--duration) var(--delay) ease-in-out infinite;
+}
+
+.em-hero-shape.circulo {
+  border-radius: 50%;
+  background: var(--em-hero-shape-color);
+}
+
+.em-hero-shape.cuadrado {
+  border-radius: 12px;
+  background: var(--em-hero-shape-color);
+}
+
+.em-hero-shape.triangulo {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: calc(var(--size) / 2) solid transparent;
+  border-right: calc(var(--size) / 2) solid transparent;
+  border-bottom: var(--size) solid var(--em-hero-shape-color);
+}
+
+.em-hero-shape.equis {
+  background: transparent;
+}
+
+.em-hero-shape.equis::before,
+.em-hero-shape.equis::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: max(12px, calc(var(--size) * 0.18));
+  border-radius: 999px;
+  background: var(--em-hero-shape-color);
+  transform-origin: center;
+}
+
+.em-hero-shape.equis::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.em-hero-shape.equis::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+@keyframes emHeroFiguraFlotanteContinua {
+  0% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r0))
+      scale(0.90);
+  }
+  16% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x1), var(--y1))
+      rotate(var(--r1))
+      scale(1.06);
+  }
+  38% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x2), var(--y2))
+      rotate(var(--r2))
+      scale(0.96);
+  }
+  62% {
+    opacity: var(--alpha);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x3), var(--y3))
+      rotate(var(--r3))
+      scale(1.10);
+  }
+  84% {
+    opacity: var(--alpha-mid);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x4), var(--y4))
+      rotate(var(--r4))
+      scale(1.00);
+  }
+  100% {
+    opacity: var(--alpha-low);
+    transform:
+      translate(-50%, -50%)
+      translate(var(--x0), var(--y0))
+      rotate(var(--r5))
+      scale(0.90);
+  }
+}
+
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly,
+.em-quiz-hero-live [data-quiz-countdown-poly] {
+  transform-origin: center center !important;
+  scale: 1.08;
+}
+
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly .countdown-poly__number,
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.danger .countdown-poly__number,
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-answered .countdown-poly__number,
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly.is-timeup .countdown-poly__number,
+.em-quiz-hero-live [data-quiz-countdown-number],
+.em-quiz-hero-live svg text,
+.em-quiz-hero-live svg .quiz-countdown-number,
+.em-quiz-hero-live svg .countdown-number {
+  color: var(--em-hero-countdown-color) !important;
+  fill: var(--em-hero-countdown-color) !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.em-quiz-hero-live .countdown-poly.quiz-countdown-poly [data-quiz-moving-polygon] {
+  fill: #ffffff !important;
 }

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.257';
+  const APP_VERSION = '0.24.258';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4241,9 +4241,22 @@
       band.appendChild(figurasLayer);
       band.appendChild(copy);
 
-      prepareBandVisuals(band, figurasLayer, { avoidColor });
+      const chosenColor = prepareBandVisuals(band, figurasLayer, { avoidColor });
+
+      if (type !== 'band-quiz') {
+        setEncisoCurrentItemColor(chosenColor);
+      }
 
       return band;
+    }
+
+    function setEncisoCurrentItemColor(color) {
+      const safeColor = COLORES.includes(String(color || '').trim()) ? String(color).trim() : '#24b49a';
+      window.EncisoCurrentItemColor = safeColor;
+      document.documentElement.style.setProperty('--em-current-item-color', safeColor);
+      if (window.EncisoQuizHeroLive && typeof window.EncisoQuizHeroLive.setColor === 'function') {
+        window.EncisoQuizHeroLive.setColor(safeColor);
+      }
     }
 
     function prepareBandVisuals(band, figurasLayer, { avoidColor = '' } = {}) {
@@ -4259,6 +4272,8 @@
       aplicarDireccionEntrada(band, entrada);
       aplicarDireccionSalida(band, salida);
       crearFiguras(figurasLayer);
+
+      return color;
     }
 
     function aplicarDireccionEntrada(band, dir) {
@@ -4474,6 +4489,191 @@
       playQuizIntroThenItem,
       stop
     };
+  })();
+
+
+  /* =========================================================
+     ENCISOMATH - HERO DEL QUIZ EN VIVO
+     Flat + 5 figuras grandes animadas.
+     Usa el mismo color del ITEM de la transicion anterior.
+  ========================================================= */
+  (function setupEncisoQuizHeroLive() {
+    const FIGURAS_TOTAL = 5;
+    const VELOCIDAD_FIGURAS = 0.4;
+    const COLORES_ITEM = ['#e21b3c', '#ff7a00', '#EBB513', '#24b49a', '#54c600'];
+    const TIPOS_BASE = ['circulo', 'cuadrado', 'triangulo', 'equis'];
+
+    function random(min, max) { return Math.random() * (max - min) + min; }
+    function randomInt(min, max) { return Math.floor(random(min, max + 1)); }
+
+    function shuffle(array) {
+      const copia = [...array];
+      for (let i = copia.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copia[i], copia[j]] = [copia[j], copia[i]];
+      }
+      return copia;
+    }
+
+    function construirListaTipos(cantidad) {
+      const lista = [];
+      while (lista.length < cantidad) lista.push(...shuffle(TIPOS_BASE));
+      return lista.slice(0, cantidad);
+    }
+
+    function normalizarColor(color) {
+      const value = String(color || '').trim();
+      return COLORES_ITEM.includes(value) ? value : '#24b49a';
+    }
+
+    function oscurecerColor(hex, factor) {
+      const clean = String(hex || '').replace('#', '');
+      if (clean.length !== 6) return 'rgba(0, 0, 0, 0.28)';
+      const r = parseInt(clean.slice(0, 2), 16);
+      const g = parseInt(clean.slice(2, 4), 16);
+      const b = parseInt(clean.slice(4, 6), 16);
+      if (![r, g, b].every(Number.isFinite)) return 'rgba(0, 0, 0, 0.28)';
+      const nr = Math.max(0, Math.round(r * factor));
+      const ng = Math.max(0, Math.round(g * factor));
+      const nb = Math.max(0, Math.round(b * factor));
+      return `rgb(${nr}, ${ng}, ${nb})`;
+    }
+
+    function resolveHero(root) {
+      if (root instanceof HTMLElement) return root;
+      if (typeof root === 'string') return document.querySelector(root);
+      return document.querySelector('.em-quiz-hero-live');
+    }
+
+    function ensureHero(root) {
+      const hero = resolveHero(root);
+      if (!hero) return null;
+      hero.classList.add('em-quiz-hero-live');
+      const computed = window.getComputedStyle(hero);
+      if (computed.position === 'static') hero.style.position = 'relative';
+      return hero;
+    }
+
+    function ensureLayer(hero) {
+      if (!hero) return null;
+      let layer = hero.querySelector(':scope > .em-quiz-hero-shapes-layer');
+      if (!layer) {
+        layer = document.createElement('div');
+        layer.className = 'em-quiz-hero-shapes-layer';
+        layer.setAttribute('aria-hidden', 'true');
+        hero.insertBefore(layer, hero.firstChild);
+      }
+      return layer;
+    }
+
+    function posicionDistribuida(index) {
+      const zonas = [
+        { xMin: 6, xMax: 18, yMin: 12, yMax: 34 },
+        { xMin: 24, xMax: 40, yMin: 50, yMax: 84 },
+        { xMin: 44, xMax: 58, yMin: 8, yMax: 30 },
+        { xMin: 64, xMax: 78, yMin: 46, yMax: 82 },
+        { xMin: 84, xMax: 96, yMin: 14, yMax: 40 }
+      ];
+      const zona = zonas[index % zonas.length];
+      return { x: random(zona.xMin, zona.xMax), y: random(zona.yMin, zona.yMax) };
+    }
+
+    function crearFiguras(hero) {
+      const layer = ensureLayer(hero);
+      if (!layer) return;
+      layer.innerHTML = '';
+      const listaTipos = construirListaTipos(FIGURAS_TOTAL);
+      for (let i = 0; i < FIGURAS_TOTAL; i += 1) {
+        const figura = document.createElement('span');
+        const tipo = listaTipos[i];
+        figura.className = `em-hero-shape ${tipo}`;
+        const pos = posicionDistribuida(i);
+        const size = randomInt(68, 128);
+        const alpha = random(0.34, 0.54);
+        const alphaLow = Math.max(0.22, alpha * 0.72);
+        const alphaMid = Math.max(0.28, alpha * 0.88);
+        const baseDuration = random(10, 14);
+        const duration = baseDuration / VELOCIDAD_FIGURAS;
+        const delay = -(random(0, duration));
+        const fuerzaX = random(20, 54);
+        const fuerzaY = random(8, 20);
+        const x0 = random(-8, 8);
+        const y0 = random(-5, 5);
+        const x1 = random(-fuerzaX, fuerzaX);
+        const y1 = random(-fuerzaY, fuerzaY);
+        const x2 = random(-fuerzaX * 1.08, fuerzaX * 1.08);
+        const y2 = random(-fuerzaY * 1.08, fuerzaY * 1.08);
+        const x3 = random(-fuerzaX * 1.20, fuerzaX * 1.20);
+        const y3 = random(-fuerzaY * 1.20, fuerzaY * 1.20);
+        const x4 = random(-fuerzaX, fuerzaX);
+        const y4 = random(-fuerzaY, fuerzaY);
+        const r0 = randomInt(-80, 80);
+        const r1 = randomInt(80, 220);
+        const r2 = randomInt(220, 420);
+        const r3 = randomInt(420, 650);
+        const r4 = randomInt(650, 860);
+        const r5 = r0 + 360;
+
+        figura.style.setProperty('--x', `${pos.x.toFixed(1)}%`);
+        figura.style.setProperty('--y', `${pos.y.toFixed(1)}%`);
+        figura.style.setProperty('--size', `${size}px`);
+        figura.style.setProperty('--alpha', alpha.toFixed(2));
+        figura.style.setProperty('--alpha-low', alphaLow.toFixed(2));
+        figura.style.setProperty('--alpha-mid', alphaMid.toFixed(2));
+        figura.style.setProperty('--duration', `${duration.toFixed(2)}s`);
+        figura.style.setProperty('--delay', `${delay.toFixed(2)}s`);
+        figura.style.setProperty('--x0', `${x0.toFixed(1)}px`);
+        figura.style.setProperty('--y0', `${y0.toFixed(1)}px`);
+        figura.style.setProperty('--x1', `${x1.toFixed(1)}px`);
+        figura.style.setProperty('--y1', `${y1.toFixed(1)}px`);
+        figura.style.setProperty('--x2', `${x2.toFixed(1)}px`);
+        figura.style.setProperty('--y2', `${y2.toFixed(1)}px`);
+        figura.style.setProperty('--x3', `${x3.toFixed(1)}px`);
+        figura.style.setProperty('--y3', `${y3.toFixed(1)}px`);
+        figura.style.setProperty('--x4', `${x4.toFixed(1)}px`);
+        figura.style.setProperty('--y4', `${y4.toFixed(1)}px`);
+        figura.style.setProperty('--r0', `${r0}deg`);
+        figura.style.setProperty('--r1', `${r1}deg`);
+        figura.style.setProperty('--r2', `${r2}deg`);
+        figura.style.setProperty('--r3', `${r3}deg`);
+        figura.style.setProperty('--r4', `${r4}deg`);
+        figura.style.setProperty('--r5', `${r5}deg`);
+        layer.appendChild(figura);
+      }
+    }
+
+    function setColor(color, root) {
+      const finalColor = normalizarColor(color);
+      const shapeColor = oscurecerColor(finalColor, 0.55);
+      window.EncisoCurrentItemColor = finalColor;
+      document.documentElement.style.setProperty('--em-current-item-color', finalColor);
+      const hero = ensureHero(root);
+      if (!hero) return;
+      hero.style.setProperty('--em-hero-bg', finalColor);
+      hero.style.setProperty('--em-hero-countdown-color', finalColor);
+      hero.style.setProperty('--em-hero-shape-color', shapeColor);
+    }
+
+    function init(root) {
+      const hero = ensureHero(root);
+      if (!hero) return;
+      const currentColor = window.EncisoCurrentItemColor || getComputedStyle(document.documentElement).getPropertyValue('--em-current-item-color') || '#24b49a';
+      setColor(currentColor, hero);
+      crearFiguras(hero);
+    }
+
+    function refresh(root) {
+      const hero = ensureHero(root);
+      if (!hero) return;
+      crearFiguras(hero);
+    }
+
+    window.EncisoQuizHeroLive = { init, refresh, setColor };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hero = document.querySelector('.em-quiz-hero-live');
+      if (hero) init(hero);
+    });
   })();
 
 
@@ -6545,7 +6745,8 @@
     layer.innerHTML = `
       <div class="quiz-fullscreen-bg" aria-hidden="true"></div>
       ${phase !== 'confirm' && phase !== 'intro' ? quizSecurityWatermarkHTML() : ''}
-      ${showTop ? `<div class="quiz-fullscreen-top quiz-fullscreen-top-countdown ${phase === 'results' ? 'quiz-top-results' : ''}">
+      ${showTop ? `<div class="quiz-fullscreen-top quiz-fullscreen-top-countdown em-quiz-hero-live ${phase === 'results' ? 'quiz-top-results' : ''}">
+        <div class="em-quiz-hero-shapes-layer" aria-hidden="true"></div>
         <div class="quiz-fullscreen-hero-copy">
           <strong>${escapeHTML(quiz.title || 'Quiz')}</strong>
           <small>${phase === 'results' ? 'Quiz finalizado' : (QUIZ_SECURITY_ENABLED ? 'Modo quiz · sin salida hasta finalizar' : 'Modo prueba · protección desactivada')}</small>
@@ -6558,6 +6759,7 @@
     `;
     bindQuizPlayerEvents();
     if (phase === 'question') {
+      try { window.EncisoQuizHeroLive?.init?.(layer.querySelector('.quiz-fullscreen-top-countdown')); } catch (_) {}
       window.requestAnimationFrame(() => {
         playQuizItemEnterMotion(layer);
         startQuizQuestionMusic(getCurrentQuizQuestion());
@@ -9067,7 +9269,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.257', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.258', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
