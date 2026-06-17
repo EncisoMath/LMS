@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.224';
+  const APP_VERSION = '0.24.225';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -323,14 +323,14 @@
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.224';
+  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.223';
   const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
   const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
     { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
     { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
   ];
   const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.224';
+  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.223';
   const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
   const QUIZ_PADDING_DEBUG_FIELDS = [
     { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
@@ -340,12 +340,12 @@
     { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
     { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
   ];
-  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.224';
+  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.223';
   const QUIZ_COUNTDOWN_TUNE_DEFAULTS = { x: 23 };
   const QUIZ_COUNTDOWN_TUNE_FIELDS = [
     { key: 'x', label: 'Countdown X', min: -36, max: 64, step: 1, unit: 'px' }
   ];
-  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.224';
+  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.223';
   const QUIZ_TIME_SCORING_MODE_DEFAULT = 'curve';
   const QUIZ_TIME_SCORING_MODES = new Set(['curve', 'speed']);
   const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
@@ -5597,16 +5597,7 @@
       scheduleQuizTransitionContinuousAdvance();
     } else if (phase === 'results') {
       stopQuizQuestionMusic(true);
-      if (window.__encisoFinalResultsController?.destroy) {
-        window.__encisoFinalResultsController.destroy();
-        window.__encisoFinalResultsController = null;
-      }
-      const finalResultsRoot = layer.querySelector('[data-final-results]');
-      if (finalResultsRoot) {
-        const payload = encisoBuildFinalResultsPayload(quiz);
-        payload.onContinue = () => closeQuizFullscreen('quizzes');
-        window.__encisoFinalResultsController = encisoStartFinalResultsScreen(finalResultsRoot, payload);
-      }
+      try { startEncisoFinalResultsScreen(layer); } catch (_) {}
     } else if (phase === 'confirm' || phase === 'idle') {
       stopQuizQuestionMusic(false);
     }
@@ -5708,94 +5699,262 @@
     `;
   }
 
+  function quizResultItemCardsHTML(quiz, answers = []) {
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions.slice(0, 10) : [];
+    const answerMap = new Map((Array.isArray(answers) ? answers : []).map((answer) => [Number(answer.index), answer]));
+    if (!questions.length) return '';
+    const cards = questions.map((question, index) => {
+      const answer = answerMap.get(index);
+      const isOpen = question?.type === 'open';
+      const correct = answer?.correct === true;
+      const wrong = answer?.correct === false;
+      const revisable = answer && !correct && !wrong;
+      const openHasText = isOpen && Boolean(String(answer?.text || '').trim());
+      const openStateClass = openHasText ? 'is-open is-open-answered' : 'is-open is-open-empty';
+      const stateClass = isOpen ? openStateClass : (correct || revisable ? 'is-correct' : 'is-wrong');
+      const label = isOpen ? (openHasText ? 'Respuesta abierta enviada' : 'Respuesta abierta sin texto') : (correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado'));
+      const typeLabel = {
+        multiple_choice: 'Opción múltiple',
+        true_false: 'Verdadero/Falso',
+        open: 'Respuesta abierta',
+        order: 'Organizar',
+        flip: 'Flip'
+      }[question?.type] || 'Pregunta';
+      return `
+        <article class="quiz-ranking-item-card ${stateClass}" style="--item-delay:${index * 90 + 720}ms" aria-label="Ítem ${index + 1}: ${escapeHTML(label)}">
+          <span class="quiz-ranking-item-number">Ítem ${index + 1}</span>
+          <span class="quiz-ranking-item-type">${escapeHTML(typeLabel)}</span>
+        </article>
+      `;
+    }).join('');
+    return `<section class="quiz-ranking-items" aria-label="Resultado por ítem">${cards}</section>`;
+  }
+
+  function normalizeQuizRankingPodiumTune(tune = {}) {
+    const safe = { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
+    QUIZ_RANKING_PODIUM_TUNE_FIELDS.forEach((field) => {
+      const raw = Number(tune[field.key]);
+      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_RANKING_PODIUM_TUNE_DEFAULTS[field.key];
+    });
+    return safe;
+  }
+
+  function getQuizRankingPodiumTune() {
+    try {
+      return normalizeQuizRankingPodiumTune(JSON.parse(localStorage.getItem(QUIZ_RANKING_PODIUM_TUNE_KEY) || '{}'));
+    } catch (_) {
+      return { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
+    }
+  }
+
+  function saveQuizRankingPodiumTune(tune) {
+    const safe = normalizeQuizRankingPodiumTune(tune);
+    try { localStorage.setItem(QUIZ_RANKING_PODIUM_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
+    return safe;
+  }
+
+  function applyQuizRankingPodiumTune(tune = getQuizRankingPodiumTune()) {
+    const safe = normalizeQuizRankingPodiumTune(tune);
+    document.querySelectorAll('[data-quiz-ranking-podium]').forEach((podium) => {
+      podium.style.setProperty('--ranking-podium-1-x', `${safe.p1x}px`);
+      podium.style.setProperty('--ranking-podium-1-y', `${safe.p1y}px`);
+      podium.style.setProperty('--ranking-podium-1-rot', `${safe.p1rot}deg`);
+      podium.style.setProperty('--ranking-podium-2-x', `${safe.p2x}px`);
+      podium.style.setProperty('--ranking-podium-2-y', `${safe.p2y}px`);
+      podium.style.setProperty('--ranking-podium-2-rot', `${safe.p2rot}deg`);
+      podium.style.setProperty('--ranking-podium-3-x', `${safe.p3x}px`);
+      podium.style.setProperty('--ranking-podium-3-y', `${safe.p3y}px`);
+      podium.style.setProperty('--ranking-podium-3-rot', `${safe.p3rot}deg`);
+      podium.style.setProperty('--ranking-podium-base-x', `${safe.baseX}px`);
+      podium.style.setProperty('--ranking-podium-base-y', `${safe.baseY}px`);
+      podium.style.setProperty('--ranking-podium-base-w', `${safe.baseW}%`);
+    });
+    return safe;
+  }
+
+  function updateQuizRankingPodiumTuneOutput(key, value) {
+    const field = QUIZ_RANKING_PODIUM_TUNE_FIELDS.find((item) => item.key === key);
+    document.querySelectorAll(`[data-quiz-ranking-podium-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
+      output.textContent = `${value}${field?.unit || ''}`;
+    });
+  }
+
+  function quizRankingPodiumTunePanelHTML() {
+    return '';
+  }
+
+
+  function bindQuizRankingPodiumTunePanel() {
+    const layer = document.getElementById('quizFullscreenLayer');
+    if (!layer || !layer.classList.contains('quiz-phase-results')) return;
+    applyQuizRankingPodiumTune(getQuizRankingPodiumTune());
+    const panel = layer.querySelector('[data-quiz-ranking-tune-panel]');
+    const syncPanel = () => {
+      if (!panel) return;
+      panel.hidden = !state.quizRankingPodiumPanelOpen;
+      panel.setAttribute('aria-hidden', state.quizRankingPodiumPanelOpen ? 'false' : 'true');
+      panel.classList.toggle('is-open', state.quizRankingPodiumPanelOpen);
+    };
+    syncPanel();
+    layer.querySelectorAll('[data-quiz-ranking-tune-toggle]').forEach((button) => {
+      if (button.dataset.boundRankingTuneToggle === 'true') return;
+      button.dataset.boundRankingTuneToggle = 'true';
+      button.addEventListener('click', () => {
+        state.quizRankingPodiumPanelOpen = !state.quizRankingPodiumPanelOpen;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-ranking-tune-close]').forEach((button) => {
+      if (button.dataset.boundRankingTuneClose === 'true') return;
+      button.dataset.boundRankingTuneClose = 'true';
+      button.addEventListener('click', () => {
+        state.quizRankingPodiumPanelOpen = false;
+        syncPanel();
+      });
+    });
+    layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
+      if (input.dataset.boundRankingPodiumTune === 'true') return;
+      input.dataset.boundRankingPodiumTune = 'true';
+      const update = () => {
+        const key = input.dataset.quizRankingPodiumTune;
+        const current = getQuizRankingPodiumTune();
+        current[key] = Number(input.value);
+        const safe = saveQuizRankingPodiumTune(current);
+        applyQuizRankingPodiumTune(safe);
+        updateQuizRankingPodiumTuneOutput(key, safe[key]);
+      };
+      input.addEventListener('input', update);
+      input.addEventListener('change', update);
+    });
+    layer.querySelectorAll('[data-quiz-ranking-tune-reset]').forEach((button) => {
+      if (button.dataset.boundRankingTuneReset === 'true') return;
+      button.dataset.boundRankingTuneReset = 'true';
+      button.addEventListener('click', () => {
+        const defaults = saveQuizRankingPodiumTune({ ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS });
+        applyQuizRankingPodiumTune(defaults);
+        layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
+          const key = input.dataset.quizRankingPodiumTune;
+          input.value = defaults[key];
+          updateQuizRankingPodiumTuneOutput(key, defaults[key]);
+        });
+      });
+    });
+  }
+
+  function quizRankingPodiumHTML(stats) {
+    const scoreBase = Math.max(1, stats.scorable || stats.total || 1);
+    const userScore = Math.max(0, stats.correct || 0);
+    const podium = [
+      { rank: 2, name: 'Sofía', avatar: 'S', score: Math.max(0, Math.min(scoreBase, userScore - 1)), order: 'left' },
+      { rank: 1, name: 'Tú', avatar: '★', score: userScore, order: 'center' },
+      { rank: 3, name: 'Mateo', avatar: 'M', score: Math.max(0, Math.min(scoreBase, userScore - 2)), order: 'right' }
+    ];
+    return `
+      <section class="quiz-ranking-panel" aria-label="Ranking del quiz">
+        <div class="quiz-ranking-podium" data-quiz-ranking-podium aria-hidden="false">
+          ${podium.map((slot) => `
+            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" data-podium-rank="${slot.rank}" style="--podium-delay:${slot.rank === 3 ? 90 : slot.rank === 2 ? 310 : 540}ms">
+              <div class="quiz-podium-adjust">
+                <div class="quiz-podium-profile">
+                  <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
+                  <strong>${escapeHTML(slot.name)}</strong>
+                </div>
+                <div class="quiz-podium-step">
+                  <span>${slot.rank}</span>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+          <div class="quiz-podium-base" aria-hidden="true"></div>
+        </div>
+      </section>
+    `;
+  }
+
   const ENCISO_RESULT_STATES = {
     red: {
-      color: "#e21b3c",
-      glow: "rgba(226,27,60,.55)",
-      bandBg: "#e21b3c",
-      textColor: "#ffffff",
-      noteColor: "#e21b3c",
-      fakeNoteColor: "#d89e00",
-      polygonFill: "#ffffff",
-      titlePool: ["Uy quieto", "Casi casi", "Toca remontada", "Modo recuperaci\u00f3n"],
+      color: '#e21b3c',
+      glow: 'rgba(226,27,60,.55)',
+      bandBg: '#e21b3c',
+      textColor: '#ffffff',
+      noteColor: '#e21b3c',
+      fakeNoteColor: '#d89e00',
+      polygonFill: '#ffffff',
+      titlePool: ['Uy quieto', 'Casi casi', 'Toca remontada', 'Modo recuperación'],
       phrasePool: [
-        "El quiz dijo: hoy no, mi ciela.",
-        "Toca activar el modo Rocky Balboa.",
-        "Eso no fue ca\u00edda, fue aprendizaje con efectos especiales.",
-        "Respira, que hasta los cracks tienen episodio de relleno.",
-        "Hoy el algoritmo eligi\u00f3 violencia."
+        'El quiz dijo: hoy no, mi ciela.',
+        'Toca activar el modo Rocky Balboa.',
+        'Eso no fue caída, fue aprendizaje con efectos especiales.',
+        'Respira, que hasta los cracks tienen episodio de relleno.',
+        'Hoy el algoritmo eligió violencia.'
       ]
     },
-
     orange: {
-      color: "#ff7a00",
-      glow: "rgba(255,122,0,.55)",
-      bandBg: "#ff7a00",
-      textColor: "#ffffff",
-      noteColor: "#ff7a00",
-      fakeNoteColor: "#d89e00",
-      polygonFill: "#ffffff",
-      titlePool: ["Bien ah\u00ed", "Se salv\u00f3", "Aprobado vibes", "Pas\u00f3 raspando"],
+      color: '#ff7a00',
+      glow: 'rgba(255,122,0,.55)',
+      bandBg: '#ff7a00',
+      textColor: '#ffffff',
+      noteColor: '#ff7a00',
+      fakeNoteColor: '#d89e00',
+      polygonFill: '#ffffff',
+      titlePool: ['Bien ahí', 'Se salvó', 'Aprobado vibes', 'Pasó raspando'],
       phrasePool: [
-        "Sobreviviste, que tambi\u00e9n es talento.",
-        "No fue paliza, fue estrategia de suspenso.",
-        "El semestre respir\u00f3 por 2 segundos.",
-        "Se gan\u00f3, pero el profe sud\u00f3 contigo.",
-        "Modo: no s\u00e9 c\u00f3mo, pero sali\u00f3."
+        'Sobreviviste, que también es talento.',
+        'No fue paliza, fue estrategia de suspenso.',
+        'El semestre respiró por 2 segundos.',
+        'Se ganó, pero el profe sudó contigo.',
+        'Modo: no sé cómo, pero salió.'
       ]
     },
-
     green: {
-      color: "#58cc02",
-      glow: "rgba(88,204,2,.55)",
-      bandBg: "#58cc02",
-      textColor: "#ffffff",
-      noteColor: "#58cc02",
-      fakeNoteColor: "#d89e00",
-      polygonFill: "#ffffff",
-      titlePool: ["\u00a1Muy bien!", "\u00a1Excelente!", "Nivel pro", "Tremendo"],
+      color: '#58cc02',
+      glow: 'rgba(88,204,2,.55)',
+      bandBg: '#58cc02',
+      textColor: '#ffffff',
+      noteColor: '#58cc02',
+      fakeNoteColor: '#d89e00',
+      polygonFill: '#ffffff',
+      titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
-        "El conocimiento entr\u00f3 con flow.",
-        "Eso estuvo m\u00e1s limpio que tablero nuevo.",
-        "Hoy s\u00ed desayunaste concentraci\u00f3n.",
-        "La calculadora pidi\u00f3 aut\u00f3grafo.",
-        "Buenardo, como dicen los acad\u00e9micos."
+        'El conocimiento entró con flow.',
+        'Eso estuvo más limpio que tablero nuevo.',
+        'Hoy sí desayunaste concentración.',
+        'La calculadora pidió autógrafo.',
+        'Buenardo, como dicen los académicos.'
       ]
     },
-
     silver: {
-      color: "#d7dde8",
-      glow: "rgba(215,221,232,.55)",
-      bandBg: "linear-gradient(135deg, #8d98a8 0%, #f8fbff 22%, #bfc7d5 45%, #ffffff 58%, #7f8898 78%, #e7ecf5 100%)",
-      textColor: "#697284",
-      noteColor: "#697284",
-      fakeNoteColor: "#697284",
-      polygonFill: "url(#silverPolyGradient)",
-      titlePool: ["Casi leyenda", "Plateado brutal", "Top mundial", "Modo tryhard"],
+      color: '#d7dde8',
+      glow: 'rgba(215,221,232,.55)',
+      bandBg: 'linear-gradient(135deg, #8d98a8 0%, #f8fbff 22%, #bfc7d5 45%, #ffffff 58%, #7f8898 78%, #e7ecf5 100%)',
+      textColor: '#697284',
+      noteColor: '#697284',
+      fakeNoteColor: '#697284',
+      polygonFill: 'url(#silverPolyGradient)',
+      titlePool: ['Casi leyenda', 'Plateado brutal', 'Top mundial', 'Modo tryhard'],
       phrasePool: [
-        "Eso roz\u00f3 el 10 como tr\u00e1iler de pel\u00edcula \u00e9pica.",
-        "La excelencia te vio y dijo: casi vecino.",
-        "Nivel plateado, flow de final boss.",
-        "No fue perfecto, pero hizo temblar al ranking.",
-        "El 10 estaba ah\u00ed mirando nervioso."
+        'Eso rozó el 10 como tráiler de película épica.',
+        'La excelencia te vio y dijo: casi vecino.',
+        'Nivel plateado, flow de final boss.',
+        'No fue perfecto, pero hizo temblar al ranking.',
+        'El 10 estaba ahí mirando nervioso.'
       ]
     },
-
     gold: {
-      color: "#f7c948",
-      glow: "rgba(247,201,72,.62)",
-      bandBg: "linear-gradient(135deg, #b77900 0%, #f7c948 22%, #fff4b8 42%, #ffffff 52%, #d89e00 72%, #ffd86b 100%)",
-      textColor: "#94731c",
-      noteColor: "#94731c",
-      fakeNoteColor: "#94731c",
-      polygonFill: "url(#goldPolyGradient)",
-      titlePool: ["\u00a1Perfecto!", "Oro puro", "Legendario", "Modo dios"],
+      color: '#f7c948',
+      glow: 'rgba(247,201,72,.62)',
+      bandBg: 'linear-gradient(135deg, #b77900 0%, #f7c948 22%, #fff4b8 42%, #ffffff 52%, #d89e00 72%, #ffd86b 100%)',
+      textColor: '#94731c',
+      noteColor: '#94731c',
+      fakeNoteColor: '#94731c',
+      polygonFill: 'url(#goldPolyGradient)',
+      titlePool: ['¡Perfecto!', 'Oro puro', 'Legendario', 'Modo dios'],
       phrasePool: [
-        "El quiz se arrodill\u00f3 y pidi\u00f3 perd\u00f3n.",
-        "Dios baj\u00f3 y dijo: 10.0.",
-        "La nota hizo speedrun al Olimpo.",
-        "Eso no fue responder, fue humillar con elegancia.",
-        "El ranking pidi\u00f3 captura de pantalla."
+        'El quiz se arrodilló y pidió perdón.',
+        'Dios bajó y dijo: 10.0.',
+        'La nota hizo speedrun al Olimpo.',
+        'Eso no fue responder, fue humillar con elegancia.',
+        'El ranking pidió captura de pantalla.'
       ]
     }
   };
@@ -5809,19 +5968,20 @@
   }
 
   function encisoPickRandom(list) {
-    return list[Math.floor(Math.random() * list.length)];
+    const safeList = Array.isArray(list) && list.length ? list : ['Resultado listo'];
+    return safeList[Math.floor(Math.random() * safeList.length)];
   }
 
   function encisoFormatNumber(value) {
-    return Math.round(value).toLocaleString("es-CO");
+    return Math.round(Number(value) || 0).toLocaleString('es-CO');
   }
 
   function encisoFormatGrade(value) {
-    return Number(value).toFixed(1);
+    return Number(value || 0).toFixed(1);
   }
 
   function encisoFloorOneDecimal(value) {
-    return Math.floor(value * 10) / 10;
+    return Math.floor((Number(value) || 0) * 10) / 10;
   }
 
   function encisoEaseOutCubic(t) {
@@ -5832,10 +5992,8 @@
     const correctPoints = encisoClamp(Number(correctRaw) || 0, 0, 10000);
     const timePoints = Math.max(Number(timeRaw) || 0, 0);
     const globalScore = correctPoints + timePoints;
-
     const baseGrade = encisoFloorOneDecimal(correctPoints / 1000);
     const timeUnits = Math.floor(timePoints / 2000);
-
     let finalGrade = baseGrade;
     let bonusGrade = 0;
     let extraPoints = 0;
@@ -5846,54 +6004,34 @@
     } else {
       const tenthsNeeded = Math.max(0, Math.round((10 - baseGrade) * 10));
       const tenthsUsed = Math.min(timeUnits, tenthsNeeded);
-
       bonusGrade = tenthsUsed / 10;
       finalGrade = encisoClamp(baseGrade + bonusGrade, 0, 10);
       extraPoints = Math.max(0, timeUnits - tenthsUsed);
     }
 
-    return {
-      correctPoints,
-      timePoints,
-      globalScore,
-      baseGrade,
-      finalGrade,
-      bonusGrade,
-      extraPoints
-    };
+    return { correctPoints, timePoints, globalScore, baseGrade, finalGrade, bonusGrade, extraPoints };
   }
 
-  function encisoGetResultStateByGrade(grade) {
-    if (grade >= 10) return ENCISO_RESULT_STATES.gold;
-    if (grade >= 9) return ENCISO_RESULT_STATES.silver;
-    if (grade >= 7) return ENCISO_RESULT_STATES.green;
-    if (grade >= 6) return ENCISO_RESULT_STATES.orange;
-    return ENCISO_RESULT_STATES.red;
+  function encisoGetResultStateKeyByGrade(grade) {
+    if (grade >= 10) return 'gold';
+    if (grade >= 9) return 'silver';
+    if (grade >= 7) return 'green';
+    if (grade >= 6) return 'orange';
+    return 'red';
   }
 
   function encisoMakeFakeGrade(realGrade) {
     let fake;
-
-    if (realGrade >= 7) {
-      fake = encisoRand(4.8, 6.4);
-    } else {
-      fake = realGrade + encisoRand(.6, 1.3);
-    }
-
+    if (realGrade >= 7) fake = encisoRand(4.8, 6.4);
+    else fake = realGrade + encisoRand(.6, 1.3);
     fake = encisoClamp(fake, 1, 9.8);
-
-    if (Math.abs(fake - realGrade) < .4) {
-      fake = realGrade >= 7 ? realGrade - 1.1 : realGrade + 1.1;
-    }
-
+    if (Math.abs(fake - realGrade) < .4) fake = realGrade >= 7 ? realGrade - 1.1 : realGrade + 1.1;
     return encisoFloorOneDecimal(fake);
   }
 
   function encisoSetPolygonPoints(polygonEl, points) {
-    polygonEl.setAttribute(
-      "points",
-      points.map((point) => `${point.x},${point.y}`).join(" ")
-    );
+    if (!polygonEl) return;
+    polygonEl.setAttribute('points', points.map((point) => `${point.x},${point.y}`).join(' '));
   }
 
   function encisoRandomPolygon() {
@@ -5905,254 +6043,175 @@
     ];
   }
 
-  function encisoResetPolygon(els) {
-    const center = [
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 }
-    ];
-
-    encisoSetPolygonPoints(els.gradePolygon, center);
-
-    els.gradeStage.classList.remove("active");
-    els.gradeNote.className = "enciso-grade-note";
-    els.gradeNote.textContent = "?";
-    els.gradeCaption.textContent = "Nota";
+  function encisoEaseOutBack(t) {
+    const c1 = 2.15;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
   }
 
-  function encisoStartPolygonFloat(els, basePoints, addRaf) {
+  function encisoAnimateValue({ from, to, duration, update, complete }) {
     const start = performance.now();
-
-    function frame(now) {
-      const t = (now - start) / 1000;
-
-      const floating = basePoints.map((point, index) => ({
-        x: point.x + Math.sin(t * 1.35 + index * 1.8) * 2.4,
-        y: point.y + Math.cos(t * 1.15 + index * 1.5) * 2.4
-      }));
-
-      encisoSetPolygonPoints(els.gradePolygon, floating);
-      addRaf(requestAnimationFrame(frame));
-    }
-
-    addRaf(requestAnimationFrame(frame));
-  }
-
-  function encisoShowGradePolygon(els, fakeGrade, realGrade, extraPoints, addRaf, wait) {
-    encisoResetPolygon(els);
-
-    const center = [
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 },
-      { x: 68, y: 64 }
-    ];
-
-    const finalPoints = encisoRandomPolygon();
-    const currentPoints = center.map((point) => ({ ...point }));
-
-    const start = performance.now();
-    const vertexDuration = 460;
-    const cascadeDelay = 130;
-
-    els.gradeStage.classList.add("active");
-    els.gradeCaption.textContent = "Calculando...";
-
-    function easeOutBack(t) {
-      const c1 = 2.15;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-
-    function frame(now) {
-      let finished = true;
-
-      for (let i = 0; i < 4; i += 1) {
-        const localStart = start + i * cascadeDelay;
-        const progress = encisoClamp((now - localStart) / vertexDuration, 0, 1);
-        const eased = easeOutBack(progress);
-
-        currentPoints[i] = {
-          x: center[i].x + (finalPoints[i].x - center[i].x) * eased,
-          y: center[i].y + (finalPoints[i].y - center[i].y) * eased
-        };
-
-        if (progress < 1) finished = false;
-      }
-
-      encisoSetPolygonPoints(els.gradePolygon, currentPoints);
-
-      if (!finished) {
-        addRaf(requestAnimationFrame(frame));
-      } else {
-        encisoSetPolygonPoints(els.gradePolygon, finalPoints);
-        encisoStartPolygonFloat(els, finalPoints, addRaf);
-
-        wait(180, () => {
-          els.gradeNote.textContent = encisoFormatGrade(fakeGrade);
-          els.gradeNote.className = "enciso-grade-note show fake";
-        });
-
-        wait(1350, () => {
-          els.gradeNote.textContent = encisoFormatGrade(realGrade);
-          els.gradeNote.className = "enciso-grade-note show final";
-
-          els.gradeCaption.textContent =
-            extraPoints > 0
-              ? extraPoints + " PUNTOS extra"
-              : "Nota final";
-        });
-      }
-    }
-
-    addRaf(requestAnimationFrame(frame));
-  }
-
-  function encisoAnimateValue({ from, to, duration, update, complete }, addRaf) {
-    const start = performance.now();
-
     function frame(now) {
       const progress = encisoClamp((now - start) / duration, 0, 1);
       const eased = encisoEaseOutCubic(progress);
       const current = from + (to - from) * eased;
-
       update(current);
-
-      if (progress < 1) {
-        addRaf(requestAnimationFrame(frame));
-      } else {
+      if (progress < 1) requestAnimationFrame(frame);
+      else {
         update(to);
         if (complete) complete();
       }
     }
-
-    addRaf(requestAnimationFrame(frame));
+    requestAnimationFrame(frame);
   }
 
-  function encisoApplyResultState(root, els, stateInfo) {
-    root.style.setProperty("--enciso-state-color", stateInfo.color);
-    root.style.setProperty("--enciso-state-glow", stateInfo.glow);
-    root.style.setProperty("--enciso-state-band-bg", stateInfo.bandBg);
-    root.style.setProperty("--enciso-state-text", stateInfo.textColor);
-    root.style.setProperty("--enciso-state-note-text", stateInfo.noteColor);
-    root.style.setProperty("--enciso-fake-note-color", stateInfo.fakeNoteColor);
+  function encisoStartFinalPolygon(root, payload) {
+    const stage = root.querySelector('[data-grade-stage]');
+    const polygon = root.querySelector('[data-grade-polygon]');
+    const note = root.querySelector('[data-grade-note]');
+    const caption = root.querySelector('[data-grade-caption]');
+    if (!stage || !polygon || !note || !caption) return;
+    const center = [
+      { x: 68, y: 64 },
+      { x: 68, y: 64 },
+      { x: 68, y: 64 },
+      { x: 68, y: 64 }
+    ];
+    const finalPoints = encisoRandomPolygon();
+    const currentPoints = center.map((point) => ({ ...point }));
+    const start = performance.now();
+    const vertexDuration = 460;
+    const cascadeDelay = 130;
+    encisoSetPolygonPoints(polygon, center);
+    stage.classList.add('active');
+    note.className = 'enciso-grade-note';
+    note.textContent = '?';
+    caption.textContent = 'Calculando...';
 
-    els.gradePolygon.style.fill = stateInfo.polygonFill;
-    els.gradePolygon.style.stroke = stateInfo.color;
+    function floatFrame(floatStart, basePoints) {
+      const now = performance.now();
+      const t = (now - floatStart) / 1000;
+      const floating = basePoints.map((point, index) => ({
+        x: point.x + Math.sin(t * 1.35 + index * 1.8) * 2.4,
+        y: point.y + Math.cos(t * 1.15 + index * 1.5) * 2.4
+      }));
+      encisoSetPolygonPoints(polygon, floating);
+      if (root.isConnected) requestAnimationFrame(() => floatFrame(floatStart, basePoints));
+    }
 
-    els.resultKicker.textContent = "Reto completado";
-    els.resultTitle.textContent = encisoPickRandom(stateInfo.titlePool);
-    els.resultMessage.textContent = encisoPickRandom(stateInfo.phrasePool);
-  }
-
-  function encisoResetContainers(els) {
-    els.scoreCard.classList.remove("play");
-    els.podiumSection.classList.remove("play");
-    els.reviewSection.classList.remove("play");
-    els.actionsSection.classList.remove("show");
-
-    void els.scoreCard.offsetWidth;
-    void els.podiumSection.offsetWidth;
-    void els.reviewSection.offsetWidth;
-    void els.actionsSection.offsetWidth;
-  }
-
-  function encisoAnimateContainersTogether(els) {
-    els.scoreCard.classList.add("play");
-    els.podiumSection.classList.add("play");
-    els.reviewSection.classList.add("play");
-  }
-
-  function encisoResetPodium(els) {
-    Object.values(els.podiumPlayers).forEach((player) => {
-      if (!player) return;
-      player.classList.remove(
-        "show-block",
-        "show-points",
-        "show-name",
-        "show-avatar",
-        "show-sparkles"
-      );
-
-      void player.offsetWidth;
-    });
-  }
-
-  function encisoAnimateOnePodium(player, startDelay, wait) {
-    if (!player) return;
-    wait(startDelay, () => player.classList.add("show-block"));
-    wait(startDelay + 170, () => player.classList.add("show-points"));
-    wait(startDelay + 320, () => player.classList.add("show-name"));
-    wait(startDelay + 470, () => player.classList.add("show-avatar"));
-    wait(startDelay + 660, () => player.classList.add("show-sparkles"));
-  }
-
-  function encisoAnimatePodium(els, wait) {
-    encisoResetPodium(els);
-
-    encisoAnimateOnePodium(els.podiumPlayers.first, 180, wait);
-    encisoAnimateOnePodium(els.podiumPlayers.second, 520, wait);
-    encisoAnimateOnePodium(els.podiumPlayers.third, 860, wait);
-  }
-
-  function encisoResetReview(els) {
-    els.reviewItems.forEach((item) => {
-      item.classList.remove("show");
-      void item.offsetWidth;
-    });
-  }
-
-  function encisoAnimateReview(els, wait) {
-    encisoResetReview(els);
-
-    els.reviewItems.forEach((item, index) => {
-      wait(160 + index * 85, () => {
-        item.classList.add("show");
-      });
-    });
-  }
-
-  function encisoAnimateContinueButton(els, wait) {
-    els.actionsSection.classList.remove("show");
-    void els.actionsSection.offsetWidth;
-
-    wait(1180, () => {
-      els.actionsSection.classList.add("show");
-    });
-  }
-
-  function encisoRenderReviewItems(container, answers) {
-    container.innerHTML = "";
-
-    answers.slice(0, 10).forEach((answer, index) => {
-      const item = document.createElement("div");
-      item.className = "enciso-review-item";
-
-      const number = document.createElement("small");
-      number.textContent = String(index + 1);
-
-      const isOpen = answer.type === "open" || answer.questionType === "open";
-      const hasOpenText = isOpen && String(answer.text || "").trim().length > 0;
-      const isCorrect = answer.correct === true;
-      const isEmpty = answer.empty === true || answer.timeout === true;
-
-      if (isOpen && hasOpenText) {
-        item.classList.add("open");
-        item.append(number, document.createTextNode("?"));
-      } else if (isCorrect) {
-        item.classList.add("ok");
-        item.append(number, document.createTextNode("\u2713"));
-      } else {
-        item.classList.add("bad");
-        item.append(number, document.createTextNode(isEmpty ? "\u00d7" : "\u00d7"));
+    function frame(now) {
+      let finished = true;
+      for (let i = 0; i < 4; i++) {
+        const localStart = start + i * cascadeDelay;
+        const progress = encisoClamp((now - localStart) / vertexDuration, 0, 1);
+        const eased = encisoEaseOutBack(progress);
+        currentPoints[i] = {
+          x: center[i].x + (finalPoints[i].x - center[i].x) * eased,
+          y: center[i].y + (finalPoints[i].y - center[i].y) * eased
+        };
+        if (progress < 1) finished = false;
       }
+      encisoSetPolygonPoints(polygon, currentPoints);
+      if (!finished) requestAnimationFrame(frame);
+      else {
+        encisoSetPolygonPoints(polygon, finalPoints);
+        requestAnimationFrame(() => floatFrame(performance.now(), finalPoints));
+        setTimeout(() => {
+          if (!root.isConnected) return;
+          note.textContent = encisoFormatGrade(payload.fakeGrade);
+          note.className = 'enciso-grade-note show fake';
+        }, 180);
+        setTimeout(() => {
+          if (!root.isConnected) return;
+          note.textContent = encisoFormatGrade(payload.finalGrade);
+          note.className = 'enciso-grade-note show final';
+          caption.textContent = payload.extraPoints > 0 ? `${payload.extraPoints} PUNTOS extra` : 'Nota final';
+        }, 1350);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
 
-      container.appendChild(item);
+  function startEncisoFinalResultsScreen(layer) {
+    const root = layer?.querySelector?.('[data-final-results]');
+    if (!root || root.dataset.encisoFinalStarted === 'true') return;
+    root.dataset.encisoFinalStarted = 'true';
+    const payload = {
+      correctPoints: Number(root.dataset.correctPoints) || 0,
+      timePoints: Number(root.dataset.timePoints) || 0,
+      globalScore: Number(root.dataset.globalScore) || 0,
+      finalGrade: Number(root.dataset.finalGrade) || 0,
+      fakeGrade: Number(root.dataset.fakeGrade) || 0,
+      bonusGrade: Number(root.dataset.bonusGrade) || 0,
+      extraPoints: Number(root.dataset.extraPoints) || 0
+    };
+    root.querySelectorAll('.enciso-score-card, .enciso-podium-section, .enciso-review-section').forEach((el) => el.classList.add('play'));
+    setTimeout(() => root.querySelector('[data-actions-section]')?.classList.add('show'), 1180);
+    ['first', 'second', 'third'].forEach((place, placeIndex) => {
+      const player = root.querySelector(`[data-place="${place}"]`);
+      if (!player) return;
+      const startDelay = 180 + placeIndex * 340;
+      setTimeout(() => player.classList.add('show-block'), startDelay);
+      setTimeout(() => player.classList.add('show-points'), startDelay + 170);
+      setTimeout(() => player.classList.add('show-name'), startDelay + 320);
+      setTimeout(() => player.classList.add('show-avatar'), startDelay + 470);
+      setTimeout(() => player.classList.add('show-sparkles'), startDelay + 660);
+    });
+    root.querySelectorAll('.enciso-review-item').forEach((item, index) => {
+      setTimeout(() => item.classList.add('show'), 160 + index * 85);
+    });
+    encisoAnimateValue({
+      from: 0,
+      to: payload.globalScore,
+      duration: 1550,
+      update(value) {
+        const text = encisoFormatNumber(value);
+        const score = root.querySelector('[data-global-score]');
+        const podiumPoints = root.querySelector('[data-my-podium-points]');
+        if (score) score.textContent = text;
+        if (podiumPoints) podiumPoints.textContent = `${text} pts`;
+      },
+      complete() { encisoStartFinalPolygon(root, payload); }
+    });
+    encisoAnimateValue({
+      from: 0,
+      to: payload.correctPoints,
+      duration: 1250,
+      update(value) {
+        const el = root.querySelector('[data-correct-points]');
+        if (el) el.textContent = encisoFormatNumber(value);
+      }
+    });
+    encisoAnimateValue({
+      from: 0,
+      to: payload.timePoints,
+      duration: 1350,
+      update(value) {
+        const el = root.querySelector('[data-time-points]');
+        if (el) el.textContent = encisoFormatNumber(value);
+      }
+    });
+    encisoAnimateValue({
+      from: 0,
+      to: payload.bonusGrade,
+      duration: 1400,
+      update(value) {
+        const el = root.querySelector('[data-bonus-grade]');
+        if (el) el.textContent = `+${encisoFormatGrade(value)}`;
+      }
+    });
+    encisoAnimateValue({
+      from: 0,
+      to: payload.extraPoints,
+      duration: 1450,
+      update(value) {
+        const el = root.querySelector('[data-extra-points]');
+        if (el) el.textContent = String(Math.round(value));
+      }
     });
   }
 
-  function encisoBuildFinalResultsPayload(quiz) {
+  function encisoBuildFinalResultsData(quiz) {
     const session = getQuizSession();
     const answers = Array.isArray(session.answers) ? session.answers : [];
     const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
@@ -6163,208 +6222,76 @@
       acc.timePoints += Number(score.time) || 0;
       return acc;
     }, { correctPoints: 0, timePoints: 0 });
-    const correctPoints = Math.max(0, Math.round(totals.correctPoints));
-    const timePoints = Math.max(0, Math.round(totals.timePoints));
-    const globalScore = correctPoints + timePoints;
+    const result = encisoCalculateFinalScore(Math.round(totals.correctPoints), Math.round(totals.timePoints));
+    const stateKey = encisoGetResultStateKeyByGrade(result.finalGrade);
+    const stateInfo = ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
     const user = state.user || {};
-    const userName = user.fullName || user.name || user.username || "T\u00fa";
-    const reviewAnswers = questions.slice(0, 10).map((question, index) => {
+    const userName = user.fullName || user.name || user.username || 'Tú';
+    const review = questions.slice(0, 10).map((question, index) => {
       const answer = answerMap.get(index) || null;
-      return {
-        index,
-        type: question?.type || answer?.type || "unknown",
-        questionType: question?.type || answer?.questionType || answer?.type || "unknown",
-        correct: answer?.correct,
-        text: answer?.text || "",
-        timeout: answer?.timeout === true,
-        empty: !answer || (question?.type === "open" && !String(answer?.text || "").trim())
-      };
+      const type = question?.type || answer?.type || 'unknown';
+      const isOpen = type === 'open';
+      const hasOpenText = isOpen && Boolean(String(answer?.text || '').trim());
+      const isCorrect = answer?.correct === true;
+      const cssClass = isOpen && hasOpenText ? 'open' : (isCorrect ? 'ok' : 'bad');
+      const symbol = isOpen && hasOpenText ? '?' : (isCorrect ? '✓' : '×');
+      return { index, cssClass, symbol };
     });
+    const fakeGrade = encisoMakeFakeGrade(result.finalGrade);
     return {
-      correctPoints,
-      timePoints,
-      globalScore,
-      answers: reviewAnswers,
+      ...result,
+      fakeGrade,
+      stateKey,
+      stateInfo,
+      userName,
+      title: encisoPickRandom(stateInfo.titlePool),
+      phrase: encisoPickRandom(stateInfo.phrasePool),
       ranking: [
-        { place: "first", name: userName, points: globalScore },
-        { place: "second", name: "Mateo", points: Math.max(0, globalScore - 850) },
-        { place: "third", name: "Sof\u00eda", points: Math.max(0, globalScore - 1720) }
-      ]
+        { place: 'first', name: userName, points: result.globalScore },
+        { place: 'second', name: 'Mateo', points: Math.max(0, result.globalScore - 850) },
+        { place: 'third', name: 'Sofía', points: Math.max(0, result.globalScore - 1720) }
+      ],
+      review
     };
   }
 
-  function encisoStartFinalResultsScreen(root, payload) {
-    let rafs = [];
-    let timers = [];
+  function encisoReviewItemsHTML(items = []) {
+    return items.map((item) => `
+      <div class="enciso-review-item ${escapeAttr(item.cssClass)}">
+        <small>${Number(item.index) + 1}</small>${escapeHTML(item.symbol)}
+      </div>
+    `).join('');
+  }
 
-    function addRaf(id) {
-      rafs.push(id);
-      return id;
-    }
-
-    function wait(ms, callback) {
-      const id = setTimeout(callback, ms);
-      timers.push(id);
-      return id;
-    }
-
-    function clearAll() {
-      rafs.forEach(cancelAnimationFrame);
-      timers.forEach(clearTimeout);
-      rafs = [];
-      timers = [];
-    }
-
-    const els = {
-      scoreCard: root.querySelector("[data-score-card]"),
-      podiumSection: root.querySelector("[data-podium-section]"),
-      reviewSection: root.querySelector("[data-review-section]"),
-      actionsSection: root.querySelector("[data-actions-section]"),
-
-      resultKicker: root.querySelector("[data-result-kicker]"),
-      resultTitle: root.querySelector("[data-result-title]"),
-      resultMessage: root.querySelector("[data-result-message]"),
-
-      globalScore: root.querySelector("[data-global-score]"),
-      correctView: root.querySelector("[data-correct-points]"),
-      timeView: root.querySelector("[data-time-points]"),
-      bonusView: root.querySelector("[data-bonus-grade]"),
-      extraView: root.querySelector("[data-extra-points]"),
-      podiumPoints: root.querySelector("[data-my-podium-points]"),
-
-      gradeStage: root.querySelector("[data-grade-stage]"),
-      gradePolygon: root.querySelector("[data-grade-polygon]"),
-      gradeNote: root.querySelector("[data-grade-note]"),
-      gradeCaption: root.querySelector("[data-grade-caption]"),
-
-      podiumPlayers: {
-        first: root.querySelector('[data-place="first"]'),
-        second: root.querySelector('[data-place="second"]'),
-        third: root.querySelector('[data-place="third"]')
-      },
-
-      reviewScroll: root.querySelector("[data-review-scroll]"),
-      continueButton: root.querySelector("[data-continue-button]")
-    };
-
-    const result = encisoCalculateFinalScore(payload.correctPoints, payload.timePoints);
-    const fake = encisoMakeFakeGrade(result.finalGrade);
-    const stateInfo = encisoGetResultStateByGrade(result.finalGrade);
-
-    encisoApplyResultState(root, els, stateInfo);
-
-    (payload.ranking || []).forEach((entry) => {
-      const player = els.podiumPlayers[entry.place];
-      if (!player) return;
-      const name = player.querySelector('[data-podium-name]');
-      const points = player.querySelector('[data-points]');
-      if (name) name.textContent = entry.name || "Jugador";
-      if (points && entry.place !== "first") points.textContent = encisoFormatNumber(entry.points || 0) + " pts";
-    });
-
-    if (payload.answers) {
-      encisoRenderReviewItems(els.reviewScroll, payload.answers);
-    }
-
-    els.reviewItems = Array.from(root.querySelectorAll(".enciso-review-item"));
-
-    encisoResetContainers(els);
-    encisoResetPolygon(els);
-    encisoResetPodium(els);
-    encisoResetReview(els);
-
-    els.globalScore.textContent = "0";
-    els.correctView.textContent = "0";
-    els.timeView.textContent = "0";
-    els.bonusView.textContent = "+0.0";
-    els.extraView.textContent = "0";
-    els.podiumPoints.textContent = "0 pts";
-
-    encisoAnimateContainersTogether(els);
-    encisoAnimatePodium(els, wait);
-    encisoAnimateReview(els, wait);
-    encisoAnimateContinueButton(els, wait);
-
-    encisoAnimateValue({
-      from: 0,
-      to: result.globalScore,
-      duration: 1550,
-      update(value) {
-        els.globalScore.textContent = encisoFormatNumber(value);
-        els.podiumPoints.textContent = encisoFormatNumber(value) + " pts";
-      },
-      complete() {
-        encisoShowGradePolygon(els, fake, result.finalGrade, result.extraPoints, addRaf, wait);
-      }
-    }, addRaf);
-
-    encisoAnimateValue({
-      from: 0,
-      to: result.correctPoints,
-      duration: 1250,
-      update(value) {
-        els.correctView.textContent = encisoFormatNumber(value);
-      }
-    }, addRaf);
-
-    encisoAnimateValue({
-      from: 0,
-      to: result.timePoints,
-      duration: 1350,
-      update(value) {
-        els.timeView.textContent = encisoFormatNumber(value);
-      }
-    }, addRaf);
-
-    encisoAnimateValue({
-      from: 0,
-      to: result.bonusGrade,
-      duration: 1400,
-      update(value) {
-        els.bonusView.textContent = "+" + encisoFormatGrade(value);
-      }
-    }, addRaf);
-
-    encisoAnimateValue({
-      from: 0,
-      to: result.extraPoints,
-      duration: 1450,
-      update(value) {
-        els.extraView.textContent = Math.round(value);
-      }
-    }, addRaf);
-
-    if (els.continueButton) {
-      els.continueButton.addEventListener("click", () => {
-        clearAll();
-        if (typeof payload.onContinue === "function") {
-          payload.onContinue();
-        }
-      });
-    }
-
-    return {
-      destroy: clearAll
-    };
+  function encisoPodiumSparklesHTML(count = 4) {
+    return Array.from({ length: count }, () => '<span></span>').join('');
   }
 
   function quizResultsHTML(quiz) {
     const session = getQuizSession();
     const securedOut = Boolean(session.securityTerminated);
-    const securityHTML = securedOut ? `<div class="quiz-security-result-note enciso-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Accion sospechosa repetida')}</div>` : '';
+    const data = encisoBuildFinalResultsData(quiz);
+    const rootStyle = [
+      `--enciso-state-color:${data.stateInfo.color}`,
+      `--enciso-state-glow:${data.stateInfo.glow}`,
+      `--enciso-state-band-bg:${data.stateInfo.bandBg}`,
+      `--enciso-state-text:${data.stateInfo.textColor}`,
+      `--enciso-state-note-text:${data.stateInfo.noteColor}`,
+      `--enciso-fake-note-color:${data.stateInfo.fakeNoteColor}`
+    ].join(';');
+    const ranking = new Map(data.ranking.map((entry) => [entry.place, entry]));
+    const first = ranking.get('first') || { name: 'Tú', points: data.globalScore };
+    const second = ranking.get('second') || { name: 'Mateo', points: 0 };
+    const third = ranking.get('third') || { name: 'Sofía', points: 0 };
     return `
-      <section class="enciso-final-results results-screen ranking-results-screen" data-final-results>
-        ${securityHTML}
+      <section class="enciso-final-results results-screen ranking-results-screen enciso-result-state-${escapeAttr(data.stateKey)}" data-final-results data-correct-points="${data.correctPoints}" data-time-points="${data.timePoints}" data-global-score="${data.globalScore}" data-final-grade="${data.finalGrade}" data-fake-grade="${data.fakeGrade}" data-bonus-grade="${data.bonusGrade}" data-extra-points="${data.extraPoints}" style="${escapeAttr(rootStyle)}">
+        ${securedOut ? `<div class="enciso-security-result-note">Motivo: ${escapeHTML(session.securityTerminatedReason || 'Acción sospechosa repetida')}</div>` : ''}
         <section class="enciso-result-band">
-          <div class="enciso-band-sparkles" aria-hidden="true">
-            <span></span><span></span><span></span>
-            <span></span><span></span><span></span>
-          </div>
-
+          <div class="enciso-band-sparkles" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
           <div class="enciso-result-content">
-            <div class="enciso-result-kicker" data-result-kicker>Reto completado</div>
-            <h2 class="enciso-result-title" data-result-title>Resultado</h2>
-            <p class="enciso-result-message" data-result-message>Calculando tu cierre...</p>
+            <div class="enciso-result-kicker">Reto completado</div>
+            <h2 class="enciso-result-title">${escapeHTML(data.title)}</h2>
+            <p class="enciso-result-message">${escapeHTML(data.phrase)}</p>
           </div>
         </section>
 
@@ -6374,93 +6301,54 @@
               <div class="enciso-score-label">Puntaje global</div>
               <div class="enciso-score-number" data-global-score>0</div>
             </div>
-
             <div class="enciso-grade-wrap">
               <div class="enciso-grade-poly-stage" data-grade-stage>
                 <svg class="enciso-grade-poly-svg" viewBox="0 0 148 128" aria-hidden="true">
                   <defs>
                     <linearGradient id="silverPolyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#ffffff"></stop>
-                      <stop offset="22%" stop-color="#bfc7d5"></stop>
-                      <stop offset="45%" stop-color="#f8fbff"></stop>
-                      <stop offset="68%" stop-color="#8d98a8"></stop>
-                      <stop offset="100%" stop-color="#e7ecf5"></stop>
+                      <stop offset="0%" stop-color="#ffffff"></stop><stop offset="22%" stop-color="#bfc7d5"></stop><stop offset="45%" stop-color="#f8fbff"></stop><stop offset="68%" stop-color="#8d98a8"></stop><stop offset="100%" stop-color="#e7ecf5"></stop>
                     </linearGradient>
-
                     <linearGradient id="goldPolyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#fff4b8"></stop>
-                      <stop offset="22%" stop-color="#f7c948"></stop>
-                      <stop offset="48%" stop-color="#ffffff"></stop>
-                      <stop offset="70%" stop-color="#d89e00"></stop>
-                      <stop offset="100%" stop-color="#ffd86b"></stop>
+                      <stop offset="0%" stop-color="#fff4b8"></stop><stop offset="22%" stop-color="#f7c948"></stop><stop offset="48%" stop-color="#ffffff"></stop><stop offset="70%" stop-color="#d89e00"></stop><stop offset="100%" stop-color="#ffd86b"></stop>
                     </linearGradient>
                   </defs>
-
                   <polygon data-grade-polygon points="68,64 68,64 68,64 68,64"></polygon>
                 </svg>
-
                 <div class="enciso-grade-note" data-grade-note>?</div>
               </div>
-
               <div class="enciso-grade-caption" data-grade-caption>Nota</div>
             </div>
           </div>
-
           <div class="enciso-stats-grid">
-            <div class="enciso-stat">
-              <div class="enciso-stat-value" data-correct-points>0</div>
-              <div class="enciso-stat-label">Correctas</div>
-            </div>
-
-            <div class="enciso-stat">
-              <div class="enciso-stat-value" data-time-points>0</div>
-              <div class="enciso-stat-label">Tiempo</div>
-            </div>
-
-            <div class="enciso-stat">
-              <div class="enciso-stat-value" data-bonus-grade>+0.0</div>
-              <div class="enciso-stat-label">Bonus nota</div>
-            </div>
-
-            <div class="enciso-stat">
-              <div class="enciso-stat-value" data-extra-points>0</div>
-              <div class="enciso-stat-label">Puntos</div>
-            </div>
+            <div class="enciso-stat"><div class="enciso-stat-value" data-correct-points>0</div><div class="enciso-stat-label">Correctas</div></div>
+            <div class="enciso-stat"><div class="enciso-stat-value" data-time-points>0</div><div class="enciso-stat-label">Tiempo</div></div>
+            <div class="enciso-stat"><div class="enciso-stat-value" data-bonus-grade>+0.0</div><div class="enciso-stat-label">Bonus nota</div></div>
+            <div class="enciso-stat"><div class="enciso-stat-value" data-extra-points>0</div><div class="enciso-stat-label">Puntos</div></div>
           </div>
         </section>
 
         <section class="enciso-podium-section" data-podium-section>
           <div class="enciso-section-title">Ranking del reto</div>
-
           <div class="enciso-podium">
             <article class="enciso-podium-player second" data-place="second">
-              <div class="enciso-podium-sparkles" aria-hidden="true">
-                <span></span><span></span><span></span><span></span>
-              </div>
+              <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(4)}</div>
               <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name" data-podium-name>Mateo</div>
-              <div class="enciso-podium-points" data-points>0 pts</div>
+              <div class="enciso-podium-name">${escapeHTML(second.name)}</div>
+              <div class="enciso-podium-points">${encisoFormatNumber(second.points)} pts</div>
               <div class="enciso-podium-block">2</div>
             </article>
-
             <article class="enciso-podium-player first" data-place="first">
-              <div class="enciso-podium-sparkles" aria-hidden="true">
-                <span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span>
-              </div>
+              <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(8)}</div>
               <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name" data-podium-name>T\u00fa</div>
-              <div class="enciso-podium-points" data-my-podium-points data-points>0 pts</div>
+              <div class="enciso-podium-name">${escapeHTML(first.name)}</div>
+              <div class="enciso-podium-points" data-my-podium-points>0 pts</div>
               <div class="enciso-podium-block">1</div>
             </article>
-
             <article class="enciso-podium-player third" data-place="third">
-              <div class="enciso-podium-sparkles" aria-hidden="true">
-                <span></span><span></span>
-              </div>
+              <div class="enciso-podium-sparkles" aria-hidden="true">${encisoPodiumSparklesHTML(2)}</div>
               <div class="enciso-avatar"></div>
-              <div class="enciso-podium-name" data-podium-name>Sof\u00eda</div>
-              <div class="enciso-podium-points" data-points>0 pts</div>
+              <div class="enciso-podium-name">${escapeHTML(third.name)}</div>
+              <div class="enciso-podium-points">${encisoFormatNumber(third.points)} pts</div>
               <div class="enciso-podium-block">3</div>
             </article>
           </div>
@@ -6468,13 +6356,11 @@
 
         <section class="enciso-review-section" data-review-section>
           <div class="enciso-section-title">Resumen por pregunta</div>
-          <div class="enciso-review-scroll" data-review-scroll></div>
+          <div class="enciso-review-scroll">${encisoReviewItemsHTML(data.review)}</div>
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
-          <button class="enciso-continue-btn" type="button" data-continue-button>
-            Continuar
-          </button>
+          <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
       </section>
     `;
@@ -6489,10 +6375,6 @@
   }
 
   function closeQuizFullscreen(target = 'quizzes') {
-    if (window.__encisoFinalResultsController?.destroy) {
-      window.__encisoFinalResultsController.destroy();
-      window.__encisoFinalResultsController = null;
-    }
     stopQuizQuestionMusic(false);
     removeQuizGlobalFeedback();
     clearQuizTimers();
@@ -7292,7 +7174,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.224', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.225', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
