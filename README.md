@@ -1,3 +1,13 @@
+## v0.24.268
+
+Base: v0.24.267.
+
+Corrección visual limitada al hero de CLASES: se igualaron sus dimensiones y alineación base con los heroes de ROCKSTARS y QUIZZES, manteniendo el contenedor existente y sin tocar el listado de clases, contenidos, navegación, lógica, datos, quizzes, countdown, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.268.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.267
 
 Base: v0.24.266.
