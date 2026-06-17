@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.251';
+  const APP_VERSION = '0.24.252';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3989,9 +3989,10 @@
   function normalizeQuizTransitionTune(tune = {}) {
     const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
     return {
-      radials: safe.radials === true,
-      sceneGlow: safe.sceneGlow === true,
-      shapeGlow: safe.shapeGlow !== false,
+      // v0.24.252: transicion limpia sin radiales/glow/figuras. Se conserva solo el avance continuo si existia.
+      radials: false,
+      sceneGlow: false,
+      shapeGlow: false,
       continuous: safe.continuous === true
     };
   }
@@ -5669,8 +5670,8 @@
     const session = getQuizSession();
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
     const phase = session.phase || 'question';
-    const transitionWithIntro = phase === 'transition' && session.transitionFromIntro && state.quizQuestionIndex === 0;
-    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'transition' && session.transitionFromIntro ? ' quiz-transition-from-intro' : ''}${transitionWithIntro ? ' quiz-transition-with-intro' : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
+    const transitionWithIntro = false;
+    layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}` : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
@@ -5793,23 +5794,14 @@
   function quizItemTransitionHTML(item, total, quiz = getActiveQuiz(), withIntroInfo = false) {
     const current = Math.max(1, Number(item) || 1);
     const count = Math.max(1, Number(total) || 1);
-    const infoHTML = withIntroInfo ? `
-        <div class="quiz-transition-intro-info" aria-hidden="false">
-          <p class="section-kicker">Preparando reto</p>
-          <h2>${escapeHTML(quiz?.title || 'Quiz')}</h2>
-          <p>${escapeHTML(quiz?.description || quiz?.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
-        </div>` : '';
     return `
-      <section class="quiz-item-transition quiz-burst-scene" aria-live="polite">
-        ${quizTransitionTunePanelHTML(current, count)}
-        <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        ${infoHTML}
-        <div class="quiz-transition-count"><span class="quiz-transition-number"><strong>${current}</strong><small>/${count}</small></span></div>
+      <section class="quiz-item-transition quiz-transition-minimal" aria-live="polite">
         ${quizTransitionScoreHTML(current, quiz)}
-        <div class="quiz-transition-progress"><span></span></div>
+        <div class="quiz-transition-progress" aria-hidden="true"><span></span></div>
       </section>
     `;
   }
+
 
   function quizResultItemCardsHTML(quiz, answers = []) {
     const questions = Array.isArray(quiz?.questions) ? quiz.questions.slice(0, 10) : [];
@@ -8194,7 +8186,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.251', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.252', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

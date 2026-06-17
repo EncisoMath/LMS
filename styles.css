@@ -19711,3 +19711,100 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-h
 /* v0.24.249 - Resultados: color verde alto ajustado a #54c600 en hero y poligono. */
 
 /* v0.24.251 - Resultados: corrige override CSS del estado 8.0 a 8.9 para poligono/hero a #24b49a y alinea 7.0 a 7.9 a #EBB513. */
+
+/* ===== v0.24.252 - Transicion limpia: solo puntaje + countdown ===== */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition,
+.quiz-fullscreen-layer.quiz-phase-transition {
+  background: #000 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition::before,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition::after,
+.quiz-fullscreen-layer.quiz-phase-transition::before,
+.quiz-fullscreen-layer.quiz-phase-transition::after,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-bg::before,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-bg::after {
+  content: none !important;
+  display: none !important;
+  opacity: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-bg,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-bg,
+.quiz-phase-transition.quiz-transition-radials-on .quiz-fullscreen-bg,
+.quiz-phase-transition.quiz-transition-radials-off .quiz-fullscreen-bg {
+  opacity: 1 !important;
+  background: #000 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-content,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-content,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-fullscreen-transition-content {
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition .quiz-item-transition.quiz-transition-minimal,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-item-transition.quiz-transition-minimal,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-item-transition.quiz-burst-scene,
+.quiz-phase-transition .quiz-item-transition.quiz-burst-scene,
+.quiz-phase-transition.quiz-transition-radials-on .quiz-item-transition.quiz-burst-scene,
+.quiz-phase-transition.quiz-transition-scene-effects-on .quiz-item-transition.quiz-burst-scene {
+  position: relative !important;
+  min-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  width: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+  overflow: hidden !important;
+}
+
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-burst-shapes,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-burst-shapes span,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-intro-info,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-count,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-number,
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-ribbon {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  animation: none !important;
+}
+
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-progress,
+.quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro .quiz-transition-progress {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  left: 14px !important;
+  right: 14px !important;
+  bottom: 14px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(255,255,255,.18) !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.quiz-fullscreen-layer.quiz-phase-transition .quiz-transition-progress span,
+.quiz-fullscreen-layer.quiz-phase-transition.quiz-transition-with-intro .quiz-transition-progress span {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform-origin: left center !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  animation: quizTransitionBarHoldDrain var(--quiz-transition-total-duration) linear forwards !important;
+}
