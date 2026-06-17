@@ -1,17 +1,8 @@
-## v0.24.246
+## v0.24.247
 
-Cambios v0.24.246:
-
-- Corrección en Resultados: la banda/hero de estados plateado y dorado ahora usa fondos metalizados visibles mediante gradientes explícitos por estado.
-- Corrección en Resultados: el polígono de la nota ahora usa los mismos rangos de color que la banda: rojo `#e21b3c`, naranja `#ff7a00`, verde `#58cc02`, plateado metalizado y dorado metalizado.
-- Ajustes por defecto de la nota/polígono en la tuerquita de resultados: Pos X polígono `10%`, Pos Y polígono `-16%`, tamaño número nota `90%`, Pos X número nota `7%`, Pos Y número nota `-40%`.
-- Se actualizó la clave de calibración de resultados a `encisomath:finalResultsTune:v0.24.246` para aplicar esos valores por defecto.
-- Versión/cache busting actualizado a `0.24.246`.
-
-Validaciones esperadas:
-
-- `node --check app.js`
-- `node --check sw.js`
-- JSON válidos
-- `manifest.webmanifest` válido
-- `unzip -t` sin errores
+Cambios v0.24.247:
+- Se actualizaron únicamente los rangos de color del hero/banda y del polígono de nota final en Resultados.
+- Nuevos rangos: 0.0-5.9 rojo #e21b3c, 6.0-6.9 naranja #ff7a00, 7.0-7.9 amarillo #f5c400, 8.0-8.9 lima #a3d900, 9.0-10.0 verde #58cc02.
+- El texto del hero y el número de nota quedan blancos en todos los casos.
+- No se tocaron layout, tamaños, posiciones, ranking, resumen, preguntas, datos, música ni countdown.
+- Versión/cache busting actualizado a 0.24.247.

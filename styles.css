@@ -19579,7 +19579,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-
 }
 
 
-/* v0.24.246 - resultados: fondos metalizados de nota alta y poligono con mismos rangos de la banda */
+/* v0.24.247 - resultados: fondos metalizados de nota alta y poligono con mismos rangos de la banda */
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-silver {
   --enciso-state-band-bg: linear-gradient(115deg, #697284 0%, #b4becd 11%, #f7fbff 22%, #9aa5b5 34%, #e9eef7 47%, #ffffff 55%, #818b9b 69%, #d8e0ec 84%, #6f7a89 100%);
 }
@@ -19621,4 +19621,82 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-fi
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold .enciso-grade-poly-svg polygon,
 body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-gold .em-grade-polygon-base {
   fill: url(#goldPolyGradient);
+}
+
+/* v0.24.247 - resultados: nuevos rangos planos para hero y poligono; texto/nota siempre blancos */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-red {
+  --enciso-state-color: #e21b3c;
+  --enciso-state-glow: rgba(226,27,60,.55);
+  --enciso-state-band-bg: #e21b3c;
+  --enciso-state-text: #ffffff;
+  --enciso-state-note-text: #ffffff;
+  --enciso-fake-note-color: #ffffff;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-orange {
+  --enciso-state-color: #ff7a00;
+  --enciso-state-glow: rgba(255,122,0,.55);
+  --enciso-state-band-bg: #ff7a00;
+  --enciso-state-text: #ffffff;
+  --enciso-state-note-text: #ffffff;
+  --enciso-fake-note-color: #ffffff;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow {
+  --enciso-state-color: #f5c400;
+  --enciso-state-glow: rgba(245,196,0,.55);
+  --enciso-state-band-bg: #f5c400;
+  --enciso-state-text: #ffffff;
+  --enciso-state-note-text: #ffffff;
+  --enciso-fake-note-color: #ffffff;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime {
+  --enciso-state-color: #a3d900;
+  --enciso-state-glow: rgba(163,217,0,.55);
+  --enciso-state-band-bg: #a3d900;
+  --enciso-state-text: #ffffff;
+  --enciso-state-note-text: #ffffff;
+  --enciso-fake-note-color: #ffffff;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green {
+  --enciso-state-color: #58cc02;
+  --enciso-state-glow: rgba(88,204,2,.55);
+  --enciso-state-band-bg: #58cc02;
+  --enciso-state-text: #ffffff;
+  --enciso-state-note-text: #ffffff;
+  --enciso-fake-note-color: #ffffff;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-red .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-red .em-grade-polygon-base {
+  fill: #e21b3c !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-orange .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-orange .em-grade-polygon-base {
+  fill: #ff7a00 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-yellow .em-grade-polygon-base {
+  fill: #f5c400 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-lime .em-grade-polygon-base {
+  fill: #a3d900 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .enciso-grade-poly-svg polygon,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-final-results.enciso-result-state-green .em-grade-polygon-base {
+  fill: #58cc02 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-reto-hero-animado *,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-grade-note,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .em-grade-number-base {
+  color: #ffffff !important;
 }

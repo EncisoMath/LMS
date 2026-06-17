@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.246';
+  const APP_VERSION = '0.24.247';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5923,9 +5923,9 @@
       glow: 'rgba(226,27,60,.55)',
       bandBg: '#e21b3c',
       textColor: '#ffffff',
-      noteColor: '#e21b3c',
-      fakeNoteColor: '#d89e00',
-      polygonFill: '#ffffff',
+      noteColor: '#ffffff',
+      fakeNoteColor: '#ffffff',
+      polygonFill: '#e21b3c',
       titlePool: ['Uy quieto', 'Casi casi', 'Toca remontada', 'Modo recuperación'],
       phrasePool: [
         'El quiz dijo: hoy no, mi ciela.',
@@ -5940,9 +5940,9 @@
       glow: 'rgba(255,122,0,.55)',
       bandBg: '#ff7a00',
       textColor: '#ffffff',
-      noteColor: '#ff7a00',
-      fakeNoteColor: '#d89e00',
-      polygonFill: '#ffffff',
+      noteColor: '#ffffff',
+      fakeNoteColor: '#ffffff',
+      polygonFill: '#ff7a00',
       titlePool: ['Bien ahí', 'Se salvó', 'Aprobado vibes', 'Pasó raspando'],
       phrasePool: [
         'Sobreviviste, que también es talento.',
@@ -5952,14 +5952,14 @@
         'Modo: no sé cómo, pero salió.'
       ]
     },
-    green: {
-      color: '#58cc02',
-      glow: 'rgba(88,204,2,.55)',
-      bandBg: '#58cc02',
+    yellow: {
+      color: '#f5c400',
+      glow: 'rgba(245,196,0,.55)',
+      bandBg: '#f5c400',
       textColor: '#ffffff',
-      noteColor: '#58cc02',
-      fakeNoteColor: '#d89e00',
-      polygonFill: '#ffffff',
+      noteColor: '#ffffff',
+      fakeNoteColor: '#ffffff',
+      polygonFill: '#f5c400',
       titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
         'El conocimiento entró con flow.',
@@ -5969,38 +5969,38 @@
         'Buenardo, como dicen los académicos.'
       ]
     },
-    silver: {
-      color: '#d7dde8',
-      glow: 'rgba(215,221,232,.55)',
-      bandBg: 'linear-gradient(115deg, #697284 0%, #b4becd 11%, #f7fbff 22%, #9aa5b5 34%, #e9eef7 47%, #ffffff 55%, #818b9b 69%, #d8e0ec 84%, #6f7a89 100%)',
-      textColor: '#697284',
-      noteColor: '#697284',
-      fakeNoteColor: '#697284',
-      polygonFill: 'url(#silverPolyGradient)',
-      titlePool: ['Casi leyenda', 'Plateado brutal', 'Top mundial', 'Modo tryhard'],
+    lime: {
+      color: '#a3d900',
+      glow: 'rgba(163,217,0,.55)',
+      bandBg: '#a3d900',
+      textColor: '#ffffff',
+      noteColor: '#ffffff',
+      fakeNoteColor: '#ffffff',
+      polygonFill: '#a3d900',
+      titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
-        'Eso rozó el 10 como tráiler de película épica.',
-        'La excelencia te vio y dijo: casi vecino.',
-        'Nivel plateado, flow de final boss.',
-        'No fue perfecto, pero hizo temblar al ranking.',
-        'El 10 estaba ahí mirando nervioso.'
+        'El conocimiento entró con flow.',
+        'Eso estuvo más limpio que tablero nuevo.',
+        'Hoy sí desayunaste concentración.',
+        'La calculadora pidió autógrafo.',
+        'Buenardo, como dicen los académicos.'
       ]
     },
-    gold: {
-      color: '#f7c948',
-      glow: 'rgba(247,201,72,.62)',
-      bandBg: 'linear-gradient(115deg, #8b5a00 0%, #c78600 10%, #f7c948 22%, #fff2a8 36%, #ffffff 48%, #e0a600 63%, #b77900 76%, #ffd86b 90%, #9c6a00 100%)',
-      textColor: '#94731c',
-      noteColor: '#94731c',
-      fakeNoteColor: '#94731c',
-      polygonFill: 'url(#goldPolyGradient)',
-      titlePool: ['¡Perfecto!', 'Oro puro', 'Legendario', 'Modo dios'],
+    green: {
+      color: '#58cc02',
+      glow: 'rgba(88,204,2,.55)',
+      bandBg: '#58cc02',
+      textColor: '#ffffff',
+      noteColor: '#ffffff',
+      fakeNoteColor: '#ffffff',
+      polygonFill: '#58cc02',
+      titlePool: ['¡Muy bien!', '¡Excelente!', 'Nivel pro', 'Tremendo'],
       phrasePool: [
-        'El quiz se arrodilló y pidió perdón.',
-        'Dios bajó y dijo: 10.0.',
-        'La nota hizo speedrun al Olimpo.',
-        'Eso no fue responder, fue humillar con elegancia.',
-        'El ranking pidió captura de pantalla.'
+        'El conocimiento entró con flow.',
+        'Eso estuvo más limpio que tablero nuevo.',
+        'Hoy sí desayunaste concentración.',
+        'La calculadora pidió autógrafo.',
+        'Buenardo, como dicen los académicos.'
       ]
     }
   };
@@ -6059,9 +6059,9 @@
   }
 
   function encisoGetResultStateKeyByGrade(grade) {
-    if (grade >= 10) return 'gold';
-    if (grade >= 9) return 'silver';
-    if (grade >= 7) return 'green';
+    if (grade >= 9) return 'green';
+    if (grade >= 8) return 'lime';
+    if (grade >= 7) return 'yellow';
     if (grade >= 6) return 'orange';
     return 'red';
   }
@@ -6720,7 +6720,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.246';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.247';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -8125,7 +8125,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.246', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.247', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
