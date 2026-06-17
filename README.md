@@ -1,3 +1,13 @@
+## v0.24.271
+
+Base: v0.24.270.
+
+Corrección puntual solo en CLASES: se corrigió la regla responsive efectiva de `.em-cl-lessonsBoard` dentro de `@media (max-width: 560px)` para que reserve `90px × 90px` en lugar de `132px × 104px`. Se agregó un override final limitado a CLASES para evitar que una regla duplicada posterior vuelva a empujar el alto del hero. No se tocaron ROCKSTARS, QUIZZES, listados, navegación, lógica, datos, quizzes, countdown, música, ranking, podio ni estudiantes.
+
+Version/cache busting actualizado a 0.24.271.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.270
 
 Base: v0.24.269.

@@ -22291,7 +22291,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH HERO ROCKSTARS + QUIZZES ALIGNMENT
-   v0.24.270 - Misma escala interna, mismas posiciones relativas,
+   v0.24.271 - Misma escala interna, mismas posiciones relativas,
    sin cortes de texto. No cambia contenedor padre ni listas.
 ========================================================= */
 
@@ -22469,7 +22469,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO FLAT
-   v0.24.270 - Solo hero visual de la pestaña CLASES.
+   v0.24.271 - Solo hero visual de la pestaña CLASES.
    No modifica listados, datos ni lógica.
 ========================================================= */
 
@@ -22837,8 +22837,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   }
 
   .em-cl-lessonsBoard {
-    width: 132px;
-    height: 104px;
+    width: 90px;
+    height: 90px;
     transform: rotate(-2deg) scale(0.72);
   }
 
@@ -22896,7 +22896,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
 /* =========================================================
    ENCISOMATH CLASES HERO ALIGNMENT FIX
-   v0.24.270 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
+   v0.24.271 - Igualar dimensiones y alineación con ROCKSTARS/QUIZZES.
    Solo afecta el hero visual de CLASES.
 ========================================================= */
 
@@ -22982,8 +22982,8 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   }
 
   .em-cl-lessonsBoard {
-    width: 132px !important;
-    height: 104px !important;
+    width: 90px !important;
+    height: 90px !important;
     transform: rotate(-2deg) scale(0.72) !important;
   }
 
@@ -23025,5 +23025,17 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 
   .em-cl-subtitle {
     display: none !important;
+  }
+}
+
+
+/* v0.24.271 - Ajuste final CLASES mobile board footprint.
+   Solo CLASES: evita que el board reserve 132x104 y empuje el alto del hero. */
+@media (max-width: 560px) {
+  .class-hero.em-cl-hero-host .em-cl-lessonsBoard,
+  .em-cl-lessonsBoard {
+    width: 90px !important;
+    height: 90px !important;
+    transform: rotate(-2deg) scale(0.72) !important;
   }
 }
