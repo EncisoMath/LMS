@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.238';
+  const APP_VERSION = '0.24.239';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -4782,8 +4782,14 @@
       button.addEventListener('click', () => {
         const root = button.closest?.('[data-final-results]');
         encisoPlayResultButtonJello(button);
-        if (root) encisoPlayFinalResultsFlowOut(root, () => closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes'));
-        else closeQuizFullscreen(button.dataset.quizResultTarget || 'quizzes');
+        const target = button.dataset.quizResultTarget || 'quizzes';
+        if (root) {
+          setTimeout(() => {
+            encisoPlayFinalResultsFlowOut(root, () => closeQuizFullscreen(target));
+          }, 600);
+        } else {
+          setTimeout(() => closeQuizFullscreen(target), 600);
+        }
       });
     });
     document.querySelectorAll('[data-enciso-result-replay]').forEach((button) => {
@@ -6402,7 +6408,7 @@
     `).join('');
   }
 
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.238';
+  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.239';
   const ENCISO_FINAL_TUNE_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
@@ -6429,7 +6435,7 @@
     gradePolyZoom: 100,
     gradePolyX: 0,
     gradePolyY: -16,
-    gradeNoteSize: 132,
+    gradeNoteSize: 102,
     gradeNoteX: 0,
     gradeNoteY: -50,
     podiumHeight: 25,
@@ -7600,7 +7606,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.238', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.239', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

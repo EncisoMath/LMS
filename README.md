@@ -1,18 +1,14 @@
-## v0.24.238
+## v0.24.239
 
-Cambios v0.24.238:
-- Solo pantalla final de resultados: hero, puntaje, ranking, resumen y botonera usan entrada/salida tipo encisoFlowIn/encisoFlowOut con orden de abajo hacia arriba.
-- Botones Repetir animación y Continuar aplican jello-horizontal al pulsarlos.
-- Podios azul y rojo reciben sombra inferior flat sólida como el podio amarillo.
-- Versión/cache busting actualizado a `0.24.238`.
-
-## v0.24.238
-
-Cambios v0.24.238:
-- Pantalla final de resultados: se fijaron como valores definitivos por defecto los ajustes calibrados por el usuario para Hero, Puntaje, Ranking, Preguntas y Botones.
-- Se actualizó la clave de calibración a `encisomath:finalResultsTune:v0.24.238` para no arrastrar valores anteriores de pruebas.
-- No se tocaron flujo del quiz, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
-- Versión/cache busting actualizado a `0.24.238`.
+Cambios v0.24.239:
+- Solo pantalla final de resultados: se corrigió `encisoFinalResultsFlowIn` para que haga `opacity: 0 -> 1` y `scale: .97 -> 1`.
+- Solo pantalla final de resultados: se corrigió `encisoFinalResultsFlowOut` para que haga `opacity: 1 -> 0` y `scale: 1 -> .97`.
+- La salida de resultados se dispara 0.6 segundos después de pulsar `Continuar`, dejando correr primero la animación jello del botón.
+- El tamaño por defecto del número de la nota quedó en 102%.
+- Se quitaron los `opacity: 1 !important` que bloqueaban el fade de los contenedores, manteniendo fondos sólidos.
+- Se actualizó la clave de calibración a `encisomath:finalResultsTune:v0.24.239`.
+- No se tocaron inicio del quiz, transición, preguntas, tipos de quiz, countdown, música, login, Rockstars, Clases, Estudiantes ni datos base.
+- Versión/cache busting actualizado a `0.24.239`.
 
 Validación:
 - `node --check app.js`
