@@ -1,3 +1,11 @@
+## v0.24.284 - Botonera de asignatura y controles de asistencia
+
+Base: v0.24.283.
+
+Cambios limitados a la zona superior de asignatura seleccionada y a los controles superiores de ESTUDIANTES: se integró botonera horizontal responsive `em-subject-top-tabs` para Estudiantes, Clases, Rockstars y Quizzes, conservando la navegación existente; el botón activo toma el color real de la asignatura. Se reemplazó visualmente el bloque superior de ESTUDIANTES por `em-students-attendance-tools` con tarjeta de Asistencia diaria, fecha, buscador y botón Añadir; la fecha/bandita usan `--em-current-subject-color` y buscador/Añadir usan `--em-current-support-color` calculado según la paleta EncisoMath. Se agregaron figuras random suaves en la bandita de asistencia. No se tocaron datos, lógica de quizzes, clases, rockstars, ranking, podio, música, countdown ni base de datos.
+
+Version/cache busting actualizado a 0.24.284.
+
 ## v0.24.283 - Banner asignatura sin gestor visual y chip de área
 
 - Cambio limitado al banner interno de asignatura: se eliminó el botón de tres puntos `...` y el modal/contenido de gestor visual asociado.

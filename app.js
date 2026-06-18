@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.283';
+  const APP_VERSION = '0.24.284';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -907,12 +907,14 @@
             </div>
           </div>
         </section>
-        <div class="tab-row sticky-tabs">
-          <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
-          <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
-          <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 Rockstars</button>
-          <button class="tab-btn ${tab === 'quizzes' ? 'active' : ''}" id="quizzesTab">🎮 Quizzes</button>
-        </div>
+        <nav class="em-subject-top-tabs sticky-tabs" aria-label="Pestañas de asignatura">
+          <div class="em-subject-top-tabs-track">
+            <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students">👥 Estudiantes</button>
+            <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes">📚 Clases</button>
+            <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars">🚀 Rockstars</button>
+            <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes">🎮 Quizzes</button>
+          </div>
+        </nav>
         <section id="tabContent" class="section tab-section"></section>
         ${bottomNav('profe')}
       </main>
@@ -925,6 +927,7 @@
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
+      emInitSubjectToolbar(document);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
@@ -957,10 +960,16 @@
     const content = document.getElementById('tabContent');
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     setActiveSubjectTabMeta(tab);
-    document.getElementById('studentsTab')?.classList.toggle('active', tab === 'students');
-    document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
-    document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
-    document.getElementById('quizzesTab')?.classList.toggle('active', tab === 'quizzes');
+    const updateSubjectTopTab = (id, isActive) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.classList.toggle('active', isActive);
+      button.classList.toggle('is-active', isActive);
+    };
+    updateSubjectTopTab('studentsTab', tab === 'students');
+    updateSubjectTopTab('classesTab', tab === 'classes');
+    updateSubjectTopTab('rockstarsTab', tab === 'rockstars');
+    updateSubjectTopTab('quizzesTab', tab === 'quizzes');
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
@@ -1060,23 +1069,37 @@
     setActiveSubjectTabMeta('students');
 
     $content.innerHTML = `
-      <div class="date-card">
-        <div><strong>Asistencia diaria</strong><br><span class="card-sub">${readableDate(state.attendanceDate)}</span></div>
-        <input id="attendanceDate" type="date" value="${state.attendanceDate}" />
-      </div>
-      <div class="student-tools">
-        <div class="search-wrap">
-          <span aria-hidden="true">🔎</span>
-          <input class="input search-input" id="studentSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
+      <section class="em-students-attendance-tools">
+        <div class="em-attendance-date-card" data-em-attendance-band>
+          <span class="em-attendance-shape" aria-hidden="true"></span>
+          <span class="em-attendance-shape" aria-hidden="true"></span>
+
+          <div class="em-attendance-title-box">
+            <h1 class="em-attendance-title">Asistencia diaria</h1>
+            <p class="em-attendance-subtitle" id="attendanceReadableDate">${readableDate(state.attendanceDate)}</p>
+          </div>
+
+          <label class="em-date-pill" for="attendanceDate">
+            <input id="attendanceDate" type="date" value="${state.attendanceDate}" />
+          </label>
         </div>
-        <button class="primary-btn" id="openAddStudentBtn" type="button">Añadir</button>
-      </div>
+
+        <div class="em-attendance-actions-row">
+          <label class="em-search-box" for="studentSearch">
+            <span class="em-search-tag">Buscar</span>
+            <input class="em-search-input" id="studentSearch" type="search" placeholder="Nombre o código" value="${escapeAttr(state.studentSearch || '')}" />
+          </label>
+
+          <button class="em-add-button" id="openAddStudentBtn" type="button">Añadir</button>
+        </div>
+      </section>
       <div id="studentList" class="student-list em-rs-list">
         ${studentListHTML()}
       </div>
     `;
 
     bindStudentTabEvents();
+    emRandomizeAttendanceBandShapes($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function studentListHTML() {
@@ -1100,6 +1123,8 @@
     const assignment = state.assignment;
     document.getElementById('attendanceDate').addEventListener('change', (event) => {
       state.attendanceDate = event.target.value || todayISO();
+      const readable = document.getElementById('attendanceReadableDate');
+      if (readable) readable.textContent = readableDate(state.attendanceDate);
       refreshStudentList();
     });
 
@@ -8033,6 +8058,118 @@
     '#e21b3c'
   ];
 
+  const EM_SUBJECT_THEME_MAP = {
+    '#1368ce': {
+      main: '#1368ce',
+      support: '#24b49a',
+      mainInk: '#ffffff',
+      supportInk: '#001814',
+      shape: 'rgba(19, 104, 206, .28)'
+    },
+    '#ff7a00': {
+      main: '#ff7a00',
+      support: '#EBB513',
+      mainInk: '#ffffff',
+      supportInk: '#181100',
+      shape: 'rgba(255, 122, 0, .28)'
+    },
+    '#24b49a': {
+      main: '#24b49a',
+      support: '#1368ce',
+      mainInk: '#001814',
+      supportInk: '#ffffff',
+      shape: 'rgba(36, 180, 154, .28)'
+    },
+    '#54c600': {
+      main: '#54c600',
+      support: '#EBB513',
+      mainInk: '#092300',
+      supportInk: '#181100',
+      shape: 'rgba(84, 198, 0, .28)'
+    },
+    '#ebb513': {
+      main: '#EBB513',
+      support: '#ff7a00',
+      mainInk: '#181100',
+      supportInk: '#ffffff',
+      shape: 'rgba(235, 181, 19, .28)'
+    },
+    '#e21b3c': {
+      main: '#e21b3c',
+      support: '#ff7a00',
+      mainInk: '#ffffff',
+      supportInk: '#ffffff',
+      shape: 'rgba(226, 27, 60, .28)'
+    }
+  };
+
+  const EM_ATTENDANCE_SHAPE_TYPES = ['circle', 'square', 'triangle', 'x'];
+
+  const EM_ATTENDANCE_MOVEMENT_PAIRS = [
+    ['move-a1', 'move-b1'],
+    ['move-a2', 'move-b2'],
+    ['move-a3', 'move-b3'],
+    ['move-a4', 'move-b4']
+  ];
+
+  function emNormalizeHexColor(color) {
+    return String(color || '#1368ce').trim().toLowerCase();
+  }
+
+  function emGetSubjectTheme(color) {
+    const normalized = emNormalizeHexColor(color);
+    return EM_SUBJECT_THEME_MAP[normalized] || EM_SUBJECT_THEME_MAP['#1368ce'];
+  }
+
+  function emApplySubjectTheme(color, root = document.documentElement) {
+    const theme = emGetSubjectTheme(color);
+
+    root.style.setProperty('--em-current-subject-color', theme.main);
+    root.style.setProperty('--em-current-support-color', theme.support);
+    root.style.setProperty('--em-current-subject-ink', theme.mainInk);
+    root.style.setProperty('--em-current-support-ink', theme.supportInk);
+    root.style.setProperty('--em-current-shape-color', theme.shape);
+  }
+
+  function emRandomFrom(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function emRandomizeAttendanceBandShapes(root = document) {
+    const cards = root.querySelectorAll?.('[data-em-attendance-band]') || [];
+
+    cards.forEach((card) => {
+      const shapes = card.querySelectorAll('.em-attendance-shape');
+      const pair = emRandomFrom(EM_ATTENDANCE_MOVEMENT_PAIRS);
+
+      shapes.forEach((shape, index) => {
+        const randomShape = emRandomFrom(EM_ATTENDANCE_SHAPE_TYPES);
+        const movement = pair[index] || pair[0];
+
+        shape.className = 'em-attendance-shape';
+        shape.classList.add(randomShape, movement);
+        shape.setAttribute('aria-hidden', 'true');
+      });
+    });
+  }
+
+  function emInitSubjectToolbar(root = document) {
+    root.querySelectorAll?.('.em-subject-tab-btn').forEach((button) => {
+      if (button.dataset.emToolbarBound === 'true') return;
+      button.dataset.emToolbarBound = 'true';
+      button.addEventListener('click', () => {
+        const group = button.closest('.em-subject-top-tabs');
+        if (!group) return;
+
+        group.querySelectorAll('.em-subject-tab-btn').forEach((item) => {
+          item.classList.remove('is-active', 'active');
+        });
+
+        button.classList.add('is-active', 'active');
+      });
+    });
+  }
+
   function emGetSubjectColorByIndex(index) {
     const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
     return EM_SUBJECT_COLORS[((safeIndex % EM_SUBJECT_COLORS.length) + EM_SUBJECT_COLORS.length) % EM_SUBJECT_COLORS.length];
@@ -8040,7 +8177,7 @@
 
   function emSetCurrentSubjectColor(color) {
     const safeColor = color || '#1368ce';
-    document.documentElement.style.setProperty('--em-current-subject-color', safeColor);
+    emApplySubjectTheme(safeColor);
   }
 
   function emFlatEnsureBackground(element, color) {
@@ -8737,7 +8874,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.283', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.284', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

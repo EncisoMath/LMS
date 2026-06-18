@@ -21973,3 +21973,611 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
   filter: none !important;
   opacity: 1 !important;
 }
+
+/* v0.24.284 - Botonera superior de asignatura y controles de asistencia */
+:root {
+  --em-red: #e21b3c;
+  --em-blue: #1368ce;
+  --em-yellow: #EBB513;
+  --em-orange: #ff7a00;
+  --em-aqua: #24b49a;
+  --em-green: #54c600;
+
+  --em-bg: #000000;
+  --em-card: #080d17;
+  --em-text: #ffffff;
+  --em-soft: rgba(255,255,255,.68);
+  --em-line: rgba(255,255,255,.10);
+
+  --em-current-subject-color: #1368ce;
+  --em-current-support-color: #24b49a;
+  --em-current-subject-ink: #ffffff;
+  --em-current-support-ink: #001814;
+  --em-current-shape-color: rgba(19, 104, 206, .28);
+}
+
+/* =========================================================
+   BOTONERA SUPERIOR DE ASIGNATURA
+========================================================= */
+
+.em-subject-top-tabs {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 1px;
+}
+
+.em-subject-top-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.em-subject-top-tabs-track {
+  display: inline-flex;
+  gap: 6px;
+  min-width: 100%;
+}
+
+.em-subject-tab-btn {
+  flex: 0 0 auto;
+  height: 34px;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 2px solid var(--em-line);
+  border-radius: 6px;
+  background: #0b0f18;
+  color: #ffffff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.em-subject-tab-btn.is-active {
+  background: var(--em-current-subject-color);
+  border-color: var(--em-current-subject-color);
+  color: var(--em-current-subject-ink);
+}
+
+.em-subject-tab-btn:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both;
+}
+
+/* =========================================================
+   CONTROLES DE ASISTENCIA
+========================================================= */
+
+.em-students-attendance-tools {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.em-attendance-date-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 136px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--em-card);
+  border: 2px solid var(--em-current-subject-color);
+  border-radius: 6px;
+  isolation: isolate;
+}
+
+.em-attendance-date-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--em-current-subject-color);
+  z-index: 2;
+}
+
+.em-attendance-shape {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--em-current-shape-color);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.em-attendance-shape.circle {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+}
+
+.em-attendance-shape.square {
+  width: 72px;
+  height: 72px;
+  border-radius: 5px;
+}
+
+.em-attendance-shape.triangle {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-left: 43px solid transparent;
+  border-right: 43px solid transparent;
+  border-bottom: 76px solid var(--em-current-shape-color);
+}
+
+.em-attendance-shape.x {
+  width: 82px;
+  height: 82px;
+  background: transparent;
+}
+
+.em-attendance-shape.x::before,
+.em-attendance-shape.x::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 84px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--em-current-shape-color);
+  transform-origin: center;
+}
+
+.em-attendance-shape.x::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.em-attendance-shape.x::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.em-attendance-shape.move-a1 {
+  animation: emAttendanceMoveA1 18s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-b1 {
+  animation: emAttendanceMoveB1 19s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-a2 {
+  animation: emAttendanceMoveA2 19.5s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-b2 {
+  animation: emAttendanceMoveB2 18.5s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-a3 {
+  animation: emAttendanceMoveA3 20s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-b3 {
+  animation: emAttendanceMoveB3 18.8s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-a4 {
+  animation: emAttendanceMoveA4 19.2s ease-in-out infinite;
+}
+
+.em-attendance-shape.move-b4 {
+  animation: emAttendanceMoveB4 20.4s ease-in-out infinite;
+}
+
+.em-attendance-title-box {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 2px;
+}
+
+.em-attendance-title {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.em-attendance-subtitle {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--em-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.em-date-pill {
+  position: relative;
+  z-index: 3;
+  height: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  background: #0f1724;
+  border: 2px solid var(--em-current-subject-color);
+  border-radius: 5px;
+  padding: 0 8px;
+  transform-origin: center;
+}
+
+.em-date-pill:focus-within {
+  animation: emToolbarSmallPop .28s cubic-bezier(.18, 1.42, .28, 1) both;
+}
+
+.em-date-pill input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  color-scheme: dark;
+}
+
+.em-attendance-actions-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px;
+  gap: 8px;
+}
+
+.em-search-box {
+  position: relative;
+  overflow: hidden;
+  height: 46px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  background: var(--em-card);
+  border: 2px solid var(--em-current-support-color);
+  border-radius: 6px;
+  isolation: isolate;
+  transform-origin: center;
+}
+
+.em-search-box::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--em-current-support-color);
+  z-index: 0;
+}
+
+.em-search-box:focus-within {
+  animation: emToolbarSmallPop .28s cubic-bezier(.18, 1.42, .28, 1) both;
+}
+
+.em-search-tag {
+  position: relative;
+  z-index: 2;
+  height: 26px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background: var(--em-current-support-color);
+  color: var(--em-current-support-ink);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.em-search-input {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 400;
+  padding: 0 9px 0 8px;
+  min-width: 0;
+}
+
+.em-search-input::placeholder {
+  color: rgba(255,255,255,.42);
+  font-weight: 400;
+}
+
+.em-add-button {
+  height: 46px;
+  border: none;
+  border-radius: 6px;
+  background: var(--em-current-support-color);
+  color: var(--em-current-support-ink);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.em-add-button:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both;
+}
+
+/* =========================================================
+   ANIMACIONES
+========================================================= */
+
+@keyframes emAttendanceMoveA1 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(-120px, -18px) rotate(-8deg) scale(1);
+  }
+
+  35% {
+    transform: translate(-50%, -50%) translate(-46px, 15px) rotate(7deg) scale(1.04);
+  }
+
+  70% {
+    transform: translate(-50%, -50%) translate(-96px, 22px) rotate(-4deg) scale(.98);
+  }
+}
+
+@keyframes emAttendanceMoveB1 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(120px, 18px) rotate(8deg) scale(.98);
+  }
+
+  35% {
+    transform: translate(-50%, -50%) translate(46px, -15px) rotate(-7deg) scale(1.04);
+  }
+
+  70% {
+    transform: translate(-50%, -50%) translate(96px, -22px) rotate(4deg) scale(1);
+  }
+}
+
+@keyframes emAttendanceMoveA2 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(-112px, 20px) rotate(5deg) scale(1);
+  }
+
+  40% {
+    transform: translate(-50%, -50%) translate(-58px, -18px) rotate(-8deg) scale(1.04);
+  }
+
+  75% {
+    transform: translate(-50%, -50%) translate(-128px, -4px) rotate(3deg) scale(.98);
+  }
+}
+
+@keyframes emAttendanceMoveB2 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(112px, -20px) rotate(-5deg) scale(.98);
+  }
+
+  40% {
+    transform: translate(-50%, -50%) translate(58px, 18px) rotate(8deg) scale(1.04);
+  }
+
+  75% {
+    transform: translate(-50%, -50%) translate(128px, 4px) rotate(-3deg) scale(1);
+  }
+}
+
+@keyframes emAttendanceMoveA3 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(-132px, 0) rotate(-12deg) scale(1);
+  }
+
+  30% {
+    transform: translate(-50%, -50%) translate(-70px, -21px) rotate(6deg) scale(1.03);
+  }
+
+  65% {
+    transform: translate(-50%, -50%) translate(-34px, 18px) rotate(12deg) scale(.98);
+  }
+
+  85% {
+    transform: translate(-50%, -50%) translate(-106px, 22px) rotate(-4deg) scale(1);
+  }
+}
+
+@keyframes emAttendanceMoveB3 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(132px, 0) rotate(12deg) scale(.98);
+  }
+
+  30% {
+    transform: translate(-50%, -50%) translate(70px, 21px) rotate(-6deg) scale(1.04);
+  }
+
+  65% {
+    transform: translate(-50%, -50%) translate(34px, -18px) rotate(-12deg) scale(1);
+  }
+
+  85% {
+    transform: translate(-50%, -50%) translate(106px, -22px) rotate(4deg) scale(.98);
+  }
+}
+
+@keyframes emAttendanceMoveA4 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(-96px, -22px) rotate(-6deg) scale(1);
+  }
+
+  28% {
+    transform: translate(-50%, -50%) translate(-136px, 12px) rotate(10deg) scale(1.03);
+  }
+
+  58% {
+    transform: translate(-50%, -50%) translate(-54px, 20px) rotate(-3deg) scale(.99);
+  }
+
+  82% {
+    transform: translate(-50%, -50%) translate(-78px, -8px) rotate(5deg) scale(1.02);
+  }
+}
+
+@keyframes emAttendanceMoveB4 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate(96px, 22px) rotate(6deg) scale(.99);
+  }
+
+  28% {
+    transform: translate(-50%, -50%) translate(136px, -12px) rotate(-10deg) scale(1.03);
+  }
+
+  58% {
+    transform: translate(-50%, -50%) translate(54px, -20px) rotate(3deg) scale(1);
+  }
+
+  82% {
+    transform: translate(-50%, -50%) translate(78px, 8px) rotate(-5deg) scale(.98);
+  }
+}
+
+@keyframes emToolbarSmallPop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scaleX(1.015) scaleY(.96);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes emToolbarButtonTap {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scaleX(1.08) scaleY(.86);
+  }
+
+  70% {
+    transform: scaleX(.96) scaleY(1.08);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* =========================================================
+   RESPONSIVO
+========================================================= */
+
+@media (max-width: 360px) {
+  .em-subject-tab-btn {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .em-attendance-date-card {
+    grid-template-columns: minmax(0, 1fr) 124px;
+    gap: 6px;
+    min-height: 58px;
+    padding: 7px;
+  }
+
+  .em-attendance-title {
+    font-size: 14px;
+  }
+
+  .em-attendance-subtitle {
+    font-size: 10px;
+  }
+
+  .em-date-pill {
+    height: 40px;
+    padding: 0 6px;
+  }
+
+  .em-date-pill input {
+    font-size: 12px;
+  }
+
+  .em-attendance-shape.circle {
+    width: 70px;
+    height: 70px;
+  }
+
+  .em-attendance-shape.square {
+    width: 66px;
+    height: 66px;
+  }
+
+  .em-attendance-shape.x {
+    width: 74px;
+    height: 74px;
+  }
+
+  .em-attendance-shape.x::before,
+  .em-attendance-shape.x::after {
+    width: 76px;
+    height: 15px;
+  }
+
+  .em-attendance-shape.triangle {
+    border-left-width: 39px;
+    border-right-width: 39px;
+    border-bottom-width: 69px;
+  }
+
+  .em-attendance-actions-row {
+    grid-template-columns: minmax(0, 1fr) 78px;
+    gap: 6px;
+  }
+
+  .em-search-box {
+    height: 44px;
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .em-search-tag {
+    margin-left: 7px;
+    font-size: 8px;
+  }
+
+  .em-search-input {
+    font-size: 11px;
+  }
+
+  .em-add-button {
+    height: 44px;
+    font-size: 12px;
+  }
+}
