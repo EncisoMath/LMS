@@ -1,12 +1,3 @@
-
-## v0.24.276
-
-- Limpieza agresiva de código legado y capas de depuración del módulo Quizzes.
-- Eliminados paneles/tuerquitas antiguos de feedback, layout, transición, ranking/podio y resultados.
-- Eliminado CSS viejo de feedbacks anteriores, ranking/podio antiguo, transición antigua y heroes heredados que ya no participan en el flujo actual.
-- ROCKSTARS mantiene la estructura directa sobre `.rockstar-hero.em-rs-hero-host` sin wrapper visual hijo, alineado con QUIZZES y CLASES.
-- Se mantienen preguntas, tipos, validación, countdown, música, puntajes, resultados finales actuales, Rockstars, Clases y datos base.
-
 ## v0.24.273
 
 Base: v0.24.272.
