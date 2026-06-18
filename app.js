@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.292';
+  const APP_VERSION = '0.24.290';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5566,7 +5566,7 @@
 
     const DEFAULT_POS_Y = 50;
     const DEFAULT_TITLE_SIZE = 58;
-    const DEFAULT_SUBTITLE_SIZE = 18;
+    const DEFAULT_SUBTITLE_SIZE = 22;
 
     const DIRECCIONES = [
       { x: -135, y: 0 },
@@ -6266,7 +6266,6 @@
     closeModal(false);
     stopQuizQuestionMusic(false);
     removeQuizGlobalFeedback();
-    encisoRemoveFinalResultsFloatingContinue();
     clearQuizTimers();
     state.quizFullscreenActive = false;
     unlockQuizHistory();
@@ -6339,7 +6338,6 @@
         ${content}
       </div>
     `;
-    if (phase !== 'results') encisoRemoveFinalResultsFloatingContinue();
     bindQuizPlayerEvents();
     if (phase === 'question') {
       try { window.EncisoQuizHeroLive?.init?.(layer.querySelector('.quiz-fullscreen-top-countdown')); } catch (_) {}
@@ -7116,62 +7114,6 @@
       }
     });
   }
-  function encisoFinalResultsCleanText(el) {
-    return String(el?.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
-  }
-  function encisoRemoveFinalResultsFloatingContinue() {
-    document.querySelector('[data-em-floating-continue="true"]')?.remove();
-  }
-  function encisoFindFinalResultsContinueButton(layer = document) {
-    const root = layer?.querySelector?.('.quiz-fullscreen-layer.quiz-phase-results') || layer?.querySelector?.('[data-final-results]') || document.querySelector('.quiz-fullscreen-layer.quiz-phase-results') || document.querySelector('[data-final-results]') || document;
-    return Array.from(root.querySelectorAll('button, a, [role="button"]')).find((el) => encisoFinalResultsCleanText(el) === 'continuar') || null;
-  }
-  function encisoRestoreFinalResultsFloatingContinue(layer = document) {
-    const realButton = encisoFindFinalResultsContinueButton(layer);
-    if (!realButton) {
-      encisoRemoveFinalResultsFloatingContinue();
-      return null;
-    }
-    let floating = document.querySelector('[data-em-floating-continue="true"]');
-    if (!floating) {
-      floating = document.createElement('button');
-      floating.type = 'button';
-      floating.textContent = 'Continuar';
-      floating.setAttribute('data-em-floating-continue', 'true');
-      document.body.appendChild(floating);
-      floating.addEventListener('click', () => {
-        const current = encisoFindFinalResultsContinueButton(layer);
-        if (current) current.click();
-      });
-    }
-    return floating;
-  }
-  function encisoAnchorFinalResultsReview(layer = document, gap = 10) {
-    const root = layer?.querySelector?.('[data-final-results]') || document.querySelector('.quiz-fullscreen-layer.quiz-phase-results [data-final-results]') || document.querySelector('[data-final-results]');
-    if (!root) return;
-    const podium = root.querySelector('.enciso-podium-section');
-    const review = root.querySelector('.enciso-review-section');
-    if (!podium || !review) return;
-    const rootBox = root.getBoundingClientRect();
-    const podiumBox = podium.getBoundingClientRect();
-    const top = podiumBox.bottom - rootBox.top + gap;
-    review.style.setProperty('position', 'absolute', 'important');
-    review.style.setProperty('top', `${top}px`, 'important');
-    review.style.setProperty('left', '6px', 'important');
-    review.style.setProperty('right', '6px', 'important');
-    review.style.setProperty('width', 'auto', 'important');
-    review.style.setProperty('max-width', 'none', 'important');
-    review.style.setProperty('min-width', '0', 'important');
-    review.style.setProperty('box-sizing', 'border-box', 'important');
-    review.style.setProperty('overflow', 'hidden', 'important');
-    review.style.setProperty('z-index', '40', 'important');
-    review.style.setProperty('transform', 'none', 'important');
-    review.style.setProperty('margin', '0', 'important');
-  }
-  function encisoApplyFinalResultsLayoutPatch(layer = document, gap = 10) {
-    encisoRestoreFinalResultsFloatingContinue(layer);
-    encisoAnchorFinalResultsReview(layer, gap);
-  }
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
@@ -7179,10 +7121,6 @@
     applyEncisoFinalTune(root, getEncisoFinalTune());
     bindEncisoFinalTunePanel(root);
     encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
-    encisoApplyFinalResultsLayoutPatch(layer, 10);
-    setTimeout(() => encisoApplyFinalResultsLayoutPatch(layer, 10), 120);
-    setTimeout(() => encisoApplyFinalResultsLayoutPatch(layer, 10), 420);
-    setTimeout(() => encisoApplyFinalResultsLayoutPatch(layer, 10), 900);
   }
   function encisoBuildFinalResultsData(quiz) {
     const session = getQuizSession();
@@ -7771,7 +7709,7 @@
         </section>
 
         <section class="enciso-review-section" data-review-section>
-          <div class="enciso-section-title">RESUMEN POR ITEM</div>
+          <div class="enciso-section-title">Resumen por pregunta</div>
           <div class="enciso-review-scroll summary-question-entry-track">${encisoReviewItemsHTML(data.review)}</div>
         </section>
 
@@ -8854,7 +8792,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.292', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.290', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
