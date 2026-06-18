@@ -1,10 +1,13 @@
-## v0.24.285 - Navegación superior/inferior y controles finales de asignatura
+## v0.24.289 - Rebase 285 + tarjetas Clases/Quizzes seguras
 
-Base: v0.24.284.
+Base: v0.24.285-navegacion-asignatura.
 
-Cambios limitados a la zona de asignatura seleccionada: se eliminó la barra inferior PROFE/ESTUDIANTES; la barra superior Back/Home ahora toma un color oscurecido derivado del color actual de la asignatura; se consolidaron los ajustes de organización de la botonera superior, asistencia diaria compacta, buscador/Añadir, conteo Estudiantes (X), animación encisoFlowIn por pestaña activa, periodos 1-4 grandes en Montserrat Black, botones Cuadrícula/Lista con color de asignatura y eliminación del buscador de Rockstars. No se tocaron datos base, lógica de quizzes, ranking, podio, música ni countdown.
+Cambio limitado a ASIGNATURA > CLASES y ASIGNATURA > QUIZZES: se rehicieron visualmente las tarjetas/listados internos usando las estructuras `em-content-`, `em-class-` y `em-quiz-` probadas por consola, partiendo de la última base donde el quiz finalizaba correctamente. En CLASES cada tarjeta muestra solo el título real de la clase y conserva `data-class-id` para abrir la clase. En QUIZZES cada tarjeta muestra nombre real, número real de preguntas compatibles, estado `Cronometrado`/`No cronometrado`, intentos disponibles o 1 por defecto y botón `Iniciar` dentro del banner; conserva `data-quiz-id` para iniciar el quiz.
 
-Version/cache busting actualizado a 0.24.285.
+No se tocaron `renderQuizFullscreen`, `quizResultsHTML`, `startEncisoFinalResultsScreen`, pantalla de juego, countdown, música, ranking, podio ni resultados. Tampoco se tocaron botonera superior de asignatura, asistencia, estudiantes, Rockstars, Home, navegación, datos base ni lógica general.
+
+Version/cache busting actualizado a 0.24.289.
+
 
 ## v0.24.284 - Botonera de asignatura y controles de asistencia
 
