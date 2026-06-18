@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.278';
+  const APP_VERSION = '0.24.279';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -801,15 +801,6 @@
     state.assignment = null;
     const teacher = state.user;
     const assignments = getTeacherAssignments(teacher.id);
-    const filtered = assignments.filter((item) => {
-      return (state.filters.grade === 'all' || item.grade === state.filters.grade)
-        && (state.filters.area === 'all' || item.area === state.filters.area)
-        && (state.filters.course === 'all' || item.course === state.filters.course);
-    });
-
-    const grades = unique(assignments.map((item) => item.grade)).sort((a, b) => Number(b) - Number(a));
-    const areas = unique(assignments.map((item) => item.area)).sort();
-    const courses = unique(assignments.map((item) => item.course)).sort();
 
     const markup = `
       <main class="screen home-screen">
@@ -845,13 +836,8 @@
             </div>
             <button class="mini-btn" id="notifyBtn">🔔 Prueba</button>
           </div>
-          <div class="filter-row three">
-            ${selectHTML('gradeFilter', 'Grado', grades, state.filters.grade)}
-            ${selectHTML('areaFilter', 'Área', areas, state.filters.area)}
-            ${selectHTML('courseFilter', 'Curso', courses, state.filters.course)}
-          </div>
-          <div id="assignmentsGrid" class="grid assignments-grid">
-            ${filtered.map(assignmentCardHTML).join('') || `<div class="empty">No hay asignaturas con esos filtros.</div>`}
+          <div id="assignmentsGrid" class="em-sub-home-wrap">
+            ${emSubHomeSubjectsHTML(assignments)}
           </div>
         </section>
         ${bottomNav('profe')}
@@ -865,33 +851,24 @@
         event.stopPropagation();
         openProfileMenuModal();
       });
-      bindFilter('gradeFilter', 'grade', renderTeacherAssignmentGrid);
-      bindFilter('areaFilter', 'area', renderTeacherAssignmentGrid);
-      bindFilter('courseFilter', 'course', renderTeacherAssignmentGrid);
-
       bindAssignmentCards(assignments);
     });
   }
   function renderTeacherAssignmentGrid() {
     const teacher = state.user;
     const assignments = getTeacherAssignments(teacher.id);
-    const filtered = assignments.filter((item) => {
-      return (state.filters.grade === 'all' || item.grade === state.filters.grade)
-        && (state.filters.area === 'all' || item.area === state.filters.area)
-        && (state.filters.course === 'all' || item.course === state.filters.course);
-    });
     const grid = document.getElementById('assignmentsGrid');
     if (!grid) return;
-    grid.innerHTML = filtered.map(assignmentCardHTML).join('') || `<div class="empty">No hay asignaturas con esos filtros.</div>`;
+    emSubRenderHomeSubjects(assignments, grid);
     grid.classList.remove('grid-local-update');
     void grid.offsetWidth;
     grid.classList.add('grid-local-update');
-    bindAssignmentCards(assignments);
   }
   function bindAssignmentCards(assignments = getTeacherAssignments(state.user?.id)) {
-    document.querySelectorAll('[data-open-assignment]').forEach((button) => {
+    document.querySelectorAll('[data-open-assignment], [data-subject-id]').forEach((button) => {
       button.addEventListener('click', () => {
-        const assignment = assignments.find((item) => item.id === button.dataset.openAssignment);
+        const assignmentId = button.dataset.openAssignment || button.dataset.subjectId;
+        const assignment = assignments.find((item) => String(item.id) === String(assignmentId));
         if (!assignment) return;
         state.assignment = assignment;
         renderSubjectDetail('students');
@@ -8087,6 +8064,137 @@
       document.getElementById('logoutBtn').addEventListener('click', logout);
     });
   }
+  const EM_SUB_SHAPE_PAIRS = [
+    ['circle', 'x'],
+    ['triangle', 'circle'],
+    ['square', 'triangle'],
+    ['x', 'square'],
+    ['circle', 'triangle'],
+    ['square', 'x']
+  ];
+
+  const EM_SUB_MOVE_PAIRS = [
+    ['em-sub-move-1a', 'em-sub-move-1b'],
+    ['em-sub-move-2a', 'em-sub-move-2b'],
+    ['em-sub-move-3a', 'em-sub-move-3b'],
+    ['em-sub-move-4a', 'em-sub-move-4b'],
+    ['em-sub-move-5a', 'em-sub-move-5b'],
+    ['em-sub-move-6a', 'em-sub-move-6b']
+  ];
+
+  function emSubGetSubjectId(subject) {
+    return subject.id || subject.subjectId || subject.key || subject.slug || '';
+  }
+  function emSubGetSubjectArea(subject) {
+    return subject.area || subject.asignatura || subject.subject || subject.materia || 'Asignatura';
+  }
+  function emSubGetSubjectName(subject) {
+    return subject.name || subject.nombre || subject.title || subject.titulo || subject.subject || 'Sin nombre';
+  }
+  function emSubGetSubjectGrade(subject) {
+    return subject.grade || subject.grado || subject.level || '';
+  }
+  function emSubGetSubjectCourse(subject) {
+    return subject.course || subject.curso || subject.group || subject.grupo || '';
+  }
+  function emSubGetSubjectGradeCourse(subject) {
+    const grade = emSubGetSubjectGrade(subject);
+    const course = emSubGetSubjectCourse(subject);
+    if (grade && course) return `${grade}-${course}`;
+    if (course) return String(course);
+    if (grade) return String(grade);
+    return '';
+  }
+  function emSubGetSubjectSortGrade(subject) {
+    const gradeCourse = emSubGetSubjectGradeCourse(subject);
+    const grade = emSubGetSubjectGrade(subject);
+    const raw = String(grade || gradeCourse || '').match(/\d+/);
+    return raw ? Number(raw[0]) : 0;
+  }
+  function emSubNaturalPart(value) {
+    const raw = String(value || '').match(/\d+/);
+    return raw ? Number(raw[0]) : Number.POSITIVE_INFINITY;
+  }
+  function emSubGetSubjectSortKey(subject) {
+    return [
+      String(emSubNaturalPart(emSubGetSubjectCourse(subject))).padStart(4, '0'),
+      emSubGetSubjectArea(subject),
+      emSubGetSubjectName(subject),
+      emSubGetSubjectGradeCourse(subject)
+    ]
+      .join(' ')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+  function emSubSortSubjects(subjects) {
+    return [...subjects].sort((a, b) => {
+      const gradeA = emSubGetSubjectSortGrade(a);
+      const gradeB = emSubGetSubjectSortGrade(b);
+      if (gradeA !== gradeB) return gradeB - gradeA;
+      return emSubGetSubjectSortKey(a).localeCompare(emSubGetSubjectSortKey(b), 'es', { sensitivity: 'base' });
+    });
+  }
+  function emSubGroupSubjectsByGrade(subjects) {
+    const sorted = emSubSortSubjects(subjects);
+    const groups = new Map();
+    sorted.forEach((subject) => {
+      const grade = emSubGetSubjectSortGrade(subject);
+      const label = grade ? `GRADO ${grade}` : 'SIN GRADO';
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(subject);
+    });
+    return [...groups.entries()].map(([label, items]) => ({ label, items }));
+  }
+  function emSubSubjectCardHTML(subject, index) {
+    const id = emSubGetSubjectId(subject);
+    const area = emSubGetSubjectArea(subject);
+    const name = emSubGetSubjectName(subject);
+    const gradeCourse = emSubGetSubjectGradeCourse(subject);
+    const pairIndex = index % EM_SUB_SHAPE_PAIRS.length;
+    const shapes = EM_SUB_SHAPE_PAIRS[pairIndex];
+    const moves = EM_SUB_MOVE_PAIRS[pairIndex];
+    return `
+      <article class="em-sub-card" data-subject-id="${escapeAttr(id)}" role="button" tabindex="0">
+        <div class="em-sub-cover">
+          <span class="em-sub-shape ${escapeAttr(shapes[0])} ${escapeAttr(moves[0])}"></span>
+          <span class="em-sub-shape ${escapeAttr(shapes[1])} ${escapeAttr(moves[1])}"></span>
+        </div>
+        <div class="em-sub-content">
+          <p class="em-sub-area">${escapeHTML(area)}</p>
+          <h2 class="em-sub-name">${escapeHTML(name)}</h2>
+          <p class="em-sub-course">${escapeHTML(gradeCourse)}</p>
+        </div>
+      </article>
+    `;
+  }
+  function emSubGradeGroupHTML(group, startIndex) {
+    return `
+      <section class="em-sub-grade-group">
+        <h2 class="em-sub-grade-title">${escapeHTML(group.label)}</h2>
+        <div class="em-sub-grid">
+          ${group.items.map((subject, index) => emSubSubjectCardHTML(subject, startIndex + index)).join('')}
+        </div>
+      </section>
+    `;
+  }
+  function emSubHomeSubjectsHTML(subjects) {
+    const groups = emSubGroupSubjectsByGrade(subjects);
+    let runningIndex = 0;
+    const html = groups.map((group) => {
+      const groupHTML = emSubGradeGroupHTML(group, runningIndex);
+      runningIndex += group.items.length;
+      return groupHTML;
+    }).join('');
+    return html || '<div class="empty">No hay asignaturas asignadas.</div>';
+  }
+  function emSubRenderHomeSubjects(subjects, homeSubjectsContainer) {
+    if (!homeSubjectsContainer) return;
+    homeSubjectsContainer.classList.add('em-sub-home-wrap');
+    homeSubjectsContainer.innerHTML = emSubHomeSubjectsHTML(subjects);
+    bindAssignmentCards(subjects);
+  }
+
   function assignmentCardHTML(item) {
     const iconSrc = getAssignmentIcon(item);
     const coverStyle = coverBackgroundStyle(item);
@@ -8603,7 +8711,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.278', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.279', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

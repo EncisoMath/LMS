@@ -99,6 +99,50 @@ Cambio visual puntual en Rockstars:
 
 Version/cache busting actualizado a 0.24.262.
 
+## v0.24.279 - Grid definitivo de asignaturas HOME
+
+Base: v0.24.278.
+
+Cambio limitado al HOME: se reemplazó visualmente el grid interno/listado de asignaturas por tarjetas `em-sub-` oscuras con portada flat, dos figuras geométricas animadas por tarjeta, colores EncisoMath alternados, agrupación por grado de mayor a menor y grid responsivo de 2 columnas en celular y 3 columnas en pantallas más anchas. Se quitó del HOME el bloque visual de filtros GRADO/ÁREA/CURSO. Se mantiene el mismo comportamiento de click para abrir cada asignatura. No se tocaron contenedores externos del HOME, navegación, datos base, clases, quizzes, rockstars, estudiantes, asistencia, ranking, podio, música ni countdown.
+
+Version/cache busting actualizado a 0.24.279.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos, CSS braces balanceado y `unzip -t` sin errores.
+
+## v0.24.278 - Calibración final tarjetas asistencia y Rockstars
+
+Base: v0.24.277.
+
+Cambio limitado a tarjetas/listas internas de ESTUDIANTES y ROCKSTARS: se aplicaron como defaults los valores calibrados desde consola para avatar/foto, nombre, código, chip y containers de botones. En Rockstars se oculta visualmente el ID/código y el chip queda debajo del nombre. No se tocaron contenedores principales, heroes, lógica, datos, navegación, quizzes, ranking, podio, música ni countdown.
+
+Version/cache busting actualizado a 0.24.278.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos, CSS braces balanceado y `unzip -t` sin errores.
+
+## v0.24.277 - Compactación final tarjetas asistencia y Rockstars
+
+Base: v0.24.276.
+
+- Se compactaron solo las tarjetas internas `em-rs-att-card` de ESTUDIANTES/asistencia y `em-rs-card` de ROCKSTARS.
+- Se redujeron separaciones verticales internas entre nombre, código/usuario, chip de asistencia y botones.
+- La canastica de asistencia queda posicionada arriba a la derecha dentro de la tarjeta con 3px desde arriba y 3px desde la derecha.
+- Se mantienen las variables de puntos de Rockstars: `--em-rs-rockstar-points-x: -15px` y `--em-rs-rockstar-points-size: 42px`.
+- No se tocaron contenedores principales, heroes, lógica, datos, navegación, quizzes, ranking, podio, música ni countdown.
+
+Version/cache busting actualizado a 0.24.277.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos, CSS braces balanceado y `unzip -t` sin errores.
+
+## v0.24.276 - Compactación tarjetas Rockstars
+
+Base: v0.24.275.
+
+Cambio visual limitado a las tarjetas internas de ROCKSTARS: se compactaron las tarjetas de puntos sin modificar el contenedor principal, layout externo, heroes, navegación, datos ni lógica. El número de puntos se movió 15px a la izquierda mediante `--em-rs-rockstar-points-x` y se aumentó 2px mediante `--em-rs-rockstar-points-size`.
+
+Version/cache busting actualizado a 0.24.276.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.275 - Tarjetas definitivas de estudiantes y Rockstars
 
 - Reemplazo visual de las tarjetas/list items internos de ESTUDIANTES y ROCKSTARS con el nuevo estilo oscuro `em-rs-`.
@@ -106,35 +150,3 @@ Version/cache busting actualizado a 0.24.262.
 - Orden de Rockstars: primero asistentes por apellido/nombre y luego no asistentes/excusa/sin marcar por apellido/nombre, sin separadores visuales.
 - Animaciones resistentes a clics repetidos para cambios de asistencia, puntos y cambio de rango; confeti geométrico solo en ROCKSTARS al cruzar de rango.
 - No se modificaron contenedores principales, heroes, navegación, datos base, quizzes, clases, ranking, podio, música ni countdown.
-
-
-
-## v0.24.276 - Compactacion tarjetas Rockstars
-
-Base: v0.24.275.
-
-Cambio visual limitado a las tarjetas internas de ROCKSTARS: se compactaron las tarjetas de puntos sin modificar el contenedor principal, layout externo, heroes, navegacion, datos ni logica. El numero de puntos se movio 15px a la izquierda mediante `--em-rs-rockstar-points-x` y se aumento 2px mediante `--em-rs-rockstar-points-size`.
-
-Version/cache busting actualizado a 0.24.276.
-
-Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
-
-
-## v0.24.277 - Compactacion final tarjetas asistencia y Rockstars
-- Se compactaron solo las tarjetas internas `em-rs-att-card` de ESTUDIANTES/asistencia y `em-rs-card` de ROCKSTARS.
-- Se redujeron separaciones verticales internas entre nombre, codigo/usuario, chip de asistencia y botones.
-- La canastica de asistencia queda posicionada arriba a la derecha dentro de la tarjeta con 3px desde arriba y 3px desde la derecha.
-- Se mantienen las variables de puntos de Rockstars: `--em-rs-rockstar-points-x: -15px` y `--em-rs-rockstar-points-size: 42px`.
-- No se tocaron contenedores principales, heroes, logica, datos, navegacion, quizzes, ranking, podio, musica ni countdown.
-- Version/cache busting actualizado a 0.24.277.
-
-
-## v0.24.278 - Calibracion tarjetas estudiantes y Rockstars
-
-Base: v0.24.277.
-
-Cambio visual limitado a tarjetas/listas internas de ESTUDIANTES y ROCKSTARS: se aplicaron como defaults los valores calibrados desde consola para avatar/foto, nombre, codigo de asistencia, chip de asistencia Rockstars y containers de botones. En ROCKSTARS se oculta visualmente el codigo/ID y el chip queda debajo del nombre usando el espacio liberado.
-
-No se tocaron contenedores principales, heroes, logica, datos, navegacion, quizzes, ranking, podio, musica ni countdown.
-
-Version/cache busting actualizado a 0.24.278.
