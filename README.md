@@ -1,9 +1,3 @@
-## v0.24.286 - Limpieza de menus HOME y resultados quiz
-
-Cambios limitados: se elimino del HOME el boton de tres puntos y su menu de gestion/apariencia; en inicio de quiz se elimino la frase "Antes de empezar"; en resultados finales del quiz se eliminaron la opcion "Repetir animacion", la tuerquita de ajustes y su panel/menu asociado desde la salida visual. Se mantiene la base v0.24.285 con barra inferior PROFE/ESTUDIANTES eliminada, barra superior Back/Home coloreada por asignatura, organizacion de asignatura, asistencia compacta, conteo Estudiantes (X), encisoFlowIn, periodos Montserrat Black, Cuadricula/Lista con color de asignatura y Rockstars sin buscador.
-
-Version/cache busting actualizado a 0.24.286.
-
 ## v0.24.285 - Navegación superior/inferior y controles finales de asignatura
 
 Base: v0.24.284.
