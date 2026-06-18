@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.289';
+  const APP_VERSION = '0.24.290';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -809,7 +809,6 @@
           <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
-              <button class="round-action" id="profileMenuBtn" aria-label="Opciones de perfil">•••</button>
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
             <img class="profile-avatar" src="${escapeAttr(teacher.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
@@ -845,10 +844,6 @@
     mount(markup, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('profileMenuBtn').addEventListener('click', (event) => {
-        event.stopPropagation();
-        openProfileMenuModal();
-      });
       bindAssignmentCards(assignments);
     });
   }
@@ -973,92 +968,6 @@
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
-  }
-  function openProfileMenuModal() {
-    openModal(`
-      <div class="modal-card profile-menu-modal">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <p class="section-kicker">Perfil y apariencia</p>
-        <h2>Gestionar EncisoMath</h2>
-        <div class="settings-group">
-          <label class="settings-label" for="accentPicker">Color principal</label>
-          <div class="color-picker-row">
-            <input id="accentPicker" class="color-picker" type="color" value="${escapeAttr(state.prefs.accent)}" aria-label="Escoger color principal" />
-            <div class="color-picker-meta">
-              <input id="accentHex" class="input color-hex-input" value="${escapeAttr(state.prefs.accent)}" maxlength="7" spellcheck="false" aria-label="Color principal en hexadecimal" />
-              <span id="accentPreview" class="color-preview" style="--preview-color:${escapeAttr(state.prefs.accent)}">Color actual</span>
-            </div>
-          </div>
-          <p class="settings-help">Puedes escoger cualquier color medio o intenso. Se bloquean tonos casi negros y tonos casi blancos para conservar contraste.</p>
-          <button class="ghost-btn" id="accentResetBtn" type="button">Restablecer Azul Enciso</button>
-        </div>
-        <div class="settings-group">
-          <label class="settings-label" for="backgroundSelect">Fondo de la app</label>
-          <select id="backgroundSelect" class="select dark-select">
-            ${BACKGROUND_OPTIONS.map((item) => `<option value="${escapeAttr(item.value)}" ${state.prefs.background === item.value ? 'selected' : ''}>${escapeHTML(item.label)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="settings-group settings-effects-group">
-          <label class="settings-label">Rendimiento y efectos</label>
-          <label class="toggle-row" for="visualOptimizedToggle"><span>Visual optimizado sin modo plano</span><input id="visualOptimizedToggle" type="checkbox" ${booleanPrefChecked('visualOptimized')} /></label>
-          <label class="toggle-row" for="heroAnimationsToggle"><span>Animación viva de heroes Rockstars/Quizzes</span><input id="heroAnimationsToggle" type="checkbox" ${booleanPrefChecked('heroAnimations')} /></label>
-          <label class="toggle-row" for="glassEffectsToggle"><span>Blur / vidrio</span><input id="glassEffectsToggle" type="checkbox" ${booleanPrefChecked('glassEffects')} /></label>
-          <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
-          <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
-          <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
-          <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
-          <label class="toggle-row" for="quizSoundsToggle"><span>Sonidos de quiz</span><input id="quizSoundsToggle" type="checkbox" ${booleanPrefChecked('quizSounds')} /></label>
-          <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero deja los heroes como composiciones estáticas ricas y evita animaciones permanentes pesadas.</p>
-        </div>
-        <div class="profile-menu-actions">
-          <button class="ghost-btn" id="profileSoonBtn">🪪 Gestionar perfil</button>
-          <button class="ghost-btn" id="notifyMenuBtn">🔔 Probar notificación</button>
-          <button class="danger-btn" id="logoutMenuBtn">Cerrar sesión</button>
-        </div>
-      </div>
-    `, () => {
-      const accentPicker = document.getElementById('accentPicker');
-      const accentHex = document.getElementById('accentHex');
-      const syncAccentPreview = (value) => {
-        const normalized = normalizeHexColor(value) || state.prefs.accent;
-        accentPicker.value = normalized;
-        accentHex.value = normalized.toUpperCase();
-        document.getElementById('accentPreview')?.style.setProperty('--preview-color', normalized);
-      };
-      const commitAccent = (value) => {
-        const normalized = normalizeHexColor(value);
-        if (!normalized || !isAllowedAccentColor(normalized)) {
-          syncAccentPreview(state.prefs.accent);
-          toast('Ese color queda demasiado oscuro o demasiado claro. Elige un tono medio o intenso.');
-          return;
-        }
-        updatePreference('accent', normalized);
-        syncAccentPreview(normalized);
-      };
-      accentPicker.addEventListener('input', (event) => syncAccentPreview(event.target.value));
-      accentPicker.addEventListener('change', (event) => commitAccent(event.target.value));
-      accentHex.addEventListener('change', (event) => commitAccent(event.target.value));
-      document.getElementById('accentResetBtn').addEventListener('click', () => commitAccent(DEFAULT_PREFS.accent));
-      document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
-      [
-        ['visualOptimizedToggle', 'visualOptimized'],
-        ['heroAnimationsToggle', 'heroAnimations'],
-        ['glassEffectsToggle', 'glassEffects'],
-        ['effectsMotionToggle', 'effectsMotion'],
-        ['effectsMeshToggle', 'effectsMesh'],
-        ['quizOptionEffectsToggle', 'quizOptionEffects'],
-        ['quizFeedbackEffectsToggle', 'quizFeedbackEffects'],
-        ['quizSoundsToggle', 'quizSounds']
-      ].forEach(([id, key]) => {
-        document.getElementById(id)?.addEventListener('change', (event) => updatePreference(key, event.target.checked));
-      });
-      document.getElementById('profileSoonBtn').addEventListener('click', () => toast('Gestión completa de perfil queda para la siguiente fase.'));
-      document.getElementById('notifyMenuBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('logoutMenuBtn').addEventListener('click', () => {
-        closeModal();
-        logout();
-      });
-    });
   }
   function renderStudentsTab(options = {}) {
     const assignment = state.assignment;
@@ -2520,7 +2429,6 @@
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <div class="quiz-stage-meta-actions">
               <span class="quiz-timer-pill">Item ${index + 1}</span>
-              <button class="quiz-layout-tune-open quiz-quick-menu-btn" type="button" data-quiz-layout-tune-open aria-label="Abrir navegación del quiz">⚙️</button>
             </div>
           </div>
         </div>
@@ -2532,7 +2440,6 @@
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
-        ${quizLayoutTunePanelHTML(question.type, questions.length, index, Boolean(question.image), quiz.id || 'quiz', question.id || String(index))}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -2976,40 +2883,8 @@
       </div>
     `;
   }
-  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
-    if (!['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(type)) return '';
-    const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
-    const imageToggleHTML = hasImage ? `
-          <div class="quiz-layout-image-preview-row">
-            <label class="quiz-layout-image-preview-toggle">
-              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(imageKey) ? 'checked' : ''} />
-              <span>Mostrar imagen de esta pregunta</span>
-            </label>
-            <small>Al desactivarla, el texto usa el espacio de la imagen. No modifica el JSON ni borra el recurso.</small>
-          </div>` : `
-          <div class="quiz-layout-image-preview-row quiz-layout-image-preview-row-empty">
-            <strong>Imagen</strong>
-            <small>Esta pregunta no tiene imagen cargada.</small>
-          </div>`;
-    return `
-      <section class="quiz-layout-tune-panel quiz-quick-menu-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(imageKey)}" hidden aria-hidden="true">
-        <div class="quiz-layout-tune-dialog quiz-quick-menu-dialog" role="dialog" aria-modal="true" aria-label="Navegación del quiz">
-          <div class="quiz-layout-tune-dialog-head">
-            <div>
-              <strong>Navegación del quiz</strong>
-              <small>Salta entre preguntas y controla la imagen de este ítem.</small>
-            </div>
-            <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar navegación">×</button>
-          </div>
-          ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
-          ${imageToggleHTML}
-          ${quizTypographyQuickControlsHTML()}
-          ${quizCountdownQuickControlsHTML()}
-          ${quizSoundQuickControlsHTML()}
-          ${quizPaddingDebugControlsHTML()}
-        </div>
-      </section>
-    `;
+  function quizLayoutTunePanelHTML() {
+    return '';
   }
   function updateQuizLayoutMeasurements(stage) {
     if (!stage) return;
@@ -6532,7 +6407,6 @@
       <div class="modal-card quiz-start-modal">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <div class="quiz-start-modal-head" data-em-flat-bg>
-          <p class="section-kicker">Antes de empezar</p>
           <h2>¿Iniciarás este quiz?</h2>
           <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
         </div>
@@ -6542,7 +6416,6 @@
           <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
           ${quizTimeScoringSelectorHTML()}
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
-          <button class="ghost-btn quiz-start-results-shortcut" type="button" data-quiz-skip-results>Pasar a resultados</button>
         </div>
       </div>
     `;
@@ -6552,7 +6425,6 @@
     return `
       <section class="quiz-start-gate">
         <div class="quiz-kahoot-mark" aria-hidden="true"><span>▲</span><span>◆</span><span>●</span><span>■</span></div>
-        <p class="section-kicker">Antes de empezar</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
         <p>${escapeHTML(quiz.description || quiz.mode || 'Quiz interactivo de práctica.')}</p>
         <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
@@ -7520,31 +7392,7 @@
     `;
   }
   function encisoFinalTunePanelHTML() {
-    return `
-      <button class="enciso-final-tune-toggle" type="button" data-enciso-final-tune-toggle aria-label="Ajustar pantalla final">⚙️</button>
-      <div class="enciso-final-tune-modal" data-enciso-final-tune-modal hidden aria-hidden="true">
-        <div class="enciso-final-tune-card" role="dialog" aria-modal="true" aria-label="Ajustes pantalla final">
-          <div class="enciso-final-tune-head">
-            <strong>Ajustar resultados</strong>
-            <button type="button" data-enciso-final-tune-close aria-label="Cerrar">×</button>
-          </div>
-          <div class="enciso-final-tune-tabs" role="tablist">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-enciso-final-tune-tab="${escapeAttr(tab.key)}">${escapeHTML(tab.label)}</button>`).join('')}
-          </div>
-          <div class="enciso-final-tune-body">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
-              <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
-                ${tab.key === 'points' ? encisoFinalPointsTuneHTML() : (tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
-              </section>
-            `).join('')}
-          </div>
-          <div class="enciso-final-tune-foot">
-            <button type="button" data-enciso-final-tune-reset>Restablecer</button>
-            <button type="button" data-enciso-final-tune-close>Listo</button>
-          </div>
-        </div>
-      </div>
-    `;
+    return '';
   }
   function encisoClampFinalPointInput(value) {
     return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
@@ -7866,10 +7714,8 @@
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
-          <button class="enciso-replay-btn ranking-repeat-animation" type="button" data-enciso-result-replay data-repeat-ranking-animation>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
-        ${encisoFinalTunePanelHTML()}
       </section>
     `;
   }
@@ -8946,7 +8792,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.289', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.290', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

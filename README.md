@@ -1,3 +1,17 @@
+## v0.24.290 - Limpieza HOME y controles de quiz
+
+Base: v0.24.289-rebase-quiz-ok-clean.
+
+Cambios limitados:
+- HOME: eliminado el boton de tres puntos `•••` y removido el render/menu asociado de gestionar color/apariencia.
+- Inicio de quiz: eliminada la frase `Antes de empezar`, eliminado el boton `Pasar a resultados` y ajustado el alto/espaciado del modal sin esa linea.
+- Pantalla de juego del quiz: eliminada la tuerquita superior `⚙️` y desactivado el panel/menu asociado de navegacion/ajustes rapidos.
+- Resultados del quiz: eliminado el boton `Repetir animacion`, eliminada la tuerquita superior `⚙️` y desactivado el panel/menu asociado.
+
+No se tocaron datos base, tarjetas Clases/Quizzes, pantalla de juego, motor de resultados, countdown, musica, ranking/podio, navegacion de asignatura, asistencia, estudiantes, Rockstars ni Home salvo el boton/menu pedido.
+
+Version/cache busting actualizado a 0.24.290.
+
 ## v0.24.289 - Rebase 285 + tarjetas Clases/Quizzes seguras
 
 Base: v0.24.285-navegacion-asignatura.

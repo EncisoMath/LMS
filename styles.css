@@ -23651,3 +23651,27 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
     font-size: 8px;
   }
 }
+
+
+/* =========================================================
+   v0.24.290 - limpieza puntual de controles de quiz/home
+   Alcance: HOME tres puntos, inicio quiz, controles debug quiz/resultados.
+========================================================= */
+.quiz-start-modal-head {
+  min-height: 104px !important;
+  padding: 15px 58px 14px 16px !important;
+  gap: 3px !important;
+}
+
+.quiz-start-modal-body {
+  gap: 10px !important;
+}
+
+.quiz-start-results-shortcut,
+.quiz-layout-tune-open,
+.quiz-layout-tune-panel,
+.enciso-final-tune-toggle,
+.enciso-final-tune-modal,
+.enciso-replay-btn.ranking-repeat-animation {
+  display: none !important;
+}
