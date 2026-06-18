@@ -21944,3 +21944,32 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
     padding: 0 !important;
   }
 }
+
+/* v0.24.283 - Banner asignatura: chip de area y sin gestor visual */
+.subject-banner.em-flat-background .subject-copy {
+  transform: translate3d(var(--subject-info-x, 10px), 0, 0) !important;
+  transform-origin: left center !important;
+}
+
+.subject-banner.em-flat-background .subject-kicker {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
+  max-width: max-content !important;
+  padding: 4px 9px !important;
+  border-radius: 999px !important;
+  margin: 0 0 4px 0 !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, #000000 28%) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}

@@ -1,3 +1,11 @@
+## v0.24.283 - Banner asignatura sin gestor visual y chip de área
+
+- Cambio limitado al banner interno de asignatura: se eliminó el botón de tres puntos `...` y el modal/contenido de gestor visual asociado.
+- Se conservó el desplazamiento del contenedor de información de la materia con X `10px`.
+- El área de la materia, por ejemplo `MATEMÁTICAS`, ahora se muestra como etiqueta/chip con fondo más oscuro que el color activo de la asignatura y texto blanco.
+- No se tocaron HOME, tarjetas, Quizzes, Rockstars, Estudiantes/asistencia, datos, música, countdown, ranking ni podio.
+- Version/cache busting actualizado a 0.24.283.
+
 ## v0.24.282 - Limpieza flat banner HOME y asignatura
 - Correccion visual limitada a fondos/banners: se neutralizo la contaminacion vieja de gradientes, radiales, glow, sombras y filtros en `profile-cover.em-flat-background` y `subject-banner.em-flat-background`.
 - En el banner de asignatura se quitaron el icono visual, el resplandor/sombra oscura de textos y el filtro/drop-shadow; el texto ocupa el espacio del icono sin cambiar el contenedor externo.

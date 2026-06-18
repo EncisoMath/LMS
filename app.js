@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.282';
+  const APP_VERSION = '0.24.283';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -894,7 +894,6 @@
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
         <section class="subject-banner" data-em-flat-bg data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
-          <button class="subject-menu-btn" id="subjectMenuBtn" aria-label="Gestor visual">•••</button>
           <div class="subject-banner-content">
             ${isSubjectIconVisible(assignment) ? `<img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />` : ''}
             <div class="subject-copy">
@@ -926,7 +925,6 @@
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
-      document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
@@ -968,53 +966,6 @@
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
-  }
-  function openVisualManagerModal() {
-    const assignment = state.assignment;
-    if (!assignment) return;
-    const iconSrc = getAssignmentIcon(assignment);
-    const coverStyle = coverBackgroundStyle(assignment);
-    openModal(`
-      <div class="modal-card visual-modal">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="modal-title-row">
-          <div>
-            <p class="section-kicker">Gestor visual</p>
-            <h2>${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</h2>
-          </div>
-        </div>
-        <div class="visual-manager-grid">
-          <article class="manager-card">
-            <h3>Portada de la asignatura</h3>
-            <p>Esta imagen aparece en la vista interna y como franja en la cuadrícula.</p>
-            <div class="manager-preview-cover animated-cover" ${coverStyle}>${coverMotionHTML('preview')}</div>
-            <div class="manager-actions">
-              <label class="primary-btn">Cambiar portada<input id="coverInput" type="file" accept="image/*" hidden /></label>
-              <button class="danger-btn" id="resetCoverBtn">Restablecer</button>
-            </div>
-          </article>
-          <article class="manager-card">
-            <h3>Icono de la asignatura</h3>
-            <p>Úsalo para diferenciar rápido cada carga académica.</p>
-            <label class="toggle-row" for="showSubjectIconToggle">
-              <span>Mostrar icono en el banner</span>
-              <input id="showSubjectIconToggle" type="checkbox" ${isSubjectIconVisible(assignment) ? 'checked' : ''} />
-            </label>
-            <img class="manager-preview-icon" src="${escapeAttr(iconSrc)}" alt="Icono actual" />
-            <div class="manager-actions">
-              <label class="primary-btn">Cambiar icono<input id="iconInput" type="file" accept="image/*,.svg" hidden /></label>
-              <button class="danger-btn" id="resetIconBtn">Restablecer</button>
-            </div>
-          </article>
-        </div>
-      </div>
-    `, () => {
-      document.getElementById('coverInput').addEventListener('change', (event) => saveImageOverride(event, 'cover'));
-      document.getElementById('iconInput').addEventListener('change', (event) => saveImageOverride(event, 'icon'));
-      document.getElementById('resetCoverBtn').addEventListener('click', () => resetAssignmentVisual('cover'));
-      document.getElementById('resetIconBtn').addEventListener('click', () => resetAssignmentVisual('icon'));
-      document.getElementById('showSubjectIconToggle').addEventListener('change', (event) => toggleSubjectIconVisibility(event.target.checked));
-    });
   }
   function openProfileMenuModal() {
     openModal(`
@@ -8786,7 +8737,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.282', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.283', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
