@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.290';
+  const APP_VERSION = '0.24.291';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -5566,7 +5566,7 @@
 
     const DEFAULT_POS_Y = 50;
     const DEFAULT_TITLE_SIZE = 58;
-    const DEFAULT_SUBTITLE_SIZE = 22;
+    const DEFAULT_SUBTITLE_SIZE = 18;
 
     const DIRECCIONES = [
       { x: -135, y: 0 },
@@ -7709,7 +7709,7 @@
         </section>
 
         <section class="enciso-review-section" data-review-section>
-          <div class="enciso-section-title">Resumen por pregunta</div>
+          <div class="enciso-section-title">RESUMEN POR ITEM</div>
           <div class="enciso-review-scroll summary-question-entry-track">${encisoReviewItemsHTML(data.review)}</div>
         </section>
 
@@ -8792,7 +8792,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.290', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.291', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

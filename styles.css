@@ -17585,10 +17585,11 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-transition.quiz-tr
 }
 
 .em-feedback-subtitle {
-  font-size: min(calc(var(--em-feedback-subtitle-size, 22) * 1px), 5.8vw);
-  line-height: 1.08;
+  font-size: min(calc(var(--em-feedback-subtitle-size, 18) * 1px), 5.8vw);
+  line-height: 1.05;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  font-variation-settings: "wght" 500;
+  letter-spacing: -0.025em;
   max-width: 100%;
   white-space: normal;
   text-wrap: balance;
@@ -23674,4 +23675,65 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
 .enciso-final-tune-modal,
 .enciso-replay-btn.ranking-repeat-animation {
   display: none !important;
+}
+
+/* =========================================================
+   v0.24.291 - ajustes finales resultados quiz
+   - Subtitulo feedback en 18px Montserrat Medium.
+   - Boton Continuar ocupa todo su contenedor.
+   - Resumen por pregunta renombrado en JS a RESUMEN POR ITEM.
+   Alcance: solo feedback/resultados de quiz.
+========================================================= */
+
+.em-feedback-band .em-feedback-subtitle,
+.em-feedback-subtitle,
+[class*="feedback"] [class*="subtitle"],
+[class*="Feedback"] [class*="subtitle"] {
+  font-size: min(18px, 5.8vw) !important;
+  line-height: 1.05 !important;
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  letter-spacing: -0.025em !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section.show {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+  align-content: stretch !important;
+  justify-items: stretch !important;
+  padding: 0 !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section .enciso-continue-btn,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 100% !important;
+  height: 100% !important;
+  min-height: 58px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  grid-column: 1 / -1 !important;
+  flex: 1 1 100% !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 900 !important;
+  font-variation-settings: "wght" 900 !important;
+  letter-spacing: -0.055em !important;
+  text-align: center !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both !important;
 }
