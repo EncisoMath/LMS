@@ -1,13 +1,3 @@
-## v0.24.274
-
-Base: v0.24.273.
-
-Limpieza profunda conservadora del código: se eliminaron bloques heredados y no usados de resultados antiguos, feedbacks anteriores, transiciones viejas con radiales/glow/barritas, paneles temporales de calibración/debug y funciones JS huérfanas asociadas. Se mantuvieron intactos los heroes optimizados de ROCKSTARS, QUIZZES y CLASES, y no se modificaron preguntas, tipos de quiz, countdown, música, resultados finales actuales, ranking, podio, puntajes, datos, navegación ni estudiantes.
-
-Version/cache busting actualizado a 0.24.274.
-
-Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
-
 ## v0.24.273
 
 Base: v0.24.272.
@@ -108,3 +98,12 @@ Cambio visual puntual en Rockstars:
 - No se tocaron navegacion, logica de Rockstars, estudiantes, clases, quizzes, resultados, ranking, podio, musica, countdown, puntajes ni datos.
 
 Version/cache busting actualizado a 0.24.262.
+
+## v0.24.275 - Tarjetas definitivas de estudiantes y Rockstars
+
+- Reemplazo visual de las tarjetas/list items internos de ESTUDIANTES y ROCKSTARS con el nuevo estilo oscuro `em-rs-`.
+- Conexión de asistencia con Rockstars: estudiantes sin asistencia presente quedan bloqueados, grises, con 😴 y sin botones de puntos.
+- Orden de Rockstars: primero asistentes por apellido/nombre y luego no asistentes/excusa/sin marcar por apellido/nombre, sin separadores visuales.
+- Animaciones resistentes a clics repetidos para cambios de asistencia, puntos y cambio de rango; confeti geométrico solo en ROCKSTARS al cruzar de rango.
+- No se modificaron contenedores principales, heroes, navegación, datos base, quizzes, clases, ranking, podio, música ni countdown.
+

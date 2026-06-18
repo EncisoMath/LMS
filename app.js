@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.274';
+  const APP_VERSION = '0.24.275';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1144,7 +1144,7 @@
         </div>
         <button class="primary-btn" id="openAddStudentBtn" type="button">Añadir</button>
       </div>
-      <div id="studentList" class="student-list">
+      <div id="studentList" class="student-list em-rs-list">
         ${studentListHTML()}
       </div>
     `;
@@ -1186,14 +1186,35 @@
   }
   function bindStudentActionButtons() {
     const assignment = state.assignment;
-    document.querySelectorAll('[data-student-id][data-status]').forEach((button) => {
+    document.querySelectorAll('.em-rs-att-btn[data-student-id][data-status-option]').forEach((button) => {
       button.addEventListener('click', () => {
         const studentId = button.dataset.studentId;
-        const status = button.dataset.status;
+        const visualStatus = button.dataset.statusOption;
+        const storedStatus = emRsVisualStatusToStored(visualStatus);
         const current = getAttendance(assignment.id, state.attendanceDate);
-        current[studentId] = status;
+
+        emRsReplayClass(button, 'tap', 300);
+
+        if (storedStatus) current[studentId] = storedStatus;
+        else delete current[studentId];
+
         saveAttendance(assignment.id, state.attendanceDate, current);
-        updateStudentCardAttendance(studentId, status);
+        updateStudentCardAttendance(studentId, storedStatus || 'none');
+        syncRockstarListAfterAttendanceChange();
+      });
+    });
+
+    document.querySelectorAll('.em-rs-trash-btn[data-student-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const studentId = button.dataset.studentId;
+        const current = getAttendance(assignment.id, state.attendanceDate);
+
+        emRsReplayClass(button, 'tap', 300);
+        delete current[studentId];
+
+        saveAttendance(assignment.id, state.attendanceDate, current);
+        updateStudentCardAttendance(studentId, 'none');
+        syncRockstarListAfterAttendanceChange();
       });
     });
 
@@ -1255,16 +1276,30 @@
   }
   function updateStudentCardAttendance(studentId, status) {
     const card = document.querySelector(`[data-student-card="${escapeSelector(studentId)}"]`);
-    const info = statusMap[status];
-    if (!card || !info) return;
+    if (!card) return;
+
+    const visualStatus = emRsStatusToVisual(status);
+    const storedStatus = emRsVisualStatusToStored(visualStatus);
+    if (card.classList.contains('em-rs-att-card')) {
+      card.classList.remove('present', 'absent', 'excuse', 'none');
+      card.classList.add(visualStatus);
+      card.querySelectorAll('.em-rs-att-btn').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.statusOption === visualStatus);
+      });
+      emRsSetRandomShape(card);
+      emRsReplayCardState(card, 'status-change', 760);
+      return;
+    }
+
+    const info = statusMap[storedStatus] || null;
     card.classList.remove('present', 'absent', 'excused', 'flash-present', 'flash-absent', 'flash-excused');
-    card.classList.add(info.className, `flash-${info.className}`);
+    if (info) card.classList.add(info.className, `flash-${info.className}`);
     const meta = card.querySelector('[data-attendance-meta]');
-    if (meta) meta.textContent = `📅 Asistencia: ${info.emoji} ${info.label}`;
+    if (meta) meta.textContent = `📅 Asistencia: ${info ? `${info.emoji} ${info.label}` : 'Sin marcar'}`;
     card.querySelectorAll('.att-btn').forEach((button) => {
-      button.classList.toggle('active', button.dataset.status === status);
+      button.classList.toggle('active', button.dataset.status === storedStatus);
     });
-    card.addEventListener('animationend', () => card.classList.remove(`flash-${info.className}`), { once: true });
+    if (info) card.addEventListener('animationend', () => card.classList.remove(`flash-${info.className}`), { once: true });
   }
   function openDeleteStudentModal(student) {
     const assignment = state.assignment;
@@ -2009,6 +2044,173 @@
       emClStartCardSwap(heroSkin);
     });
   }
+
+  const EM_RS_SHAPE_TYPES = ['circle', 'square', 'triangle', 'x'];
+  const emRsAnimationTimers = new WeakMap();
+
+  function emRsGetTimerBucket(element) {
+    let bucket = emRsAnimationTimers.get(element);
+    if (!bucket) {
+      bucket = {};
+      emRsAnimationTimers.set(element, bucket);
+    }
+    return bucket;
+  }
+
+  function emRsReplayClass(element, className, duration = 800) {
+    if (!element) return;
+    const bucket = emRsGetTimerBucket(element);
+    if (bucket[className]) {
+      clearTimeout(bucket[className]);
+      bucket[className] = null;
+    }
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+    bucket[className] = window.setTimeout(() => {
+      element.classList.remove(className);
+      bucket[className] = null;
+    }, duration);
+  }
+
+  function emRsReplayCardState(card, className, duration = 800) {
+    if (!card) return;
+    const bucket = emRsGetTimerBucket(card);
+    ['score-hit', 'level-change', 'status-change'].forEach((stateClass) => {
+      if (bucket[stateClass]) {
+        clearTimeout(bucket[stateClass]);
+        bucket[stateClass] = null;
+      }
+      card.classList.remove(stateClass);
+    });
+    void card.offsetWidth;
+    card.classList.add(className);
+    bucket[className] = window.setTimeout(() => {
+      card.classList.remove(className);
+      bucket[className] = null;
+    }, duration);
+  }
+
+  function emRsRandomShape() {
+    return EM_RS_SHAPE_TYPES[Math.floor(Math.random() * EM_RS_SHAPE_TYPES.length)];
+  }
+
+  function emRsSetRandomShape(card) {
+    const shape = card?.querySelector('.em-rs-card-bg-shape');
+    if (!shape) return;
+    shape.className = 'em-rs-card-bg-shape';
+    shape.classList.add(emRsRandomShape());
+  }
+
+  function emRsGetStudentId(student) {
+    return student?.id || student?.studentId || student?.codigo || student?.code || '';
+  }
+
+  function emRsGetStudentName(student) {
+    return student?.fullName || student?.name || student?.nombre || student?.full_name || '';
+  }
+
+  function emRsGetStudentCode(student) {
+    return student?.codigo || student?.code || student?.id || '';
+  }
+
+  function emRsGetStudentUser(student) {
+    return student?.username || student?.user || student?.usuario || '';
+  }
+
+  function emRsGetStudentSortKey(student) {
+    return String(student?.sortKey || emRsGetStudentName(student))
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  function emRsSortStudentsByLastName(list) {
+    return [...list].sort((a, b) => emRsGetStudentSortKey(a).localeCompare(emRsGetStudentSortKey(b), 'es', { sensitivity: 'base' }));
+  }
+
+  function emRsStatusToVisual(status) {
+    if (status === 'present') return 'present';
+    if (status === 'absent') return 'absent';
+    if (status === 'excused' || status === 'excuse') return 'excuse';
+    return 'none';
+  }
+
+  function emRsVisualStatusToStored(status) {
+    if (status === 'present') return 'present';
+    if (status === 'absent') return 'absent';
+    if (status === 'excuse') return 'excused';
+    return '';
+  }
+
+  function emRsGetAttendanceLabel(status) {
+    const visual = emRsStatusToVisual(status);
+    if (visual === 'present') return 'Asistió';
+    if (visual === 'absent') return 'No asistió';
+    if (visual === 'excuse') return 'Excusa';
+    return 'Sin marcar';
+  }
+
+  function emRsGetAttendanceEmoji(status) {
+    const visual = emRsStatusToVisual(status);
+    if (visual === 'present') return '✅';
+    if (visual === 'absent') return '🔴';
+    if (visual === 'excuse') return '⚠️';
+    return '—';
+  }
+
+  function emRsIsAttendanceLocked(status) {
+    return emRsStatusToVisual(status) !== 'present';
+  }
+
+  function emRsGetPointsSortedStudents(students, attendance) {
+    const presentStudents = students.filter((student) => emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]) === 'present');
+    const lockedStudents = students.filter((student) => emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]) !== 'present');
+    return [
+      ...emRsSortStudentsByLastName(presentStudents),
+      ...emRsSortStudentsByLastName(lockedStudents)
+    ];
+  }
+
+  function emRsGetTier(score) {
+    const value = Number(score) || 0;
+    if (value <= -5) return 'm5';
+    if (value < 0) return 'm0';
+    if (value === 0) return 'zero';
+    if (value < 5) return 'p0';
+    if (value < 10) return 'p5';
+    if (value < 15) return 'p10';
+    return 'p15';
+  }
+
+  function emRsGetEmoji(score) {
+    const value = Number(score) || 0;
+    if (value <= -5) return '💀';
+    if (value < 0) return '😤';
+    if (value === 0) return '😐';
+    if (value < 5) return '🙂';
+    if (value < 10) return '🚀';
+    if (value < 15) return '😎';
+    return '🔥';
+  }
+
+  function emRsCreateFloatScore(card, delta) {
+    const float = document.createElement('span');
+    float.className = `em-rs-float-score ${Number(delta) > 0 ? 'plus' : 'minus'}`;
+    float.textContent = Number(delta) > 0 ? '+1' : '-1';
+    card.appendChild(float);
+    window.setTimeout(() => float.remove(), 600);
+  }
+
+  function getRockstarAttendanceDate() {
+    return state.attendanceDate || todayISO();
+  }
+
+  function syncRockstarListAfterAttendanceChange() {
+    const list = document.getElementById('rockstarList');
+    if (list) refreshRockstarList(true);
+  }
+
   function renderRockstarsTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -2028,7 +2230,7 @@
           <input class="input search-input" id="rockstarSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
         </div>
       </div>
-      <div id="rockstarList" class="student-list rockstar-list">
+      <div id="rockstarList" class="student-list rockstar-list em-rs-list">
         ${rockstarListHTML()}
       </div>
     `;
@@ -2040,7 +2242,7 @@
   function rockstarListHTML() {
     const assignment = state.assignment;
     if (!assignment) return '';
-    const attendance = getAttendance(assignment.id, todayISO());
+    const attendance = getAttendance(assignment.id, getRockstarAttendanceDate());
     const query = normalizeSearch(state.studentSearch || '');
     const period = Number(state.rockstarPeriod);
     const pointMap = getRockstarPointMap(assignment.id, period);
@@ -2048,7 +2250,7 @@
       if (!query) return true;
       return normalizeSearch(`${student.fullName} ${student.id} ${student.username || ''}`).includes(query);
     });
-    return students.map((student) => {
+    return emRsGetPointsSortedStudents(students, attendance).map((student) => {
       const points = pointMap.get(student.id) || 0;
       return rockstarCardHTML(student, points, attendance[student.id]);
     }).join('') || `<div class="empty">${query ? 'No hay rockstars con ese filtro.' : 'Aún no hay estudiantes en este curso.'}</div>`;
@@ -2097,9 +2299,9 @@
     if (animate) pulseElement(list, 'class-grid-update');
   }
   function bindRockstarActionButtons() {
-    document.querySelectorAll('[data-rockstar-delta]').forEach((button) => {
+    document.querySelectorAll('.em-rs-score-btn[data-rockstar-delta]').forEach((button) => {
       button.addEventListener('pointerdown', () => {
-        flashRockstarButton(button, Number(button.dataset.rockstarDelta), 150);
+        emRsReplayClass(button, 'tap', 300);
       }, { passive: true });
       button.addEventListener('click', () => {
         const studentId = button.dataset.rockstarStudent;
@@ -2110,24 +2312,18 @@
     });
   }
   function flashRockstarButton(button, delta, duration = 150) {
-    if (!button) return;
-    const className = Number(delta) > 0 ? 'rock-hit-plus' : 'rock-hit-minus';
-    button.classList.remove('rock-hit-plus', 'rock-hit-minus');
-    void button.offsetWidth;
-    button.classList.add(className);
-    window.clearTimeout(button._rockstarHitTimer);
-    button._rockstarHitTimer = window.setTimeout(() => {
-      button.classList.remove(className);
-    }, duration);
+    emRsReplayClass(button, Number(delta) > 0 ? 'tap' : 'tap', duration);
   }
   function addRockstarDelta(studentId, delta) {
     const assignment = state.assignment;
     if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return false;
-    const attendance = getAttendance(assignment.id, todayISO());
+    const attendance = getAttendance(assignment.id, getRockstarAttendanceDate());
     if (isRockstarLocked(attendance[studentId])) {
       toast('Estudiante sin puntos hoy por asistencia');
       return false;
     }
+    const oldPoints = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
+    const oldTier = emRsGetTier(oldPoints);
     const events = getLocalRockstarEvents(assignment.id);
     events.push({
       id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -2138,22 +2334,49 @@
       delta: Number(delta)
     });
     saveLocalRockstarEvents(assignment.id, events);
-    updateRockstarCard(studentId, Number(delta));
+    updateRockstarCard(studentId, Number(delta), oldTier);
     return true;
   }
-  function updateRockstarCard(studentId, delta = 0) {
+  function updateRockstarCard(studentId, delta = 0, oldTier = null) {
     const assignment = state.assignment;
     const card = document.querySelector(`[data-rockstar-card="${escapeSelector(studentId)}"]`);
     if (!assignment || !card) return;
-    const attendance = getAttendance(assignment.id, todayISO());
+    const attendance = getAttendance(assignment.id, getRockstarAttendanceDate());
     const status = attendance[studentId];
     const locked = isRockstarLocked(status);
     const points = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
+    const newTier = emRsGetTier(points);
+
+    if (card.classList.contains('em-rs-card')) {
+      card.classList.remove('m5', 'm0', 'zero', 'p0', 'p5', 'p10', 'p15', 'attendance-locked');
+      card.classList.add(newTier);
+      if (locked) card.classList.add('attendance-locked');
+      card.dataset.score = String(points);
+
+      const pointsNumber = card.querySelector('.em-rs-points-num');
+      const avatar = card.querySelector('.em-rs-avatar');
+      const chip = card.querySelector('.em-rs-score-chip');
+
+      if (pointsNumber) pointsNumber.textContent = String(points);
+      if (avatar) avatar.textContent = locked ? '😴' : emRsGetEmoji(points);
+      if (chip) chip.textContent = emRsGetAttendanceLabel(status);
+
+      if (locked) return;
+      if (delta !== 0) emRsCreateFloatScore(card, delta);
+
+      if (oldTier && oldTier !== newTier) {
+        emRsSetRandomShape(card);
+        emRsReplayCardState(card, 'level-change', 880);
+      } else {
+        emRsReplayCardState(card, 'score-hit', 480);
+      }
+      return;
+    }
+
     const tier = getRockstarTier(points);
     const visual = locked ? getSleepingTier() : tier;
     const badge = card.querySelector('[data-rockstar-badge]');
     const score = card.querySelector('[data-rockstar-score]');
-    const meta = card.querySelector('[data-rockstar-meta]');
     card.className = `student-card rockstar-card ${visual.className}${locked ? ' rockstar-disabled' : ''}`;
     if (badge) {
       badge.textContent = visual.emoji;
@@ -2168,7 +2391,7 @@
     pulseElement(card, locked ? 'flash-excused' : (Number(delta) < 0 ? 'flash-absent' : 'flash-present'));
   }
   function isRockstarLocked(status) {
-    return status === 'absent' || status === 'excused';
+    return emRsIsAttendanceLocked(status);
   }
   function getSleepingTier() {
     return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
@@ -7885,62 +8108,71 @@
     `;
   }
   function rockstarCardHTML(student, points, status) {
-    const statusInfo = statusMap[status] || null;
-    const locked = isRockstarLocked(status);
-    const tier = getRockstarTier(points);
-    const visual = locked ? getSleepingTier() : tier;
-    const attendanceLabel = statusInfo ? `${statusInfo.emoji} ${statusInfo.label}` : 'Sin marcar hoy';
-    const actionHTML = locked
-      ? `<div class="rockstar-locked-note" aria-label="Estudiante sin puntos disponibles hoy">😴 Sin puntos hoy</div>`
-      : `<div class="rockstar-buttons">
-          <button class="rock-btn rock-minus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="-1" title="Quitar un punto">−1</button>
-          <button class="rock-btn rock-plus" data-rockstar-student="${escapeAttr(student.id)}" data-rockstar-delta="1" title="Dar un punto">+1</button>
-        </div>`;
+    const visualStatus = emRsStatusToVisual(status);
+    const tier = emRsGetTier(points);
+    const locked = emRsIsAttendanceLocked(status);
+    const lockedClass = locked ? 'attendance-locked' : '';
+    const emoji = locked ? '😴' : emRsGetEmoji(points);
+    const id = emRsGetStudentId(student);
     return `
-      <article class="student-card rockstar-card ${visual.className}${locked ? ' rockstar-disabled' : ''}" data-rockstar-card="${escapeAttr(student.id)}">
-        <div class="student-main rockstar-main">
-          <div class="rockstar-avatar ${visual.className}" data-rockstar-badge>${visual.emoji}</div>
-          <div class="student-info rockstar-info">
-            <div class="student-name">${escapeHTML(student.fullName)}</div>
-            <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
-            <div class="student-meta">📅 Asistencia: ${attendanceLabel}</div>
+      <article class="em-rs-card ${tier} ${lockedClass}" data-rockstar-card="${escapeAttr(id)}" data-student-id="${escapeAttr(id)}" data-score="${Number(points) || 0}">
+        <div class="em-rs-card-bg-shape ${emRsRandomShape()}"></div>
+
+        <div class="em-rs-student-top">
+          <div class="em-rs-avatar">${emoji}</div>
+
+          <div class="em-rs-info">
+            <h2 class="em-rs-name">${escapeHTML(emRsGetStudentName(student))}</h2>
+            <p class="em-rs-meta"><span class="em-rs-id-badge">ID</span>${escapeHTML(emRsGetStudentCode(student))} • ${escapeHTML(emRsGetStudentUser(student))}</p>
+            <p class="em-rs-score-chip">${escapeHTML(emRsGetAttendanceLabel(visualStatus))}</p>
+          </div>
+
+          <div class="em-rs-points">
+            <span class="em-rs-points-num">${Number(points) || 0}</span>
+            <span class="em-rs-points-label">PTS</span>
+            <div class="em-rs-burst"><span></span><span></span><span></span><span></span><span></span><span></span></div>
           </div>
         </div>
-        <div class="rockstar-score-box" aria-label="Puntos del estudiante">
-          <span class="rockstar-score ${visual.className}" data-rockstar-score>${points}</span>
-          <span class="rockstar-score-label">pts</span>
+
+        <div class="em-rs-score-actions">
+          <button class="em-rs-score-btn minus" type="button" data-rockstar-student="${escapeAttr(id)}" data-rockstar-delta="-1">-1</button>
+          <button class="em-rs-score-btn plus" type="button" data-rockstar-student="${escapeAttr(id)}" data-rockstar-delta="1">+1</button>
         </div>
-        ${actionHTML}
       </article>
     `;
   }
   function getRockstarTier(points) {
     const value = Number(points) || 0;
-    if (value >= 15) return { emoji: '💎', label: 'Diamante', className: 'tier-diamond' };
-    if (value >= 10) return { emoji: '🔥', label: 'Fuego', className: 'tier-fire' };
-    if (value >= 5) return { emoji: '😎', label: 'Súper cool', className: 'tier-cool' };
-    if (value >= 1) return { emoji: '🚀', label: 'Despegando', className: 'tier-rocket' };
-    if (value === 0) return { emoji: '🙂', label: 'Listo para participar', className: 'tier-neutral' };
-    if (value >= -5) return { emoji: '😡', label: 'En deuda', className: 'tier-angry' };
-    return { emoji: '💀', label: 'Zona crítica', className: 'tier-skull' };
+    if (value <= -5) return { emoji: '💀', label: 'Zona crítica', className: 'm5' };
+    if (value < 0) return { emoji: '😤', label: 'Remontando', className: 'm0' };
+    if (value === 0) return { emoji: '😐', label: 'Neutro', className: 'zero' };
+    if (value < 5) return { emoji: '🙂', label: 'Participando', className: 'p0' };
+    if (value < 10) return { emoji: '🚀', label: 'Despegando', className: 'p5' };
+    if (value < 15) return { emoji: '😎', label: 'Sólido', className: 'p10' };
+    return { emoji: '🔥', label: 'On fire', className: 'p15' };
   }
   function studentCardHTML(student, status) {
-    const statusInfo = statusMap[status] || null;
+    const visualStatus = emRsStatusToVisual(status);
+    const id = emRsGetStudentId(student);
     return `
-      <article class="student-card ${statusInfo ? statusInfo.className : ''}" data-student-card="${escapeAttr(student.id)}">
-        <button class="student-delete" data-delete-student="${escapeAttr(student.id)}" aria-label="Eliminar ${escapeAttr(student.fullName)}">🗑️</button>
-        <div class="student-main">
-          <img class="student-photo" src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de ${escapeAttr(student.fullName)}" />
-          <div class="student-info">
-            <div class="student-name">${escapeHTML(student.fullName)}</div>
-            <div class="student-meta">🆔 ${escapeHTML(student.id)} · ${escapeHTML(student.username || '')}</div>
-            <div class="student-meta" data-attendance-meta>📅 Asistencia: ${statusInfo ? `${statusInfo.emoji} ${statusInfo.label}` : 'Sin marcar'}</div>
+      <article class="em-rs-att-card ${visualStatus}" data-student-card="${escapeAttr(id)}" data-student-id="${escapeAttr(id)}">
+        <div class="em-rs-card-bg-shape ${emRsRandomShape()}"></div>
+
+        <div class="em-rs-student-top">
+          <div class="em-rs-avatar em-rs-avatar-person"></div>
+
+          <div class="em-rs-info">
+            <h2 class="em-rs-name">${escapeHTML(emRsGetStudentName(student))}</h2>
+            <p class="em-rs-meta" data-attendance-meta><span class="em-rs-id-badge">ID</span>${escapeHTML(emRsGetStudentCode(student))} • ${escapeHTML(emRsGetStudentUser(student))}</p>
           </div>
+
+          <button class="em-rs-trash-btn" type="button" data-student-id="${escapeAttr(id)}" aria-label="Limpiar asistencia">🗑️</button>
         </div>
-        <div class="attendance-buttons">
-          ${attendanceButtonHTML(student.id, 'present', status)}
-          ${attendanceButtonHTML(student.id, 'absent', status)}
-          ${attendanceButtonHTML(student.id, 'excused', status)}
+
+        <div class="em-rs-att-actions">
+          <button class="em-rs-att-btn present ${visualStatus === 'present' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="present">✅ Asistió</button>
+          <button class="em-rs-att-btn absent ${visualStatus === 'absent' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="absent">🔴 No asistió</button>
+          <button class="em-rs-att-btn excuse ${visualStatus === 'excuse' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="excuse">⚠️ Excusa</button>
         </div>
       </article>
     `;
@@ -8371,7 +8603,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.274', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.275', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
