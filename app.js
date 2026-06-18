@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.294';
+  const APP_VERSION = '0.24.295';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2254,6 +2254,7 @@
     ['circle', 'triangle'],
     ['square', 'x']
   ];
+  const EM_QUIZ_CARD_CLEAN_COLORS = ['#1368ce', '#ff7a00', '#24b49a', '#54c600', '#EBB513', '#e21b3c'];
   function emContentShapePairHTML(baseClass = 'em-content-shape', index = 0) {
     const pair = EM_CONTENT_SHAPE_PAIRS[Math.abs(Number(index) || 0) % EM_CONTENT_SHAPE_PAIRS.length] || EM_CONTENT_SHAPE_PAIRS[0];
     return `
@@ -2369,20 +2370,33 @@
       button.dataset.boundQuizPeriod = 'true';
       button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
     });
-    document.querySelectorAll('[data-quiz-id]').forEach((button) => {
-      if (button.dataset.boundQuizCard === 'true') return;
-      button.dataset.boundQuizCard = 'true';
-      button.addEventListener('click', () => {
-        const quizId = button.dataset.quizId || '';
-        if (!quizId) return;
-        startQuiz(quizId);
-      });
-      button.addEventListener('keydown', (event) => {
+    document.querySelectorAll('[data-quiz-id]').forEach((card) => {
+      if (card.dataset.boundQuizCard === 'true') return;
+      card.dataset.boundQuizCard = 'true';
+      const launchQuizFromCard = (event) => {
+        const quizId = card.dataset.quizId || '';
+        if (!quizId || card.dataset.quizGraded === 'true') return;
+        if (card.dataset.quizStarting === 'true') return;
+        const startButton = event?.target?.closest?.('.em-quiz-start');
+        const delay = startButton ? 180 : 0;
+        if (startButton) {
+          event?.preventDefault?.();
+          startButton.classList.remove('is-bouncing');
+          void startButton.offsetWidth;
+          startButton.classList.add('is-bouncing');
+          setTimeout(() => startButton.classList.remove('is-bouncing'), 700);
+        }
+        card.dataset.quizStarting = 'true';
+        setTimeout(() => {
+          delete card.dataset.quizStarting;
+          startQuiz(quizId);
+        }, delay);
+      };
+      card.addEventListener('click', launchQuizFromCard);
+      card.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        const quizId = button.dataset.quizId || '';
-        if (!quizId) return;
-        startQuiz(quizId);
+        launchQuizFromCard(event);
       });
     });
   }
@@ -2419,35 +2433,95 @@
     if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
     return active;
   }
+  function emQuizDecimalValue(source, keys = []) {
+    for (const key of keys) {
+      const parts = String(key || '').split('.').filter(Boolean);
+      let value = source;
+      for (const part of parts) value = value?.[part];
+      if (value === undefined || value === null || value === '') continue;
+      const normalized = typeof value === 'string' ? value.replace(',', '.') : value;
+      const number = Number(normalized);
+      if (Number.isFinite(number)) return number;
+    }
+    return null;
+  }
+  function getQuizGradeRaw(quiz) {
+    const gradeKeys = [
+      'grade', 'finalGrade', 'nota', 'calificacion', 'calificación', 'resultGrade',
+      'studentGrade', 'studentScore', 'lastGrade', 'bestGrade', 'quizGrade', 'scoreGrade'
+    ];
+    const direct = emQuizDecimalValue(quiz, gradeKeys);
+    if (direct !== null) return direct;
+    const containers = [quiz?.result, quiz?.results, quiz?.lastResult, quiz?.attempt, quiz?.lastAttempt, quiz?.bestAttempt, quiz?.studentResult, quiz?.submission];
+    for (const container of containers) {
+      if (Array.isArray(container)) {
+        for (let index = container.length - 1; index >= 0; index -= 1) {
+          const value = emQuizDecimalValue(container[index], gradeKeys);
+          if (value !== null) return value;
+        }
+      } else if (container && typeof container === 'object') {
+        const value = emQuizDecimalValue(container, gradeKeys);
+        if (value !== null) return value;
+      }
+    }
+    return null;
+  }
+  function getQuizGradeColor(grade) {
+    const value = Number(grade);
+    if (value >= 9) return '#58cc02';
+    if (value >= 7) return '#54c600';
+    if (value >= 6) return '#EBB513';
+    if (value >= 4) return '#ff7a00';
+    return '#e21b3c';
+  }
+  function getQuizGradeInfo(quiz) {
+    const raw = getQuizGradeRaw(quiz);
+    if (raw === null) return null;
+    const value = Math.max(0, Math.min(10, Number(raw)));
+    if (!Number.isFinite(value)) return null;
+    return {
+      value,
+      text: value.toFixed(1),
+      color: getQuizGradeColor(value)
+    };
+  }
+  function getQuizCardCleanColor(index = 0, gradeInfo = null) {
+    if (gradeInfo?.color) return gradeInfo.color;
+    return EM_QUIZ_CARD_CLEAN_COLORS[Math.abs(Number(index) || 0) % EM_QUIZ_CARD_CLEAN_COLORS.length] || EM_QUIZ_CARD_CLEAN_COLORS[0];
+  }
   function quizCardButtonHTML(quiz, active, index = 0) {
-    const total = getQuizQuestionCount(quiz);
-    const attempts = getQuizAttemptLimit(quiz);
-    const timedLabel = isQuizTimed(quiz) ? 'Cronometrado' : 'No cronometrado';
-    const attemptsLabel = attempts === 1 ? 'Intento' : 'Intentos';
+    const gradeInfo = getQuizGradeInfo(quiz);
+    const graded = Boolean(gradeInfo);
+    const color = getQuizCardCleanColor(index, gradeInfo);
+    const title = quiz.title || 'Quiz sin título';
+    const closeLabel = getQuizCloseLabel(quiz);
+    const period = Number(quiz.period || state.quizPeriod || 1);
+    const style = `--quiz-color:${color};--active-color:${color};--grade-accent:${gradeInfo?.color || color};`;
+    const actionAttrs = graded ? 'aria-hidden="true" tabindex="-1" disabled' : 'tabindex="-1"';
     return `
-      <article class="em-quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(quiz.title || 'quiz')}">
-        <div class="em-quiz-cover">
-          ${emContentShapePairHTML('em-quiz-shape', index)}
-          <div class="em-quiz-cover-content">
-            <h3 class="em-quiz-title">${escapeHTML(quiz.title || 'Quiz sin título')}</h3>
-            <button class="em-quiz-start-btn" type="button" tabindex="-1">Iniciar</button>
+      <article class="em-quiz-card-clean ${active ? 'active ' : ''}${graded ? 'is-graded' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" data-period="${escapeAttr(period)}" data-quiz-graded="${graded ? 'true' : 'false'}" ${graded ? 'role="article" tabindex="-1"' : `role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(title)}"`} style="${escapeAttr(style)}">
+        <header class="em-quiz-top">
+          <span class="em-quiz-shape circle" aria-hidden="true"></span>
+          <span class="em-quiz-shape x" aria-hidden="true"></span>
+
+          <h3 class="em-quiz-title">${escapeHTML(title)}</h3>
+
+          <div class="em-quiz-action-slot">
+            <button class="em-quiz-start" type="button" ${actionAttrs}>Iniciar</button>
           </div>
-        </div>
-        <div class="em-quiz-body">
-          <div class="em-quiz-flat-info">
-            <div class="em-quiz-flat-item">
-              <strong>${total}</strong>
-              <span>Preguntas</span>
-            </div>
-            <div class="em-quiz-flat-item em-quiz-flat-mode">
-              <strong>${timedLabel}</strong>
-            </div>
-            <div class="em-quiz-flat-item">
-              <strong>${attempts}</strong>
-              <span>${attemptsLabel}</span>
-            </div>
+        </header>
+
+        <section class="em-quiz-bottom">
+          <div class="em-quiz-available">
+            <span class="em-quiz-available-label">Disponible hasta:</span>
+            <strong class="em-quiz-available-date">${escapeHTML(closeLabel)}</strong>
           </div>
-        </div>
+
+          <div class="em-quiz-graded">
+            <span class="em-quiz-grade-label">Calificado:</span>
+            <strong class="em-quiz-grade-value">${escapeHTML(gradeInfo?.text || '')}</strong>
+          </div>
+        </section>
       </article>
     `;
   }
@@ -5498,7 +5572,7 @@
     if (!library) return;
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
-    library.innerHTML = quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`;
+    library.innerHTML = quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`;
     const note = document.getElementById('quizLaunchNote');
     if (note) note.hidden = !activeQuiz;
     bindQuizTabEvents();
@@ -9047,7 +9121,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.294', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.295', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

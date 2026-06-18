@@ -1,18 +1,9 @@
-## v0.24.294 - Modal inicio quiz slider
+## v0.24.295 - Tarjetas limpias fijas de quizzes
 
-Base: v0.24.293 estable.
+Cambio limitado a ASIGNATURA > PESTAÑA QUIZZES: se reemplazó visualmente el listado interno de quizzes por tarjetas arcade/flat limpias `em-quiz-card-clean` de tamaño fijo, con hero superior, figuras geométricas oscuras animadas, botón Iniciar negro, estado pendiente con “Disponible hasta” y estado calificado con “Calificado: X.X”.
 
-Cambios limitados al modal que aparece antes de iniciar un quiz desde ASIGNATURA > QUIZZES:
+Las tarjetas pendientes conservan alternancia de paleta EncisoMath: azul, naranja, aguamarina, verde, amarillo y rojo. Las tarjetas calificadas toman color según nota: 9.0-10.0 correcto, 7.0-8.9 verde, 6.0-6.9 amarillo, 4.0-5.9 naranja y 0.0-3.9 rojo. El espacio del botón queda reservado en estado calificado para evitar saltos de layout.
 
-- Reemplazado visualmente el modal viejo por el nuevo modal flat con hero naranja #ff7a00.
-- Hero con exactamente dos figuras oscuras animadas: triángulo y X.
-- Panel de información con datos reales del quiz: apertura, cierre, ítems, tipo e intentos.
-- Modo cronometrado/no cronometrado renderizado desde la configuración real del quiz.
-- Slider de inicio con textos DESLIZA PARA INICIAR / SIGUE DESLIZANDO / SUELTA EN GO / ¡VAMOS!.
-- Al completar el slider se ejecuta la función real existente para iniciar el quiz.
-- Confeti geométrico y rebote del modal al iniciar.
-- Se quitó el texto de apoyo: "Toca un quiz para ver el aviso de inicio."
+El botón Iniciar conserva el flujo real de quiz y abre el modal de inicio existente; solo se añadió rebote visual antes de abrir. No se tocaron Home, tarjetas de asignaturas, Clases, Estudiantes, Asistencia, Rockstars, navegación, ranking, podio, música, countdown, pantalla de juego, resultados, feedback, motor del quiz ni datos base.
 
-No se tocaron Home, tarjetas de asignaturas, Clases, tarjetas visuales de Quizzes, Estudiantes, Asistencia, Rockstars, navegación, ranking, podio, música, countdown, pantalla de juego, resultados ni feedback.
-
-Version/cache busting actualizado a 0.24.294.
+Version/cache busting actualizado a 0.24.295.
