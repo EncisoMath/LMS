@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.276';
+  const APP_VERSION = '0.24.277';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -8165,9 +8165,9 @@
             <h2 class="em-rs-name">${escapeHTML(emRsGetStudentName(student))}</h2>
             <p class="em-rs-meta" data-attendance-meta><span class="em-rs-id-badge">ID</span>${escapeHTML(emRsGetStudentCode(student))} • ${escapeHTML(emRsGetStudentUser(student))}</p>
           </div>
-
-          <button class="em-rs-trash-btn" type="button" data-student-id="${escapeAttr(id)}" aria-label="Limpiar asistencia">🗑️</button>
         </div>
+
+        <button class="em-rs-trash-btn" type="button" data-student-id="${escapeAttr(id)}" aria-label="Limpiar asistencia">🗑️</button>
 
         <div class="em-rs-att-actions">
           <button class="em-rs-att-btn present ${visualStatus === 'present' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="present">✅ Asistió</button>
@@ -8603,7 +8603,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.276', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.277', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

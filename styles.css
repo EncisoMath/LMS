@@ -20837,3 +20837,148 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   width: 80px;
   height: 15px;
 }
+
+/* EncisoMath v0.24.277 - compactacion final SOLO de tarjetas ESTUDIANTES y ROCKSTARS */
+.em-rs-list {
+  gap: 6px;
+}
+
+.em-rs-att-card {
+  padding: 5px 7px 6px;
+}
+
+.em-rs-att-card .em-rs-student-top {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 6px;
+  min-height: 34px;
+  padding-right: 34px;
+}
+
+.em-rs-att-card .em-rs-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 22px;
+}
+
+.em-rs-att-card .em-rs-avatar-person::before {
+  top: 6px;
+  width: 12px;
+  height: 12px;
+}
+
+.em-rs-att-card .em-rs-avatar-person::after {
+  bottom: 5px;
+  width: 24px;
+  height: 14px;
+}
+
+.em-rs-att-card .em-rs-info {
+  gap: 1px;
+}
+
+.em-rs-att-card .em-rs-name {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1;
+}
+
+.em-rs-att-card .em-rs-meta {
+  gap: 4px;
+  font-size: 8.5px;
+  line-height: 1;
+}
+
+.em-rs-att-card .em-rs-id-badge {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 7px;
+}
+
+.em-rs-att-card .em-rs-trash-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 5;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.em-rs-att-card .em-rs-att-actions {
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.em-rs-att-card .em-rs-att-btn {
+  height: 29px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  gap: 4px;
+}
+
+.em-rs-att-card .em-rs-card-bg-shape {
+  right: -18px;
+  top: -17px;
+  width: 78px;
+  height: 78px;
+}
+
+.em-rs-att-card .em-rs-card-bg-shape.triangle {
+  width: 0;
+  height: 0;
+  border-left-width: 41px;
+  border-right-width: 41px;
+  border-bottom-width: 75px;
+}
+
+.em-rs-att-card .em-rs-card-bg-shape.x::before,
+.em-rs-att-card .em-rs-card-bg-shape.x::after {
+  width: 80px;
+  height: 15px;
+}
+
+.em-rs-card {
+  padding: 6px 6px 6px;
+}
+
+.em-rs-card .em-rs-student-top {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.em-rs-card .em-rs-info {
+  gap: 2px;
+}
+
+.em-rs-card .em-rs-name {
+  font-size: 12.5px;
+  line-height: 1;
+}
+
+.em-rs-card .em-rs-score-chip {
+  height: 17px;
+  padding: 0 7px;
+  font-size: 8.5px;
+}
+
+.em-rs-card .em-rs-points {
+  min-width: 64px;
+  height: 36px;
+}
+
+.em-rs-card .em-rs-points-label {
+  font-size: 8.5px;
+  margin-top: 12px;
+}
+
+.em-rs-card .em-rs-score-actions {
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.em-rs-card .em-rs-score-btn {
+  height: 27px;
+  font-size: 13.5px;
+}
