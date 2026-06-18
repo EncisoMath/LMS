@@ -20747,3 +20747,93 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   }
 }
 
+
+
+/* EncisoMath v0.24.276 - compactacion SOLO de tarjetas ROCKSTARS */
+:root {
+  --em-rs-rockstar-points-x: -15px;
+  --em-rs-rockstar-points-size: 42px;
+}
+
+.em-rs-card {
+  padding: 6px 7px 7px;
+}
+
+.em-rs-card .em-rs-student-top {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.em-rs-card .em-rs-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 22px;
+}
+
+.em-rs-card .em-rs-info {
+  gap: 3px;
+}
+
+.em-rs-card .em-rs-name,
+.em-rs-card .em-rs-score-chip {
+  margin: 0;
+}
+
+.em-rs-card .em-rs-name {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.em-rs-card .em-rs-score-chip {
+  height: 18px;
+  padding: 0 7px;
+  font-size: 9px;
+}
+
+.em-rs-card .em-rs-points {
+  min-width: 68px;
+  height: 40px;
+  gap: 2px;
+  translate: var(--em-rs-rockstar-points-x) 0;
+}
+
+.em-rs-card .em-rs-points-num {
+  font-size: var(--em-rs-rockstar-points-size);
+  line-height: .82;
+}
+
+.em-rs-card .em-rs-points-label {
+  font-size: 9px;
+  margin-top: 13px;
+}
+
+.em-rs-card .em-rs-score-actions {
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.em-rs-card .em-rs-score-btn {
+  height: 28px;
+  font-size: 14px;
+}
+
+.em-rs-card .em-rs-card-bg-shape {
+  right: -18px;
+  top: -16px;
+  width: 78px;
+  height: 78px;
+}
+
+.em-rs-card .em-rs-card-bg-shape.triangle {
+  width: 0;
+  height: 0;
+  border-left-width: 41px;
+  border-right-width: 41px;
+  border-bottom-width: 75px;
+}
+
+.em-rs-card .em-rs-card-bg-shape.x::before,
+.em-rs-card .em-rs-card-bg-shape.x::after {
+  width: 80px;
+  height: 15px;
+}

@@ -107,3 +107,14 @@ Version/cache busting actualizado a 0.24.262.
 - Animaciones resistentes a clics repetidos para cambios de asistencia, puntos y cambio de rango; confeti geométrico solo en ROCKSTARS al cruzar de rango.
 - No se modificaron contenedores principales, heroes, navegación, datos base, quizzes, clases, ranking, podio, música ni countdown.
 
+
+
+## v0.24.276 - Compactacion tarjetas Rockstars
+
+Base: v0.24.275.
+
+Cambio visual limitado a las tarjetas internas de ROCKSTARS: se compactaron las tarjetas de puntos sin modificar el contenedor principal, layout externo, heroes, navegacion, datos ni logica. El numero de puntos se movio 15px a la izquierda mediante `--em-rs-rockstar-points-x` y se aumento 2px mediante `--em-rs-rockstar-points-size`.
+
+Version/cache busting actualizado a 0.24.276.
+
+Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
