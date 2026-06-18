@@ -119,14 +119,22 @@ Version/cache busting actualizado a 0.24.276.
 
 Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
 
+
 ## v0.24.277 - Compactacion final tarjetas asistencia y Rockstars
+- Se compactaron solo las tarjetas internas `em-rs-att-card` de ESTUDIANTES/asistencia y `em-rs-card` de ROCKSTARS.
+- Se redujeron separaciones verticales internas entre nombre, codigo/usuario, chip de asistencia y botones.
+- La canastica de asistencia queda posicionada arriba a la derecha dentro de la tarjeta con 3px desde arriba y 3px desde la derecha.
+- Se mantienen las variables de puntos de Rockstars: `--em-rs-rockstar-points-x: -15px` y `--em-rs-rockstar-points-size: 42px`.
+- No se tocaron contenedores principales, heroes, logica, datos, navegacion, quizzes, ranking, podio, musica ni countdown.
+- Version/cache busting actualizado a 0.24.277.
 
-Base: v0.24.276.
 
-Cambio visual limitado a las tarjetas internas `em-rs-att-card` de ESTUDIANTES/asistencia y `em-rs-card` de ROCKSTARS: se redujeron separaciones verticales internas entre nombre, codigo/usuario, chip de asistencia y botones. La canastica de asistencia queda posicionada arriba a la derecha dentro de la tarjeta con 3px desde arriba y 3px desde la derecha. Se mantienen las variables de puntos de Rockstars: `--em-rs-rockstar-points-x: -15px` y `--em-rs-rockstar-points-size: 42px`.
+## v0.24.278 - Calibracion tarjetas estudiantes y Rockstars
+
+Base: v0.24.277.
+
+Cambio visual limitado a tarjetas/listas internas de ESTUDIANTES y ROCKSTARS: se aplicaron como defaults los valores calibrados desde consola para avatar/foto, nombre, codigo de asistencia, chip de asistencia Rockstars y containers de botones. En ROCKSTARS se oculta visualmente el codigo/ID y el chip queda debajo del nombre usando el espacio liberado.
 
 No se tocaron contenedores principales, heroes, logica, datos, navegacion, quizzes, ranking, podio, musica ni countdown.
 
-Version/cache busting actualizado a 0.24.277.
-
-Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
+Version/cache busting actualizado a 0.24.278.

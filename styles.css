@@ -20982,3 +20982,103 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   height: 27px;
   font-size: 13.5px;
 }
+
+/* EncisoMath v0.24.278 - defaults calibrados por consola para tarjetas ESTUDIANTES y ROCKSTARS */
+:root {
+  --em-att-buttons-container-x: 1px;
+  --em-att-buttons-container-y: 1px;
+  --em-rock-buttons-container-x: 2.5px;
+  --em-rock-buttons-container-y: 2px;
+
+  --em-att-avatar-size: 50px;
+  --em-att-avatar-font: 26px;
+  --em-att-avatar-x: 2px;
+  --em-att-avatar-y: 0px;
+  --em-att-name-x: 20px;
+  --em-att-name-y: 10px;
+  --em-att-name-size: 14px;
+  --em-att-code-x: 20px;
+  --em-att-code-y: 0px;
+  --em-att-code-size: 12px;
+
+  --em-rock-avatar-size: 50px;
+  --em-rock-avatar-font: 35px;
+  --em-rock-avatar-x: 2px;
+  --em-rock-avatar-y: 0px;
+  --em-rock-name-size: 14px;
+  --em-rock-name-x: 20px;
+  --em-rock-name-y: 0px;
+  --em-rock-chip-x: 20px;
+  --em-rock-chip-y: 0px;
+  --em-rock-chip-font: 10px;
+  --em-rock-chip-height: 20px;
+  --em-rock-chip-pad-x: 8px;
+  --em-rock-chip-margin-top: 2px;
+}
+
+.em-rs-att-card .em-rs-att-actions {
+  transform: translate(var(--em-att-buttons-container-x), var(--em-att-buttons-container-y)) !important;
+}
+
+.em-rs-card .em-rs-score-actions {
+  transform: translate(var(--em-rock-buttons-container-x), var(--em-rock-buttons-container-y)) !important;
+}
+
+.em-rs-att-card .em-rs-avatar {
+  width: var(--em-att-avatar-size) !important;
+  height: var(--em-att-avatar-size) !important;
+  font-size: var(--em-att-avatar-font) !important;
+  position: relative !important;
+  left: var(--em-att-avatar-x) !important;
+  top: var(--em-att-avatar-y) !important;
+}
+
+.em-rs-att-card .em-rs-name {
+  position: relative !important;
+  left: var(--em-att-name-x) !important;
+  top: var(--em-att-name-y) !important;
+  font-size: var(--em-att-name-size) !important;
+}
+
+.em-rs-att-card .em-rs-meta {
+  position: relative !important;
+  left: var(--em-att-code-x) !important;
+  top: var(--em-att-code-y) !important;
+  font-size: var(--em-att-code-size) !important;
+}
+
+.em-rs-card .em-rs-meta {
+  display: none !important;
+}
+
+.em-rs-card .em-rs-avatar {
+  width: var(--em-rock-avatar-size) !important;
+  height: var(--em-rock-avatar-size) !important;
+  font-size: var(--em-rock-avatar-font) !important;
+  position: relative !important;
+  left: var(--em-rock-avatar-x) !important;
+  top: var(--em-rock-avatar-y) !important;
+}
+
+.em-rs-card .em-rs-name {
+  position: relative !important;
+  left: var(--em-rock-name-x) !important;
+  top: var(--em-rock-name-y) !important;
+  font-size: var(--em-rock-name-size) !important;
+}
+
+.em-rs-card .em-rs-score-chip {
+  position: relative !important;
+  left: var(--em-rock-chip-x) !important;
+  top: var(--em-rock-chip-y) !important;
+  right: auto !important;
+  height: var(--em-rock-chip-height) !important;
+  padding-left: var(--em-rock-chip-pad-x) !important;
+  padding-right: var(--em-rock-chip-pad-x) !important;
+  font-size: var(--em-rock-chip-font) !important;
+  margin-top: var(--em-rock-chip-margin-top) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
