@@ -21849,3 +21849,98 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
     display: none;
   }
 }
+
+/* v0.24.282 - Limpieza flat HOME banner y subject banner */
+html[data-bg-mode="black"] .profile-cover.em-flat-background,
+.profile-cover.em-flat-background {
+  background: var(--em-flat-bg-color, var(--em-current-subject-color, #1368ce)) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+.profile-cover.em-flat-background::before,
+.profile-cover.em-flat-background::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html[data-bg-mode="black"] .subject-banner.em-flat-background,
+.subject-banner.em-flat-background,
+.subject-banner.em-flat-background.is-default-cover,
+.subject-banner.em-flat-background.has-custom-cover {
+  background: var(--em-flat-bg-color, var(--em-current-subject-color, #1368ce)) !important;
+  background-image: none !important;
+  background-blend-mode: normal !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+.subject-banner.em-flat-background::before,
+.subject-banner.em-flat-background::after,
+.subject-banner.em-flat-background.has-custom-cover::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+  content: none !important;
+}
+
+.subject-banner.em-flat-background .subject-banner-content,
+html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-content {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.subject-banner.em-flat-background .subject-icon.xl {
+  display: none !important;
+}
+
+.subject-banner.em-flat-background .subject-copy {
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.subject-banner.em-flat-background .subject-kicker,
+.subject-banner.em-flat-background h2,
+.subject-banner.em-flat-background .subject-chips span {
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.subject-banner.em-flat-background .subject-menu-btn {
+  top: 3px !important;
+  left: 3px !important;
+  right: auto !important;
+  transform: none !important;
+  z-index: 6 !important;
+}
+
+.subject-banner.em-flat-background .subject-menu-btn:active {
+  transform: scale(.94) !important;
+}
+
+@media (max-width: 520px) {
+  .subject-banner.em-flat-background .subject-banner-content {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+}

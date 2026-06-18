@@ -1,18 +1,25 @@
-## v0.24.281 - Fondo flat reutilizable
+## v0.24.282 - Limpieza flat banner HOME y asignatura
+- Correccion visual limitada a fondos/banners: se neutralizo la contaminacion vieja de gradientes, radiales, glow, sombras y filtros en `profile-cover.em-flat-background` y `subject-banner.em-flat-background`.
+- En el banner de asignatura se quitaron el icono visual, el resplandor/sombra oscura de textos y el filtro/drop-shadow; el texto ocupa el espacio del icono sin cambiar el contenedor externo.
+- El boton `...` del banner de asignatura queda en la esquina superior izquierda con `top: 3px` y `left: 3px`.
+- No se tocaron contenedores externos, navegacion, datos base, quizzes, rockstars, estudiantes, asistencia, ranking, podio, musica ni countdown.
+- Version/cache busting actualizado a 0.24.282.
+
+## v0.24.282 - Fondo flat reutilizable
 
 - Se agregó el fondo reutilizable `em-flat-background` con color sólido flat y figuras geométricas oscuras animadas.
 - Se aplicó a la portada superior del HOME, al banner de asignatura, al modal de inicio de quiz, al aviso de seguridad del quiz y al hero de clase (`lesson-head`).
 - Se conectó el color activo de asignatura mediante `--em-current-subject-color`, sincronizado con el color de la tarjeta del HOME.
 - No se modificaron contenedores externos, navegación, datos base, quizzes, rockstars, estudiantes, asistencia, ranking, podio, música ni countdown.
-- Version/cache busting actualizado a 0.24.281.
+- Version/cache busting actualizado a 0.24.282.
 
-## v0.24.281 - Compactacion HOME asignaturas
+## v0.24.282 - Compactacion HOME asignaturas
 
 Base: v0.24.279.
 
 Cambio limitado al grid interno de asignaturas del HOME: se aplico la compactacion calibrada por consola en las tarjetas `em-sub-`, reduciendo altura de card y portada, eliminando el colchon vertical del bloque de texto con `min-height: 0` y `align-content: start`, manteniendo tipografias legibles y textos mas juntos verticalmente. No se tocaron contenedores externos del HOME, navegacion, datos base, clases, quizzes, rockstars, estudiantes, asistencia, ranking, podio, musica ni countdown.
 
-Version/cache busting actualizado a 0.24.281.
+Version/cache busting actualizado a 0.24.282.
 
 Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
 
