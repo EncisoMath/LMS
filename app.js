@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.295';
+  const APP_VERSION = '0.24.296';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -480,6 +480,10 @@
     quizTransitionPanelOpen: false,
     quizTransitionScorePanelOpen: false,
     appRoute: null,
+    quizStudioContext: null,
+    quizStudioDraft: null,
+    quizStudioQuestionIndex: 0,
+    quizStudioTab: 'data',
     appHistoryReady: false,
     applyingHistoryRoute: false
   };
@@ -2356,6 +2360,7 @@
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
       </div>
+      <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz a este grupo</button>
       <div class="em-content-list is-grid" id="quizLibrary">
         ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
@@ -2365,6 +2370,7 @@
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function bindQuizTabEvents() {
+    document.getElementById('openQuizStudioBtn')?.addEventListener('click', () => openQuizStudio(createQuizStudioContext()));
     document.querySelectorAll('[data-quiz-period]').forEach((button) => {
       if (button.dataset.boundQuizPeriod === 'true') return;
       button.dataset.boundQuizPeriod = 'true';
@@ -2400,11 +2406,17 @@
       });
     });
   }
+  function getLocalQuizzes() {
+    const list = readJSON('encisomath:localQuizzes');
+    return Array.isArray(list) ? list : [];
+  }
+  function saveLocalQuizzes(list = []) {
+    localStorage.setItem('encisomath:localQuizzes', JSON.stringify(Array.isArray(list) ? list : []));
+  }
   function getBaseQuizzes() {
     const source = state.data.quizzes;
-    if (Array.isArray(source)) return source;
-    if (Array.isArray(source?.quizzes)) return source.quizzes;
-    return [];
+    const base = Array.isArray(source) ? source : (Array.isArray(source?.quizzes) ? source.quizzes : []);
+    return [...base, ...getLocalQuizzes()];
   }
   function getQuizzesForCurrentAssignment() {
     const assignment = state.assignment;
@@ -2412,7 +2424,7 @@
     return getBaseQuizzes().filter((quiz) => {
       if (Number(quiz.period || 1) !== Number(state.quizPeriod)) return false;
       const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds : [];
-      if (ids.includes('*') || ids.includes(assignment.id)) return true;
+      if (ids.length) return ids.includes('*') || ids.includes(assignment.id);
       if (quiz.subject && quiz.subject === assignment.subject) return true;
       if (quiz.area && quiz.area === assignment.area) return true;
       return !ids.length && !quiz.subject && !quiz.area;
@@ -2524,6 +2536,502 @@
         </section>
       </article>
     `;
+  }
+
+  function createQuizStudioContext() {
+    const assignment = state.assignment || {};
+    return {
+      assignmentId: assignment.id || '',
+      subjectId: assignment.id || '',
+      courseId: assignment.id || '',
+      groupId: assignment.id || '',
+      grade: assignment.grade || '',
+      subjectName: assignment.subject || '',
+      courseName: assignment.course || '',
+      area: assignment.area || '',
+      sede: assignment.sede || '',
+      period: Number(state.quizPeriod || 1)
+    };
+  }
+  function quizStudioId(prefix = 'id') {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+  function quizStudioDeepClone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+  function createQuizStudioQuestion(type = 'multiple_choice') {
+    const base = {
+      id: quizStudioId('studio_q'),
+      type,
+      time: '20',
+      text: 'Escribe aquí la pregunta.',
+      image: '',
+      options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'],
+      correct: 0,
+      shortAnswer: '',
+      charLimit: 40
+    };
+    return normalizeQuizStudioQuestion(base);
+  }
+  function createEmptyQuizStudioDraft(context = createQuizStudioContext()) {
+    return {
+      title: '',
+      availableUntil: '',
+      attempts: '1',
+      shuffleQuestions: true,
+      shuffleOptions: true,
+      replicateAssignmentIds: [],
+      context: { ...context },
+      questions: [createQuizStudioQuestion('multiple_choice')]
+    };
+  }
+  const QUIZ_STUDIO_TYPES = {
+    multiple_choice: {
+      label: 'Opción múltiple',
+      count: 4,
+      infoTitle: 'Opción múltiple · ABCD',
+      infoText: 'Escribe directamente sobre cada tarjeta. Marca la respuesta correcta con el check.',
+      defaults: ['Opción A', 'Opción B', 'Opción C', 'Opción D']
+    },
+    flip: {
+      label: 'Quiz flip',
+      count: 6,
+      infoTitle: 'Quiz flip · 6 opciones',
+      infoText: 'Se ve como el juego real: seis tarjetas editables y un check para la correcta.',
+      defaults: ['Opción 1', 'Opción 2', 'Opción 3', 'Opción 4', 'Opción 5', 'Opción 6']
+    },
+    order: {
+      label: 'Organizar tarjetas',
+      count: 4,
+      organize: true,
+      infoTitle: 'Organizar tarjetas · 4 ítems',
+      infoText: 'Escribe cada tarjeta en el orden correcto. El estudiante deberá organizarlas.',
+      defaults: ['Primero', 'Segundo', 'Tercero', 'Cuarto']
+    },
+    true_false: {
+      label: 'Verdadero / falso',
+      count: 2,
+      fixed: true,
+      infoTitle: 'Verdadero / falso · 2 opciones fijas',
+      infoText: 'Las tarjetas no se editan. Solo marca cuál es la respuesta correcta.',
+      defaults: ['Verdadero', 'Falso']
+    },
+    open: {
+      label: 'Respuesta corta',
+      count: 0,
+      short: true,
+      fixed: true,
+      infoTitle: 'Respuesta corta',
+      infoText: 'Configura la respuesta esperada y el límite de caracteres.',
+      defaults: []
+    }
+  };
+  function normalizeQuizStudioQuestion(question = {}) {
+    const type = QUIZ_STUDIO_TYPES[question.type] ? question.type : 'multiple_choice';
+    const config = QUIZ_STUDIO_TYPES[type];
+    const safe = {
+      id: question.id || quizStudioId('studio_q'),
+      type,
+      time: String(question.time ?? '20'),
+      text: String(question.text || ''),
+      image: String(question.image || ''),
+      options: Array.isArray(question.options) ? question.options.map((item) => String(item || '')) : [],
+      correct: Number.isFinite(Number(question.correct)) ? Number(question.correct) : 0,
+      shortAnswer: String(question.shortAnswer || ''),
+      charLimit: Math.max(1, Math.min(300, Number(question.charLimit || 40)))
+    };
+    if (config.short) {
+      safe.options = [];
+      safe.correct = 0;
+      return safe;
+    }
+    if (config.fixed) safe.options = [...config.defaults];
+    while (safe.options.length < config.count) safe.options.push(config.defaults[safe.options.length] || `Opción ${safe.options.length + 1}`);
+    safe.options = safe.options.slice(0, config.count);
+    safe.correct = Math.max(0, Math.min(config.count - 1, safe.correct));
+    return safe;
+  }
+  function getQuizStudioDraft() {
+    if (!state.quizStudioDraft) state.quizStudioDraft = createEmptyQuizStudioDraft(createQuizStudioContext());
+    state.quizStudioDraft.questions = (Array.isArray(state.quizStudioDraft.questions) && state.quizStudioDraft.questions.length ? state.quizStudioDraft.questions : [createQuizStudioQuestion()]).map(normalizeQuizStudioQuestion);
+    state.quizStudioQuestionIndex = Math.max(0, Math.min(Number(state.quizStudioQuestionIndex || 0), state.quizStudioDraft.questions.length - 1));
+    return state.quizStudioDraft;
+  }
+  function getSameGradeQuizStudioTargets(context = state.quizStudioContext || createQuizStudioContext()) {
+    const teacherId = state.user?.id || '';
+    return state.data.assignments
+      .filter((assignment) => String(assignment.teacherId || '') === String(teacherId || assignment.teacherId || ''))
+      .filter((assignment) => String(assignment.grade || '') === String(context.grade || ''))
+      .filter((assignment) => String(assignment.id || '') !== String(context.assignmentId || ''))
+      .sort((a, b) => `${a.subject} ${a.course}`.localeCompare(`${b.subject} ${b.course}`, 'es'));
+  }
+  function openQuizStudio(context = createQuizStudioContext()) {
+    state.quizStudioContext = { ...context };
+    state.quizStudioDraft = createEmptyQuizStudioDraft(context);
+    state.quizStudioQuestionIndex = 0;
+    state.quizStudioTab = 'data';
+    renderQuizStudio();
+  }
+  function closeQuizStudio() {
+    state.quizStudioContext = null;
+    state.quizStudioDraft = null;
+    state.quizStudioQuestionIndex = 0;
+    state.quizStudioTab = 'data';
+    renderSubjectDetail('quizzes', { replaceHistory: true });
+  }
+  function renderQuizStudio() {
+    const context = state.quizStudioContext || createQuizStudioContext();
+    const draft = getQuizStudioDraft();
+    const tab = state.quizStudioTab === 'questions' ? 'questions' : 'data';
+    mount(quizStudioHTML(context, draft, tab), bindQuizStudioEvents, { noTransition: true });
+  }
+  function quizStudioHTML(context, draft, tab) {
+    const question = normalizeQuizStudioQuestion(draft.questions[state.quizStudioQuestionIndex] || createQuizStudioQuestion());
+    const typeConfig = QUIZ_STUDIO_TYPES[question.type];
+    const targets = getSameGradeQuizStudioTargets(context);
+    return `
+      <main class="screen em-quiz-studio-screen">
+        <header class="em-quiz-studio-topbar">
+          <button class="em-quiz-studio-back" id="quizStudioBackBtn" type="button" aria-label="Volver a quizzes">←</button>
+          <span>${escapeHTML(context.subjectName || 'Quizzes')} ${escapeHTML(context.grade || '')}${context.courseName ? `-${escapeHTML(context.courseName)}` : ''}</span>
+        </header>
+        <section class="em-quiz-studio-page">
+          <header class="em-quiz-studio-hero">
+            <span class="em-quiz-studio-shape circle" aria-hidden="true"></span>
+            <span class="em-quiz-studio-shape x" aria-hidden="true"></span>
+            <div class="em-quiz-studio-hero-copy">
+              <h1 class="em-quiz-studio-title">Quiz Studio</h1>
+            </div>
+          </header>
+          <nav class="em-quiz-studio-tabs" aria-label="Pestañas del creador">
+            <button class="em-quiz-studio-tab-btn ${tab === 'data' ? 'active' : ''}" type="button" data-studio-tab="data">Datos rápidos</button>
+            <button class="em-quiz-studio-tab-btn ${tab === 'questions' ? 'active' : ''}" type="button" data-studio-tab="questions">Preguntas</button>
+          </nav>
+          <section class="em-quiz-studio-tab-panel ${tab === 'data' ? 'active' : ''}" id="quizStudioTabData">
+            <section class="em-quiz-studio-card">
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Datos rápidos</h2><p class="em-quiz-studio-card-mini">Nombre y reglas base</p></div></header>
+              <div class="em-quiz-studio-card-body">
+                <div class="em-quiz-studio-grid">
+                  <label class="em-quiz-studio-field full"><span class="em-quiz-studio-label">Nombre del quiz</span><input class="em-quiz-studio-input" id="quizStudioTitle" value="${escapeAttr(draft.title || '')}" placeholder="Ejemplo: Tablas de frecuencia" /></label>
+                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Disponible hasta</span><input class="em-quiz-studio-input" id="quizStudioUntil" type="datetime-local" value="${escapeAttr(draft.availableUntil || '')}" /></label>
+                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Intentos permitidos</span><select class="em-quiz-studio-select" id="quizStudioAttempts">${quizStudioAttemptOptionsHTML(draft.attempts)}</select></label>
+                </div>
+                <div class="em-quiz-studio-toggles">
+                  <button class="em-quiz-studio-toggle ${draft.shuffleQuestions ? 'active' : ''}" type="button" id="quizStudioShuffleQuestions"><strong>Preguntas en desorden</strong><span>Mezcla los ítems</span></button>
+                  <button class="em-quiz-studio-toggle ${draft.shuffleOptions ? 'active' : ''}" type="button" id="quizStudioShuffleOptions"><strong>Opciones en desorden</strong><span>Mezcla respuestas o tarjetas</span></button>
+                </div>
+              </div>
+            </section>
+            <section class="em-quiz-studio-card">
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Replicar quiz</h2><p class="em-quiz-studio-card-mini">Otros cursos del mismo grado</p></div></header>
+              <div class="em-quiz-studio-card-body">
+                <div class="em-quiz-studio-replicate-list" id="quizStudioReplicateList">
+                  ${targets.length ? targets.map((assignment) => quizStudioReplicateItemHTML(assignment, draft.replicateAssignmentIds || [])).join('') : '<div class="em-quiz-studio-empty">No hay otros cursos de este mismo grado.</div>'}
+                </div>
+              </div>
+            </section>
+          </section>
+          <section class="em-quiz-studio-tab-panel ${tab === 'questions' ? 'active' : ''}" id="quizStudioTabQuestions">
+            <section class="em-quiz-studio-card">
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Preguntas</h2><p class="em-quiz-studio-card-mini" id="quizStudioQuestionCounter">Pregunta ${state.quizStudioQuestionIndex + 1} de ${draft.questions.length}</p></div></header>
+              <div class="em-quiz-studio-card-body"><div class="em-quiz-studio-question-strip" id="quizStudioQuestionStrip">${quizStudioQuestionStripHTML(draft)}</div></div>
+            </section>
+            <section class="em-quiz-studio-card">
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Pregunta actual</h2><p class="em-quiz-studio-card-mini">Tipo, imagen, tiempo y enunciado</p></div></header>
+              <div class="em-quiz-studio-card-body">
+                <div class="em-quiz-studio-grid">
+                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tipo de pregunta</span><select class="em-quiz-studio-select" id="quizStudioQuestionType">${quizStudioTypeOptionsHTML(question.type)}</select></label>
+                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tiempo</span><select class="em-quiz-studio-select" id="quizStudioQuestionTime">${quizStudioTimeOptionsHTML(question.time)}</select></label>
+                  <label class="em-quiz-studio-field full"><span class="em-quiz-studio-label">Enunciado</span><textarea class="em-quiz-studio-textarea" id="quizStudioQuestionText">${escapeHTML(question.text || '')}</textarea></label>
+                </div>
+                ${quizStudioImageEditorHTML(question)}
+                <div class="em-quiz-studio-type-info" id="quizStudioTypeInfo"><strong>${escapeHTML(typeConfig.infoTitle)}</strong><span>${escapeHTML(typeConfig.infoText)}</span></div>
+              </div>
+            </section>
+            <section class="em-quiz-studio-card">
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">${typeConfig.short ? 'Respuesta corta' : (typeConfig.organize ? 'Tarjetas en orden' : 'Tarjetas de respuesta')}</h2><p class="em-quiz-studio-card-mini">${typeConfig.short ? 'Respuesta y límite' : (typeConfig.organize ? 'Edita el orden correcto' : 'Toca el check correcto')}</p></div></header>
+              <div class="em-quiz-studio-card-body">
+                ${typeConfig.short ? quizStudioShortEditorHTML(question) : `<div class="em-quiz-studio-answer-grid" id="quizStudioAnswerGrid">${quizStudioAnswerCardsHTML(question)}</div>`}
+                <div class="em-quiz-studio-mini-actions"><button class="em-quiz-studio-mini-btn" type="button" id="quizStudioDuplicateBtn">Duplicar pregunta</button><button class="em-quiz-studio-mini-btn" type="button" id="quizStudioDeleteBtn">Eliminar pregunta</button></div>
+              </div>
+            </section>
+            <section class="em-quiz-studio-preview-box" id="quizStudioPreviewBox" hidden></section>
+          </section>
+        </section>
+        <footer class="em-quiz-studio-savebar">
+          <button class="em-quiz-studio-save-btn" type="button" id="quizStudioSaveBtn">Guardar</button>
+          <button class="em-quiz-studio-save-btn preview" type="button" id="quizStudioPreviewBtn">Probar</button>
+          <button class="em-quiz-studio-save-btn publish" type="button" id="quizStudioPublishBtn">Publicar</button>
+        </footer>
+      </main>
+    `;
+  }
+  function quizStudioAttemptOptionsHTML(selected) {
+    const options = [
+      ['∞', 'Ilimitados'], ['1', '1 intento'], ['2', '2 intentos'], ['3', '3 intentos'], ['4', '4 intentos'], ['5', '5 intentos']
+    ];
+    return options.map(([value, label]) => `<option value="${escapeAttr(value)}" ${String(selected || '1') === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('');
+  }
+  function quizStudioTypeOptionsHTML(selected) {
+    return Object.entries(QUIZ_STUDIO_TYPES).map(([value, config]) => `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHTML(config.label)}</option>`).join('');
+  }
+  function quizStudioTimeOptionsHTML(selected) {
+    const options = [['', 'Sin tiempo'], ['10', '10 segundos'], ['20', '20 segundos'], ['30', '30 segundos'], ['60', '60 segundos']];
+    return options.map(([value, label]) => `<option value="${escapeAttr(value)}" ${String(selected || '') === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('');
+  }
+  function quizStudioReplicateItemHTML(assignment, selected = []) {
+    const active = selected.includes(assignment.id);
+    return `
+      <button class="em-quiz-studio-replicate-item ${active ? 'active' : ''}" type="button" data-studio-replicate="${escapeAttr(assignment.id)}">
+        <span class="em-quiz-studio-replicate-copy"><strong>${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</strong><span>Mismo grado</span></span>
+        <span class="em-quiz-studio-replicate-check">✓</span>
+      </button>
+    `;
+  }
+  function quizStudioQuestionStripHTML(draft) {
+    return `${draft.questions.map((question, index) => `<button class="em-quiz-studio-q-chip ${index === state.quizStudioQuestionIndex ? 'active' : ''}" type="button" data-studio-question-index="${index}">${index + 1}</button>`).join('')}<button class="em-quiz-studio-add-question" type="button" id="quizStudioAddQuestionBtn">+ Añadir pregunta</button>`;
+  }
+  function quizStudioImageEditorHTML(question) {
+    const hasImage = Boolean(question.image);
+    return `
+      <section class="em-quiz-studio-image-uploader">
+        <div class="em-quiz-studio-image-head">
+          <div class="em-quiz-studio-image-title"><strong>Imagen de la pregunta</strong><span>Opcional. Cada pregunta guarda su propia imagen.</span></div>
+          <label class="em-quiz-studio-image-btn">Añadir imagen<input class="em-quiz-studio-file-input" id="quizStudioQuestionImage" type="file" accept="image/*" /></label>
+        </div>
+        <div class="em-quiz-studio-image-preview ${hasImage ? 'is-filled' : ''}">
+          ${hasImage ? `<img src="${escapeAttr(question.image)}" alt="Imagen de la pregunta" />` : '<div class="em-quiz-studio-image-empty"><strong>Sin imagen</strong><span>Puedes subir una gráfica, foto, captura o recurso visual para esta pregunta.</span></div>'}
+        </div>
+        <div class="em-quiz-studio-image-actions">
+          <label class="em-quiz-studio-image-btn">Cambiar imagen<input class="em-quiz-studio-file-input" id="quizStudioQuestionImageAlt" type="file" accept="image/*" /></label>
+          <button class="em-quiz-studio-image-remove" type="button" id="quizStudioRemoveImageBtn">Quitar imagen</button>
+        </div>
+      </section>
+    `;
+  }
+  function quizStudioAnswerCardsHTML(question) {
+    const config = QUIZ_STUDIO_TYPES[question.type] || QUIZ_STUDIO_TYPES.multiple_choice;
+    return question.options.map((value, index) => `
+      <article class="em-quiz-studio-answer-card ${config.fixed ? 'is-fixed' : ''} ${config.organize ? 'is-organize' : ''}">
+        ${config.organize ? `<span class="em-quiz-studio-order-badge">${index + 1}</span>` : ''}
+        ${config.organize ? '' : `<button class="em-quiz-studio-answer-check ${index === question.correct ? 'active' : ''}" type="button" data-studio-correct-index="${index}" aria-label="Marcar como correcta">✓</button>`}
+        <textarea class="em-quiz-studio-answer-text" data-studio-option-index="${index}" ${config.fixed ? 'readonly' : ''}>${escapeHTML(value || '')}</textarea>
+      </article>
+    `).join('');
+  }
+  function quizStudioShortEditorHTML(question) {
+    return `
+      <div class="em-quiz-studio-short-box active">
+        <div class="em-quiz-studio-short-answer-card">
+          <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Respuesta esperada</span><input class="em-quiz-studio-input" id="quizStudioShortAnswer" value="${escapeAttr(question.shortAnswer || '')}" /></label>
+          <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Límite de caracteres</span><input class="em-quiz-studio-input" id="quizStudioShortLimit" type="number" min="1" max="300" value="${escapeAttr(question.charLimit || 40)}" /></label>
+        </div>
+      </div>
+    `;
+  }
+  function bindQuizStudioEvents() {
+    document.getElementById('quizStudioBackBtn')?.addEventListener('click', closeQuizStudio);
+    document.querySelectorAll('[data-studio-tab]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); state.quizStudioTab = button.dataset.studioTab === 'questions' ? 'questions' : 'data'; renderQuizStudio(); }));
+    document.getElementById('quizStudioTitle')?.addEventListener('input', saveQuizStudioFromDOM);
+    document.getElementById('quizStudioUntil')?.addEventListener('change', saveQuizStudioFromDOM);
+    document.getElementById('quizStudioAttempts')?.addEventListener('change', saveQuizStudioFromDOM);
+    document.getElementById('quizStudioShuffleQuestions')?.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.shuffleQuestions = !draft.shuffleQuestions; renderQuizStudio(); });
+    document.getElementById('quizStudioShuffleOptions')?.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.shuffleOptions = !draft.shuffleOptions; renderQuizStudio(); });
+    document.querySelectorAll('[data-studio-replicate]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); const id = button.dataset.studioReplicate || ''; const set = new Set(draft.replicateAssignmentIds || []); if (set.has(id)) set.delete(id); else set.add(id); draft.replicateAssignmentIds = [...set]; renderQuizStudio(); }));
+    document.querySelectorAll('[data-studio-question-index]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); state.quizStudioQuestionIndex = Number(button.dataset.studioQuestionIndex || 0); renderQuizStudio(); }));
+    document.getElementById('quizStudioAddQuestionBtn')?.addEventListener('click', () => { saveQuizStudioFromDOM(); const draft = getQuizStudioDraft(); draft.questions.push(createQuizStudioQuestion('multiple_choice')); state.quizStudioQuestionIndex = draft.questions.length - 1; state.quizStudioTab = 'questions'; renderQuizStudio(); toast('Pregunta añadida.'); });
+    document.getElementById('quizStudioQuestionType')?.addEventListener('change', (event) => { const draft = getQuizStudioDraft(); const question = draft.questions[state.quizStudioQuestionIndex]; question.type = event.target.value; Object.assign(question, normalizeQuizStudioQuestion({ ...question, type: event.target.value, options: [...(QUIZ_STUDIO_TYPES[event.target.value]?.defaults || [])], correct: 0 })); renderQuizStudio(); });
+    ['quizStudioQuestionTime','quizStudioQuestionText','quizStudioShortAnswer','quizStudioShortLimit'].forEach((id) => document.getElementById(id)?.addEventListener('input', saveQuizStudioFromDOM));
+    document.querySelectorAll('[data-studio-option-index]').forEach((input) => input.addEventListener('input', saveQuizStudioFromDOM));
+    document.querySelectorAll('[data-studio-correct-index]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.questions[state.quizStudioQuestionIndex].correct = Number(button.dataset.studioCorrectIndex || 0); renderQuizStudio(); }));
+    document.getElementById('quizStudioQuestionImage')?.addEventListener('change', handleQuizStudioImage);
+    document.getElementById('quizStudioQuestionImageAlt')?.addEventListener('change', handleQuizStudioImage);
+    document.getElementById('quizStudioRemoveImageBtn')?.addEventListener('click', () => { getQuizStudioDraft().questions[state.quizStudioQuestionIndex].image = ''; renderQuizStudio(); toast('Imagen quitada.'); });
+    document.getElementById('quizStudioDuplicateBtn')?.addEventListener('click', duplicateQuizStudioQuestion);
+    document.getElementById('quizStudioDeleteBtn')?.addEventListener('click', deleteQuizStudioQuestion);
+    document.getElementById('quizStudioPreviewBtn')?.addEventListener('click', openQuizStudioPreview);
+    document.getElementById('quizStudioSaveBtn')?.addEventListener('click', () => saveQuizStudio('draft'));
+    document.getElementById('quizStudioPublishBtn')?.addEventListener('click', () => saveQuizStudio('published'));
+  }
+  function saveQuizStudioFromDOM() {
+    const draft = getQuizStudioDraft();
+    const title = document.getElementById('quizStudioTitle');
+    const until = document.getElementById('quizStudioUntil');
+    const attempts = document.getElementById('quizStudioAttempts');
+    if (title) draft.title = title.value;
+    if (until) draft.availableUntil = until.value;
+    if (attempts) draft.attempts = attempts.value;
+    const question = draft.questions[state.quizStudioQuestionIndex];
+    if (!question) return draft;
+    const type = document.getElementById('quizStudioQuestionType');
+    const time = document.getElementById('quizStudioQuestionTime');
+    const text = document.getElementById('quizStudioQuestionText');
+    if (type) question.type = type.value;
+    if (time) question.time = time.value;
+    if (text) question.text = text.value;
+    const config = QUIZ_STUDIO_TYPES[question.type] || QUIZ_STUDIO_TYPES.multiple_choice;
+    if (config.short) {
+      const shortAnswer = document.getElementById('quizStudioShortAnswer');
+      const shortLimit = document.getElementById('quizStudioShortLimit');
+      if (shortAnswer) question.shortAnswer = shortAnswer.value;
+      if (shortLimit) question.charLimit = Number(shortLimit.value || 40);
+    } else if (!config.fixed) {
+      document.querySelectorAll('[data-studio-option-index]').forEach((input) => {
+        question.options[Number(input.dataset.studioOptionIndex || 0)] = input.value;
+      });
+    }
+    draft.questions[state.quizStudioQuestionIndex] = normalizeQuizStudioQuestion(question);
+    return draft;
+  }
+  function handleQuizStudioImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('Solo imagen.'); return; }
+    if (file.size > 1800000) { toast('Imagen muy pesada.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      getQuizStudioDraft().questions[state.quizStudioQuestionIndex].image = String(reader.result || '');
+      renderQuizStudio();
+      toast('Imagen añadida.');
+    };
+    reader.readAsDataURL(file);
+  }
+  function duplicateQuizStudioQuestion() {
+    saveQuizStudioFromDOM();
+    const draft = getQuizStudioDraft();
+    const copy = quizStudioDeepClone(draft.questions[state.quizStudioQuestionIndex]);
+    copy.id = quizStudioId('studio_q');
+    draft.questions.splice(state.quizStudioQuestionIndex + 1, 0, copy);
+    state.quizStudioQuestionIndex += 1;
+    renderQuizStudio();
+    toast('Pregunta duplicada.');
+  }
+  function deleteQuizStudioQuestion() {
+    const draft = getQuizStudioDraft();
+    if (draft.questions.length <= 1) { toast('Debe quedar 1 pregunta.'); return; }
+    draft.questions.splice(state.quizStudioQuestionIndex, 1);
+    state.quizStudioQuestionIndex = Math.max(0, state.quizStudioQuestionIndex - 1);
+    renderQuizStudio();
+    toast('Pregunta eliminada.');
+  }
+  function openQuizStudioPreview() {
+    saveQuizStudioFromDOM();
+    const box = document.getElementById('quizStudioPreviewBox');
+    if (!box) return;
+    box.hidden = false;
+    box.innerHTML = quizStudioPreviewHTML();
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function quizStudioPreviewHTML() {
+    const draft = getQuizStudioDraft();
+    const question = normalizeQuizStudioQuestion(draft.questions[state.quizStudioQuestionIndex]);
+    const config = QUIZ_STUDIO_TYPES[question.type] || QUIZ_STUDIO_TYPES.multiple_choice;
+    const timeText = question.time ? `${question.time} segundos` : 'Sin tiempo';
+    return `
+      <header class="em-quiz-studio-preview-top"><strong class="em-quiz-studio-preview-title">${escapeHTML(draft.title || 'Quiz sin nombre')}</strong><span class="em-quiz-studio-preview-meta">Pregunta ${state.quizStudioQuestionIndex + 1} · ${escapeHTML(config.label)} · ${escapeHTML(timeText)}</span></header>
+      <div class="em-quiz-studio-preview-body">
+        ${question.image ? `<div class="em-quiz-studio-preview-image show"><img src="${escapeAttr(question.image)}" alt="Imagen de vista previa" /></div>` : ''}
+        <p class="em-quiz-studio-preview-question">${escapeHTML(question.text || 'Pregunta sin texto')}</p>
+        ${config.short ? `<div class="em-quiz-studio-preview-short"><input placeholder="Escribe tu respuesta..." maxlength="${Number(question.charLimit || 40)}" /><span>Máximo ${Number(question.charLimit || 40)} caracteres</span></div>` : `<div class="em-quiz-studio-preview-options">${question.options.map((option) => `<button class="em-quiz-studio-preview-option" type="button">${escapeHTML(option || 'Opción')}</button>`).join('')}</div>`}
+      </div>
+    `;
+  }
+  function validateQuizStudioDraft() {
+    const draft = saveQuizStudioFromDOM();
+    if (!String(draft.title || '').trim()) { toast('Falta nombre.'); state.quizStudioTab = 'data'; renderQuizStudio(); return false; }
+    if (!draft.questions.length) { toast('Falta pregunta.'); state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+    for (let index = 0; index < draft.questions.length; index += 1) {
+      const question = normalizeQuizStudioQuestion(draft.questions[index]);
+      const config = QUIZ_STUDIO_TYPES[question.type] || QUIZ_STUDIO_TYPES.multiple_choice;
+      if (!String(question.text || '').trim()) { toast(`Falta texto P${index + 1}.`); state.quizStudioQuestionIndex = index; state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+      if (config.short) {
+        if (!String(question.shortAnswer || '').trim()) { toast(`Falta respuesta P${index + 1}.`); state.quizStudioQuestionIndex = index; state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+        if (!Number(question.charLimit || 0)) { toast(`Falta límite P${index + 1}.`); state.quizStudioQuestionIndex = index; state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+      } else {
+        if (question.options.some((option) => !String(option || '').trim())) { toast(`Faltan opciones P${index + 1}.`); state.quizStudioQuestionIndex = index; state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+        if (!config.organize && (question.correct < 0 || question.correct >= question.options.length)) { toast(`Falta correcta P${index + 1}.`); state.quizStudioQuestionIndex = index; state.quizStudioTab = 'questions'; renderQuizStudio(); return false; }
+      }
+    }
+    return true;
+  }
+  function quizStudioQuestionToApp(question, index = 0) {
+    const q = normalizeQuizStudioQuestion(question);
+    const id = quizStudioId('q');
+    const timeLimit = Number(q.time || 0);
+    const common = { id, prompt: q.text, textA: q.text, textB: '', image: q.image || '', imageAlt: q.image ? 'Imagen de la pregunta' : '' };
+    if (timeLimit > 0) common.timeLimit = timeLimit;
+    if (q.type === 'flip') {
+      const colors = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];
+      return { ...common, type: 'flip', options: q.options.slice(0, 6).map((text, i) => ({ id: String.fromCharCode(97 + i), text, correct: i === q.correct, color: colors[i] || 'blue' })) };
+    }
+    if (q.type === 'order') {
+      const colors = ['red', 'blue', 'yellow', 'green'];
+      const cards = q.options.slice(0, 4).map((text, i) => ({ id: `card-${i + 1}`, text, order: i + 1, color: colors[i] || 'blue' }));
+      return { ...common, type: 'order', cards, correctOrder: cards.map((card) => card.id) };
+    }
+    if (q.type === 'true_false') {
+      return { ...common, type: 'true_false', options: [{ id: 'true', text: 'Verdadero', correct: q.correct === 0 }, { id: 'false', text: 'Falso', correct: q.correct === 1 }] };
+    }
+    if (q.type === 'open') {
+      return { ...common, type: 'open', expectedAnswer: q.shortAnswer, charLimit: Number(q.charLimit || 40), maxLength: Number(q.charLimit || 40) };
+    }
+    return { ...common, type: 'multiple_choice', options: q.options.slice(0, 4).map((text, i) => ({ id: String.fromCharCode(97 + i), text, correct: i === q.correct })) };
+  }
+  function quizStudioDraftToAppQuiz(draft, assignment, status = 'draft') {
+    const now = Date.now();
+    const attempts = String(draft.attempts || '1') === '∞' ? null : Number(draft.attempts || 1);
+    const quiz = {
+      id: quizStudioId('quiz'),
+      title: String(draft.title || '').trim(),
+      emoji: '🎮',
+      mode: status === 'published' ? 'Publicado' : 'Borrador',
+      status,
+      period: Number(draft.context?.period || state.quizPeriod || 1),
+      assignmentIds: [assignment.id],
+      subject: assignment.subject,
+      area: assignment.area,
+      grade: assignment.grade,
+      course: assignment.course,
+      groupId: assignment.id,
+      availableUntil: draft.availableUntil || '',
+      attempts,
+      shuffleQuestions: Boolean(draft.shuffleQuestions),
+      shuffleOptions: Boolean(draft.shuffleOptions),
+      createdAt: now,
+      updatedAt: now,
+      questions: draft.questions.map(quizStudioQuestionToApp)
+    };
+    return quiz;
+  }
+  function cloneQuizForAssignment(baseQuiz, assignment) {
+    const copy = quizStudioDeepClone(baseQuiz);
+    copy.id = quizStudioId('quiz');
+    copy.assignmentIds = [assignment.id];
+    copy.subject = assignment.subject;
+    copy.area = assignment.area;
+    copy.grade = assignment.grade;
+    copy.course = assignment.course;
+    copy.groupId = assignment.id;
+    copy.createdAt = Date.now();
+    copy.updatedAt = Date.now();
+    copy.questions = (copy.questions || []).map((question) => ({ ...quizStudioDeepClone(question), id: quizStudioId('q') }));
+    return copy;
+  }
+  function saveQuizStudio(status = 'draft') {
+    if (!validateQuizStudioDraft()) return;
+    const draft = getQuizStudioDraft();
+    const context = state.quizStudioContext || createQuizStudioContext();
+    const currentAssignment = state.data.assignments.find((item) => item.id === context.assignmentId) || state.assignment;
+    if (!currentAssignment) { toast('No hay grupo activo.'); return; }
+    const baseQuiz = quizStudioDraftToAppQuiz(draft, currentAssignment, status);
+    const targets = getSameGradeQuizStudioTargets(context).filter((assignment) => (draft.replicateAssignmentIds || []).includes(assignment.id));
+    const copies = targets.map((assignment) => cloneQuizForAssignment(baseQuiz, assignment));
+    const local = getLocalQuizzes();
+    saveLocalQuizzes([...local, baseQuiz, ...copies]);
+    state.quizActiveId = baseQuiz.id;
+    localStorage.setItem('encisomath:quizActiveId', baseQuiz.id);
+    toast(copies.length ? `Quiz ${status === 'published' ? 'publicado' : 'guardado'} y replicado en ${copies.length} cursos.` : `Quiz ${status === 'published' ? 'publicado' : 'guardado'}.`);
+    window.setTimeout(closeQuizStudio, 720);
   }
   function quizPlayerHTML(quiz, options = {}) {
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
@@ -9121,7 +9629,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.295', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.296', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
