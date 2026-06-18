@@ -1,5 +1,5 @@
 
-## v0.24.275
+## v0.24.276
 
 - Limpieza agresiva de código legado y capas de depuración del módulo Quizzes.
 - Eliminados paneles/tuerquitas antiguos de feedback, layout, transición, ranking/podio y resultados.

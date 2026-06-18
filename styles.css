@@ -17411,3 +17411,190 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
     display: none !important;
   }
 }
+
+/* ===== v0.24.276 - Fix ROCKSTARS directo en el padre: restaurar cohete y estrellas sin cambiar base de hero ===== */
+.rockstar-hero.em-rs-hero-host .em-rs-starsLayer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  display: block !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-star {
+  position: absolute !important;
+  left: var(--em-rs-star-x) !important;
+  top: var(--em-rs-star-y) !important;
+  width: var(--em-rs-star-size) !important;
+  height: var(--em-rs-star-size) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: block !important;
+  border-radius: 50% !important;
+  background: var(--em-rs-star-color) !important;
+  opacity: var(--em-rs-star-alpha) !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: translate(-50%, -50%) translate(var(--em-rs-star-from-x), var(--em-rs-star-from-y)) !important;
+  animation: emRsStarMove var(--em-rs-star-duration) var(--em-rs-star-delay) linear infinite !important;
+  will-change: transform !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-star::before,
+.rockstar-hero.em-rs-hero-host .em-rs-star::after {
+  content: none !important;
+  display: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+  position: relative !important;
+  z-index: 2 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: 91px !important;
+  height: 91px !important;
+  display: grid !important;
+  place-items: center !important;
+  transform: rotate(var(--em-rs-rocket-tilt)) scale(0.66) !important;
+  transform-origin: center !important;
+  margin-right: clamp(2px, 0.8vw, 8px) !important;
+  pointer-events: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-rocket {
+  position: relative !important;
+  display: block !important;
+  width: clamp(24px, 5.5vw, 34px) !important;
+  height: clamp(48px, 10vw, 64px) !important;
+  background: #ffffff !important;
+  border-radius: 50% 50% 38% 38% !important;
+  transform-origin: center !important;
+  box-shadow: none !important;
+  filter: none !important;
+  overflow: visible !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-rocket::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: clamp(-8px, -1.5vw, -6px) !important;
+  width: clamp(18px, 4vw, 24px) !important;
+  height: clamp(18px, 4vw, 24px) !important;
+  display: block !important;
+  background: var(--em-rs-rojo) !important;
+  transform: translateX(-50%) rotate(45deg) !important;
+  border-radius: 7px 7px 2px 7px !important;
+  z-index: -1 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-window {
+  position: absolute !important;
+  left: 50% !important;
+  top: clamp(12px, 2.2vw, 16px) !important;
+  width: clamp(10px, 2.4vw, 14px) !important;
+  height: clamp(10px, 2.4vw, 14px) !important;
+  display: block !important;
+  transform: translateX(-50%) !important;
+  border-radius: 50% !important;
+  background: #8bd8ff !important;
+  border: clamp(2px, 0.5vw, 3px) solid #77a7d8 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-fin {
+  position: absolute !important;
+  bottom: 6px !important;
+  width: clamp(12px, 2.8vw, 18px) !important;
+  height: clamp(16px, 4vw, 24px) !important;
+  display: block !important;
+  background: var(--em-rs-rojo) !important;
+  border-radius: 6px 6px 3px 3px !important;
+  z-index: -1 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-finLeft {
+  left: clamp(-10px, -2vw, -8px) !important;
+  transform: rotate(-18deg) !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-finRight {
+  right: clamp(-10px, -2vw, -8px) !important;
+  transform: rotate(18deg) !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-flame {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: clamp(-30px, -5vw, -24px) !important;
+  width: clamp(22px, 5vw, 34px) !important;
+  height: clamp(34px, 7vw, 48px) !important;
+  display: block !important;
+  transform: translateX(-50%) !important;
+  transform-origin: 50% 0% !important;
+  animation: emRsFlameSway 0.72s ease-in-out infinite !important;
+  box-shadow: none !important;
+  filter: none !important;
+  overflow: visible !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-flame::before,
+.rockstar-hero.em-rs-hero-host .em-rs-flame::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 0 !important;
+  display: block !important;
+  transform: translateX(-50%) !important;
+  border-radius: 0 0 999px 999px !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-flame::before {
+  width: 100% !important;
+  height: 100% !important;
+  background: var(--em-rs-naranja) !important;
+  animation: emRsFlameOuter 0.72s ease-in-out infinite !important;
+  clip-path: polygon(50% 100%, 8% 24%, 24% 8%, 38% 24%, 49% 0%, 61% 22%, 77% 8%, 92% 25%) !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-flame::after {
+  width: 52% !important;
+  height: 72% !important;
+  top: 8px !important;
+  background: var(--em-rs-amarillo) !important;
+  animation: emRsFlameInner 0.72s ease-in-out infinite !important;
+  clip-path: polygon(50% 100%, 12% 27%, 33% 8%, 50% 0%, 69% 11%, 88% 27%) !important;
+}
+
+@media (max-width: 560px) {
+  .rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+    width: 90px !important;
+    height: 90px !important;
+    transform: rotate(var(--em-rs-rocket-tilt)) scale(0.72) !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+    transform: rotate(var(--em-rs-rocket-tilt)) scale(0.62) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rockstar-hero.em-rs-hero-host .em-rs-star,
+  .rockstar-hero.em-rs-hero-host .em-rs-flame,
+  .rockstar-hero.em-rs-hero-host .em-rs-flame::before,
+  .rockstar-hero.em-rs-hero-host .em-rs-flame::after {
+    animation: none !important;
+  }
+}
