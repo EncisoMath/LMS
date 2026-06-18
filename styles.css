@@ -23675,3 +23675,44 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
 .enciso-replay-btn.ranking-repeat-animation {
   display: none !important;
 }
+
+/* =========================================================
+   v0.24.293 - Resultados: Continuar full + subtitulo feedback
+   Cambios limitados a resultados/fase feedback del quiz.
+========================================================= */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-actions-section.show {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  justify-items: stretch !important;
+  align-items: stretch !important;
+  box-sizing: border-box !important;
+}
+
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results .enciso-continue-btn {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-self: stretch !important;
+  align-self: stretch !important;
+  flex: 1 1 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.quiz-fullscreen-active .em-feedback-subtitle,
+body.quiz-fullscreen-active .em-feedback-band .em-feedback-subtitle,
+body.quiz-fullscreen-active [class*="feedback"] [class*="subtitle"],
+body.quiz-fullscreen-active [class*="Feedback"] [class*="subtitle"] {
+  font-size: 18px !important;
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.025em !important;
+}
