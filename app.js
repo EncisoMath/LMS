@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.280';
+  const APP_VERSION = '0.24.281';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -556,6 +556,7 @@
       $app.classList.remove('is-leaving');
       if (!optimizedRoute) $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
+      emFlatApplyBackgrounds($app);
       window.setTimeout(() => $app.classList.remove('is-entering'), optimizedRoute ? 90 : 620);
       firstPaint = false;
     };
@@ -805,9 +806,7 @@
     const markup = `
       <main class="screen home-screen">
         <section class="twitter-profile">
-          <div class="profile-cover animated-cover">
-            ${coverMotionHTML('home')}
-          </div>
+          <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
               <button class="round-action" id="profileMenuBtn" aria-label="Opciones de perfil">•••</button>
@@ -870,6 +869,8 @@
         const assignmentId = button.dataset.openAssignment || button.dataset.subjectId;
         const assignment = assignments.find((item) => String(item.id) === String(assignmentId));
         if (!assignment) return;
+        const subjectColor = button.dataset.subjectColor || emGetSubjectColorForAssignment(assignment);
+        emSetCurrentSubjectColor(subjectColor);
         state.assignment = assignment;
         renderSubjectDetail('students');
       });
@@ -880,7 +881,7 @@
     const assignment = state.assignment;
     if (!assignment) return renderTeacherHome(options);
     commitAppRoute({ screen: 'subject', assignmentId: assignment.id, tab }, options);
-    const coverStyle = coverBackgroundStyle(assignment);
+    emSetCurrentSubjectColor(emGetSubjectColorForAssignment(assignment));
     const iconSrc = getAssignmentIcon(assignment);
 
     const studentCount = getStudentsForAssignment(assignment).length;
@@ -892,9 +893,7 @@
           <span class="spacer"></span>
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
-        <section class="subject-banner animated-cover ${getAssignmentCover(assignment) ? 'has-custom-cover' : 'is-default-cover'}" ${coverStyle} data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
-          ${coverMotionHTML('subject')}
-          <div class="subject-banner-shade" aria-hidden="true"></div>
+        <section class="subject-banner" data-em-flat-bg data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
           <button class="subject-menu-btn" id="subjectMenuBtn" aria-label="Gestor visual">•••</button>
           <div class="subject-banner-content">
             ${isSubjectIconVisible(assignment) ? `<img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />` : ''}
@@ -5445,6 +5444,7 @@
     wrapper.className = 'modal-layer quiz-security-layer';
     wrapper.innerHTML = quizSecurityWarningHTML(reason);
     document.body.appendChild(wrapper);
+    emFlatApplyBackgrounds(wrapper);
     document.body.classList.add('modal-open', 'quiz-security-warning-open');
     requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
     wrapper.querySelector('[data-quiz-security-continue]')?.addEventListener('click', continueQuizAfterSecurityWarning);
@@ -5453,8 +5453,7 @@
   function quizSecurityWarningHTML(reason = '') {
     return `
       <div class="modal-card danger-modal quiz-security-modal" role="dialog" aria-modal="true" aria-label="Advertencia de seguridad del quiz">
-        <div class="danger-head">
-          <span class="danger-red-mesh" aria-hidden="true"></span>
+        <div class="danger-head quiz-security-flat-head" data-em-flat-bg>
           <div class="warning-tune-stack">
             <div class="warning-icon quiz-security-emoji" aria-hidden="true">😡</div>
           </div>
@@ -6486,8 +6485,7 @@
     return `
       <div class="modal-card quiz-start-modal">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="quiz-start-modal-head">
-          <div class="quiz-start-modal-mesh" aria-hidden="true"></div>
+        <div class="quiz-start-modal-head" data-em-flat-bg>
           <p class="section-kicker">Antes de empezar</p>
           <h2>¿Iniciarás este quiz?</h2>
           <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
@@ -8044,7 +8042,7 @@
           <h1>Clase</h1>
           <span class="spacer"></span>
         </header>
-        <section class="lesson-head">
+        <section class="lesson-head" data-em-flat-bg>
           <div class="class-emoji">${escapeHTML(lesson.emoji || '📘')}</div>
           <div>
             <h2>${escapeHTML(lesson.title)}</h2>
@@ -8064,6 +8062,80 @@
       document.getElementById('logoutBtn').addEventListener('click', logout);
     });
   }
+  const EM_FLAT_BACKGROUND_SHAPES = [
+    'circle',
+    'x',
+    'triangle',
+    'square',
+    'circle',
+    'triangle',
+    'square',
+    'x'
+  ];
+
+  const EM_SUBJECT_COLORS = [
+    '#1368ce',
+    '#ff7a00',
+    '#24b49a',
+    '#54c600',
+    '#EBB513',
+    '#e21b3c'
+  ];
+
+  function emGetSubjectColorByIndex(index) {
+    const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
+    return EM_SUBJECT_COLORS[((safeIndex % EM_SUBJECT_COLORS.length) + EM_SUBJECT_COLORS.length) % EM_SUBJECT_COLORS.length];
+  }
+
+  function emSetCurrentSubjectColor(color) {
+    const safeColor = color || '#1368ce';
+    document.documentElement.style.setProperty('--em-current-subject-color', safeColor);
+  }
+
+  function emFlatEnsureBackground(element, color) {
+    if (!element) return;
+    element.classList.add('em-flat-background');
+
+    if (color) {
+      element.style.setProperty('--em-flat-bg-color', color);
+    }
+
+    let layer = element.querySelector(':scope > .em-flat-background-layer');
+
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'em-flat-background-layer';
+      layer.setAttribute('aria-hidden', 'true');
+
+      EM_FLAT_BACKGROUND_SHAPES.forEach((shapeType) => {
+        const shape = document.createElement('span');
+        shape.className = `em-bg-shape ${shapeType}`;
+        layer.appendChild(shape);
+      });
+
+      element.prepend(layer);
+    }
+  }
+
+  function emFlatApplyBackgrounds(root = document) {
+    root.querySelectorAll?.('[data-em-flat-bg]').forEach((element) => {
+      const color = element.getAttribute('data-em-flat-bg-color');
+      emFlatEnsureBackground(element, color);
+    });
+  }
+
+  function emGetSubjectColorForAssignment(subject) {
+    if (!subject) return '#1368ce';
+    if (subject.__emColor) return subject.__emColor;
+
+    const teacherAssignments = getTeacherAssignments(state.user?.id);
+    const sortedSubjects = emSubSortSubjects(teacherAssignments);
+    const index = sortedSubjects.findIndex((item) => String(emSubGetSubjectId(item)) === String(emSubGetSubjectId(subject)));
+    const color = emGetSubjectColorByIndex(index >= 0 ? index : 0);
+    subject.__emColor = color;
+    return color;
+  }
+
   const EM_SUB_SHAPE_PAIRS = [
     ['circle', 'x'],
     ['triangle', 'circle'],
@@ -8154,8 +8226,10 @@
     const pairIndex = index % EM_SUB_SHAPE_PAIRS.length;
     const shapes = EM_SUB_SHAPE_PAIRS[pairIndex];
     const moves = EM_SUB_MOVE_PAIRS[pairIndex];
+    const subjectColor = emGetSubjectColorByIndex(index);
+    subject.__emColor = subjectColor;
     return `
-      <article class="em-sub-card" data-subject-id="${escapeAttr(id)}" role="button" tabindex="0">
+      <article class="em-sub-card" data-subject-id="${escapeAttr(id)}" data-subject-color="${escapeAttr(subjectColor)}" style="--main: ${escapeAttr(subjectColor)};" role="button" tabindex="0">
         <div class="em-sub-cover">
           <span class="em-sub-shape ${escapeAttr(shapes[0])} ${escapeAttr(moves[0])}"></span>
           <span class="em-sub-shape ${escapeAttr(shapes[1])} ${escapeAttr(moves[1])}"></span>
@@ -8670,6 +8744,7 @@
     });
     document.addEventListener('keydown', escCloseModal);
     if (typeof afterRender === 'function') afterRender();
+    emFlatApplyBackgrounds(wrapper);
     requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
   }
   function closeModal(animate = true) {
@@ -8711,7 +8786,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.280', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.281', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
