@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.273';
+  const APP_VERSION = '0.24.274';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -1009,50 +1009,6 @@
     });
   }
 
-  function subjectInfoTunePanelHTML() {
-    const tune = getSubjectInfoTune();
-    const rows = SUBJECT_INFO_TUNE_FIELDS.map((field) => {
-      const value = tune[field.key];
-      return `
-        <label class="subject-info-tune-row">
-          <span class="subject-info-tune-head"><strong>${field.label}</strong><output data-subject-info-tune-value="${field.key}">${value}${field.unit}</output></span>
-          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-subject-info-tune="${field.key}" />
-        </label>
-      `;
-    }).join('');
-    return `
-      <section class="subject-info-tune-panel" aria-label="Ajuste temporal de informacion del banner">
-        <div class="subject-info-tune-title">Ajuste temporal info banner</div>
-        <div class="subject-info-tune-help">Pásame estos valores cuando la informacion de la asignatura quede bien.</div>
-        ${rows}
-        <button class="btn ghost small subject-info-tune-reset" type="button" id="subjectInfoTuneReset">Restablecer info</button>
-      </section>
-    `;
-  }
-
-  function bindSubjectInfoTunePanel() {
-    document.querySelectorAll('[data-subject-info-tune]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.subjectInfoTune;
-        const value = Number(input.value);
-        const tune = getSubjectInfoTune();
-        tune[key] = value;
-        saveSubjectInfoTune(tune);
-        updateSubjectInfoTuneOutput(key, value);
-        applySubjectInfoTune(tune);
-      });
-    });
-    document.getElementById('subjectInfoTuneReset')?.addEventListener('click', () => {
-      saveSubjectInfoTune({ ...SUBJECT_INFO_TUNE_DEFAULTS });
-      document.querySelectorAll('[data-subject-info-tune]').forEach((input) => {
-        const key = input.dataset.subjectInfoTune;
-        input.value = SUBJECT_INFO_TUNE_DEFAULTS[key];
-        updateSubjectInfoTuneOutput(key, SUBJECT_INFO_TUNE_DEFAULTS[key]);
-      });
-      applySubjectInfoTune({ ...SUBJECT_INFO_TUNE_DEFAULTS });
-    });
-  }
-
   function getSubjectInfoTune() {
     return { ...SUBJECT_INFO_TUNE_DEFAULTS };
   }
@@ -1442,27 +1398,6 @@
     return `${value}${field.unit}`;
   }
 
-  function renderWarningTunePanel() {
-    const tune = getWarningTune();
-    return `
-      <div class="warning-calibration-panel" aria-label="Panel temporal de ajuste del warning">
-        <div class="warning-calibration-head">
-          <strong>Ajuste temporal del warning</strong>
-          <span>Pásame estos valores cuando quede bien.</span>
-        </div>
-        <div class="warning-calibration-grid">
-          ${WARNING_TUNE_FIELDS.map((field) => `
-            <label class="warning-tune-control" for="warningTune-${field.key}">
-              <span>${field.label} <output id="warningTuneOut-${field.key}">${warningTuneValueLabel(field, tune[field.key])}</output></span>
-              <input id="warningTune-${field.key}" data-warning-tune="${field.key}" type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" />
-            </label>
-          `).join('')}
-        </div>
-        <button class="warning-tune-reset" type="button" id="warningTuneReset">Restablecer ajustes</button>
-      </div>
-    `;
-  }
-
   function applyWarningTune(tune = getWarningTune()) {
     const zoomMid = Math.round((tune.zoomMin + tune.zoomMax) / 2);
     document.querySelectorAll('.danger-modal').forEach((modal) => {
@@ -1630,23 +1565,21 @@
     const eyebrow = `${emRsEscapeHtml(subjectName)} • ${emRsEscapeHtml(gradeCourse)}`;
 
     return `
-      <div class="em-rs-heroSkin" data-em-rockstars-hero>
-        <div class="em-rs-starsLayer" aria-hidden="true"></div>
+      <div class="em-rs-starsLayer" aria-hidden="true"></div>
 
-        <div class="em-rs-rocketWrap" aria-hidden="true">
-          <div class="em-rs-rocket">
-            <span class="em-rs-window"></span>
-            <span class="em-rs-fin em-rs-finLeft"></span>
-            <span class="em-rs-fin em-rs-finRight"></span>
-            <span class="em-rs-flame"></span>
-          </div>
+      <div class="em-rs-rocketWrap" aria-hidden="true">
+        <div class="em-rs-rocket">
+          <span class="em-rs-window"></span>
+          <span class="em-rs-fin em-rs-finLeft"></span>
+          <span class="em-rs-fin em-rs-finRight"></span>
+          <span class="em-rs-flame"></span>
         </div>
+      </div>
 
-        <div class="em-rs-content">
-          <span class="em-rs-eyebrow">${eyebrow}</span>
-          <h1 class="em-rs-title">ROCKSTARS</h1>
-          <p class="em-rs-subtitle">Estudiantes destacados de EncisoMath.</p>
-        </div>
+      <div class="em-rs-content">
+        <span class="em-rs-eyebrow">${eyebrow}</span>
+        <h1 class="em-rs-title">ROCKSTARS</h1>
+        <p class="em-rs-subtitle">Estudiantes destacados de EncisoMath.</p>
       </div>
     `;
   }
@@ -2237,7 +2170,7 @@
     setActiveSubjectTabMeta('rockstars');
 
     $content.innerHTML = `
-      <section class="rockstar-hero em-rs-hero-host" aria-label="Rockstars de participación">
+      <section class="rockstar-hero em-rs-hero-host" data-em-rockstars-hero aria-label="Rockstars de participación">
         ${emRsRockstarsHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
@@ -2288,50 +2221,6 @@
 
     applyRockstarScoreTune();
     bindRockstarActionButtons();
-  }
-
-  function rockstarScoreTunePanelHTML() {
-    const tune = getRockstarScoreTune();
-    const rows = ROCKSTAR_SCORE_TUNE_FIELDS.map((field) => {
-      const value = tune[field.key];
-      return `
-        <label class="rockstar-score-tune-row">
-          <span class="rockstar-score-tune-head"><strong>${field.label}</strong><output data-rockstar-score-tune-value="${field.key}">${value}${field.unit}</output></span>
-          <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-rockstar-score-tune="${field.key}" />
-        </label>
-      `;
-    }).join('');
-    return `
-      <section class="rockstar-score-tune-panel" aria-label="Ajuste temporal del total de puntos">
-        <div class="rockstar-score-tune-title">Ajuste temporal de puntos</div>
-        <div class="rockstar-score-tune-help">Pásame estos valores cuando la posición quede bien.</div>
-        ${rows}
-        <button class="btn ghost small rockstar-score-tune-reset" type="button" id="rockstarScoreTuneReset">Restablecer puntos</button>
-      </section>
-    `;
-  }
-
-  function bindRockstarScoreTunePanel() {
-    document.querySelectorAll('[data-rockstar-score-tune]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.rockstarScoreTune;
-        const value = Number(input.value);
-        const tune = getRockstarScoreTune();
-        tune[key] = value;
-        saveRockstarScoreTune(tune);
-        updateRockstarScoreTuneOutput(key, value);
-        applyRockstarScoreTune(tune);
-      });
-    });
-    document.getElementById('rockstarScoreTuneReset')?.addEventListener('click', () => {
-      saveRockstarScoreTune({ ...ROCKSTAR_SCORE_TUNE_DEFAULTS });
-      document.querySelectorAll('[data-rockstar-score-tune]').forEach((input) => {
-        const key = input.dataset.rockstarScoreTune;
-        input.value = ROCKSTAR_SCORE_TUNE_DEFAULTS[key];
-        updateRockstarScoreTuneOutput(key, ROCKSTAR_SCORE_TUNE_DEFAULTS[key]);
-      });
-      applyRockstarScoreTune({ ...ROCKSTAR_SCORE_TUNE_DEFAULTS });
-    });
   }
 
   function getRockstarScoreTune() {
@@ -2575,7 +2464,6 @@
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
             <div class="quiz-stage-meta-actions">
               <span class="quiz-timer-pill">Item ${index + 1}</span>
-              <button class="quiz-layout-tune-open quiz-quick-menu-btn" type="button" data-quiz-layout-tune-open aria-label="Abrir navegación del quiz">⚙️</button>
             </div>
           </div>
         </div>
@@ -2587,7 +2475,6 @@
           </div>
         </div>
         <div class="quiz-answer-feedback" data-quiz-feedback hidden></div>
-        ${quizLayoutTunePanelHTML(question.type, questions.length, index, Boolean(question.image), quiz.id || 'quiz', question.id || String(index))}
         ${!fullscreen ? `
         <div class="quiz-nav-row">
           <span>${index + 1}/${questions.length}</span>
@@ -2665,17 +2552,7 @@
   }
 
   function getQuizTypographyTune() {
-    try {
-      return normalizeQuizTypographyTune(JSON.parse(localStorage.getItem(QUIZ_TYPOGRAPHY_STORAGE_KEY) || '{}'));
-    } catch (_) {
-      return normalizeQuizTypographyTune({});
-    }
-  }
-
-  function saveQuizTypographyTune(tune) {
-    const safe = normalizeQuizTypographyTune(tune);
-    try { localStorage.setItem(QUIZ_TYPOGRAPHY_STORAGE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
+    return normalizeQuizTypographyTune({});
   }
 
   function quizPresetParts(value = '400|normal') {
@@ -2684,10 +2561,6 @@
       weight: Number.isFinite(Number(weight)) ? Number(weight) : 400,
       style: style === 'italic' ? 'italic' : 'normal'
     };
-  }
-
-  function quizFontPresetOptionsHTML(selectedValue = '') {
-    return QUIZ_FONT_PRESETS.map((item) => `<option value="${escapeAttr(item.value)}" ${item.value === selectedValue ? 'selected' : ''}>${escapeHTML(item.label)}</option>`).join('');
   }
 
   function applyQuizTypographyTune(tune = getQuizTypographyTune()) {
@@ -2864,12 +2737,7 @@
   }
 
   function getQuizLayoutTune(type = 'default') {
-    try {
-      const saved = JSON.parse(localStorage.getItem(quizLayoutTuneKey(type)) || '{}');
-      return normalizeQuizLayoutTune(saved, type);
-    } catch (_) {
-      return normalizeQuizLayoutTune({}, type);
-    }
+    return normalizeQuizLayoutTune({}, type);
   }
 
   function normalizeQuizLayoutTune(tune = {}, type = 'default') {
@@ -2880,12 +2748,6 @@
       normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : defaults[field.key];
     });
     return rebalanceQuizLayoutTune(normalized, 'image_h');
-  }
-
-  function saveQuizLayoutTune(type, tune) {
-    const normalized = normalizeQuizLayoutTune(tune, type);
-    try { localStorage.setItem(quizLayoutTuneKey(type), JSON.stringify(normalized)); } catch (_) {}
-    return normalized;
   }
 
   function quizCascadeTuneKey(type = 'default', hasImage = false) {
@@ -2903,17 +2765,7 @@
   }
 
   function getQuizCascadeTune(type = 'default', hasImage = false) {
-    try {
-      return normalizeQuizCascadeTune(JSON.parse(localStorage.getItem(quizCascadeTuneKey(type, hasImage)) || '{}'), type, hasImage);
-    } catch (_) {
-      return normalizeQuizCascadeTune({}, type, hasImage);
-    }
-  }
-
-  function saveQuizCascadeTune(type, tune, hasImage = false) {
-    const normalized = normalizeQuizCascadeTune(tune, type, hasImage);
-    try { localStorage.setItem(quizCascadeTuneKey(type, hasImage), JSON.stringify(normalized)); } catch (_) {}
-    return normalized;
+    return normalizeQuizCascadeTune({}, type, hasImage);
   }
 
   function applyQuizCascadeTune(type = 'default', tune = null, stageRef = null, hasImageOverride = null) {
@@ -2925,44 +2777,6 @@
     stage.style.setProperty('--quiz-feedback-cascade-image-shift', `${safe.image_y}px`);
     stage.style.setProperty('--quiz-feedback-cascade-text-b-shift', `${safe.textB_y}px`);
     stage.style.setProperty('--quiz-feedback-cascade-answer-shift', `${safe.answers_y}px`);
-  }
-
-  function replayQuizCascadePreview(trigger = null) {
-    const panel = trigger?.closest('[data-quiz-layout-tune-panel]') || null;
-    const stage = panel?.closest('.quiz-stage') || trigger?.closest('.quiz-stage') || document.querySelector('.quiz-stage-fullscreen') || document.querySelector('.quiz-stage');
-    if (!stage) return;
-    const feedback = stage.querySelector('[data-quiz-feedback]');
-    if (quizCascadeReplayTimer) window.clearTimeout(quizCascadeReplayTimer);
-    stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
-    if (feedback) {
-      feedback.hidden = true;
-      feedback.innerHTML = '';
-      feedback.className = 'quiz-answer-feedback';
-    }
-    if (panel) {
-      panel.classList.remove('is-open');
-      panel.setAttribute('aria-hidden', 'true');
-      panel.hidden = true;
-    }
-    const playPreview = () => {
-      void stage.offsetWidth;
-      if (feedback) {
-        feedback.hidden = false;
-        feedback.innerHTML = '<div class="quiz-feedback-card is-correct quiz-feedback-preview-card"><span>✨</span><strong>Prueba</strong><p>Vista previa de cascada</p></div>';
-        feedback.className = 'quiz-answer-feedback is-correct is-preview';
-      }
-      stage.classList.add('quiz-cascade-previewing', 'quiz-feedback-visible');
-      quizCascadeReplayTimer = window.setTimeout(() => {
-        stage.classList.remove('quiz-feedback-visible', 'quiz-cascade-previewing');
-        if (feedback) {
-          feedback.hidden = true;
-          feedback.innerHTML = '';
-          feedback.className = 'quiz-answer-feedback';
-        }
-        quizCascadeReplayTimer = null;
-      }, 1800);
-    };
-    quizCascadeReplayTimer = window.setTimeout(playPreview, panel ? 420 : 0);
   }
 
   function quizImagePreviewKey(type = 'default') {
@@ -2982,28 +2796,6 @@
     return Boolean(visible);
   }
 
-  function quizLayoutTuneNavHTML(totalQuestions = 0, currentIndex = 0) {
-    const total = Math.max(0, Number(totalQuestions) || 0);
-    if (!total) return '';
-    const buttons = Array.from({ length: total }, (_, index) => {
-      const active = index === Number(currentIndex) ? 'active' : '';
-      return `<button class="quiz-tune-jump-btn ${active}" type="button" data-quiz-jump="${index}">${index + 1}</button>`;
-    }).join('');
-    return `
-      <div class="quiz-layout-tune-nav" aria-label="Navegación rápida de preguntas">
-        <div class="quiz-layout-tune-nav-head">
-          <strong>Preguntas</strong>
-          <span>Salta a cualquier ítem, esté resuelto o no.</span>
-        </div>
-        <div class="quiz-layout-tune-nav-actions">
-          <button class="btn ghost small" type="button" data-quiz-prev>← Anterior</button>
-          <button class="btn ghost small" type="button" data-quiz-next>Siguiente →</button>
-        </div>
-        <div class="quiz-layout-tune-jumps">${buttons}</div>
-      </div>
-    `;
-  }
-
 
   function normalizeQuizPaddingDebugTune(tune = {}) {
     const safe = { ...QUIZ_PADDING_DEBUG_DEFAULTS };
@@ -3015,25 +2807,7 @@
   }
 
   function getQuizPaddingDebugTune() {
-    try {
-      return normalizeQuizPaddingDebugTune(JSON.parse(localStorage.getItem(QUIZ_PADDING_DEBUG_KEY) || '{}'));
-    } catch (_) {
-      return { ...QUIZ_PADDING_DEBUG_DEFAULTS };
-    }
-  }
-
-  function saveQuizPaddingDebugTune(tune) {
-    const safe = normalizeQuizPaddingDebugTune(tune);
-    try { localStorage.setItem(QUIZ_PADDING_DEBUG_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-
-  function updateQuizPaddingDebugOutput(key, value) {
-    const field = QUIZ_PADDING_DEBUG_FIELDS.find((item) => item.key === key);
-    if (!field) return;
-    document.querySelectorAll(`[data-quiz-padding-debug-value="${escapeSelector(key)}"]`).forEach((node) => {
-      node.textContent = `${value}${field.unit}`;
-    });
+    return { ...QUIZ_PADDING_DEBUG_DEFAULTS };
   }
 
   function applyQuizPaddingDebugTune(tune = getQuizPaddingDebugTune()) {
@@ -3072,12 +2846,7 @@
     setInlinePadding('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-answer-zone', safe.answerX);
     setInlineOptions('.quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .kahoot-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-board, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-order-stack, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-flip-grid, .quiz-fullscreen-layer:not(.quiz-phase-transition) .quiz-stage-fullscreen .quiz-open-form');
 
-    QUIZ_PADDING_DEBUG_FIELDS.forEach((field) => updateQuizPaddingDebugOutput(field.key, safe[field.key]));
     return safe;
-  }
-
-  function quizPaddingDebugControlsHTML() {
-    return '';
   }
 
   function normalizeQuizCountdownTune(tune = {}) {
@@ -3090,25 +2859,7 @@
   }
 
   function getQuizCountdownTune() {
-    try {
-      return normalizeQuizCountdownTune(JSON.parse(localStorage.getItem(QUIZ_COUNTDOWN_TUNE_KEY) || '{}'));
-    } catch (_) {
-      return { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
-    }
-  }
-
-  function saveQuizCountdownTune(tune) {
-    const safe = normalizeQuizCountdownTune(tune);
-    try { localStorage.setItem(QUIZ_COUNTDOWN_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-
-  function updateQuizCountdownTuneOutput(key, value) {
-    const field = QUIZ_COUNTDOWN_TUNE_FIELDS.find((item) => item.key === key);
-    if (!field) return;
-    document.querySelectorAll(`[data-quiz-countdown-tune-value="${escapeSelector(key)}"]`).forEach((node) => {
-      node.textContent = `${value}${field.unit}`;
-    });
+    return { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
   }
 
   function applyQuizCountdownTune(tune = getQuizCountdownTune()) {
@@ -3118,259 +2869,10 @@
     document.querySelectorAll('.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot').forEach((node) => {
       node.style.setProperty('transform', `translateX(${value})`, 'important');
     });
-    QUIZ_COUNTDOWN_TUNE_FIELDS.forEach((field) => updateQuizCountdownTuneOutput(field.key, safe[field.key]));
     return safe;
   }
 
-  function quizCountdownQuickControlsHTML() {
-    const tune = getQuizCountdownTune();
-    return `
-      <div class="quiz-countdown-tune-box quiz-quick-countdown-box" data-quiz-countdown-tune-box>
-        <div class="quiz-layout-tune-nav-head">
-          <strong>Countdown</strong>
-          <span>Mueve solo la posición horizontal del contador del hero.</span>
-        </div>
-        <label class="quiz-layout-tune-row quiz-quick-range-row">
-          <span>Countdown X <b data-quiz-countdown-tune-value="x">${tune.x}px</b></span>
-          <input type="range" min="-36" max="64" step="1" value="${tune.x}" data-quiz-countdown-tune="x" />
-        </label>
-      </div>
-    `;
-  }
 
-
-  function quizTypographyQuickControlsHTML() {
-    const tune = getQuizTypographyTune();
-    return `
-      <div class="quiz-typography-tune-box quiz-quick-typography-box" data-quiz-typography-box>
-        <div class="quiz-layout-tune-nav-head">
-          <strong>Texto y opciones</strong>
-          <span>Ajusta la fuente y el tamaño visual del texto principal y de las respuestas.</span>
-        </div>
-        <div class="quiz-quick-font-grid">
-          <label class="quiz-font-select-row">
-            <span>Fuente del texto</span>
-            <select data-quiz-typography-input="textPreset">${quizFontPresetOptionsHTML(tune.textPreset)}</select>
-          </label>
-          <label class="quiz-layout-tune-row quiz-quick-range-row">
-            <span>Tamaño texto <b data-quiz-typography-value="textSize">${tune.textSize}px</b></span>
-            <input type="range" min="12" max="28" step="1" value="${tune.textSize}" data-quiz-typography-input="textSize" />
-          </label>
-          <label class="quiz-font-select-row">
-            <span>Fuente de opciones</span>
-            <select data-quiz-typography-input="optionPreset">${quizFontPresetOptionsHTML(tune.optionPreset)}</select>
-          </label>
-          <label class="quiz-layout-tune-row quiz-quick-range-row">
-            <span>Tamaño opciones <b data-quiz-typography-value="optionSize">${tune.optionSize}px</b></span>
-            <input type="range" min="12" max="28" step="1" value="${tune.optionSize}" data-quiz-typography-input="optionSize" />
-          </label>
-        </div>
-      </div>
-    `;
-  }
-
-  function quizSoundQuickControlsHTML() {
-    return `
-      <div class="quiz-sound-tune-box quiz-quick-sound-box">
-        <label class="toggle-row quiz-sound-toggle-row">
-          <span>Sonidos del quiz</span>
-          <input type="checkbox" data-quiz-sound-toggle ${booleanPrefChecked('quizSounds')} />
-        </label>
-        <small>Usa correct.mp3, wrong.mp3, type.mp3, item.mp3 y music1.mp3.</small>
-      </div>
-    `;
-  }
-
-  function quizLayoutTunePanelHTML(type = 'default', totalQuestions = 0, currentIndex = 0, hasImage = false, quizId = 'quiz', questionId = '') {
-    if (!['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(type)) return '';
-    const imageKey = `${quizId || 'quiz'}:${questionId || currentIndex}`;
-    const imageToggleHTML = hasImage ? `
-          <div class="quiz-layout-image-preview-row">
-            <label class="quiz-layout-image-preview-toggle">
-              <input type="checkbox" data-quiz-image-preview-toggle ${getQuizImagePreviewVisible(imageKey) ? 'checked' : ''} />
-              <span>Mostrar imagen de esta pregunta</span>
-            </label>
-            <small>Al desactivarla, el texto usa el espacio de la imagen. No modifica el JSON ni borra el recurso.</small>
-          </div>` : `
-          <div class="quiz-layout-image-preview-row quiz-layout-image-preview-row-empty">
-            <strong>Imagen</strong>
-            <small>Esta pregunta no tiene imagen cargada.</small>
-          </div>`;
-    return `
-      <section class="quiz-layout-tune-panel quiz-quick-menu-panel" data-quiz-layout-tune-panel data-quiz-layout-type="${escapeAttr(type)}" data-quiz-has-image="${hasImage ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(imageKey)}" hidden aria-hidden="true">
-        <div class="quiz-layout-tune-dialog quiz-quick-menu-dialog" role="dialog" aria-modal="true" aria-label="Navegación del quiz">
-          <div class="quiz-layout-tune-dialog-head">
-            <div>
-              <strong>Navegación del quiz</strong>
-              <small>Salta entre preguntas y controla la imagen de este ítem.</small>
-            </div>
-            <button class="quiz-layout-tune-close" type="button" data-quiz-layout-tune-close aria-label="Cerrar navegación">×</button>
-          </div>
-          ${quizLayoutTuneNavHTML(totalQuestions, currentIndex)}
-          ${imageToggleHTML}
-          ${quizTypographyQuickControlsHTML()}
-          ${quizCountdownQuickControlsHTML()}
-          ${quizSoundQuickControlsHTML()}
-          ${quizPaddingDebugControlsHTML()}
-        </div>
-      </section>
-    `;
-  }
-
-
-  function updateQuizLayoutMeasurements(stage) {
-    if (!stage) return;
-    const panel = stage.querySelector('[data-quiz-layout-tune-panel]');
-    if (!panel) return;
-    const targets = {
-      image: stage.querySelector('[data-quiz-tune-target="image"]'),
-      textA: stage.querySelector('[data-quiz-tune-target="textA"]'),
-      answers: stage.querySelector('[data-quiz-tune-target="answers"]')
-    };
-    const labels = {
-      image: 'Imagen',
-      textA: 'Texto',
-      answers: 'Opciones'
-    };
-    Object.entries(targets).forEach(([key, el]) => {
-      const output = panel.querySelector(`[data-quiz-layout-measure="${key}"]`);
-      if (!output) return;
-      if (!el) {
-        output.textContent = `${labels[key]}: 0 px`;
-        return;
-      }
-      const rect = el.getBoundingClientRect();
-      output.textContent = `${labels[key]}: ${Math.round(rect.height)} px`;
-    });
-  }
-
-  function bindQuizLayoutTunePanel() {
-    document.querySelectorAll('[data-quiz-layout-tune-open]').forEach((button) => {
-      if (button.dataset.boundLayoutTuneOpen === 'true') return;
-      button.dataset.boundLayoutTuneOpen = 'true';
-      button.addEventListener('click', () => {
-        const stage = button.closest('.quiz-stage');
-        const panel = stage?.querySelector('[data-quiz-layout-tune-panel]');
-        if (!panel) return;
-        panel.hidden = false;
-        panel.setAttribute('aria-hidden', 'false');
-        panel.classList.add('is-open');
-      });
-    });
-
-    document.querySelectorAll('[data-quiz-layout-tune-panel]').forEach((panel) => {
-      if (panel.dataset.boundQuickQuizMenu === 'true') return;
-      panel.dataset.boundQuickQuizMenu = 'true';
-      const panelStage = panel.closest('.quiz-stage');
-      const closePanel = () => {
-        const active = document.activeElement;
-        if (active && panel.contains(active)) active.blur();
-        panel.classList.remove('is-open');
-        panel.setAttribute('aria-hidden', 'true');
-        panel.hidden = true;
-        panelStage?.querySelector('[data-quiz-layout-tune-open]')?.focus?.({ preventScroll: true });
-      };
-
-      panel.querySelectorAll('[data-quiz-layout-tune-close]').forEach((button) => {
-        button.addEventListener('click', closePanel);
-      });
-      panel.addEventListener('click', (event) => {
-        if (event.target === panel) closePanel();
-      });
-
-      const imagePreviewToggle = panel.querySelector('[data-quiz-image-preview-toggle]');
-      if (imagePreviewToggle) {
-        const imageKey = panel.dataset.quizImagePreviewKey || panel.dataset.quizLayoutType || 'default';
-        imagePreviewToggle.checked = getQuizImagePreviewVisible(imageKey);
-        imagePreviewToggle.addEventListener('change', () => {
-          setQuizImagePreviewVisible(imageKey, imagePreviewToggle.checked);
-          applyQuizLayoutTune(panel.dataset.quizLayoutType || 'default', getQuizLayoutTune(panel.dataset.quizLayoutType || 'default'), panelStage);
-        });
-      }
-
-      const soundToggle = panel.querySelector('[data-quiz-sound-toggle]');
-      if (soundToggle) {
-        soundToggle.checked = quizSoundsEnabled();
-        soundToggle.addEventListener('change', () => {
-          state.prefs.quizSounds = Boolean(soundToggle.checked);
-          localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
-          if (state.prefs.quizSounds === false) stopQuizQuestionMusic(false);
-          panel.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => { input.checked = state.prefs.quizSounds !== false; });
-          if (state.prefs.quizSounds !== false) {
-            preloadQuizSounds();
-            if (state.quizFullscreenActive && getQuizSession().phase === 'question' && !getQuizSession().locked) startQuizQuestionMusic(getCurrentQuizQuestion());
-          }
-        });
-      }
-
-      const typographyInputs = panel.querySelectorAll('[data-quiz-typography-input]');
-      const refreshTypographyPanel = (safe) => {
-        panel.querySelectorAll('[data-quiz-typography-value="textSize"]').forEach((node) => { node.textContent = `${safe.textSize}px`; });
-        panel.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
-        panel.querySelectorAll('[data-quiz-typography-input]').forEach((input) => {
-          const key = input.dataset.quizTypographyInput;
-          if (!key || !(key in safe)) return;
-          input.value = String(safe[key]);
-        });
-      };
-      typographyInputs.forEach((input) => {
-        const handleTypographyChange = () => {
-          const key = input.dataset.quizTypographyInput;
-          if (!key) return;
-          const current = getQuizTypographyTune();
-          const value = key === 'textSize' || key === 'optionSize' ? Number(input.value) : input.value;
-          const safe = saveQuizTypographyTune({ ...current, [key]: value });
-          applyQuizTypographyTune(safe);
-          refreshTypographyPanel(safe);
-          if ((panel.dataset.quizLayoutType || '') === 'order') {
-            window.requestAnimationFrame(() => {
-              document.querySelectorAll('[data-quiz-order-board]').forEach((orderBoard) => fitQuizOrderCards(orderBoard));
-            });
-          }
-        };
-        input.addEventListener('input', handleTypographyChange);
-        input.addEventListener('change', handleTypographyChange);
-      });
-
-      panel.querySelectorAll('[data-quiz-countdown-tune]').forEach((input) => {
-        if (input.dataset.boundCountdownTune === 'true') return;
-        input.dataset.boundCountdownTune = 'true';
-        const handleCountdownTuneChange = () => {
-          const key = input.dataset.quizCountdownTune;
-          if (!key) return;
-          const current = getQuizCountdownTune();
-          const safe = saveQuizCountdownTune({ ...current, [key]: Number(input.value) });
-          applyQuizCountdownTune(safe);
-          panel.querySelectorAll('[data-quiz-countdown-tune]').forEach((slider) => {
-            const sliderKey = slider.dataset.quizCountdownTune;
-            if (sliderKey && sliderKey in safe) slider.value = String(safe[sliderKey]);
-          });
-        };
-        input.addEventListener('input', handleCountdownTuneChange);
-        input.addEventListener('change', handleCountdownTuneChange);
-      });
-
-      panel.querySelectorAll('[data-quiz-padding-debug]').forEach((input) => {
-        if (input.dataset.boundPaddingDebug === 'true') return;
-        input.dataset.boundPaddingDebug = 'true';
-        const handlePaddingDebugChange = () => {
-          const key = input.dataset.quizPaddingDebug;
-          if (!key) return;
-          const current = getQuizPaddingDebugTune();
-          const safe = saveQuizPaddingDebugTune({ ...current, [key]: Number(input.value) });
-          applyQuizPaddingDebugTune(safe);
-          panel.querySelectorAll('[data-quiz-padding-debug]').forEach((slider) => {
-            const sliderKey = slider.dataset.quizPaddingDebug;
-            if (sliderKey && sliderKey in safe) slider.value = String(safe[sliderKey]);
-          });
-        };
-        input.addEventListener('input', handlePaddingDebugChange);
-        input.addEventListener('change', handlePaddingDebugChange);
-      });
-      applyQuizCountdownTune(getQuizCountdownTune());
-      applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
-    });
-  }
 
 
   function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type), stageRef = null) {
@@ -3428,7 +2930,6 @@
     setBox('image', 'image');
     setBox('answers', 'answers');
     applyQuizTypographyTune(getQuizTypographyTune());
-    window.requestAnimationFrame?.(() => updateQuizLayoutMeasurements(stage));
   }
 
   function quizTypeLabel(type) {
@@ -4618,12 +4119,6 @@
     return normalizeQuizTransitionTune(readJSON(QUIZ_TRANSITION_TUNE_KEY) || QUIZ_TRANSITION_TUNE_DEFAULTS);
   }
 
-  function saveQuizTransitionTune(tune) {
-    const safe = normalizeQuizTransitionTune(tune);
-    localStorage.setItem(QUIZ_TRANSITION_TUNE_KEY, JSON.stringify(safe));
-    return safe;
-  }
-
   function quizTransitionClassNames(tune = getQuizTransitionTune()) {
     const safe = normalizeQuizTransitionTune(tune);
     const radialVariant = `quiz-transition-radial-variant-${(Math.max(0, Number(state.quizQuestionIndex) || 0) % 4) + 1}`;
@@ -4634,21 +4129,6 @@
       safe.continuous ? 'quiz-transition-continuous-on' : 'quiz-transition-continuous-off',
       radialVariant
     ].join(' ');
-  }
-
-  function applyQuizTransitionTune(tune = getQuizTransitionTune()) {
-    const layer = document.getElementById('quizFullscreenLayer');
-    if (!layer) return normalizeQuizTransitionTune(tune);
-    const safe = normalizeQuizTransitionTune(tune);
-    layer.classList.toggle('quiz-transition-radials-on', safe.radials);
-    layer.classList.toggle('quiz-transition-radials-off', !safe.radials);
-    layer.classList.toggle('quiz-transition-scene-effects-on', safe.sceneGlow);
-    layer.classList.toggle('quiz-transition-scene-effects-off', !safe.sceneGlow);
-    layer.classList.toggle('quiz-transition-shape-glow-on', safe.shapeGlow);
-    layer.classList.toggle('quiz-transition-shape-glow-off', !safe.shapeGlow);
-    layer.classList.toggle('quiz-transition-continuous-on', safe.continuous);
-    layer.classList.toggle('quiz-transition-continuous-off', !safe.continuous);
-    return safe;
   }
 
 
@@ -5541,21 +5021,6 @@
     playScoreCounter({ target: slot, from: Number(wrap.dataset.scoreFrom) || 0, score: Number(wrap.dataset.scoreTo) || 0 });
   }
 
-  function quizTransitionTuneSwitchHTML(key, label, help = '') {
-    const tune = getQuizTransitionTune();
-    const checked = tune[key] ? 'checked' : '';
-    return `
-      <label class="quiz-transition-tune-switch">
-        <input type="checkbox" data-quiz-transition-tune="${escapeAttr(key)}" ${checked} />
-        <span><strong>${escapeHTML(label)}</strong>${help ? `<small>${escapeHTML(help)}</small>` : ''}</span>
-      </label>
-    `;
-  }
-
-  function quizTransitionTunePanelHTML(item = 1, total = 1) {
-    return '';
-  }
-
 
   function goToQuizQuestionFromTransition() {
     const quiz = getActiveQuiz();
@@ -5581,86 +5046,6 @@
     }, remaining);
   }
 
-  function bindQuizTransitionTunePanel() {
-    const layer = document.getElementById('quizFullscreenLayer');
-    if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
-    applyQuizTransitionTune(getQuizTransitionTune());
-    const panel = layer.querySelector('[data-quiz-transition-tune-panel]');
-    const syncPanel = () => {
-      if (!panel) return;
-      panel.hidden = !state.quizTransitionPanelOpen;
-      panel.setAttribute('aria-hidden', state.quizTransitionPanelOpen ? 'false' : 'true');
-    };
-    syncPanel();
-    layer.querySelectorAll('[data-quiz-transition-panel-toggle]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.quizTransitionPanelOpen = !state.quizTransitionPanelOpen;
-        syncPanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-transition-panel-close]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.quizTransitionPanelOpen = false;
-        syncPanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-transition-tune]').forEach((input) => {
-      input.addEventListener('change', () => {
-        const key = input.dataset.quizTransitionTune;
-        const tune = getQuizTransitionTune();
-        tune[key] = Boolean(input.checked);
-        const safeTune = applyQuizTransitionTune(saveQuizTransitionTune(tune));
-        if (key === 'continuous' && safeTune.continuous) scheduleQuizTransitionContinuousAdvance();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => {
-      input.checked = quizSoundsEnabled();
-      input.addEventListener('change', () => {
-        state.prefs.quizSounds = Boolean(input.checked);
-        localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
-        if (state.prefs.quizSounds === false) stopQuizQuestionMusic(false);
-        document.querySelectorAll('[data-quiz-sound-toggle]').forEach((toggle) => { toggle.checked = state.prefs.quizSounds !== false; });
-        if (state.prefs.quizSounds !== false) {
-          preloadQuizSounds();
-          if (state.quizFullscreenActive && getQuizSession().phase === 'question' && !getQuizSession().locked) startQuizQuestionMusic(getCurrentQuizQuestion());
-        }
-      });
-    });
-
-
-    layer.querySelectorAll('[data-quiz-score-counter-action]').forEach((button) => {
-      button.addEventListener('click', () => {
-        if (button.dataset.quizScoreCounterAction === 'continue') {
-          goToQuizQuestionFromTransition();
-        }
-      });
-    });
-
-    layer.querySelectorAll('[data-quiz-transition-action]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const action = button.dataset.quizTransitionAction;
-        const quiz = getActiveQuiz();
-        const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
-        if (!quiz || !total) return;
-        if (action === 'restart') {
-          showQuizItemTransition(state.quizQuestionIndex);
-          return;
-        }
-        if (action === 'question') {
-          goToQuizQuestionFromTransition();
-          return;
-        }
-        if (action === 'prev') {
-          showQuizItemTransition(Math.max(0, state.quizQuestionIndex - 1));
-          return;
-        }
-        if (action === 'next') {
-          showQuizItemTransition(Math.min(total - 1, state.quizQuestionIndex + 1));
-        }
-      });
-    });
-  }
-
 
 
   function quizItemMotionStageFrom(root = document) {
@@ -5680,11 +5065,10 @@
     const counter = top?.querySelector?.('.quiz-top-counter') || null;
     const info = stage?.querySelector?.('.quiz-eyebrow') || null;
     const item = stage?.querySelector?.('.quiz-timer-pill') || null;
-    const gear = stage?.querySelector?.('.quiz-layout-tune-open') || null;
     const image = stage?.querySelector?.('.quiz-image-tune-box') || null;
     const text = stage?.querySelector?.('.quiz-text-a') || null;
     const options = stage?.querySelector?.('.quiz-answer-zone') || null;
-    return { layer, top, title, counter, info, item, gear, image, text, options };
+    return { layer, top, title, counter, info, item, image, text, options };
   }
 
   function uniqueQuizItemMotionNodes(nodes) {
@@ -5705,7 +5089,6 @@
       parts.counter,
       parts.info,
       parts.item,
-      parts.gear,
       parts.image,
       parts.text,
       parts.options
@@ -5718,7 +5101,6 @@
     return uniqueQuizItemMotionNodes([
       parts.info,
       parts.item,
-      parts.gear,
       parts.image,
       parts.text,
       parts.options
@@ -5861,38 +5243,6 @@
     }, startDelay);
   }
 
-  function quizFeedbackMiniTuneBoxHTML() {
-    const tune = getQuizFeedbackTune();
-    const allowed = new Set(['emojiX','emojiY','emojiZoom','titleX','titleY','titleSize','titleWidth','textX','textY','textSize','textWidth','bounceDuration']);
-    const fields = QUIZ_FEEDBACK_TUNE_FIELDS.filter((field) => allowed.has(field.key));
-    return `
-      <div class="quiz-feedback-mini-tune-box">
-        <strong>Banda Correcto / Incorrecto</strong>
-        <small>Ajusta emoji, título, subtítulo y duración total del bounce.</small>
-        ${fields.map((field) => `
-          <label class="quiz-layout-tune-row quiz-feedback-mini-row">
-            <span>${escapeHTML(field.label)} <b data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${tune[field.key]}${field.unit}</b></span>
-            <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${tune[field.key]}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
-          </label>
-        `).join('')}
-        <button class="btn ghost small" type="button" data-quiz-feedback-tune-reset>Restablecer banda</button>
-      </div>
-    `;
-  }
-
-  function quizFeedbackTuneRangeRowHTML(fieldKey) {
-    const tune = getQuizFeedbackTune();
-    const field = QUIZ_FEEDBACK_TUNE_FIELDS.find((item) => item.key === fieldKey);
-    if (!field) return '';
-    const value = tune[field.key];
-    return `
-      <label class="quiz-feedback-tune-row">
-        <span class="quiz-feedback-tune-head"><strong>${escapeHTML(field.label)}</strong><output data-quiz-feedback-tune-value="${escapeAttr(field.key)}">${value}${field.unit}</output></span>
-        <input type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${value}" data-quiz-feedback-tune="${escapeAttr(field.key)}" />
-      </label>
-    `;
-  }
-
   function quizFeedbackContinueControlHTML(last = false) {
     return `
       <div class="quiz-feedback-continue-control" data-quiz-feedback-simple-continue>
@@ -5901,95 +5251,6 @@
   }
 
   function bindQuizFeedbackContinueControl() {
-    document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
-      if (button.dataset.boundContinue === 'true') return;
-      button.dataset.boundContinue = 'true';
-      button.addEventListener('click', continueQuizAfterFeedback);
-    });
-  }
-
-  function quizFeedbackTunePanelHTML(options = {}) {
-    const tune = getQuizFeedbackTune();
-    return `
-      <section class="quiz-feedback-tune-panel ${options.live ? 'is-live' : ''}" data-quiz-feedback-tune-live="${options.live ? 'true' : 'false'}" aria-label="Ajuste temporal de la banda de feedback">
-        <div class="quiz-feedback-tune-title">Ajuste temporal banda quiz · v0.24.166</div>
-        <div class="quiz-feedback-tune-help">El avance está pausado. Ajusta título/subtítulo y pulsa Continuar.</div>
-        <div class="quiz-feedback-tune-scroll">
-          <div class="quiz-feedback-tune-group">
-            <h4>Banda</h4>
-            ${quizFeedbackTuneRangeRowHTML('bandZoom')}
-            ${quizFeedbackTuneRangeRowHTML('bandRotation')}
-          </div>
-          <div class="quiz-feedback-tune-group">
-            <h4>Título</h4>
-            <label class="quiz-feedback-tune-row">
-              <span class="quiz-feedback-tune-head"><strong>Fuente título</strong></span>
-              <select class="quiz-feedback-font-select" data-quiz-feedback-font="titlePreset">${quizFontPresetOptionsHTML(tune.titlePreset)}</select>
-            </label>
-            ${quizFeedbackTuneRangeRowHTML('titleSize')}
-            ${quizFeedbackTuneRangeRowHTML('titleY')}
-          </div>
-          <div class="quiz-feedback-tune-group">
-            <h4>Subtítulo</h4>
-            <label class="quiz-feedback-tune-row">
-              <span class="quiz-feedback-tune-head"><strong>Fuente subtítulo</strong></span>
-              <select class="quiz-feedback-font-select" data-quiz-feedback-font="textPreset">${quizFontPresetOptionsHTML(tune.textPreset)}</select>
-            </label>
-            ${quizFeedbackTuneRangeRowHTML('textSize')}
-            ${quizFeedbackTuneRangeRowHTML('textY')}
-          </div>
-        </div>
-        <div class="quiz-feedback-tune-actions one-button">
-          <button class="primary-btn small" type="button" data-quiz-feedback-continue>${options.last ? 'Ver resultados' : 'Continuar'}</button>
-        </div>
-      </section>
-    `;
-  }
-
-  function bindQuizFeedbackTunePanel() {
-    applyQuizFeedbackTune(getQuizFeedbackTune());
-    document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
-      if (input.dataset.boundTune === 'true') return;
-      input.dataset.boundTune = 'true';
-      const updateFeedbackTuneFromInput = () => {
-        const current = getQuizFeedbackTune();
-        const key = input.dataset.quizFeedbackTune;
-        current[key] = Number(input.value);
-        saveQuizFeedbackTune(current);
-        applyQuizFeedbackTune(current);
-        updateQuizFeedbackTuneOutput(key, current[key]);
-      };
-      input.addEventListener('input', updateFeedbackTuneFromInput);
-      input.addEventListener('change', updateFeedbackTuneFromInput);
-    });
-    document.querySelectorAll('[data-quiz-feedback-font]').forEach((select) => {
-      if (select.dataset.boundFeedbackFont === 'true') return;
-      select.dataset.boundFeedbackFont = 'true';
-      select.addEventListener('change', () => {
-        const current = getQuizFeedbackTune();
-        const key = select.dataset.quizFeedbackFont;
-        current[key] = select.value;
-        saveQuizFeedbackTune(current);
-        applyQuizFeedbackTune(current);
-      });
-    });
-    document.querySelectorAll('[data-quiz-feedback-tune-reset]').forEach((button) => {
-      if (button.dataset.boundTuneReset === 'true') return;
-      button.dataset.boundTuneReset = 'true';
-      button.addEventListener('click', () => {
-        const defaults = saveQuizFeedbackTune({ ...QUIZ_FEEDBACK_TUNE_DEFAULTS });
-        applyQuizFeedbackTune(defaults);
-        document.querySelectorAll('[data-quiz-feedback-tune]').forEach((input) => {
-          const key = input.dataset.quizFeedbackTune;
-          input.value = defaults[key];
-          updateQuizFeedbackTuneOutput(key, defaults[key]);
-        });
-        document.querySelectorAll('[data-quiz-feedback-font]').forEach((select) => {
-          const key = select.dataset.quizFeedbackFont;
-          select.value = defaults[key];
-        });
-      });
-    });
     document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
       if (button.dataset.boundContinue === 'true') return;
       button.dataset.boundContinue = 'true';
@@ -6019,20 +5280,6 @@
     normalized.titlePreset = presetValues.has(String(tune.titlePreset || '')) ? String(tune.titlePreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.titlePreset;
     normalized.textPreset = presetValues.has(String(tune.textPreset || '')) ? String(tune.textPreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset;
     return normalized;
-  }
-
-  function saveQuizFeedbackTune(tune) {
-    const normalized = normalizeQuizFeedbackTune(tune);
-    try { localStorage.setItem(QUIZ_FEEDBACK_TUNE_KEY, JSON.stringify(normalized)); } catch (_) {}
-    return normalized;
-  }
-
-  function updateQuizFeedbackTuneOutput(key, value) {
-    const field = QUIZ_FEEDBACK_TUNE_FIELDS.find((item) => item.key === key);
-    if (!field) return;
-    document.querySelectorAll(`[data-quiz-feedback-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
-      output.textContent = `${value}${field.unit}`;
-    });
   }
 
   function applyQuizFeedbackTune(tune = getQuizFeedbackTune()) {
@@ -6130,9 +5377,6 @@
         handleOpenAnswer(form);
       });
     });
-    bindQuizLayoutTunePanel();
-    bindQuizTransitionTunePanel();
-    bindQuizRankingPodiumTunePanel();
     bindQuizFlipEvents();
     bindQuizOrderEvents();
     applyQuizTypographyTune(getQuizTypographyTune());
@@ -7197,22 +6441,11 @@
   }
 
   function scheduleQuizAdvance() {
-    document.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
     scheduleQuizTimer(() => continueQuizAfterFeedback(), 4000);
-  }
-
-  function showQuizFeedbackTunePanel(stage) {
-    if (!stage) return;
-    stage.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
-    const quiz = getActiveQuiz();
-    const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
-    const last = state.quizQuestionIndex >= total - 1;
-    stage.insertAdjacentHTML('beforeend', quizFeedbackTunePanelHTML({ live: true, last }));
   }
 
   function continueQuizAfterFeedback() {
     removeQuizGlobalFeedback();
-    document.querySelectorAll('[data-quiz-feedback-tune-live]').forEach((panel) => panel.remove());
     const quiz = getActiveQuiz();
     if (!quiz || !Array.isArray(quiz.questions)) return;
     if (state.quizQuestionIndex >= quiz.questions.length - 1) {
@@ -7552,99 +6785,6 @@
     }
   }
 
-  function saveQuizRankingPodiumTune(tune) {
-    const safe = normalizeQuizRankingPodiumTune(tune);
-    try { localStorage.setItem(QUIZ_RANKING_PODIUM_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-
-  function applyQuizRankingPodiumTune(tune = getQuizRankingPodiumTune()) {
-    const safe = normalizeQuizRankingPodiumTune(tune);
-    document.querySelectorAll('[data-quiz-ranking-podium]').forEach((podium) => {
-      podium.style.setProperty('--ranking-podium-1-x', `${safe.p1x}px`);
-      podium.style.setProperty('--ranking-podium-1-y', `${safe.p1y}px`);
-      podium.style.setProperty('--ranking-podium-1-rot', `${safe.p1rot}deg`);
-      podium.style.setProperty('--ranking-podium-2-x', `${safe.p2x}px`);
-      podium.style.setProperty('--ranking-podium-2-y', `${safe.p2y}px`);
-      podium.style.setProperty('--ranking-podium-2-rot', `${safe.p2rot}deg`);
-      podium.style.setProperty('--ranking-podium-3-x', `${safe.p3x}px`);
-      podium.style.setProperty('--ranking-podium-3-y', `${safe.p3y}px`);
-      podium.style.setProperty('--ranking-podium-3-rot', `${safe.p3rot}deg`);
-      podium.style.setProperty('--ranking-podium-base-x', `${safe.baseX}px`);
-      podium.style.setProperty('--ranking-podium-base-y', `${safe.baseY}px`);
-      podium.style.setProperty('--ranking-podium-base-w', `${safe.baseW}%`);
-    });
-    return safe;
-  }
-
-  function updateQuizRankingPodiumTuneOutput(key, value) {
-    const field = QUIZ_RANKING_PODIUM_TUNE_FIELDS.find((item) => item.key === key);
-    document.querySelectorAll(`[data-quiz-ranking-podium-tune-value="${escapeSelector(key)}"]`).forEach((output) => {
-      output.textContent = `${value}${field?.unit || ''}`;
-    });
-  }
-
-  function quizRankingPodiumTunePanelHTML() {
-    return '';
-  }
-
-
-  function bindQuizRankingPodiumTunePanel() {
-    const layer = document.getElementById('quizFullscreenLayer');
-    if (!layer || !layer.classList.contains('quiz-phase-results')) return;
-    applyQuizRankingPodiumTune(getQuizRankingPodiumTune());
-    const panel = layer.querySelector('[data-quiz-ranking-tune-panel]');
-    const syncPanel = () => {
-      if (!panel) return;
-      panel.hidden = !state.quizRankingPodiumPanelOpen;
-      panel.setAttribute('aria-hidden', state.quizRankingPodiumPanelOpen ? 'false' : 'true');
-      panel.classList.toggle('is-open', state.quizRankingPodiumPanelOpen);
-    };
-    syncPanel();
-    layer.querySelectorAll('[data-quiz-ranking-tune-toggle]').forEach((button) => {
-      if (button.dataset.boundRankingTuneToggle === 'true') return;
-      button.dataset.boundRankingTuneToggle = 'true';
-      button.addEventListener('click', () => {
-        state.quizRankingPodiumPanelOpen = !state.quizRankingPodiumPanelOpen;
-        syncPanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-ranking-tune-close]').forEach((button) => {
-      if (button.dataset.boundRankingTuneClose === 'true') return;
-      button.dataset.boundRankingTuneClose = 'true';
-      button.addEventListener('click', () => {
-        state.quizRankingPodiumPanelOpen = false;
-        syncPanel();
-      });
-    });
-    layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
-      if (input.dataset.boundRankingPodiumTune === 'true') return;
-      input.dataset.boundRankingPodiumTune = 'true';
-      const update = () => {
-        const key = input.dataset.quizRankingPodiumTune;
-        const current = getQuizRankingPodiumTune();
-        current[key] = Number(input.value);
-        const safe = saveQuizRankingPodiumTune(current);
-        applyQuizRankingPodiumTune(safe);
-        updateQuizRankingPodiumTuneOutput(key, safe[key]);
-      };
-      input.addEventListener('input', update);
-      input.addEventListener('change', update);
-    });
-    layer.querySelectorAll('[data-quiz-ranking-tune-reset]').forEach((button) => {
-      if (button.dataset.boundRankingTuneReset === 'true') return;
-      button.dataset.boundRankingTuneReset = 'true';
-      button.addEventListener('click', () => {
-        const defaults = saveQuizRankingPodiumTune({ ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS });
-        applyQuizRankingPodiumTune(defaults);
-        layer.querySelectorAll('[data-quiz-ranking-podium-tune]').forEach((input) => {
-          const key = input.dataset.quizRankingPodiumTune;
-          input.value = defaults[key];
-          updateQuizRankingPodiumTuneOutput(key, defaults[key]);
-        });
-      });
-    });
-  }
 
   function quizRankingPodiumHTML(stats) {
     const scoreBase = Math.max(1, stats.scorable || stats.total || 1);
@@ -8420,7 +7560,6 @@
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
     root.dataset.encisoFinalStarted = 'true';
     applyEncisoFinalTune(root, getEncisoFinalTune());
-    bindEncisoFinalTunePanel(root);
     encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
   }
 
@@ -8603,12 +7742,6 @@
     }
   }
 
-  function saveEncisoFinalTune(tune) {
-    const safe = normalizeEncisoFinalTune(tune);
-    try { localStorage.setItem(ENCISO_FINAL_TUNE_STORAGE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-
   function applyEncisoFinalTune(root, tune = getEncisoFinalTune()) {
     if (!root) return normalizeEncisoFinalTune(tune);
     const safe = normalizeEncisoFinalTune(tune);
@@ -8662,167 +7795,8 @@
     return safe;
   }
 
-  function updateEncisoFinalTuneOutputs(root, tune = getEncisoFinalTune()) {
-    const safe = normalizeEncisoFinalTune(tune);
-    root?.querySelectorAll?.('[data-enciso-final-tune-output]').forEach((output) => {
-      const key = output.dataset.encisoFinalTuneOutput;
-      const meta = encisoFinalTuneFieldMeta(key);
-      output.textContent = `${safe[key]}${meta.unit}`;
-    });
-    root?.querySelectorAll?.('[data-enciso-final-tune-field]').forEach((input) => {
-      const key = input.dataset.encisoFinalTuneField;
-      if (Object.prototype.hasOwnProperty.call(safe, key)) input.value = String(safe[key]);
-    });
-  }
-
-  function encisoFinalTuneSliderHTML(key, label) {
-    const meta = encisoFinalTuneFieldMeta(key);
-    const value = ENCISO_FINAL_TUNE_DEFAULTS[key];
-    return `
-      <label class="enciso-final-tune-slider">
-        <span>${escapeHTML(label)} <b data-enciso-final-tune-output="${escapeAttr(key)}">${value}${escapeHTML(meta.unit)}</b></span>
-        <input type="range" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" data-enciso-final-tune-field="${escapeAttr(key)}">
-      </label>
-    `;
-  }
-
-  function encisoFinalPointsTuneHTML() {
-    return `
-      <div class="enciso-final-points-tune">
-        <label class="enciso-final-tune-slider">
-          <span>Correctas <b data-enciso-final-points-output="correct">0</b></span>
-          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="correct">
-        </label>
-        <label class="enciso-final-tune-slider">
-          <span>Tiempo <b data-enciso-final-points-output="time">0</b></span>
-          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="time">
-        </label>
-        <button class="enciso-final-points-replay" type="button" data-enciso-final-points-apply>Reiniciar animación con estos puntos</button>
-      </div>
-    `;
-  }
-
-  function encisoFinalTunePanelHTML() {
-    return `
-      <button class="enciso-final-tune-toggle" type="button" data-enciso-final-tune-toggle aria-label="Ajustar pantalla final">⚙️</button>
-      <div class="enciso-final-tune-modal" data-enciso-final-tune-modal hidden aria-hidden="true">
-        <div class="enciso-final-tune-card" role="dialog" aria-modal="true" aria-label="Ajustes pantalla final">
-          <div class="enciso-final-tune-head">
-            <strong>Ajustar resultados</strong>
-            <button type="button" data-enciso-final-tune-close aria-label="Cerrar">×</button>
-          </div>
-          <div class="enciso-final-tune-tabs" role="tablist">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-enciso-final-tune-tab="${escapeAttr(tab.key)}">${escapeHTML(tab.label)}</button>`).join('')}
-          </div>
-          <div class="enciso-final-tune-body">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
-              <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
-                ${tab.key === 'points' ? encisoFinalPointsTuneHTML() : (tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
-              </section>
-            `).join('')}
-          </div>
-          <div class="enciso-final-tune-foot">
-            <button type="button" data-enciso-final-tune-reset>Restablecer</button>
-            <button type="button" data-enciso-final-tune-close>Listo</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   function encisoClampFinalPointInput(value) {
     return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
-  }
-
-  function syncEncisoFinalPointControls(root) {
-    if (!root) return;
-    const correct = encisoClampFinalPointInput(root.dataset.correctPoints);
-    const time = encisoClampFinalPointInput(root.dataset.timePoints);
-    root.querySelectorAll('[data-enciso-final-points-field="correct"]').forEach((input) => { input.value = String(correct); });
-    root.querySelectorAll('[data-enciso-final-points-field="time"]').forEach((input) => { input.value = String(time); });
-    root.querySelectorAll('[data-enciso-final-points-output="correct"]').forEach((output) => { output.textContent = encisoFormatNumber(correct); });
-    root.querySelectorAll('[data-enciso-final-points-output="time"]').forEach((output) => { output.textContent = encisoFormatNumber(time); });
-  }
-
-  function encisoApplyManualResultPoints(root) {
-    if (!root) return;
-    const correct = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="correct"]')?.value);
-    const time = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="time"]')?.value);
-    const session = getQuizSession();
-    session.manualResultPoints = { correctPoints: correct, timePoints: time };
-    const payload = encisoBuildFinalPayloadFromPoints(correct, time);
-    encisoApplyFinalPayloadToRoot(root, payload);
-    syncEncisoFinalPointControls(root);
-    const modal = root.querySelector('[data-enciso-final-tune-modal]');
-    if (modal) {
-      modal.hidden = true;
-      modal.setAttribute('aria-hidden', 'true');
-      modal.classList.remove('open');
-    }
-    stopQuizResultsMusic(true);
-    window.setTimeout(() => encisoRunFinalResultsAnimations(root, payload), QUIZ_RESULTS_MUSIC_FADE_MS);
-  }
-
-  function bindEncisoFinalTunePanel(root) {
-    if (!root || root.dataset.encisoFinalTuneBound === 'true') return;
-    root.dataset.encisoFinalTuneBound = 'true';
-    let tune = applyEncisoFinalTune(root, getEncisoFinalTune());
-    updateEncisoFinalTuneOutputs(root, tune);
-    syncEncisoFinalPointControls(root);
-    const modal = root.querySelector('[data-enciso-final-tune-modal]');
-    const openModal = () => {
-      if (!modal) return;
-      modal.hidden = false;
-      modal.setAttribute('aria-hidden', 'false');
-      modal.classList.add('open');
-    };
-    const closeModal = () => {
-      if (!modal) return;
-      modal.hidden = true;
-      modal.setAttribute('aria-hidden', 'true');
-      modal.classList.remove('open');
-    };
-    root.querySelectorAll('[data-enciso-final-tune-toggle]').forEach((button) => button.addEventListener('click', openModal));
-    root.querySelectorAll('[data-enciso-final-tune-close]').forEach((button) => button.addEventListener('click', closeModal));
-    root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const key = button.dataset.encisoFinalTuneTab;
-        root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((item) => item.classList.toggle('active', item === button));
-        root.querySelectorAll('[data-enciso-final-tune-pane]').forEach((pane) => pane.classList.toggle('active', pane.dataset.encisoFinalTunePane === key));
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-tune-field]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.encisoFinalTuneField;
-        tune = normalizeEncisoFinalTune({ ...tune, [key]: Number(input.value) });
-        saveEncisoFinalTune(tune);
-        applyEncisoFinalTune(root, tune);
-        updateEncisoFinalTuneOutputs(root, tune);
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-points-field]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.encisoFinalPointsField;
-        const value = encisoClampFinalPointInput(input.value);
-        root.querySelectorAll(`[data-enciso-final-points-output="${escapeSelector(key)}"]`).forEach((output) => {
-          output.textContent = encisoFormatNumber(value);
-        });
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-points-apply]').forEach((button) => {
-      button.addEventListener('click', () => encisoApplyManualResultPoints(root));
-    });
-    root.querySelectorAll('[data-enciso-final-tune-reset]').forEach((button) => {
-      button.addEventListener('click', () => {
-        tune = saveEncisoFinalTune(ENCISO_FINAL_TUNE_DEFAULTS);
-        applyEncisoFinalTune(root, tune);
-        updateEncisoFinalTuneOutputs(root, tune);
-        syncEncisoFinalPointControls(root);
-      });
-    });
-    modal?.addEventListener('click', (event) => {
-      if (event.target === modal) closeModal();
-    });
   }
 
   function encisoHeroSparklesHTML(count = 24) {
@@ -9073,7 +8047,6 @@
           <button class="enciso-replay-btn ranking-repeat-animation" type="button" data-enciso-result-replay data-repeat-ranking-animation>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
-        ${encisoFinalTunePanelHTML()}
       </section>
     `;
   }
@@ -9891,7 +8864,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.273', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.274', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

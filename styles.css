@@ -21238,7 +21238,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   filter: none !important;
 }
 
-.em-rs-heroSkin {
+.rockstar-hero.em-rs-hero-host {
   --em-rs-rojo: #e21b3c;
   --em-rs-amarillo: #EBB513;
   --em-rs-naranja: #ff7a00;
@@ -21271,12 +21271,12 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   padding: 22px 30px;
 }
 
-.em-rs-heroSkin,
-.em-rs-heroSkin * {
+.rockstar-hero.em-rs-hero-host,
+.rockstar-hero.em-rs-hero-host * {
   box-sizing: border-box;
 }
 
-.em-rs-heroSkin::before {
+.rockstar-hero.em-rs-hero-host::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -21688,7 +21688,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 @media (max-width: 560px) {
-  .em-rs-heroSkin {
+  .rockstar-hero.em-rs-hero-host {
     padding: 18px 18px;
     grid-template-columns: 74px minmax(0, 1fr);
     gap: 8px;
@@ -21731,7 +21731,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
    Solo corrige escala interna del cohete/textos; no toca contenedor padre.
 ========================================================= */
 
-.em-rs-heroSkin {
+.rockstar-hero.em-rs-hero-host {
   grid-template-columns: clamp(58px, 16%, 88px) minmax(0, 1fr) !important;
   gap: clamp(10px, 2.2vw, 16px) !important;
   padding: clamp(10px, 2vw, 18px) clamp(12px, 3vw, 24px) !important;
@@ -21825,7 +21825,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 @media (max-width: 560px) {
-  .em-rs-heroSkin {
+  .rockstar-hero.em-rs-hero-host {
     grid-template-columns: 58px minmax(0, 1fr) !important;
     gap: 8px !important;
     padding: 12px 14px !important;
@@ -21853,7 +21853,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 }
 
 @media (max-width: 400px) {
-  .em-rs-heroSkin {
+  .rockstar-hero.em-rs-hero-host {
     grid-template-columns: 52px minmax(0, 1fr) !important;
     padding: 10px 12px !important;
   }
@@ -22317,7 +22317,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   background: #ff7a00 !important;
 }
 
-.em-rs-heroSkin {
+.rockstar-hero.em-rs-hero-host {
   grid-template-columns: clamp(58px, 16%, 88px) minmax(0, 1fr) !important;
   gap: clamp(7px, 1.8vw, 12px) !important;
   padding: clamp(10px, 2vw, 18px) clamp(12px, 3vw, 24px) !important;
@@ -22402,7 +22402,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 @media (max-width: 560px) {
   .rockstar-hero.em-rs-hero-host,
   .quiz-hero.em-qz-hero-host,
-  .em-rs-heroSkin {
+  .rockstar-hero.em-rs-hero-host {
     grid-template-columns: 58px minmax(0, 1fr) !important;
     gap: 10px !important;
     padding: 12px 14px !important;
@@ -22449,7 +22449,7 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
 @media (max-width: 400px) {
   .rockstar-hero.em-rs-hero-host,
   .quiz-hero.em-qz-hero-host,
-  .em-rs-heroSkin {
+  .rockstar-hero.em-rs-hero-host {
     grid-template-columns: 52px minmax(0, 1fr) !important;
     padding: 10px 12px !important;
   }
@@ -23054,3 +23054,206 @@ body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition) >
   background: #ff7a00 !important;
 }
 
+
+
+/* =========================================================
+   ENCISOMATH v0.24.274 - ROCKSTARS host directo + limpieza de tuerquitas
+   El hero ROCKSTARS ahora usa el padre como host real,
+   con la misma base estructural usada por QUIZZES y CLASES.
+========================================================= */
+
+.rockstar-hero.em-rs-hero-host {
+  --em-rs-rojo: #e21b3c;
+  --em-rs-amarillo: #EBB513;
+  --em-rs-naranja: #ff7a00;
+  --em-rs-blanco: #ffffff;
+  --em-rs-main: #10264d;
+  --em-rs-rocket-tilt: -30deg;
+  --em-rs-star-from-x: -275.77px;
+  --em-rs-star-from-y: -275.77px;
+  --em-rs-star-to-x: 275.77px;
+  --em-rs-star-to-y: 275.77px;
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  grid-template-columns: clamp(58px, 16%, 88px) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(7px, 1.8vw, 12px) !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 118px !important;
+  margin-bottom: 10px !important;
+  padding: clamp(10px, 2vw, 18px) clamp(12px, 3vw, 24px) !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  border-radius: var(--radius) !important;
+  border: none !important;
+  background: #10264d !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host,
+.rockstar-hero.em-rs-hero-host * {
+  box-sizing: border-box !important;
+}
+
+.rockstar-hero.em-rs-hero-host::before,
+.rockstar-hero.em-rs-hero-host::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-starsLayer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+  position: relative !important;
+  z-index: 2 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: clamp(52px, 12vw, 74px) !important;
+  height: clamp(60px, 14vw, 84px) !important;
+  display: grid !important;
+  place-items: center !important;
+  transform: rotate(var(--em-rs-rocket-tilt)) !important;
+  transform-origin: center !important;
+  margin-right: clamp(2px, 0.8vw, 8px) !important;
+  pointer-events: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-content {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  align-content: center !important;
+  justify-items: start !important;
+  text-align: left !important;
+  overflow: visible !important;
+  padding-left: clamp(6px, 1.2vw, 12px) !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-eyebrow {
+  min-height: 20px !important;
+  padding: 4px 10px !important;
+  font-size: clamp(9px, 1.5vw, 11px) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-title {
+  font-size: clamp(24px, 7vw, 52px) !important;
+  line-height: 0.96 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.06em !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.rockstar-hero.em-rs-hero-host .em-rs-subtitle {
+  display: block !important;
+  font-size: clamp(10px, 2vw, 15px) !important;
+  line-height: 1.08 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.02em !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+@media (max-width: 560px) {
+  .rockstar-hero.em-rs-hero-host {
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+    width: 54px !important;
+    height: 64px !important;
+    transform: rotate(var(--em-rs-rocket-tilt)) !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-content {
+    padding-left: 6px !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-eyebrow {
+    font-size: 9px !important;
+    padding: 3px 8px !important;
+    min-height: 18px !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-title {
+    font-size: clamp(22px, 9.5vw, 36px) !important;
+    line-height: 0.96 !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-subtitle {
+    display: block !important;
+    font-size: 11px !important;
+    line-height: 1.08 !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .rockstar-hero.em-rs-hero-host {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+    padding: 10px 12px !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-rocketWrap {
+    width: 50px !important;
+    height: 60px !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-title {
+    font-size: clamp(20px, 9vw, 30px) !important;
+  }
+
+  .rockstar-hero.em-rs-hero-host .em-rs-subtitle {
+    display: none !important;
+  }
+}
+
+.quiz-layout-tune-open,
+.quiz-layout-tune-panel,
+.quiz-feedback-tune-panel,
+.quiz-transition-gear,
+.quiz-transition-tune-panel,
+.quiz-ranking-tune-gear,
+.quiz-ranking-tune-panel,
+.enciso-final-tune-toggle,
+.enciso-final-tune-modal,
+.quiz-padding-debug-box,
+.quiz-countdown-tune-box,
+.quiz-typography-tune-box,
+.quiz-sound-tune-box {
+  display: none !important;
+}
