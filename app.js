@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.284';
+  const APP_VERSION = '0.24.285';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -839,7 +839,6 @@
             ${emSubHomeSubjectsHTML(assignments)}
           </div>
         </section>
-        ${bottomNav('profe')}
       </main>
     `;
 
@@ -887,7 +886,7 @@
     const studentCount = getStudentsForAssignment(assignment).length;
     const markup = `
       <main class="screen subject-screen">
-        <header class="topbar fixed-lock">
+        <header class="topbar fixed-lock em-subject-topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>${escapeHTML(assignment.subject)}</h1>
           <span class="spacer"></span>
@@ -907,7 +906,7 @@
             </div>
           </div>
         </section>
-        <nav class="em-subject-top-tabs sticky-tabs" aria-label="Pestañas de asignatura">
+        <nav class="em-subject-top-tabs" aria-label="Pestañas de asignatura">
           <div class="em-subject-top-tabs-track">
             <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students">👥 Estudiantes</button>
             <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes">📚 Clases</button>
@@ -916,7 +915,6 @@
           </div>
         </nav>
         <section id="tabContent" class="section tab-section"></section>
-        ${bottomNav('profe')}
       </main>
     `;
 
@@ -1093,6 +1091,7 @@
           <button class="em-add-button" id="openAddStudentBtn" type="button">Añadir</button>
         </div>
       </section>
+      <div class="em-students-count-title">Estudiantes <strong>(${getStudentsForAssignment(assignment).length})</strong></div>
       <div id="studentList" class="student-list em-rs-list">
         ${studentListHTML()}
       </div>
@@ -2176,12 +2175,6 @@
       <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
       </div>
-      <div class="student-tools rockstar-tools">
-        <div class="search-wrap">
-          <span aria-hidden="true">🔎</span>
-          <input class="input search-input" id="rockstarSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
-        </div>
-      </div>
       <div id="rockstarList" class="student-list rockstar-list em-rs-list">
         ${rockstarListHTML()}
       </div>
@@ -2195,7 +2188,7 @@
     const assignment = state.assignment;
     if (!assignment) return '';
     const attendance = getAttendance(assignment.id, getRockstarAttendanceDate());
-    const query = normalizeSearch(state.studentSearch || '');
+    const query = '';
     const period = Number(state.rockstarPeriod);
     const pointMap = getRockstarPointMap(assignment.id, period);
     const students = getStudentsForAssignment(assignment).filter((student) => {
@@ -2212,10 +2205,6 @@
       button.addEventListener('click', () => setRockstarPeriod(Number(button.dataset.rockstarPeriod)));
     });
 
-    document.getElementById('rockstarSearch')?.addEventListener('input', (event) => {
-      state.studentSearch = event.target.value;
-      refreshRockstarList();
-    });
 
     applyRockstarScoreTune();
     bindRockstarActionButtons();
@@ -8471,12 +8460,7 @@
     `;
   }
   function bottomNav(active) {
-    return `
-      <nav class="bottom-nav" aria-label="Navegación principal">
-        <button class="nav-item ${active === 'profe' ? 'active' : ''}" onclick="window.EncisoMathNav.home()"><span class="nav-icon">🧮</span><span>Profe</span></button>
-        <button class="nav-item ${active === 'students' ? 'active' : ''}" onclick="window.EncisoMathNav.students()"><span class="nav-icon">👥</span><span>Estudiantes</span></button>
-      </nav>
-    `;
+    return '';
   }
 
   window.EncisoMathNav = {
@@ -8874,7 +8858,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.284', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.285', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
