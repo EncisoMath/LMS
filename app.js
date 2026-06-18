@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.293';
+  const APP_VERSION = '0.24.294';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2301,6 +2301,46 @@
     if (quizHasTimeLimitValue(quiz)) return true;
     return filterSupportedQuizQuestions(quiz?.questions).some((question) => quizHasTimeLimitValue(question));
   }
+
+  function emQuizFirstValue(source, keys = []) {
+    for (const key of keys) {
+      const value = source?.[key];
+      if (value === undefined || value === null || value === '') continue;
+      return value;
+    }
+    return null;
+  }
+  function emQuizDateLabel(value, fallback = '') {
+    if (value === undefined || value === null || value === '') return fallback;
+    const raw = String(value).trim();
+    if (!raw) return fallback;
+    const parsed = value instanceof Date ? value : new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      const dayMonth = parsed.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }).replace('.', '');
+      const time = parsed.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' }).replace(' a. m.', ' a.m.').replace(' p. m.', ' p.m.').replace(' a. m.', ' a.m.').replace(' p. m.', ' p.m.');
+      return `${dayMonth} · ${time}`;
+    }
+    return raw;
+  }
+  function getQuizOpenLabel(quiz) {
+    const value = emQuizFirstValue(quiz, ['openAt', 'openedAt', 'startsAt', 'startAt', 'startDate', 'availableFrom', 'availableAt', 'fechaInicio', 'inicio', 'opensAt']);
+    return emQuizDateLabel(value, 'Disponible ahora');
+  }
+  function getQuizCloseLabel(quiz) {
+    const value = emQuizFirstValue(quiz, ['closeAt', 'closedAt', 'endsAt', 'endAt', 'endDate', 'dueAt', 'deadline', 'availableUntil', 'fechaFin', 'fin', 'closesAt']);
+    return emQuizDateLabel(value, 'Sin cierre');
+  }
+  function getQuizAttemptsMade(quiz) {
+    return emQuizNumericValue(quiz, ['attemptsMade', 'usedAttempts', 'completedAttempts', 'doneAttempts', 'intentosHechos', 'attemptsUsed']) || 0;
+  }
+  function getQuizAttemptLimitRaw(quiz) {
+    return emQuizNumericValue(quiz, ['attempts', 'maxAttempts', 'attemptLimit', 'availableAttempts', 'intentos', 'tries', 'maxTries']);
+  }
+  function getQuizAttemptDisplay(quiz) {
+    const made = getQuizAttemptsMade(quiz);
+    const limit = getQuizAttemptLimitRaw(quiz);
+    return `${made} / ${limit || '∞'}`;
+  }
   function renderQuizzesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -2318,7 +2358,6 @@
       <div class="em-content-list is-grid" id="quizLibrary">
         ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
-      <div class="quiz-launch-note" id="quizLaunchNote" ${activeQuiz ? '' : 'hidden'}>Toca un quiz para ver el aviso de inicio.</div>
     `;
     bindQuizTabEvents();
     emQzInitQuizzesHero($content);
@@ -5178,9 +5217,11 @@
     });
   }
   function bindQuizPlayerEvents() {
+    document.getElementById('modalLayer')?.classList.toggle('em-quiz-start-layer', Boolean(document.querySelector('.em-quiz-start-modal')));
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
       button.addEventListener('click', beginQuizFromConfirm);
     });
+    bindQuizStartSliderEvents();
     document.querySelectorAll('[data-quiz-skip-results]').forEach((button) => {
       button.addEventListener('click', showQuizResultsFromConfirm);
     });
@@ -6402,24 +6443,238 @@
     `;
   }
   function quizStartModalHTML(quiz) {
-    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+    const total = getQuizQuestionCount(quiz);
+    const timed = isQuizTimed(quiz);
+    const openLabel = getQuizOpenLabel(quiz);
+    const closeLabel = getQuizCloseLabel(quiz);
+    const attemptsLabel = getQuizAttemptDisplay(quiz);
+    const quizTitle = quiz.title || quiz.name || 'Quiz';
     return `
-      <div class="modal-card quiz-start-modal">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="quiz-start-modal-head" data-em-flat-bg>
-          <h2>¿Iniciarás este quiz?</h2>
-          <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
-        </div>
-        <div class="quiz-start-modal-body">
-          <h3>${escapeHTML(quiz.title || 'Quiz')}</h3>
-          <p>${escapeHTML(quiz.description || quiz.mode || 'Quiz interactivo de práctica.')}</p>
-          <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
-          ${quizTimeScoringSelectorHTML()}
-          <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
-        </div>
-      </div>
+      <section class="modal-card quiz-start-modal em-quiz-start-modal" aria-label="Inicio de quiz">
+        <div class="em-quiz-start-confetti" data-em-quiz-start-confetti aria-hidden="true"></div>
+        <header class="em-quiz-start-head">
+          <span class="em-quiz-start-head-shape triangle a" aria-hidden="true"></span>
+          <span class="em-quiz-start-head-shape x b" aria-hidden="true"></span>
+          <div class="em-quiz-start-head-copy">
+            <h2 class="em-quiz-start-title">¿Iniciarás este quiz?</h2>
+            <p class="em-quiz-start-name">${escapeHTML(quizTitle)}</p>
+          </div>
+        </header>
+        <section class="em-quiz-start-body">
+          <section class="em-quiz-start-info-board" aria-label="Información del quiz">
+            <div class="em-quiz-start-info-row two">
+              <div class="em-quiz-start-info-cell">
+                <span class="em-quiz-start-info-label">Abierto desde</span>
+                <strong class="em-quiz-start-info-value">${escapeHTML(openLabel)}</strong>
+              </div>
+              <div class="em-quiz-start-info-cell">
+                <span class="em-quiz-start-info-label">Abierto hasta</span>
+                <strong class="em-quiz-start-info-value">${escapeHTML(closeLabel)}</strong>
+              </div>
+            </div>
+            <div class="em-quiz-start-info-row three">
+              <div class="em-quiz-start-info-cell">
+                <span class="em-quiz-start-info-label">Ítems</span>
+                <strong class="em-quiz-start-info-value big">${total}</strong>
+              </div>
+              <div class="em-quiz-start-info-cell">
+                <span class="em-quiz-start-info-label">Tipo</span>
+                ${timed ? `<strong class="em-quiz-start-time-pill is-timed">Cronometrado</strong>` : `<strong class="em-quiz-start-time-plain">No cronometrado</strong>`}
+              </div>
+              <div class="em-quiz-start-info-cell">
+                <span class="em-quiz-start-info-label">Intentos</span>
+                <strong class="em-quiz-start-info-value big">${escapeHTML(attemptsLabel)}</strong>
+              </div>
+            </div>
+            ${timed ? `<div class="em-quiz-start-bonus-row">
+              <div class="em-quiz-start-bonus-copy">
+                <span class="em-quiz-start-bonus-label">Puntos por tiempo</span>
+                <strong class="em-quiz-start-bonus-text">Premia el mejor momento de respuesta.</strong>
+              </div>
+              <span class="em-quiz-start-bonus-chip">Ritmo justo</span>
+            </div>` : ''}
+          </section>
+          <div class="em-quiz-start-slider" data-em-quiz-start-slider role="slider" aria-label="Desliza para iniciar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="em-quiz-start-slide-fill" data-em-quiz-start-fill></div>
+            <span class="em-quiz-start-slide-label" data-em-quiz-start-label><span>DESLIZA PARA INICIAR</span></span>
+            <span class="em-quiz-start-slide-goal">GO</span>
+            <button class="em-quiz-start-slide-knob" data-em-quiz-start-knob type="button" aria-label="Desliza para iniciar">
+              <span class="em-quiz-start-slide-knob-mark">›</span>
+            </button>
+          </div>
+        </section>
+      </section>
     `;
   }
+
+  function bindQuizStartSliderEvents() {
+    document.querySelectorAll('[data-em-quiz-start-slider]').forEach((slider) => {
+      if (slider.dataset.emQuizStartBound === 'true') return;
+      slider.dataset.emQuizStartBound = 'true';
+      const modal = slider.closest('.em-quiz-start-modal');
+      const knob = slider.querySelector('[data-em-quiz-start-knob]');
+      const label = slider.querySelector('[data-em-quiz-start-label] span');
+      const confettiLayer = modal?.querySelector('[data-em-quiz-start-confetti]');
+      if (!modal || !knob || !label) return;
+      let isDragging = false;
+      let startClientX = 0;
+      let currentX = 0;
+      let maxX = 0;
+      let completed = false;
+      let activePointerId = null;
+      let startTimer = null;
+      const confettiColors = ['#1368ce', '#ff7a00', '#24b49a', '#54c600', '#EBB513', '#e21b3c'];
+      const confettiShapes = ['circle', 'square', 'triangle', 'x'];
+      const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
+      const calculateMax = () => {
+        const sliderRect = slider.getBoundingClientRect();
+        const knobRect = knob.getBoundingClientRect();
+        maxX = Math.max(0, sliderRect.width - knobRect.width - 14);
+      };
+      const getProgress = () => maxX > 0 ? currentX / maxX : 0;
+      const setSlideText = (progress) => {
+        if (completed) {
+          label.textContent = '¡VAMOS!';
+          return;
+        }
+        if (progress >= 0.82) {
+          label.textContent = 'SUELTA EN GO';
+          return;
+        }
+        if (progress >= 0.48) {
+          label.textContent = 'SIGUE DESLIZANDO';
+          return;
+        }
+        label.textContent = 'DESLIZA PARA INICIAR';
+      };
+      const setSlidePosition = (x) => {
+        currentX = clampValue(x, 0, maxX);
+        const progress = getProgress();
+        slider.style.setProperty('--em-slide-x', `${currentX}px`);
+        slider.style.setProperty('--em-slide-progress', progress.toFixed(3));
+        slider.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+        const labelShell = slider.querySelector('[data-em-quiz-start-label]');
+        if (labelShell) labelShell.style.opacity = String(1 - progress * 0.18);
+        setSlideText(progress);
+      };
+      const resetSlide = () => {
+        if (completed) return;
+        isDragging = false;
+        activePointerId = null;
+        slider.classList.remove('is-complete', 'is-dragging');
+        modal.classList.remove('is-starting');
+        setSlidePosition(0);
+      };
+      const createConfettiWave = (amount, extraHeight, power) => {
+        if (!confettiLayer) return;
+        for (let index = 0; index < amount; index += 1) {
+          const piece = document.createElement('span');
+          const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+          const shape = confettiShapes[Math.floor(Math.random() * confettiShapes.length)];
+          const dx = (Math.random() * 360 - 180) * power;
+          const dy = (Math.random() * -270 - 95 - extraHeight) * power;
+          const hopX = dx * 0.22;
+          const hopY = dy * 0.18;
+          const rot = Math.random() * 760 - 380;
+          piece.className = `em-quiz-start-confetti-piece ${shape}`;
+          piece.style.setProperty('--piece-color', color);
+          piece.style.setProperty('--dx', `${dx.toFixed(0)}px`);
+          piece.style.setProperty('--dy', `${dy.toFixed(0)}px`);
+          piece.style.setProperty('--hop-x', `${hopX.toFixed(0)}px`);
+          piece.style.setProperty('--hop-y', `${hopY.toFixed(0)}px`);
+          piece.style.setProperty('--rot', `${rot.toFixed(0)}deg`);
+          piece.style.animationDelay = `${(Math.random() * 0.12).toFixed(2)}s`;
+          piece.style.animationDuration = `${(0.82 + Math.random() * 0.36).toFixed(2)}s`;
+          if (shape !== 'triangle' && shape !== 'x') {
+            const size = 7 + Math.random() * 8;
+            piece.style.width = `${size.toFixed(0)}px`;
+            piece.style.height = `${size.toFixed(0)}px`;
+          }
+          confettiLayer.appendChild(piece);
+        }
+      };
+      const createGeometricConfetti = () => {
+        if (!confettiLayer) return;
+        confettiLayer.innerHTML = '';
+        createConfettiWave(54, 0, 1);
+        window.setTimeout(() => createConfettiWave(38, 70, 0.86), 120);
+        window.setTimeout(() => { if (confettiLayer) confettiLayer.innerHTML = ''; }, 1650);
+      };
+      const completeSlide = () => {
+        if (completed) return;
+        completed = true;
+        isDragging = false;
+        activePointerId = null;
+        clearTimeout(startTimer);
+        calculateMax();
+        setSlidePosition(maxX);
+        setSlideText(1);
+        slider.classList.remove('is-dragging', 'is-complete');
+        modal.classList.remove('is-starting');
+        void slider.offsetWidth;
+        slider.classList.add('is-complete');
+        modal.classList.add('is-starting');
+        createGeometricConfetti();
+        startTimer = window.setTimeout(() => {
+          modal.classList.remove('is-starting');
+          beginQuizFromConfirm();
+        }, 920);
+      };
+      const startDrag = (clientX, pointerId) => {
+        if (completed) return;
+        calculateMax();
+        activePointerId = pointerId;
+        isDragging = true;
+        startClientX = clientX - currentX;
+        slider.classList.add('is-dragging');
+      };
+      const moveDrag = (clientX) => {
+        if (!isDragging || completed) return;
+        setSlidePosition(clientX - startClientX);
+      };
+      const endDrag = () => {
+        if (!isDragging || completed) return;
+        isDragging = false;
+        if (getProgress() >= 0.9) {
+          completeSlide();
+          return;
+        }
+        resetSlide();
+      };
+      knob.addEventListener('pointerdown', (event) => {
+        if (completed) return;
+        event.preventDefault();
+        try { knob.setPointerCapture(event.pointerId); } catch (_) {}
+        startDrag(event.clientX, event.pointerId);
+      });
+      knob.addEventListener('pointermove', (event) => {
+        if (activePointerId !== event.pointerId) return;
+        moveDrag(event.clientX);
+      });
+      knob.addEventListener('pointerup', (event) => {
+        if (activePointerId !== event.pointerId) return;
+        activePointerId = null;
+        endDrag();
+      });
+      knob.addEventListener('pointercancel', (event) => {
+        if (activePointerId !== event.pointerId) return;
+        resetSlide();
+      });
+      slider.addEventListener('pointermove', (event) => moveDrag(event.clientX));
+      slider.addEventListener('pointerup', () => {
+        activePointerId = null;
+        endDrag();
+      });
+      window.addEventListener('resize', () => {
+        if (completed || !slider.isConnected) return;
+        calculateMax();
+        resetSlide();
+      }, { passive: true });
+      calculateMax();
+      setSlidePosition(0);
+    });
+  }
+
   function quizStartGateHTML(quiz) {
     const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
     return `
@@ -8792,7 +9047,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.293', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.294', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

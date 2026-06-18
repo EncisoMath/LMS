@@ -1,9 +1,18 @@
-## v0.24.293 - Continuar full y subtitulo feedback
+## v0.24.294 - Modal inicio quiz slider
 
-Cambios limitados a resultados/fase feedback del quiz:
+Base: v0.24.293 estable.
 
-- El botón `Continuar` de resultados ocupa todo el ancho de su contenedor desde CSS, sin observer ni demora de consola.
-- El subtítulo de la banda `CORRECTO / INCORRECTO / TIEMPO / ENVIADO` queda en 18px, Montserrat Medium (`wght` 500), line-height 1.05 y letter-spacing -0.025em.
-- Base recuperada desde v0.24.290 estable. No se integran los parches experimentales de v0.24.292.
+Cambios limitados al modal que aparece antes de iniciar un quiz desde ASIGNATURA > QUIZZES:
 
-Version/cache busting actualizado a 0.24.293.
+- Reemplazado visualmente el modal viejo por el nuevo modal flat con hero naranja #ff7a00.
+- Hero con exactamente dos figuras oscuras animadas: triángulo y X.
+- Panel de información con datos reales del quiz: apertura, cierre, ítems, tipo e intentos.
+- Modo cronometrado/no cronometrado renderizado desde la configuración real del quiz.
+- Slider de inicio con textos DESLIZA PARA INICIAR / SIGUE DESLIZANDO / SUELTA EN GO / ¡VAMOS!.
+- Al completar el slider se ejecuta la función real existente para iniciar el quiz.
+- Confeti geométrico y rebote del modal al iniciar.
+- Se quitó el texto de apoyo: "Toca un quiz para ver el aviso de inicio."
+
+No se tocaron Home, tarjetas de asignaturas, Clases, tarjetas visuales de Quizzes, Estudiantes, Asistencia, Rockstars, navegación, ranking, podio, música, countdown, pantalla de juego, resultados ni feedback.
+
+Version/cache busting actualizado a 0.24.294.
