@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.286';
+  const APP_VERSION = '0.24.287';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2246,6 +2246,61 @@
   function getSleepingTier() {
     return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
   }
+  const EM_CONTENT_SHAPE_PAIRS = [
+    ['circle', 'x'],
+    ['square', 'triangle'],
+    ['triangle', 'circle'],
+    ['x', 'square'],
+    ['circle', 'triangle'],
+    ['square', 'x']
+  ];
+  function emContentShapePairHTML(baseClass = 'em-content-shape', index = 0) {
+    const pair = EM_CONTENT_SHAPE_PAIRS[Math.abs(Number(index) || 0) % EM_CONTENT_SHAPE_PAIRS.length] || EM_CONTENT_SHAPE_PAIRS[0];
+    return `
+      <span class="${baseClass} ${pair[0]} a" aria-hidden="true"></span>
+      <span class="${baseClass} ${pair[1]} b" aria-hidden="true"></span>
+    `;
+  }
+  function getQuizQuestionCount(quiz) {
+    return filterSupportedQuizQuestions(quiz?.questions).length;
+  }
+  function emQuizNumericValue(quiz, keys = []) {
+    for (const key of keys) {
+      const value = quiz?.[key];
+      if (value === undefined || value === null || value === '') continue;
+      const number = Number(value);
+      if (Number.isFinite(number) && number > 0) return Math.floor(number);
+    }
+    return null;
+  }
+  function getQuizAttemptLimit(quiz) {
+    return emQuizNumericValue(quiz, [
+      'attempts',
+      'maxAttempts',
+      'attemptLimit',
+      'availableAttempts',
+      'intentos',
+      'tries',
+      'maxTries'
+    ]) || 1;
+  }
+  function quizHasTimeLimitValue(source) {
+    return emQuizNumericValue(source, [
+      'timeLimit',
+      'timeLimitSeconds',
+      'seconds',
+      'questionTimeLimit',
+      'timePerQuestion',
+      'defaultTimeLimit'
+    ]) !== null;
+  }
+  function isQuizTimed(quiz) {
+    if (typeof quiz?.timed === 'boolean') return quiz.timed;
+    if (typeof quiz?.isTimed === 'boolean') return quiz.isTimed;
+    if (typeof quiz?.cronometrado === 'boolean') return quiz.cronometrado;
+    if (quizHasTimeLimitValue(quiz)) return true;
+    return filterSupportedQuizQuestions(quiz?.questions).some((question) => quizHasTimeLimitValue(question));
+  }
   function renderQuizzesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -2260,8 +2315,8 @@
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
       </div>
-      <div class="quiz-library" id="quizLibrary">
-        ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
+      <div class="em-content-list is-grid" id="quizLibrary">
+        ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
       <div class="quiz-launch-note" id="quizLaunchNote" ${activeQuiz ? '' : 'hidden'}>Toca un quiz para ver el aviso de inicio.</div>
     `;
@@ -2279,6 +2334,13 @@
       if (button.dataset.boundQuizCard === 'true') return;
       button.dataset.boundQuizCard = 'true';
       button.addEventListener('click', () => {
+        const quizId = button.dataset.quizId || '';
+        if (!quizId) return;
+        startQuiz(quizId);
+      });
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
         const quizId = button.dataset.quizId || '';
         if (!quizId) return;
         startQuiz(quizId);
@@ -2318,17 +2380,36 @@
     if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
     return active;
   }
-  function quizCardButtonHTML(quiz, active) {
-    const total = filterSupportedQuizQuestions(quiz.questions).length;
+  function quizCardButtonHTML(quiz, active, index = 0) {
+    const total = getQuizQuestionCount(quiz);
+    const attempts = getQuizAttemptLimit(quiz);
+    const timedLabel = isQuizTimed(quiz) ? 'Cronometrado' : 'No cronometrado';
+    const attemptsLabel = attempts === 1 ? 'Intento' : 'Intentos';
     return `
-      <button class="quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}">
-        <span class="quiz-card-icon">${escapeHTML(quiz.emoji || '🎮')}</span>
-        <span class="quiz-card-copy">
-          <strong>${escapeHTML(quiz.title || 'Quiz sin título')}</strong>
-          <small>${total} preguntas · ${escapeHTML(quiz.mode || 'Demo')}</small>
-        </span>
-        <span class="quiz-start-pill">Iniciar</span>
-      </button>
+      <article class="em-quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(quiz.title || 'quiz')}">
+        <div class="em-quiz-cover">
+          ${emContentShapePairHTML('em-quiz-shape', index)}
+          <div class="em-quiz-cover-content">
+            <h3 class="em-quiz-title">${escapeHTML(quiz.title || 'Quiz sin título')}</h3>
+            <button class="em-quiz-start-btn" type="button" tabindex="-1">Iniciar</button>
+          </div>
+        </div>
+        <div class="em-quiz-body">
+          <div class="em-quiz-flat-info">
+            <div class="em-quiz-flat-item">
+              <strong>${total}</strong>
+              <span>Preguntas</span>
+            </div>
+            <div class="em-quiz-flat-item em-quiz-flat-mode">
+              <strong>${timedLabel}</strong>
+            </div>
+            <div class="em-quiz-flat-item">
+              <strong>${attempts}</strong>
+              <span>${attemptsLabel}</span>
+            </div>
+          </div>
+        </div>
+      </article>
     `;
   }
   function quizPlayerHTML(quiz, options = {}) {
@@ -7542,7 +7623,7 @@
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn">☰ Lista</button>
         </div>
       </div>
-      <div id="classGrid" class="class-grid ${state.classViewMode}-mode">
+      <div id="classGrid" class="em-content-list ${state.classViewMode === 'list' ? 'is-list' : 'is-grid'}">
         ${renderClassCardsHTML()}
       </div>
     `;
@@ -7559,7 +7640,7 @@
   }
   function renderClassCardsHTML() {
     const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
-    return filtered.map(classCardHTML).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
+    return filtered.map((item, index) => classCardHTML(item, index)).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
   }
   function bindPeriodButtons() {
     document.querySelectorAll('[data-period]').forEach((button) => {
@@ -7588,16 +7669,22 @@
   }
   function bindClassCards() {
     document.querySelectorAll('[data-class-id]').forEach((button) => {
-      button.addEventListener('click', () => {
+      const openClass = () => {
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
         if (item) renderLesson(item);
+      };
+      button.addEventListener('click', openClass);
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openClass();
       });
     });
   }
   function updateClassGrid(animate = false) {
     const grid = document.getElementById('classGrid');
     if (!grid) return;
-    grid.className = `class-grid ${state.classViewMode}-mode`;
+    grid.className = `em-content-list ${state.classViewMode === 'list' ? 'is-list' : 'is-grid'}`;
     grid.innerHTML = renderClassCardsHTML();
     bindClassCards();
     if (animate) pulseElement(grid, 'class-grid-update');
@@ -8046,15 +8133,16 @@
     const info = statusMap[status];
     return `<button class="att-btn att-${status} ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
   }
-  function classCardHTML(item) {
+  function classCardHTML(item, index = 0) {
     return `
-      <button class="class-card" data-class-id="${escapeAttr(item.id)}">
-        <div class="class-emoji">${escapeHTML(item.emoji || '📘')}</div>
-        <div>
-          <div class="card-title">${escapeHTML(item.title)}</div>
-          <div class="card-sub">${escapeHTML(item.type || 'Clase interactiva')} · ${escapeHTML(item.estimatedTime || '45 min')}</div>
+      <article class="em-class-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
+        <div class="em-class-cover">
+          ${emContentShapePairHTML('em-content-shape', index)}
         </div>
-      </button>
+        <div class="em-class-body">
+          <h3 class="em-class-title">${escapeHTML(item.title || 'Clase sin título')}</h3>
+        </div>
+      </article>
     `;
   }
   function selectHTML(id, label, options, selected) {
@@ -8464,7 +8552,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.286', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.287', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

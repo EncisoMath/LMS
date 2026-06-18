@@ -1,3 +1,11 @@
+## v0.24.287 - Tarjetas internas de Clases y Quizzes
+
+Cambios limitados a ASIGNATURA > CLASES y ASIGNATURA > QUIZZES: se reemplazo visualmente el listado interno de clases por tarjetas arcade educativas `em-class-` con fondo negro, borde/banner por paleta EncisoMath y solo titulo visible; se reemplazo visualmente el listado interno de quizzes por tarjetas `em-quiz-` con banner, titulo y boton Iniciar dentro del banner, franja flat inferior con preguntas, estado Cronometrado/No cronometrado e intentos. Los colores alternan en orden azul, naranja, aguamarina, verde, amarillo y rojo, sin depender del color de la asignatura. Se conservaron eventos y logica existentes para abrir clase e iniciar quiz, periodos/vista de clases, datos reales, preguntas, intentos cuando existan y cronometrado por configuracion de quiz/preguntas.
+
+No se tocaron botonera superior de asignatura, asistencia, estudiantes, Rockstars, Home, ranking, podio, musica, countdown, pantalla de juego del quiz ni datos base. Los estilos antiguos de tarjetas de clases/quizzes quedan neutralizados porque ya no se renderizan `.class-card` ni `.quiz-card` en esas pestañas.
+
+Version/cache busting actualizado a 0.24.287.
+
 ## v0.24.286 - Limpieza de menus HOME y resultados quiz
 
 Cambios limitados: se elimino del HOME el boton de tres puntos y su menu de gestion/apariencia; en inicio de quiz se elimino la frase "Antes de empezar"; en resultados finales del quiz se eliminaron la opcion "Repetir animacion", la tuerquita de ajustes y su panel/menu asociado desde la salida visual. Se mantiene la base v0.24.285 con barra inferior PROFE/ESTUDIANTES eliminada, barra superior Back/Home coloreada por asignatura, organizacion de asignatura, asistencia compacta, conteo Estudiantes (X), encisoFlowIn, periodos Montserrat Black, Cuadricula/Lista con color de asignatura y Rockstars sin buscador.
