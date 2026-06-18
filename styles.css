@@ -23652,3 +23652,18 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
     font-size: 8px;
   }
 }
+
+/* =========================================================
+   v0.24.288 - Fallback seguro para resultados del quiz
+   Evita pantalla negra si una animacion final no inicia.
+========================================================= */
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results [data-final-results][data-enciso-final-fallback="true"] .enciso-result-band,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results [data-final-results][data-enciso-final-fallback="true"] .enciso-score-card,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results [data-final-results][data-enciso-final-fallback="true"] .enciso-podium-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results [data-final-results][data-enciso-final-fallback="true"] .enciso-review-section,
+body.quiz-fullscreen-active .quiz-fullscreen-layer.quiz-phase-results [data-final-results][data-enciso-final-fallback="true"] .enciso-actions-section {
+  opacity: 1 !important;
+  translate: 0 0 !important;
+  visibility: visible !important;
+  filter: none !important;
+}

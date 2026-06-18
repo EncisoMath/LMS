@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.287';
+  const APP_VERSION = '0.24.288';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6341,7 +6341,14 @@
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
     else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length, quiz, transitionWithIntro);
-    else if (phase === 'results') content = quizResultsHTML(quiz);
+    else if (phase === 'results') {
+      try {
+        content = quizResultsHTML(quiz);
+      } catch (error) {
+        console.error('No se pudo renderizar la pantalla final del quiz:', error);
+        content = quizResultsFallbackHTML(quiz, error);
+      }
+    }
     else content = quizPlayerHTML(quiz, { fullscreen: true });
     const showTop = phase === 'question';
     const currentQuestion = questions[Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1))] || null;
@@ -6396,7 +6403,12 @@
       playQuizTransitionScoreCounter(layer);
     } else if (phase === 'results') {
       stopQuizQuestionMusic(true);
-      try { startEncisoFinalResultsScreen(layer); } catch (_) {}
+      try {
+        startEncisoFinalResultsScreen(layer);
+      } catch (error) {
+        console.error('No se pudo iniciar la animación de resultados:', error);
+        encisoForceFinalResultsVisible(layer.querySelector('[data-final-results]'));
+      }
     } else if (phase === 'confirm' || phase === 'idle') {
       stopQuizQuestionMusic(false);
     }
@@ -7141,10 +7153,85 @@
   }
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
-    if (!root || root.dataset.encisoFinalStarted === 'true') return;
-    root.dataset.encisoFinalStarted = 'true';
-    applyEncisoFinalTune(root, getEncisoFinalTune());
-    encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
+    if (!root) return;
+    const alreadyStarted = root.dataset.encisoFinalStarted === 'true';
+    if (!alreadyStarted) {
+      root.dataset.encisoFinalStarted = 'true';
+      try {
+        applyEncisoFinalTune(root, getEncisoFinalTune());
+        encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
+      } catch (error) {
+        console.error('Error en la animación final del quiz:', error);
+        encisoForceFinalResultsVisible(root);
+      }
+    }
+    window.setTimeout(() => {
+      const liveRoot = document.querySelector('[data-final-results]');
+      if (!liveRoot) return;
+      const hasVisibleResult = liveRoot.querySelector('.enciso-result-band.play, .enciso-score-card.play, .enciso-actions-section.play');
+      if (!hasVisibleResult) encisoForceFinalResultsVisible(liveRoot);
+    }, 900);
+  }
+  function encisoForceFinalResultsVisible(root) {
+    if (!root) return;
+    root.dataset.encisoFinalFallback = 'true';
+    [
+      '.enciso-result-band',
+      '.enciso-score-card',
+      '.enciso-podium-section',
+      '.enciso-review-section',
+      '.enciso-actions-section'
+    ].forEach((selector) => {
+      root.querySelectorAll(selector).forEach((node) => {
+        node.classList.add('play');
+        if (node.classList.contains('enciso-actions-section')) node.classList.add('show');
+        node.style.setProperty('opacity', '1', 'important');
+        node.style.setProperty('translate', '0 0', 'important');
+        node.style.setProperty('visibility', 'visible', 'important');
+        node.style.setProperty('filter', 'none', 'important');
+      });
+    });
+  }
+  function quizResultsFallbackHTML(quiz, error) {
+    const session = getQuizSession();
+    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
+    const answers = Array.isArray(session.answers) ? session.answers : [];
+    const correct = answers.filter((answer) => answer?.correct === true).length;
+    const total = Math.max(questions.length, answers.length, 1);
+    const percent = Math.round((correct / total) * 100);
+    const title = quiz?.title || 'Quiz';
+    const detail = error?.message ? `Detalle técnico: ${error.message}` : 'La animación final no pudo cargarse, pero el resultado se recuperó.';
+    return `
+      <section class="enciso-final-results results-screen ranking-results-screen enciso-result-state-red" data-final-results data-final-grade="0" data-global-score="0" data-correct-points="0" data-time-points="0" data-bonus-grade="0" data-extra-points="0" data-enciso-final-fallback="true">
+        <section class="enciso-result-band em-reto-hero-animado play">
+          <div class="em-reto-figuras-layer" aria-hidden="true"></div>
+          <div class="enciso-result-content">
+            <div class="enciso-result-kicker">Quiz completado</div>
+            <h2 class="enciso-result-title">${escapeHTML(title)}</h2>
+            <p class="enciso-result-message">Resultado recuperado: ${correct}/${total} respuestas correctas (${percent}%).</p>
+          </div>
+        </section>
+        <section class="enciso-score-card play">
+          <div class="enciso-score-inner">
+            <div>
+              <div class="enciso-score-label">Resultado</div>
+              <div class="enciso-score-number">${percent}%</div>
+            </div>
+          </div>
+          <div class="enciso-stats-grid">
+            <div class="enciso-stat"><div class="enciso-stat-value">${correct}</div><div class="enciso-stat-label">Correctas</div></div>
+            <div class="enciso-stat"><div class="enciso-stat-value">${total}</div><div class="enciso-stat-label">Total</div></div>
+          </div>
+        </section>
+        <section class="enciso-review-section play">
+          <div class="enciso-section-title">Resumen</div>
+          <p class="empty">${escapeHTML(detail)}</p>
+        </section>
+        <section class="enciso-actions-section show play">
+          <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
+        </section>
+      </section>
+    `;
   }
   function encisoBuildFinalResultsData(quiz) {
     const session = getQuizSession();
@@ -8552,7 +8639,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.287', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.288', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
