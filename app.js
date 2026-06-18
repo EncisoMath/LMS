@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.297';
+  const APP_VERSION = '0.24.298';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2406,9 +2406,22 @@
       });
     });
   }
+  function normalizeLocalQuizForPlayer(quiz = {}) {
+    if (!quiz || typeof quiz !== 'object') return quiz;
+    const safe = { ...quiz };
+    if (safe.source === 'quiz-studio' || safe.legacyFormat === true || Array.isArray(safe.questions)) {
+      safe.questions = filterSupportedQuizQuestions(safe.questions);
+    }
+    if (safe.grade !== undefined && safe.academicGrade === undefined && safe.courseGrade === undefined) {
+      safe.academicGrade = safe.grade;
+      safe.courseGrade = safe.grade;
+      delete safe.grade;
+    }
+    return safe;
+  }
   function getLocalQuizzes() {
     const list = readJSON('encisomath:localQuizzes');
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(list) ? list.map(normalizeLocalQuizForPlayer) : [];
   }
   function saveLocalQuizzes(list = []) {
     localStorage.setItem('encisomath:localQuizzes', JSON.stringify(Array.isArray(list) ? list : []));
@@ -2430,11 +2443,117 @@
       return !ids.length && !quiz.subject && !quiz.area;
     });
   }
+  function normalizeQuizTypeForPlayer(type = '') {
+    const raw = String(type || '').trim().toLowerCase();
+    if (['multiple', 'multiple_choice', 'abcd', 'mcq', 'opcion_multiple', 'opción múltiple'].includes(raw)) return 'multiple_choice';
+    if (['truefalse', 'true_false', 'boolean', 'verdadero_falso', 'verdadero / falso'].includes(raw)) return 'true_false';
+    if (['organize', 'organizar', 'order', 'ordenar', 'organizar tarjetas'].includes(raw)) return 'order';
+    if (['short', 'short_answer', 'respuesta_corta', 'respuesta corta', 'open', 'abierta'].includes(raw)) return 'open';
+    if (raw === 'flip') return 'flip';
+    return raw;
+  }
   function isSupportedQuizQuestionType(type) {
-    return ['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(String(type || ''));
+    return ['multiple_choice', 'true_false', 'open', 'order', 'flip'].includes(normalizeQuizTypeForPlayer(type));
+  }
+  function parseQuizStudioTimeLimit(value) {
+    if (value === undefined || value === null || value === '' || value === false) return null;
+    const raw = String(value).trim().toLowerCase();
+    if (!raw || raw === '0' || raw.includes('sin tiempo')) return null;
+    const match = raw.match(/\d+/);
+    if (!match) return null;
+    const number = Number(match[0]);
+    return Number.isFinite(number) && number > 0 ? number : null;
+  }
+  function normalizeQuizOptionObjects(options = [], correctIndex = 0, max = 4, fallback = []) {
+    const source = Array.isArray(options) ? options.slice(0, max) : [];
+    const list = source.map((option, index) => {
+      const isObject = option && typeof option === 'object' && !Array.isArray(option);
+      const text = isObject ? String(option.text ?? option.label ?? option.value ?? '') : String(option ?? '');
+      const safe = {
+        id: isObject ? String(option.id || String.fromCharCode(97 + index)) : String.fromCharCode(97 + index),
+        text,
+        correct: isObject ? Boolean(option.correct) : index === Number(correctIndex || 0)
+      };
+      if (isObject && option.color) safe.color = option.color;
+      return safe;
+    });
+    while (list.length < max) {
+      const index = list.length;
+      list.push({ id: String.fromCharCode(97 + index), text: String(fallback[index] || `Opción ${index + 1}`), correct: index === Number(correctIndex || 0) });
+    }
+    const hasCorrect = list.some((option) => option.correct);
+    if (!hasCorrect && list.length) {
+      const index = Math.max(0, Math.min(list.length - 1, Number(correctIndex || 0)));
+      list[index].correct = true;
+    }
+    return list;
+  }
+  function normalizeQuizQuestionForPlayer(question = {}, index = 0) {
+    const raw = question && typeof question === 'object' ? question : {};
+    const type = normalizeQuizTypeForPlayer(raw.type || 'multiple_choice');
+    const textA = String(raw.textA ?? raw.text ?? raw.question ?? raw.prompt ?? '');
+    const prompt = String(raw.prompt ?? raw.textA ?? raw.text ?? raw.question ?? '');
+    const common = {
+      ...raw,
+      id: raw.id || `q-${index + 1}`,
+      type,
+      prompt,
+      textA,
+      textB: String(raw.textB || ''),
+      image: String(raw.image || raw.imageData || raw.imageUrl || ''),
+      imageAlt: String(raw.imageAlt || (raw.image || raw.imageData || raw.imageUrl ? 'Imagen de la pregunta' : ''))
+    };
+    const timeLimit = parseQuizStudioTimeLimit(raw.timeLimit ?? raw.time ?? raw.seconds ?? raw.duration);
+    if (timeLimit) common.timeLimit = timeLimit;
+    else delete common.timeLimit;
+
+    if (type === 'flip') {
+      const colors = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];
+      common.options = normalizeQuizOptionObjects(raw.options, raw.correct, 6, ['Opción 1', 'Opción 2', 'Opción 3', 'Opción 4', 'Opción 5', 'Opción 6']).map((option, i) => ({ ...option, color: option.color || colors[i] || 'blue' }));
+      return common;
+    }
+    if (type === 'order') {
+      const colors = ['red', 'blue', 'yellow', 'green'];
+      const rawCards = Array.isArray(raw.cards) && raw.cards.length ? raw.cards : (Array.isArray(raw.options) ? raw.options : []);
+      const cards = rawCards.slice(0, 4).map((card, i) => {
+        const isObject = card && typeof card === 'object' && !Array.isArray(card);
+        return {
+          id: isObject ? String(card.id || `card-${i + 1}`) : `card-${i + 1}`,
+          text: isObject ? String(card.text ?? card.label ?? card.value ?? '') : String(card ?? ''),
+          order: isObject && Number.isFinite(Number(card.order)) ? Number(card.order) : i + 1,
+          color: isObject ? String(card.color || colors[i] || 'blue') : colors[i]
+        };
+      });
+      while (cards.length < 4) cards.push({ id: `card-${cards.length + 1}`, text: `Tarjeta ${cards.length + 1}`, order: cards.length + 1, color: colors[cards.length] || 'blue' });
+      common.cards = cards;
+      common.correctOrder = Array.isArray(raw.correctOrder) && raw.correctOrder.length ? raw.correctOrder.map(String) : cards.slice().sort((a, b) => Number(a.order) - Number(b.order)).map((card) => card.id);
+      delete common.options;
+      return common;
+    }
+    if (type === 'true_false') {
+      const rawOptions = Array.isArray(raw.options) && raw.options.length ? raw.options : ['Verdadero', 'Falso'];
+      common.options = normalizeQuizOptionObjects(rawOptions, raw.correct, 2, ['Verdadero', 'Falso']).map((option, i) => ({
+        id: i === 0 ? 'true' : 'false',
+        text: i === 0 ? 'Verdadero' : 'Falso',
+        correct: Boolean(option.correct)
+      }));
+      if (!common.options.some((option) => option.correct)) common.options[0].correct = true;
+      return common;
+    }
+    if (type === 'open') {
+      common.expectedAnswer = String(raw.expectedAnswer ?? raw.shortAnswer ?? raw.answer ?? '');
+      common.charLimit = Math.max(1, Math.min(300, Number(raw.charLimit || raw.maxLength || 40)));
+      common.maxLength = common.charLimit;
+      delete common.options;
+      return common;
+    }
+    common.options = normalizeQuizOptionObjects(raw.options, raw.correct, 4, ['Opción A', 'Opción B', 'Opción C', 'Opción D']).map(({ id, text, correct }) => ({ id, text, correct }));
+    return common;
   }
   function filterSupportedQuizQuestions(questions = []) {
-    return (Array.isArray(questions) ? questions : []).filter((question) => isSupportedQuizQuestionType(question?.type));
+    return (Array.isArray(questions) ? questions : [])
+      .map((question, index) => normalizeQuizQuestionForPlayer(question, index))
+      .filter((question) => isSupportedQuizQuestionType(question?.type));
   }
   function getActiveQuiz(quizzes = getQuizzesForCurrentAssignment()) {
     if (!quizzes.length) return null;
@@ -3016,25 +3135,59 @@
   function quizStudioQuestionToApp(question, index = 0) {
     const q = normalizeQuizStudioQuestion(question);
     const id = quizStudioId('q');
-    const timeLimit = Number(q.time || 0);
-    const common = { id, prompt: q.text, textA: q.text, textB: '', image: q.image || '', imageAlt: q.image ? 'Imagen de la pregunta' : '' };
-    if (timeLimit > 0) common.timeLimit = timeLimit;
+    const timeLimit = parseQuizStudioTimeLimit(q.time);
+    const common = {
+      id,
+      type: q.type,
+      prompt: q.text,
+      textA: q.text,
+      textB: '',
+      image: q.image || '',
+      imageAlt: q.image ? 'Imagen de la pregunta' : '',
+      source: 'quiz-studio'
+    };
+    if (timeLimit) common.timeLimit = timeLimit;
     if (q.type === 'flip') {
       const colors = ['red', 'blue', 'yellow', 'green', 'orange', 'purple'];
-      return { ...common, type: 'flip', options: q.options.slice(0, 6).map((text, i) => ({ id: String.fromCharCode(97 + i), text, correct: i === q.correct, color: colors[i] || 'blue' })) };
+      common.options = q.options.slice(0, 6).map((text, i) => ({
+        id: String.fromCharCode(97 + i),
+        text,
+        correct: i === q.correct,
+        color: colors[i] || 'blue'
+      }));
+      return normalizeQuizQuestionForPlayer(common, index);
     }
     if (q.type === 'order') {
       const colors = ['red', 'blue', 'yellow', 'green'];
-      const cards = q.options.slice(0, 4).map((text, i) => ({ id: `card-${i + 1}`, text, order: i + 1, color: colors[i] || 'blue' }));
-      return { ...common, type: 'order', cards, correctOrder: cards.map((card) => card.id) };
+      const cards = q.options.slice(0, 4).map((text, i) => ({
+        id: `card-${i + 1}`,
+        text,
+        order: i + 1,
+        color: colors[i] || 'blue'
+      }));
+      common.cards = cards;
+      common.correctOrder = cards.map((card) => card.id);
+      return normalizeQuizQuestionForPlayer(common, index);
     }
     if (q.type === 'true_false') {
-      return { ...common, type: 'true_false', options: [{ id: 'true', text: 'Verdadero', correct: q.correct === 0 }, { id: 'false', text: 'Falso', correct: q.correct === 1 }] };
+      common.options = [
+        { id: 'true', text: 'Verdadero', correct: q.correct === 0 },
+        { id: 'false', text: 'Falso', correct: q.correct === 1 }
+      ];
+      return normalizeQuizQuestionForPlayer(common, index);
     }
     if (q.type === 'open') {
-      return { ...common, type: 'open', expectedAnswer: q.shortAnswer, charLimit: Number(q.charLimit || 40), maxLength: Number(q.charLimit || 40) };
+      common.expectedAnswer = q.shortAnswer;
+      common.charLimit = Number(q.charLimit || 40);
+      common.maxLength = Number(q.charLimit || 40);
+      return normalizeQuizQuestionForPlayer(common, index);
     }
-    return { ...common, type: 'multiple_choice', options: q.options.slice(0, 4).map((text, i) => ({ id: String.fromCharCode(97 + i), text, correct: i === q.correct })) };
+    common.options = q.options.slice(0, 4).map((text, i) => ({
+      id: String.fromCharCode(97 + i),
+      text,
+      correct: i === q.correct
+    }));
+    return normalizeQuizQuestionForPlayer(common, index);
   }
   function quizStudioDraftToAppQuiz(draft, assignment, status = 'draft') {
     const now = Date.now();
@@ -3045,6 +3198,8 @@
       emoji: '🎮',
       mode: status === 'published' ? 'Publicado' : 'Borrador',
       status,
+      source: 'quiz-studio',
+      legacyFormat: true,
       period: Number(draft.context?.period || state.quizPeriod || 1),
       assignmentIds: [assignment.id],
       subject: assignment.subject,
@@ -3106,8 +3261,9 @@
     const promptText = promptSegments.join('\n\n');
     const sharedTextModifier = quizSharedTextModifier(promptText, '');
     const promptClass = quizPromptClass(promptText || '', sharedTextModifier);
+    const studioSourceClass = quiz.source === 'quiz-studio' || question.source === 'quiz-studio' || quiz.legacyFormat === true ? 'quiz-source-studio' : '';
     return `
-      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${fullscreen ? 'quiz-stage-fullscreen quiz-item-enter-ready' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(`${quiz.id || 'quiz'}:${question.id || index}`)}">
+      <section class="quiz-stage quiz-type-${escapeAttr(question.type || 'question')} ${studioSourceClass} ${fullscreen ? 'quiz-stage-fullscreen quiz-item-enter-ready' : ''}" data-quiz-stage="${escapeAttr(quiz.id)}" data-quiz-question-index="${index}" data-quiz-has-image="${question.image ? 'true' : 'false'}" data-quiz-image-preview-key="${escapeAttr(`${quiz.id || 'quiz'}:${question.id || index}`)}">
         <div class="quiz-stage-head">
           <div class="quiz-stage-meta-row">
             <div class="quiz-eyebrow">Pregunta ${index + 1} de ${questions.length} · ${escapeHTML(quizTypeLabel(question.type))}</div>
@@ -9692,7 +9848,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.297', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.298', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
