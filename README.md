@@ -1,3 +1,13 @@
+## v0.24.274
+
+Base: v0.24.273.
+
+Limpieza profunda conservadora del código: se eliminaron bloques heredados y no usados de resultados antiguos, feedbacks anteriores, transiciones viejas con radiales/glow/barritas, paneles temporales de calibración/debug y funciones JS huérfanas asociadas. Se mantuvieron intactos los heroes optimizados de ROCKSTARS, QUIZZES y CLASES, y no se modificaron preguntas, tipos de quiz, countdown, música, resultados finales actuales, ranking, podio, puntajes, datos, navegación ni estudiantes.
+
+Version/cache busting actualizado a 0.24.274.
+
+Validación: `node --check app.js`, `node --check sw.js`, JSON/manifest válidos y `unzip -t` sin errores.
+
 ## v0.24.273
 
 Base: v0.24.272.
