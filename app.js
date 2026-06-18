@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.274';
+  const APP_VERSION = '0.24.275';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -311,11 +311,7 @@
       if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
     } catch (_) {}
   }
-
-
-  const WARNING_GAP_KEY = 'encisomath:warningBangGap';
-  const WARNING_TUNE_KEY = 'encisomath:warningTune';
-  const WARNING_TUNE_DEFAULTS = {
+const WARNING_LAYOUT_DEFAULTS = {
     gap: 0,
     iconX: -14,
     iconY: -22,
@@ -325,62 +321,14 @@
     textX: 14,
     textY: 0
   };
-  const WARNING_TUNE_FIELDS = [
-    { key: 'gap', label: 'Separacion !', min: -18, max: 22, step: 1, unit: 'px' },
-    { key: 'iconX', label: 'Mover ! horizontal', min: -32, max: 32, step: 1, unit: 'px' },
-    { key: 'iconY', label: 'Mover ! vertical', min: -32, max: 32, step: 1, unit: 'px' },
-    { key: 'markSize', label: 'Tamano !', min: 48, max: 78, step: 1, unit: 'px' },
-    { key: 'zoomMin', label: 'Zoom minimo', min: 70, max: 120, step: 1, unit: '%' },
-    { key: 'zoomMax', label: 'Zoom maximo', min: 100, max: 155, step: 1, unit: '%' },
-    { key: 'textX', label: 'Mover texto horizontal', min: -36, max: 36, step: 1, unit: 'px' },
-    { key: 'textY', label: 'Mover texto vertical', min: -30, max: 30, step: 1, unit: 'px' }
-  ];
-
-  const ROCKSTAR_SCORE_TUNE_KEY = 'encisomath:rockstarScoreTune';
-  const ROCKSTAR_SCORE_TUNE_DEFAULTS = { x: -2, y: 6, zoom: 79 };
-  const ROCKSTAR_SCORE_TUNE_FIELDS = [
-    { key: 'x', label: 'Mover puntos horizontal', min: -70, max: 70, step: 1, unit: 'px' },
-    { key: 'y', label: 'Mover puntos vertical', min: -36, max: 36, step: 1, unit: 'px' },
-    { key: 'zoom', label: 'Zoom puntos', min: 70, max: 145, step: 1, unit: '%' }
-  ];
-
-  const SUBJECT_INFO_TUNE_KEY = 'encisomath:subjectInfoTune';
-  const SUBJECT_INFO_TUNE_DEFAULTS = { x: 10, zoom: 137 };
-  const SUBJECT_INFO_TUNE_FIELDS = [
-    { key: 'x', label: 'Mover info horizontal', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'zoom', label: 'Zoom info', min: 70, max: 145, step: 1, unit: '%' }
-  ];
-
-  const QUIZ_FEEDBACK_TUNE_KEY = 'encisomath:quizFeedbackTune:v0.24.166';
-  const QUIZ_FEEDBACK_TUNE_DEFAULTS = {
-    bandRotation: -2,
-    bandX: 0,
-    bandY: 0,
-    bandWidth: 132,
-    bandHeight: 126,
-    bandZoom: 100,
-    emojiX: 0,
-    emojiY: 0,
-    emojiZoom: 100,
-    titleX: 0,
-    titleY: 0,
-    titleSize: 45,
-    titleWidth: 92,
-    titlePreset: '900|normal',
-    textX: 0,
-    textY: 0,
-    textSize: 15,
-    textWidth: 92,
-    textPreset: '500|normal',
-    bounceDuration: 0
-  };
-  const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
+const ROCKSTAR_SCORE_LAYOUT_DEFAULTS = { x: -2, y: 6, zoom: 79 };
+const SUBJECT_INFO_LAYOUT_DEFAULTS = { x: 10, zoom: 137 };
+const QUIZ_FEEDBACK_AFTER_PAINT_DELAY_MS = 420;
   const QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS = 460;
   const QUIZ_FEEDBACK_NEUTRAL_DELAY_MS = 220;
   const QUIZ_FEEDBACK_TOTAL_DURATION_MS = 3500;
   const QUIZ_FEEDBACK_BAND_EXIT_START_MS = 3000;
-  const QUIZ_TRANSITION_TUNE_KEY = 'encisomath:quizTransitionTune:v0.24.166';
-  const QUIZ_TRANSITION_ENTER_MS = 1350;
+const QUIZ_TRANSITION_ENTER_MS = 1350;
   const QUIZ_TRANSITION_WAIT_MS = 3000;
   const QUIZ_TRANSITION_EXIT_MS = 1180;
   const QUIZ_TRANSITION_START_BLACK_MS = 350;
@@ -389,82 +337,20 @@
   const QUIZ_TRANSITION_FIRST_INFO_MS = QUIZ_TRANSITION_START_BLACK_MS + QUIZ_TRANSITION_ENTER_MS + QUIZ_TRANSITION_WAIT_MS;
   const QUIZ_TRANSITION_FIRST_EXIT_START_MS = QUIZ_TRANSITION_START_BLACK_MS + (QUIZ_TRANSITION_ENTER_MS * 2) + (QUIZ_TRANSITION_WAIT_MS * 2);
   const QUIZ_TRANSITION_FIRST_TOTAL_MS = QUIZ_TRANSITION_FIRST_EXIT_START_MS + QUIZ_TRANSITION_EXIT_MS;
-  const QUIZ_TRANSITION_TUNE_DEFAULTS = { radials: true, sceneGlow: false, shapeGlow: true, continuous: false };
-  const QUIZ_ITEM_TIME_LIMIT_DEFAULT = 20;
+const QUIZ_ITEM_TIME_LIMIT_DEFAULT = 20;
   const QUIZ_ITEM_TIME_LIMIT_MIN = 1;
   const QUIZ_ITEM_TIME_LIMIT_MAX = 999;
   const QUIZ_COUNTDOWN_DANGER_SECONDS = 10;
   const QUIZ_TIMEOUT_FEEDBACK_TEXT = '__encisomath_timeout__';
   const QUIZ_SCORE_TOTAL_ITEM_POINTS = 10000;
   const QUIZ_SCORE_TOTAL_TIME_POINTS = 10000;
-  const QUIZ_TRANSITION_SCORE_TUNE_KEY = 'encisomath:quizTransitionScoreTune:v0.24.223';
-  const QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS = { y: 300, zoom: 55 };
-  const QUIZ_TRANSITION_SCORE_TUNE_FIELDS = [
-    { key: 'y', label: 'Posición Y contador', min: -300, max: 420, step: 1, unit: 'px' },
-    { key: 'zoom', label: 'Zoom contador', min: 55, max: 150, step: 1, unit: '%' }
-  ];
-  const QUIZ_DEBUG_PAUSE_COUNTDOWN = false;
-  const QUIZ_PADDING_DEBUG_KEY = 'encisomath:quizPaddingDebugTune:v0.24.223';
-  const QUIZ_PADDING_DEBUG_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
-  const QUIZ_PADDING_DEBUG_FIELDS = [
-    { key: 'layerX', label: 'Pantalla completa X', min: 0, max: 18, step: 1, unit: 'px' },
-    { key: 'contentX', label: 'Contenido quiz X', min: 0, max: 16, step: 1, unit: 'px' },
-    { key: 'questionX', label: 'Pregunta interna X', min: 0, max: 16, step: 1, unit: 'px' },
-    { key: 'answerX', label: 'Zona opciones X', min: 0, max: 16, step: 1, unit: 'px' },
-    { key: 'optionsX', label: 'Opciones internas X', min: 0, max: 16, step: 1, unit: 'px' },
-    { key: 'optionsPullX', label: 'Expandir opciones X', min: -24, max: 24, step: 1, unit: 'px' }
-  ];
-  const QUIZ_COUNTDOWN_TUNE_KEY = 'encisomath:quizCountdownTune:v0.24.223';
-  const QUIZ_COUNTDOWN_TUNE_DEFAULTS = { x: 23 };
-  const QUIZ_COUNTDOWN_TUNE_FIELDS = [
-    { key: 'x', label: 'Countdown X', min: -36, max: 64, step: 1, unit: 'px' }
-  ];
-  const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.223';
+const QUIZ_TRANSITION_SCORE_DEFAULTS = { y: 300, zoom: 55 };
+const QUIZ_PADDING_DEFAULTS = { layerX: 0, contentX: 4, questionX: 0, answerX: 0, optionsX: 0, optionsPullX: 0 };
+const QUIZ_COUNTDOWN_DEFAULTS = { x: 23 };
+const QUIZ_TIME_SCORING_MODE_KEY = 'encisomath:quizTimeScoringMode:v0.24.223';
   const QUIZ_TIME_SCORING_MODE_DEFAULT = 'curve';
   const QUIZ_TIME_SCORING_MODES = new Set(['curve', 'speed']);
-  const QUIZ_RANKING_PODIUM_TUNE_KEY = 'encisomath:rankingPodiumTune:v0.24.181';
-  const QUIZ_RANKING_PODIUM_TUNE_DEFAULTS = {
-    p1x: 5, p1y: -45, p1rot: 0,
-    p2x: 38, p2y: -41, p2rot: -6,
-    p3x: -29, p3y: -40, p3rot: 5,
-    baseX: 0, baseY: -26, baseW: 100
-  };
-  const QUIZ_RANKING_PODIUM_TUNE_FIELDS = [
-    { key: 'p1x', group: 'Puesto 1', label: 'Puesto 1 X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p1y', group: 'Puesto 1', label: 'Puesto 1 Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p1rot', group: 'Puesto 1', label: 'Puesto 1 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
-    { key: 'p2x', group: 'Puesto 2', label: 'Puesto 2 X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p2y', group: 'Puesto 2', label: 'Puesto 2 Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p2rot', group: 'Puesto 2', label: 'Puesto 2 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
-    { key: 'p3x', group: 'Puesto 3', label: 'Puesto 3 X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p3y', group: 'Puesto 3', label: 'Puesto 3 Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'p3rot', group: 'Puesto 3', label: 'Puesto 3 rotacion', min: -18, max: 18, step: 1, unit: 'deg' },
-    { key: 'baseX', group: 'Base', label: 'Base X', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'baseY', group: 'Base', label: 'Base Y', min: -70, max: 70, step: 1, unit: 'px' },
-    { key: 'baseW', group: 'Base', label: 'Ancho base', min: 70, max: 130, step: 1, unit: '%' }
-  ];
-  const QUIZ_FEEDBACK_TUNE_FIELDS = [
-    { key: 'bandRotation', group: 'Banda', label: 'Rotacion banda', min: -18, max: 18, step: 1, unit: 'deg' },
-    { key: 'bandX', group: 'Banda', label: 'Posicion X banda', min: -140, max: 140, step: 1, unit: 'px' },
-    { key: 'bandY', group: 'Banda', label: 'Posicion Y banda', min: -160, max: 160, step: 1, unit: 'px' },
-    { key: 'bandWidth', group: 'Banda', label: 'Ancho banda', min: 110, max: 180, step: 1, unit: 'vw' },
-    { key: 'bandHeight', group: 'Banda', label: 'Alto banda', min: 70, max: 190, step: 1, unit: 'px' },
-    { key: 'bandZoom', group: 'Banda', label: 'Zoom banda', min: 70, max: 140, step: 1, unit: '%' },
-    { key: 'emojiX', group: 'Emoji', label: 'Emoji X', min: -140, max: 140, step: 1, unit: 'px' },
-    { key: 'emojiY', group: 'Emoji', label: 'Emoji Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'emojiZoom', group: 'Emoji', label: 'Zoom emoji', min: 50, max: 190, step: 1, unit: '%' },
-    { key: 'titleX', group: 'Titulo', label: 'Titulo X', min: -140, max: 140, step: 1, unit: 'px' },
-    { key: 'titleY', group: 'Titulo', label: 'Titulo Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'titleSize', group: 'Titulo', label: 'Tamano titulo', min: 18, max: 54, step: 1, unit: 'px' },
-    { key: 'titleWidth', group: 'Titulo', label: 'Ancho contenedor titulo', min: 24, max: 120, step: 1, unit: 'vw' },
-    { key: 'textX', group: 'Subtitulo', label: 'Subtitulo X', min: -140, max: 140, step: 1, unit: 'px' },
-    { key: 'textY', group: 'Subtitulo', label: 'Subtitulo Y', min: -90, max: 90, step: 1, unit: 'px' },
-    { key: 'textSize', group: 'Subtitulo', label: 'Tamano subtitulo', min: 11, max: 30, step: 1, unit: 'px' },
-    { key: 'textWidth', group: 'Subtitulo', label: 'Ancho contenedor subtitulo', min: 24, max: 120, step: 1, unit: 'vw' },
-    { key: 'bounceDuration', group: 'Animacion', label: 'Duracion entrada banda', min: 260, max: 1600, step: 20, unit: 'ms' }
-  ];
-
-  const ACCENT_OPTIONS = [
+const ACCENT_OPTIONS = [
     { label: 'Rojo intenso', value: '#D32F2F' },
     { label: 'Rosa magenta', value: '#C2185B' },
     { label: 'Púrpura real', value: '#7B1FA2' },
@@ -511,7 +397,6 @@
     prefs: { ...DEFAULT_PREFS, ...(readJSON('encisomath:prefs') || {}) },
     quizTransitionPanelOpen: false,
     quizTransitionScorePanelOpen: false,
-    quizRankingPodiumPanelOpen: false,
     appRoute: null,
     appHistoryReady: false,
     applyingHistoryRoute: false
@@ -549,7 +434,6 @@
 
   async function boot() {
     applyPreferences();
-    applyQuizFeedbackTune();
     registerServiceWorker();
     bindQuizSecurityGuards();
     bindAppBackNavigation();
@@ -1000,7 +884,7 @@
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
       document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
-      applySubjectInfoTune();
+      applySubjectInfoLayout();
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
@@ -1009,27 +893,13 @@
     });
   }
 
-  function getSubjectInfoTune() {
-    return { ...SUBJECT_INFO_TUNE_DEFAULTS };
+  function getSubjectInfoLayout() {
+    return { ...SUBJECT_INFO_LAYOUT_DEFAULTS };
   }
-
-  function saveSubjectInfoTune(tune) {
-    localStorage.setItem(SUBJECT_INFO_TUNE_KEY, JSON.stringify({
-      x: Number(tune.x) || 0,
-      zoom: Number(tune.zoom) || 100
-    }));
-  }
-
-  function updateSubjectInfoTuneOutput(key, value) {
-    const field = SUBJECT_INFO_TUNE_FIELDS.find((item) => item.key === key);
-    const output = document.querySelector(`[data-subject-info-tune-value="${escapeSelector(key)}"]`);
-    if (output && field) output.textContent = `${value}${field.unit}`;
-  }
-
-  function applySubjectInfoTune(tune = getSubjectInfoTune()) {
+function applySubjectInfoLayout(layout = getSubjectInfoLayout()) {
     const root = document.documentElement;
-    const scale = (Number(tune.zoom) || 100) / 100;
-    root.style.setProperty('--subject-info-x', `${Number(tune.x) || 0}px`);
+    const scale = (Number(layout.zoom) || 100) / 100;
+    root.style.setProperty('--subject-info-x', `${Number(layout.x) || 0}px`);
     root.style.setProperty('--subject-info-scale', `${scale}`);
     root.style.setProperty('--subject-kicker-size', `${(0.66 * scale).toFixed(3)}rem`);
     root.style.setProperty('--subject-title-size', `${(1.00 * scale).toFixed(3)}rem`);
@@ -1349,7 +1219,7 @@
       <div class="modal-card danger-modal">
         <div class="danger-head">
           <span class="danger-red-mesh" aria-hidden="true"></span>
-          <div class="warning-tune-stack">
+          <div class="warning-icon-stack">
             <div class="warning-icon warning-duo" aria-hidden="true">
               <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
               <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
@@ -1378,78 +1248,25 @@
       startDeleteWarningMotion();
     });
   }
-
-  function warningTuneNumber(value, fallback, min, max) {
-    const numeric = Number(value);
-    const resolved = Number.isFinite(numeric) ? numeric : fallback;
-    return Math.max(min, Math.min(max, Math.round(resolved)));
+function getWarningLayout() {
+    return { ...WARNING_LAYOUT_DEFAULTS };
   }
-
-  function getWarningTune() {
-    return { ...WARNING_TUNE_DEFAULTS };
-  }
-
-  function saveWarningTune(tune) {
-    localStorage.setItem(WARNING_TUNE_KEY, JSON.stringify(tune));
-    localStorage.setItem(WARNING_GAP_KEY, String(tune.gap));
-  }
-
-  function warningTuneValueLabel(field, value) {
-    return `${value}${field.unit}`;
-  }
-
-  function applyWarningTune(tune = getWarningTune()) {
-    const zoomMid = Math.round((tune.zoomMin + tune.zoomMax) / 2);
+function applyWarningLayout(layout = getWarningLayout()) {
+    const zoomMid = Math.round((layout.zoomMin + layout.zoomMax) / 2);
     document.querySelectorAll('.danger-modal').forEach((modal) => {
-      modal.style.setProperty('--warning-gap', `${tune.gap}px`);
-      modal.style.setProperty('--warning-icon-x', `${tune.iconX}px`);
-      modal.style.setProperty('--warning-icon-y', `${tune.iconY}px`);
-      modal.style.setProperty('--warning-mark-size', `${tune.markSize}px`);
-      modal.style.setProperty('--warning-zoom-min', (tune.zoomMin / 100).toFixed(3));
+      modal.style.setProperty('--warning-gap', `${layout.gap}px`);
+      modal.style.setProperty('--warning-icon-x', `${layout.iconX}px`);
+      modal.style.setProperty('--warning-icon-y', `${layout.iconY}px`);
+      modal.style.setProperty('--warning-mark-size', `${layout.markSize}px`);
+      modal.style.setProperty('--warning-zoom-min', (layout.zoomMin / 100).toFixed(3));
       modal.style.setProperty('--warning-zoom-mid', (zoomMid / 100).toFixed(3));
-      modal.style.setProperty('--warning-zoom-max', (tune.zoomMax / 100).toFixed(3));
-      modal.style.setProperty('--warning-text-x', `${tune.textX}px`);
-      modal.style.setProperty('--warning-text-y', `${tune.textY}px`);
+      modal.style.setProperty('--warning-zoom-max', (layout.zoomMax / 100).toFixed(3));
+      modal.style.setProperty('--warning-text-x', `${layout.textX}px`);
+      modal.style.setProperty('--warning-text-y', `${layout.textY}px`);
     });
-
-    WARNING_TUNE_FIELDS.forEach((field) => {
-      const input = document.getElementById(`warningTune-${field.key}`);
-      const output = document.getElementById(`warningTuneOut-${field.key}`);
-      if (input) input.value = String(tune[field.key]);
-      if (output) output.textContent = warningTuneValueLabel(field, tune[field.key]);
-    });
-    return tune;
+    return layout;
   }
-
-  function initWarningTuneControls() {
-    let tune = applyWarningTune(getWarningTune());
-    document.querySelectorAll('[data-warning-tune]').forEach((slider) => {
-      slider.addEventListener('input', () => {
-        const field = WARNING_TUNE_FIELDS.find((item) => item.key === slider.dataset.warningTune);
-        if (!field) return;
-        tune = { ...tune, [field.key]: warningTuneNumber(slider.value, WARNING_TUNE_DEFAULTS[field.key], field.min, field.max) };
-        if (tune.zoomMax < tune.zoomMin + 2) {
-          if (field.key === 'zoomMin') tune.zoomMax = Math.min(155, tune.zoomMin + 2);
-          if (field.key === 'zoomMax') tune.zoomMin = Math.max(70, tune.zoomMax - 2);
-        }
-        saveWarningTune(tune);
-        applyWarningTune(tune);
-        restartDeleteWarningAnimations(tune);
-      });
-    });
-
-    const reset = document.getElementById('warningTuneReset');
-    if (reset) {
-      reset.addEventListener('click', () => {
-        tune = { ...WARNING_TUNE_DEFAULTS };
-        saveWarningTune(tune);
-        applyWarningTune(tune);
-        restartDeleteWarningAnimations(tune);
-      });
-    }
-  }
-
-  function restartDeleteWarningAnimations(tune = getWarningTune()) {
+function restartDeleteWarningAnimations(layout = getWarningLayout()) {
     warningMotionAnimations.forEach((animation) => animation.cancel());
     warningMotionAnimations = [];
     const mesh = document.querySelector('.danger-red-mesh');
@@ -1468,9 +1285,9 @@
       }));
     }
 
-    const min = (tune.zoomMin / 100).toFixed(3);
-    const mid = ((tune.zoomMin + tune.zoomMax) / 200).toFixed(3);
-    const max = (tune.zoomMax / 100).toFixed(3);
+    const min = (layout.zoomMin / 100).toFixed(3);
+    const mid = ((layout.zoomMin + layout.zoomMax) / 200).toFixed(3);
+    const max = (layout.zoomMax / 100).toFixed(3);
 
     if (markA) {
       warningMotionAnimations.push(markA.animate([
@@ -1501,8 +1318,8 @@
   }
 
   function startDeleteWarningMotion() {
-    const tune = applyWarningTune(getWarningTune());
-    restartDeleteWarningAnimations(tune);
+    const layout = applyWarningLayout(getWarningLayout());
+    restartDeleteWarningAnimations(layout);
   }
 
   function deleteStudent(student) {
@@ -2219,33 +2036,18 @@
       refreshRockstarList();
     });
 
-    applyRockstarScoreTune();
+    applyRockstarScoreLayout();
     bindRockstarActionButtons();
   }
 
-  function getRockstarScoreTune() {
-    return { ...ROCKSTAR_SCORE_TUNE_DEFAULTS };
+  function getRockstarScoreLayout() {
+    return { ...ROCKSTAR_SCORE_LAYOUT_DEFAULTS };
   }
-
-  function saveRockstarScoreTune(tune) {
-    localStorage.setItem(ROCKSTAR_SCORE_TUNE_KEY, JSON.stringify({
-      x: Number(tune.x) || 0,
-      y: Number(tune.y) || 0,
-      zoom: Number(tune.zoom) || 100
-    }));
-  }
-
-  function updateRockstarScoreTuneOutput(key, value) {
-    const field = ROCKSTAR_SCORE_TUNE_FIELDS.find((item) => item.key === key);
-    const output = document.querySelector(`[data-rockstar-score-tune-value="${escapeSelector(key)}"]`);
-    if (output && field) output.textContent = `${value}${field.unit}`;
-  }
-
-  function applyRockstarScoreTune(tune = getRockstarScoreTune()) {
+function applyRockstarScoreLayout(layout = getRockstarScoreLayout()) {
     const root = document.documentElement;
-    root.style.setProperty('--rockstar-score-x', `${Number(tune.x) || 0}px`);
-    root.style.setProperty('--rockstar-score-y', `${Number(tune.y) || 0}px`);
-    root.style.setProperty('--rockstar-score-scale', `${(Number(tune.zoom) || 100) / 100}`);
+    root.style.setProperty('--rockstar-score-x', `${Number(layout.x) || 0}px`);
+    root.style.setProperty('--rockstar-score-y', `${Number(layout.y) || 0}px`);
+    root.style.setProperty('--rockstar-score-scale', `${(Number(layout.zoom) || 100) / 100}`);
   }
 
   function setRockstarPeriod(period) {
@@ -2266,7 +2068,7 @@
     const list = document.getElementById('rockstarList');
     if (!list) return;
     list.innerHTML = rockstarListHTML();
-    applyRockstarScoreTune();
+    applyRockstarScoreLayout();
     bindRockstarActionButtons();
     if (animate) pulseElement(list, 'class-grid-update');
   }
@@ -2468,9 +2270,9 @@
           </div>
         </div>
         <div class="quiz-question-content">
-          ${question.image ? `<div class="quiz-tune-box quiz-image-tune-box" data-quiz-tune-target="image">${quizImageHTML(question)}</div>` : ''}
-          <h3 class="${promptClass} quiz-text-a quiz-tune-box" data-quiz-tune-target="textA">${escapeHTML(promptText)}</h3>
-          <div class="quiz-answer-zone quiz-tune-box" data-quiz-tune-target="answers">
+          ${question.image ? `<div class="quiz-layout-box quiz-image-layout-box" data-quiz-layout-target="image">${quizImageHTML(question)}</div>` : ''}
+          <h3 class="${promptClass} quiz-text-a quiz-layout-box" data-quiz-layout-target="textA">${escapeHTML(promptText)}</h3>
+          <div class="quiz-answer-zone quiz-layout-box" data-quiz-layout-target="answers">
             ${quizQuestionBodyHTML(question)}
           </div>
         </div>
@@ -2513,46 +2315,19 @@
     const texts = (Array.isArray(options) ? options : []).map((option) => String(option?.text || '').trim());
     return texts.some((text) => text.length > 42 || text.split(/\s+/).length > 8);
   }
-
-  const QUIZ_TYPOGRAPHY_STORAGE_KEY = 'encisomath:quizTypography:v0.24.168';
-  const QUIZ_FONT_PRESETS = [
-    { value: '300|normal', label: 'Montserrat Light' },
-    { value: '400|normal', label: 'Montserrat Regular' },
-    { value: '500|normal', label: 'Montserrat Medium' },
-    { value: '600|normal', label: 'Montserrat SemiBold' },
-    { value: '700|normal', label: 'Montserrat Bold' },
-    { value: '800|normal', label: 'Montserrat ExtraBold' },
-    { value: '900|normal', label: 'Montserrat Black' },
-    { value: '400|italic', label: 'Montserrat Italic' },
-    { value: '600|italic', label: 'Montserrat SemiBold Italic' },
-    { value: '700|italic', label: 'Montserrat Bold Italic' },
-    { value: '800|italic', label: 'Montserrat ExtraBold Italic' }
-  ];
-  const QUIZ_TYPOGRAPHY_DEFAULTS = {
+const QUIZ_TYPOGRAPHY_DEFAULTS = {
     textPreset: '600|normal',
     optionPreset: '600|normal',
     textSize: 12,
     optionSize: 12
   };
 
-  function normalizeQuizTypographyTune(tune = {}) {
-    const presetValues = new Set(QUIZ_FONT_PRESETS.map((item) => item.value));
-    const textPreset = presetValues.has(String(tune.textPreset || '')) ? String(tune.textPreset) : QUIZ_TYPOGRAPHY_DEFAULTS.textPreset;
-    const optionPreset = presetValues.has(String(tune.optionPreset || '')) ? String(tune.optionPreset) : QUIZ_TYPOGRAPHY_DEFAULTS.optionPreset;
-    const clamp = (value, min, max, fallback) => {
-      const number = Number(value);
-      return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
-    };
-    return {
-      textPreset,
-      optionPreset,
-      textSize: clamp(tune.textSize, 12, 28, QUIZ_TYPOGRAPHY_DEFAULTS.textSize),
-      optionSize: clamp(tune.optionSize, 12, 28, QUIZ_TYPOGRAPHY_DEFAULTS.optionSize)
-    };
+  function normalizeQuizTypography() {
+    return { ...QUIZ_TYPOGRAPHY_DEFAULTS };
   }
 
-  function getQuizTypographyTune() {
-    return normalizeQuizTypographyTune({});
+  function getQuizTypography() {
+    return normalizeQuizTypography({});
   }
 
   function quizPresetParts(value = '400|normal') {
@@ -2563,8 +2338,8 @@
     };
   }
 
-  function applyQuizTypographyTune(tune = getQuizTypographyTune()) {
-    const safe = normalizeQuizTypographyTune(tune);
+  function applyQuizTypography(layout = getQuizTypography()) {
+    const safe = normalizeQuizTypography(layout);
     const textPreset = quizPresetParts(safe.textPreset);
     const optionPreset = quizPresetParts(safe.optionPreset);
     const fontFamily = "'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -2584,7 +2359,7 @@
       node.style.setProperty('--quiz-global-option-size', `${safe.optionSize}px`);
     };
     setVarTarget(target);
-    document.querySelectorAll('.quiz-stage, .quiz-fullscreen-layer, .quiz-layout-tune-panel, .quiz-feedback-tune-panel, .enciso-feedback-v95, .enciso-feedback-v99, .enciso-quiz-feedback-overlay-v95, .enciso-quiz-feedback-overlay-v99, .enciso-quiz-feedback-overlay-v100').forEach(setVarTarget);
+    document.querySelectorAll('.quiz-stage, .quiz-fullscreen-layer').forEach(setVarTarget);
 
     const applyInline = (selector, preset, size) => {
       document.querySelectorAll(selector).forEach((node) => {
@@ -2619,206 +2394,22 @@
     document.querySelectorAll('[data-quiz-typography-value="optionSize"]').forEach((node) => { node.textContent = `${safe.optionSize}px`; });
     return safe;
   }
-
-  const QUIZ_LAYOUT_TUNE_FIELDS = [
-    { key: 'image_h', label: 'Imagen alto %', min: 10, max: 70, step: 1, unit: '%' },
-    { key: 'textA_h', label: 'Texto alto %', min: 10, max: 75, step: 1, unit: '%' },
-    { key: 'answers_h', label: 'Opciones alto %', min: 10, max: 70, step: 1, unit: '%' }
-  ];
-
-  const QUIZ_LAYOUT_TUNE_DEFAULTS = {
-    textA_y: 0, textA_h: 40, text_font: 12,
-    image_y: 0, image_h: 30,
-    answers_y: 0, answers_h: 30
-  };
-
-  const QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS = {
-    multiple_choice: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    flip: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 },
-    true_false: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    open: { textA_y: 0, textA_h: 40, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 30 },
-    order: { textA_y: 0, textA_h: 30, text_font: 12, image_y: 0, image_h: 30, answers_y: 0, answers_h: 40 }
-  };
-
-  function rebalanceQuizLayoutTune(tune = {}, changedKey = 'image_h') {
-    const min = 10;
-    const max = 80;
-    const safe = {
-      image_h: Number.isFinite(Number(tune.image_h)) ? Number(tune.image_h) : 30,
-      textA_h: Number.isFinite(Number(tune.textA_h)) ? Number(tune.textA_h) : 40,
-      answers_h: Number.isFinite(Number(tune.answers_h)) ? Number(tune.answers_h) : 30
-    };
-    const clampPart = (value) => Math.max(min, Math.min(max, Math.round(Number(value) || min)));
-    safe.image_h = clampPart(safe.image_h);
-    safe.textA_h = clampPart(safe.textA_h);
-    safe.answers_h = clampPart(safe.answers_h);
-    if (changedKey === 'image_h') {
-      safe.image_h = clampPart(safe.image_h);
-      safe.answers_h = clampPart(safe.answers_h);
-      safe.textA_h = 100 - safe.image_h - safe.answers_h;
-      if (safe.textA_h < min) {
-        safe.textA_h = min;
-        safe.answers_h = Math.max(min, 100 - safe.image_h - safe.textA_h);
-      }
-    } else if (changedKey === 'answers_h') {
-      safe.answers_h = clampPart(safe.answers_h);
-      safe.image_h = clampPart(safe.image_h);
-      safe.textA_h = 100 - safe.image_h - safe.answers_h;
-      if (safe.textA_h < min) {
-        safe.textA_h = min;
-        safe.image_h = Math.max(min, 100 - safe.answers_h - safe.textA_h);
-      }
-    } else {
-      safe.textA_h = clampPart(safe.textA_h);
-      safe.image_h = clampPart(safe.image_h);
-      safe.answers_h = 100 - safe.image_h - safe.textA_h;
-      if (safe.answers_h < min) {
-        safe.answers_h = min;
-        safe.image_h = Math.max(min, 100 - safe.textA_h - safe.answers_h);
-      }
-    }
-    const total = safe.image_h + safe.textA_h + safe.answers_h;
-    if (total !== 100) safe.textA_h += 100 - total;
-    return { ...tune, image_h: safe.image_h, textA_h: safe.textA_h, answers_h: safe.answers_h, text_font: 12, image_y: 0, textA_y: 0, answers_y: 0 };
+let quizCascadeReplayTimer = null;
+function normalizeQuizPadding() {
+    return { ...QUIZ_PADDING_DEFAULTS };
   }
-
-  const QUIZ_LAYOUT_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION = 'v0.24.168';
-  const QUIZ_CASCADE_TUNE_STORAGE_VERSION = 'v0.24.106';
-  const QUIZ_CASCADE_TUNE_FIELDS = [
-    { key: 'textA_y', label: 'Texto A subir Y', min: 0, max: 90, step: 1, unit: 'px' },
-    { key: 'image_y', label: 'Imagen subir Y', min: 0, max: 90, step: 1, unit: 'px' },
-    { key: 'textB_y', label: 'Texto B subir Y', min: 0, max: 90, step: 1, unit: 'px' },
-    { key: 'answers_y', label: 'Opciones / respuesta subir Y', min: 0, max: 90, step: 1, unit: 'px' }
-  ];
-  const QUIZ_CASCADE_TUNE_DEFAULTS = {
-    textA_y: 35,
-    image_y: 35,
-    textB_y: 35,
-    answers_y: 85
-  };
-
-  function getQuizCascadeTuneDefaults(type = 'default', hasImage = false) {
-    if (type === 'order') {
-      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
-    }
-    if (type === 'open') {
-      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 90 };
-    }
-    if (type === 'true_false') {
-      return { textA_y: 25, image_y: 25, textB_y: 25, answers_y: 80 };
-    }
-    if (type === 'flip') {
-      return { textA_y: 35, image_y: 35, textB_y: 35, answers_y: 85 };
-    }
-    if (type === 'multiple_choice') {
-      return hasImage
-        ? { textA_y: 40, image_y: 40, textB_y: 40, answers_y: 90 }
-        : { textA_y: 10, image_y: 10, textB_y: 10, answers_y: 10 };
-    }
-    return { ...QUIZ_CASCADE_TUNE_DEFAULTS };
+function getQuizPadding() {
+    return { ...QUIZ_PADDING_DEFAULTS };
   }
-
-  function getQuizCascadeProfile(type = 'default', hasImage = false) {
-    if (type === 'multiple_choice') return hasImage ? 'multiple_choice_with_image' : 'multiple_choice_no_image';
-    if (type === 'flip') return hasImage ? 'flip_with_image' : 'flip_no_image';
-    return type || 'default';
-  }
-
-  let quizCascadeReplayTimer = null;
-
-  function getQuizLayoutTuneDefaults(type = 'default') {
-    return { ...QUIZ_LAYOUT_TUNE_DEFAULTS, ...(QUIZ_LAYOUT_TUNE_TYPE_DEFAULTS[type] || {}) };
-  }
-
-  function quizLayoutTuneKey(type = 'default') {
-    const version = type === 'order' ? QUIZ_LAYOUT_ORDER_TUNE_STORAGE_VERSION : QUIZ_LAYOUT_TUNE_STORAGE_VERSION;
-    return `encisomath:quizLayoutTune:${version}:${type || 'default'}`;
-  }
-
-  function getQuizLayoutTune(type = 'default') {
-    return normalizeQuizLayoutTune({}, type);
-  }
-
-  function normalizeQuizLayoutTune(tune = {}, type = 'default') {
-    const defaults = getQuizLayoutTuneDefaults(type);
-    const normalized = { ...defaults, ...tune, text_font: 12, image_y: 0, textA_y: 0, answers_y: 0 };
-    QUIZ_LAYOUT_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(normalized[field.key]);
-      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : defaults[field.key];
-    });
-    return rebalanceQuizLayoutTune(normalized, 'image_h');
-  }
-
-  function quizCascadeTuneKey(type = 'default', hasImage = false) {
-    const profile = getQuizCascadeProfile(type, hasImage);
-    return `encisomath:quizCascadeTune:${QUIZ_CASCADE_TUNE_STORAGE_VERSION}:${profile}`;
-  }
-
-  function normalizeQuizCascadeTune(tune = {}, type = 'default', hasImage = false) {
-    const normalized = { ...getQuizCascadeTuneDefaults(type, hasImage) };
-    QUIZ_CASCADE_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : normalized[field.key];
-    });
-    return normalized;
-  }
-
-  function getQuizCascadeTune(type = 'default', hasImage = false) {
-    return normalizeQuizCascadeTune({}, type, hasImage);
-  }
-
-  function applyQuizCascadeTune(type = 'default', tune = null, stageRef = null, hasImageOverride = null) {
-    const stage = stageRef || document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector(`.quiz-stage.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
-    if (!stage) return;
-    const hasImage = hasImageOverride === null ? stage.dataset.quizHasImage === 'true' : Boolean(hasImageOverride);
-    const safe = normalizeQuizCascadeTune(tune || getQuizCascadeTune(type, hasImage), type, hasImage);
-    stage.style.setProperty('--quiz-feedback-cascade-text-a-shift', `${safe.textA_y}px`);
-    stage.style.setProperty('--quiz-feedback-cascade-image-shift', `${safe.image_y}px`);
-    stage.style.setProperty('--quiz-feedback-cascade-text-b-shift', `${safe.textB_y}px`);
-    stage.style.setProperty('--quiz-feedback-cascade-answer-shift', `${safe.answers_y}px`);
-  }
-
-  function quizImagePreviewKey(type = 'default') {
-    return `encisomath:quizImagePreviewVisible:${type || 'default'}`;
-  }
-
-  function getQuizImagePreviewVisible(type = 'default') {
-    try {
-      return localStorage.getItem(quizImagePreviewKey(type)) !== 'false';
-    } catch (_) {
-      return true;
-    }
-  }
-
-  function setQuizImagePreviewVisible(type = 'default', visible = true) {
-    try { localStorage.setItem(quizImagePreviewKey(type), visible ? 'true' : 'false'); } catch (_) {}
-    return Boolean(visible);
-  }
-
-
-  function normalizeQuizPaddingDebugTune(tune = {}) {
-    const safe = { ...QUIZ_PADDING_DEBUG_DEFAULTS };
-    QUIZ_PADDING_DEBUG_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_PADDING_DEBUG_DEFAULTS[field.key];
-    });
-    return safe;
-  }
-
-  function getQuizPaddingDebugTune() {
-    return { ...QUIZ_PADDING_DEBUG_DEFAULTS };
-  }
-
-  function applyQuizPaddingDebugTune(tune = getQuizPaddingDebugTune()) {
-    const safe = normalizeQuizPaddingDebugTune(tune);
+function applyQuizPadding(layout = getQuizPadding()) {
+    const safe = normalizeQuizPadding(layout);
     const root = document.documentElement;
-    root.style.setProperty('--quiz-debug-layer-pad-x', `${safe.layerX}px`);
-    root.style.setProperty('--quiz-debug-content-pad-x', `${safe.contentX}px`);
-    root.style.setProperty('--quiz-debug-question-pad-x', `${safe.questionX}px`);
-    root.style.setProperty('--quiz-debug-answer-pad-x', `${safe.answerX}px`);
-    root.style.setProperty('--quiz-debug-options-pad-x', `${safe.optionsX}px`);
-    root.style.setProperty('--quiz-debug-options-pull-x', `${safe.optionsPullX}px`);
+    root.style.setProperty('--quiz-fixed-layer-pad-x', `${safe.layerX}px`);
+    root.style.setProperty('--quiz-fixed-content-pad-x', `${safe.contentX}px`);
+    root.style.setProperty('--quiz-fixed-question-pad-x', `${safe.questionX}px`);
+    root.style.setProperty('--quiz-fixed-answer-pad-x', `${safe.answerX}px`);
+    root.style.setProperty('--quiz-fixed-options-pad-x', `${safe.optionsX}px`);
+    root.style.setProperty('--quiz-fixed-options-pull-x', `${safe.optionsPullX}px`);
 
     const setInlinePadding = (selector, value) => {
       document.querySelectorAll(selector).forEach((node) => {
@@ -2848,91 +2439,22 @@
 
     return safe;
   }
-
-  function normalizeQuizCountdownTune(tune = {}) {
-    const safe = { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
-    QUIZ_COUNTDOWN_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_COUNTDOWN_TUNE_DEFAULTS[field.key];
-    });
-    return safe;
+function normalizeQuizCountdown() {
+    return { ...QUIZ_COUNTDOWN_DEFAULTS };
   }
-
-  function getQuizCountdownTune() {
-    return { ...QUIZ_COUNTDOWN_TUNE_DEFAULTS };
+function getQuizCountdown() {
+    return { ...QUIZ_COUNTDOWN_DEFAULTS };
   }
-
-  function applyQuizCountdownTune(tune = getQuizCountdownTune()) {
-    const safe = normalizeQuizCountdownTune(tune);
+function applyQuizCountdown(layout = getQuizCountdown()) {
+    const safe = normalizeQuizCountdown(layout);
     const value = `${safe.x}px`;
-    document.documentElement.style.setProperty('--quiz-countdown-tune-x', value);
+    document.documentElement.style.setProperty('--quiz-countdown-x', value);
     document.querySelectorAll('.quiz-fullscreen-layer:not(.quiz-phase-transition) > .quiz-fullscreen-top.quiz-fullscreen-top-countdown .quiz-countdown-slot').forEach((node) => {
       node.style.setProperty('transform', `translateX(${value})`, 'important');
     });
     return safe;
   }
-
-
-
-
-  function applyQuizLayoutTune(type = 'default', tune = getQuizLayoutTune(type), stageRef = null) {
-    const stage = stageRef || document.querySelector(`.quiz-stage-fullscreen.quiz-type-${escapeSelector(type)}`) || document.querySelector('.quiz-stage');
-    if (!stage) return;
-    applyQuizTypographyTune(getQuizTypographyTune());
-    const imagePreviewKey = stage.dataset.quizImagePreviewKey || type;
-    const hasStageImage = stage.dataset.quizHasImage === 'true';
-    const imageVisible = hasStageImage && getQuizImagePreviewVisible(imagePreviewKey);
-    stage.classList.toggle('quiz-hide-image-preview', !imageVisible);
-    const safe = normalizeQuizLayoutTune(tune, type);
-    const unifiedFont = `${safe.text_font}px`;
-    stage.style.setProperty('--quiz-text-font', unifiedFont);
-    stage.style.setProperty('--quiz-text-a-font', unifiedFont);
-    stage.style.setProperty('--quiz-text-b-font', unifiedFont);
-    const answerZone = stage.querySelector('[data-quiz-tune-target="answers"]');
-    if (answerZone) {
-      answerZone.style.setProperty('--quiz-text-font', unifiedFont);
-      answerZone.style.setProperty('--quiz-text-a-font', unifiedFont);
-      answerZone.style.setProperty('--quiz-text-b-font', unifiedFont);
-    }
-    const imageFr = Math.max(0, Number(safe.image_h) || 0);
-    const textFr = Math.max(1, Number(safe.textA_h) || 1);
-    const answerFr = Math.max(1, Number(safe.answers_h) || 1);
-    if (imageVisible) {
-      stage.style.setProperty('--quiz-fit-image-fr', `${imageFr}fr`);
-      stage.style.setProperty('--quiz-fit-text-fr', `${textFr}fr`);
-      stage.style.setProperty('--quiz-fit-spacer-fr', '0fr');
-      stage.style.setProperty('--quiz-fit-answer-fr', `${answerFr}fr`);
-    } else {
-      stage.style.setProperty('--quiz-fit-image-fr', '0fr');
-      stage.style.setProperty('--quiz-fit-text-fr', '52fr');
-      stage.style.setProperty('--quiz-fit-spacer-fr', '3fr');
-      stage.style.setProperty('--quiz-fit-answer-fr', '45fr');
-    }
-    if (type === 'order') {
-      window.requestAnimationFrame(() => {
-        document.querySelectorAll('[data-quiz-order-board]').forEach((orderBoard) => fitQuizOrderCards(orderBoard));
-      });
-    }
-    const setBox = (name, prefix) => {
-      const box = stage.querySelector(`[data-quiz-tune-target="${name}"]`);
-      if (!box) return;
-      box.style.removeProperty('--quiz-tune-x');
-      box.style.removeProperty('--quiz-tune-w');
-      box.style.removeProperty('--quiz-tune-h');
-      box.style.setProperty('--quiz-tune-y', `${Number(safe[`${prefix}_y`]) || 0}%`);
-      if (prefix === 'textA') {
-        box.style.setProperty('--quiz-text-font', `${safe.text_font}px`);
-        box.style.setProperty('--quiz-text-a-font', `${safe.text_font}px`);
-        box.style.setProperty('--quiz-text-b-font', `${safe.text_font}px`);
-      }
-    };
-    setBox('textA', 'textA');
-    setBox('image', 'image');
-    setBox('answers', 'answers');
-    applyQuizTypographyTune(getQuizTypographyTune());
-  }
-
-  function quizTypeLabel(type) {
+function quizTypeLabel(type) {
     const labels = {
       multiple_choice: 'Opción múltiple',
       true_false: 'Verdadero / falso',
@@ -3715,17 +3237,7 @@
       maxTime: timeMax,
       curve,
       timeScoringMode,
-      timing,
-      debug: {
-        itemIndex: safeIndex + 1,
-        itemCount: count,
-        correct: isCorrect,
-        madeAttempt,
-        timeout: isTimeout,
-        timeScoringMode,
-        branch,
-        formula
-      }
+      timing
     };
   }
 
@@ -3742,17 +3254,7 @@
       maxTime: quizScorePointsForIndex(count, safeIndex, QUIZ_SCORE_TOTAL_TIME_POINTS),
       curve: 0,
       timeScoringMode: normalizeQuizTimeScoringMode(answer?.timeScoreMode || answer?.timeScoringMode || getQuizTimeScoringMode()),
-      timing: answer?.timing || null,
-      debug: {
-        itemIndex: safeIndex + 1,
-        itemCount: count,
-        correct: false,
-        madeAttempt: false,
-        timeout: answer?.timeout === true,
-        timeScoringMode: normalizeQuizTimeScoringMode(answer?.timeScoreMode || answer?.timeScoringMode || getQuizTimeScoringMode()),
-        branch: 'respuesta incorrecta: item y tiempo en 0',
-        formula: 'respuesta incorrecta, sin intento real o timeout; puntosItem = 0 y puntosTiempo = 0'
-      }
+      timing: answer?.timing || null
     };
   }
 
@@ -3785,44 +3287,21 @@
       previousScore
     };
   }
-
-  function normalizeQuizTransitionScoreTune(tune = {}) {
-    const safe = { ...QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS };
-    QUIZ_TRANSITION_SCORE_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS[field.key];
-    });
-    return safe;
+function normalizeQuizTransitionScore() {
+    return { ...QUIZ_TRANSITION_SCORE_DEFAULTS };
   }
-
-  function getQuizTransitionScoreTune() {
-    try {
-      return normalizeQuizTransitionScoreTune(JSON.parse(localStorage.getItem(QUIZ_TRANSITION_SCORE_TUNE_KEY) || '{}'));
-    } catch (_) {
-      return { ...QUIZ_TRANSITION_SCORE_TUNE_DEFAULTS };
-    }
+function getQuizTransitionScore() {
+    return { ...QUIZ_TRANSITION_SCORE_DEFAULTS };
   }
-
-  function saveQuizTransitionScoreTune(tune) {
-    const safe = normalizeQuizTransitionScoreTune(tune);
-    try { localStorage.setItem(QUIZ_TRANSITION_SCORE_TUNE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-
-  function applyQuizTransitionScoreTune(tune = getQuizTransitionScoreTune()) {
-    const safe = normalizeQuizTransitionScoreTune(tune);
+function applyQuizTransitionScore(layout = getQuizTransitionScore()) {
+    const safe = normalizeQuizTransitionScore(layout);
     document.querySelectorAll('[data-score-counter-slot]').forEach((slot) => {
       slot.style.setProperty('--score-counter-y', `${safe.y}px`);
       slot.style.setProperty('--score-counter-zoom', `${safe.zoom / 100}`);
     });
     return safe;
   }
-
-  function formatQuizScoreNumber(value = 0) {
-    return Math.max(0, Math.round(Number(value) || 0)).toLocaleString('es-CO');
-  }
-
-  function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
+function quizCountdownHTML(seconds = QUIZ_ITEM_TIME_LIMIT_DEFAULT) {
     const safeSeconds = normalizeQuizItemSeconds(seconds);
     return `
       <section class="countdown-poly quiz-countdown-poly" data-quiz-countdown-poly data-quiz-countdown-total="${safeSeconds}" aria-label="Tiempo restante">
@@ -4064,15 +3543,6 @@
     updateDangerState();
     moveToNewSecondShape();
 
-    if (QUIZ_DEBUG_PAUSE_COUNTDOWN) {
-      isRunning = false;
-      state.quizCountdown.isRunning = false;
-      state.quizCountdown.remainingSeconds = totalSeconds;
-      wrap.classList.add('is-debug-paused');
-      number.textContent = String(totalSeconds);
-      return;
-    }
-
     countdownInterval = window.setInterval(() => {
       const active = state.quizCountdown;
       if (!active || active.wrap !== wrap || !wrap.isConnected) {
@@ -4103,36 +3573,10 @@
     }, 1000);
     state.quizCountdown.interval = countdownInterval;
   }
-
-  function normalizeQuizTransitionTune(tune = {}) {
-    const safe = { ...QUIZ_TRANSITION_TUNE_DEFAULTS, ...(tune || {}) };
-    return {
-      // v0.24.256: ajuste visual puntual de textos Quiz y timing/flujo de bandas de transición.
-      radials: false,
-      sceneGlow: false,
-      shapeGlow: false,
-      continuous: safe.continuous === true
-    };
+function quizTransitionClassNames() {
+    return 'quiz-transition-clean';
   }
-
-  function getQuizTransitionTune() {
-    return normalizeQuizTransitionTune(readJSON(QUIZ_TRANSITION_TUNE_KEY) || QUIZ_TRANSITION_TUNE_DEFAULTS);
-  }
-
-  function quizTransitionClassNames(tune = getQuizTransitionTune()) {
-    const safe = normalizeQuizTransitionTune(tune);
-    const radialVariant = `quiz-transition-radial-variant-${(Math.max(0, Number(state.quizQuestionIndex) || 0) % 4) + 1}`;
-    return [
-      safe.radials ? 'quiz-transition-radials-on' : 'quiz-transition-radials-off',
-      safe.sceneGlow ? 'quiz-transition-scene-effects-on' : 'quiz-transition-scene-effects-off',
-      safe.shapeGlow ? 'quiz-transition-shape-glow-on' : 'quiz-transition-shape-glow-off',
-      safe.continuous ? 'quiz-transition-continuous-on' : 'quiz-transition-continuous-off',
-      radialVariant
-    ].join(' ');
-  }
-
-
-  function getQuizTransitionTiming(layer = document.getElementById('quizFullscreenLayer')) {
+function getQuizTransitionTiming(layer = document.getElementById('quizFullscreenLayer')) {
     const withIntro = Boolean(layer?.classList?.contains('quiz-transition-with-intro'));
     const numberEnterDelay = withIntro ? QUIZ_TRANSITION_FIRST_INFO_MS : 0;
     const exitStart = withIntro ? QUIZ_TRANSITION_FIRST_EXIT_START_MS : QUIZ_TRANSITION_EXIT_START_MS;
@@ -4773,20 +4217,7 @@
       if (hero) init(hero);
     });
   })();
-
-
-  function quizTransitionScoreTuneSliderHTML(field) {
-    const tune = getQuizTransitionScoreTune();
-    const value = Number(tune[field.key]);
-    return `
-      <label class="quiz-transition-score-slider">
-        <span><strong>${escapeHTML(field.label)}</strong><em data-score-tune-value="${escapeAttr(field.key)}">${Number.isFinite(value) ? value : 0}${escapeHTML(field.unit || '')}</em></span>
-        <input type="range" min="${field.min}" max="${field.max}" step="${field.step || 1}" value="${Number.isFinite(value) ? value : 0}" data-quiz-transition-score-tune="${escapeAttr(field.key)}" />
-      </label>
-    `;
-  }
-
-  function shouldShowQuizTransitionScore(itemNumber = state.quizQuestionIndex + 1) {
+function shouldShowQuizTransitionScore(itemNumber = state.quizQuestionIndex + 1) {
     return Math.max(1, Number(itemNumber) || 1) > 1;
   }
 
@@ -4795,10 +4226,10 @@
   function quizTransitionScoreHTML(itemNumber = 1, quiz = getActiveQuiz()) {
     if (!shouldShowQuizTransitionScore(itemNumber)) return '';
     const score = getQuizCumulativeScoreBeforeTransition(itemNumber, quiz);
-    const tune = getQuizTransitionScoreTune();
+    const layout = getQuizTransitionScore();
     return `
       <section class="quiz-transition-score-wrap" data-quiz-transition-score-wrap data-score-from="${Number(score.from) || 0}" data-score-to="${Number(score.to) || 0}" aria-label="Puntaje acumulado">
-        <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(tune.y) || 0}px;--score-counter-zoom:${(Number(tune.zoom) || 100) / 100};"></div>
+        <div id="scoreCounterSlot" class="score-counter-slot" data-score-counter-slot style="--score-counter-y:${Number(layout.y) || 0}px;--score-counter-zoom:${(Number(layout.zoom) || 100) / 100};"></div>
       </section>
     `;
   }
@@ -5017,7 +4448,7 @@
     const wrap = layer?.querySelector?.('[data-quiz-transition-score-wrap]');
     const slot = wrap?.querySelector?.('[data-score-counter-slot]');
     if (!wrap || !slot) return;
-    applyQuizTransitionScoreTune();
+    applyQuizTransitionScore();
     playScoreCounter({ target: slot, from: Number(wrap.dataset.scoreFrom) || 0, score: Number(wrap.dataset.scoreTo) || 0 });
   }
 
@@ -5033,22 +4464,7 @@
     session.transitionFromIntro = false;
     renderQuizFullscreen(quiz);
   }
-
-  function scheduleQuizTransitionContinuousAdvance() {
-    const layer = document.getElementById('quizFullscreenLayer');
-    const timing = getQuizTransitionTiming(layer);
-    const startedAt = Number(state.quizTransitionStartedAt) || Date.now();
-    const remaining = Math.max(420, timing.total + 90 - (Date.now() - startedAt));
-    scheduleQuizTimer(() => {
-      const layer = document.getElementById('quizFullscreenLayer');
-      if (!layer || !layer.classList.contains('quiz-phase-transition')) return;
-      goToQuizQuestionFromTransition();
-    }, remaining);
-  }
-
-
-
-  function quizItemMotionStageFrom(root = document) {
+function quizItemMotionStageFrom(root = document) {
     const stage = root?.matches?.('.quiz-stage-fullscreen') ? root : root?.querySelector?.('.quiz-stage-fullscreen');
     if (!stage || !stage.classList?.contains('quiz-stage-fullscreen')) return null;
     return stage;
@@ -5065,7 +4481,7 @@
     const counter = top?.querySelector?.('.quiz-top-counter') || null;
     const info = stage?.querySelector?.('.quiz-eyebrow') || null;
     const item = stage?.querySelector?.('.quiz-timer-pill') || null;
-    const image = stage?.querySelector?.('.quiz-image-tune-box') || null;
+    const image = stage?.querySelector?.('.quiz-image-layout-box') || null;
     const text = stage?.querySelector?.('.quiz-text-a') || null;
     const options = stage?.querySelector?.('.quiz-answer-zone') || null;
     return { layer, top, title, counter, info, item, image, text, options };
@@ -5242,77 +4658,9 @@
       });
     }, startDelay);
   }
-
-  function quizFeedbackContinueControlHTML(last = false) {
-    return `
-      <div class="quiz-feedback-continue-control" data-quiz-feedback-simple-continue>
-        <button class="primary-btn small" type="button" data-quiz-feedback-continue>${last ? 'Ver resultados' : 'Continuar'}</button>
-      </div>`;
-  }
-
-  function bindQuizFeedbackContinueControl() {
-    document.querySelectorAll('[data-quiz-feedback-continue]').forEach((button) => {
-      if (button.dataset.boundContinue === 'true') return;
-      button.dataset.boundContinue = 'true';
-      button.addEventListener('click', continueQuizAfterFeedback);
-    });
-  }
-
-  function getQuizFeedbackTune() {
-    return readQuizFeedbackTune();
-  }
-
-  function readQuizFeedbackTune() {
-    try {
-      return normalizeQuizFeedbackTune(JSON.parse(localStorage.getItem(QUIZ_FEEDBACK_TUNE_KEY) || '{}'));
-    } catch (_) {
-      return { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
-    }
-  }
-
-  function normalizeQuizFeedbackTune(tune = {}) {
-    const normalized = { ...QUIZ_FEEDBACK_TUNE_DEFAULTS };
-    QUIZ_FEEDBACK_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      normalized[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, raw)) : QUIZ_FEEDBACK_TUNE_DEFAULTS[field.key];
-    });
-    const presetValues = new Set(QUIZ_FONT_PRESETS.map((item) => item.value));
-    normalized.titlePreset = presetValues.has(String(tune.titlePreset || '')) ? String(tune.titlePreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.titlePreset;
-    normalized.textPreset = presetValues.has(String(tune.textPreset || '')) ? String(tune.textPreset) : QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset;
-    return normalized;
-  }
-
-  function applyQuizFeedbackTune(tune = getQuizFeedbackTune()) {
-    const root = document.documentElement;
-    const safe = normalizeQuizFeedbackTune(tune);
-    root.style.setProperty('--quiz-feedback-band-rotation', `${safe.bandRotation}deg`);
-    root.style.setProperty('--quiz-feedback-band-x', `${safe.bandX}px`);
-    root.style.setProperty('--quiz-feedback-band-y', `${safe.bandY}px`);
-    root.style.setProperty('--quiz-feedback-band-width', `${safe.bandWidth}vw`);
-    root.style.setProperty('--quiz-feedback-band-height', `${safe.bandHeight}px`);
-    root.style.setProperty('--quiz-feedback-band-scale', `${safe.bandZoom / 100}`);
-    root.style.setProperty('--quiz-feedback-emoji-x', `${safe.emojiX}px`);
-    root.style.setProperty('--quiz-feedback-emoji-y', `${safe.emojiY}px`);
-    root.style.setProperty('--quiz-feedback-emoji-scale', `${safe.emojiZoom / 100}`);
-    root.style.setProperty('--quiz-feedback-title-x', `${safe.titleX}px`);
-    root.style.setProperty('--quiz-feedback-title-y', `${safe.titleY}px`);
-    root.style.setProperty('--quiz-feedback-title-size', `${safe.titleSize}px`);
-    root.style.setProperty('--quiz-feedback-title-width', `${safe.titleWidth}vw`);
-    root.style.setProperty('--quiz-feedback-text-x', `${safe.textX}px`);
-    root.style.setProperty('--quiz-feedback-text-y', `${safe.textY}px`);
-    root.style.setProperty('--quiz-feedback-text-size', `${safe.textSize}px`);
-    root.style.setProperty('--quiz-feedback-text-width', `${safe.textWidth}vw`);
-    document.querySelectorAll('[data-quiz-global-feedback-band]').forEach((band) => {
-      applyInlineFeedbackBandStyles(band, band.dataset.feedbackKind || 'neutral');
-    });
-  }
-
-  function bindQuizPlayerEvents() {
+function bindQuizPlayerEvents() {
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
       button.addEventListener('click', beginQuizFromConfirm);
-    });
-    document.querySelectorAll('[data-quiz-skip-results]').forEach((button) => {
-      button.addEventListener('click', showQuizResultsFromConfirm);
     });
     document.querySelectorAll('[data-quiz-time-scoring-mode]').forEach((select) => {
       select.addEventListener('change', () => saveQuizTimeScoringMode(select.value));
@@ -5379,9 +4727,9 @@
     });
     bindQuizFlipEvents();
     bindQuizOrderEvents();
-    applyQuizTypographyTune(getQuizTypographyTune());
-    applyQuizCountdownTune(getQuizCountdownTune());
-    applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
+    applyQuizTypography(getQuizTypography());
+    applyQuizCountdown(getQuizCountdown());
+    applyQuizPadding(getQuizPadding());
   }
 
 
@@ -5511,7 +4859,7 @@
       <div class="modal-card danger-modal quiz-security-modal" role="dialog" aria-modal="true" aria-label="Advertencia de seguridad del quiz">
         <div class="danger-head">
           <span class="danger-red-mesh" aria-hidden="true"></span>
-          <div class="warning-tune-stack">
+          <div class="warning-icon-stack">
             <div class="warning-icon quiz-security-emoji" aria-hidden="true">😡</div>
           </div>
           <div class="danger-copy">
@@ -5706,39 +5054,6 @@
       }, 90 * index);
     });
   }
-
-  function quizAnswerFeedbackHTML(correct, neutralText = '', question = null) {
-    const correctPhrases = [
-      'Esa neurona vino con turbo.',
-      'Respuesta nivel crack. Siga brillando.',
-      'Bien jugado. Punto para la mente matemática.',
-      'Así se responde, sin despeinarse.',
-      'Modo leyenda activado.'
-    ];
-    const wrongPhrases = [
-      'Sacúdete el polvo. La grandeza espera.',
-      'Casi, pero la opción correcta se escondió bien.',
-      'Error con estilo. Respira y vamos por la siguiente.',
-      'La respuesta se fue por la tangente.',
-      'Ups, el cálculo pidió revisión.'
-    ];
-    if (neutralText) {
-      const neutralTitle = question?.type === 'open' ? 'Listo' : 'Respuesta enviada';
-      return `<div class="quiz-feedback-card is-neutral"><span>✍️</span><strong>${neutralTitle}</strong><p>${escapeHTML(neutralText)}</p></div>`;
-    }
-    const session = getQuizSession();
-    const correctCount = session.answers.filter((answer) => answer.correct === true).length;
-    const wrongCount = session.answers.filter((answer) => answer.correct === false).length;
-    const correctEmoji = correctCount >= 5 ? '😎' : ['🫡', '😃', '😏', '🤩'][Math.max(0, correctCount - 1)] || '🫡';
-    let wrongEmoji = wrongCount >= 5 ? '☠️' : ['😬', '😕', '😨', '🥶'][Math.max(0, wrongCount - 1)] || '😬';
-    if (question?.type === 'true_false' && correct === false) wrongEmoji = '😒';
-    const phrase = correct
-      ? correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length]
-      : wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length];
-    const emoji = correct ? correctEmoji : wrongEmoji;
-    return `<div class="quiz-feedback-card ${correct ? 'is-correct' : 'is-wrong'}"><span>${emoji}</span><strong>${correct ? '¡Correcto!' : '¡Incorrecto!'}</strong><p>${escapeHTML(phrase)}</p></div>`;
-  }
-
 
   // =========================================================
   // ENCISOMATH - BANDA DE FEEDBACK QUIZ
@@ -6196,13 +5511,8 @@
       window.clearTimeout(window.__encisomathQuizFeedbackTimer);
       window.__encisomathQuizFeedbackTimer = null;
     }
-    document.querySelectorAll('[data-quiz-global-feedback], .enciso-quiz-feedback-overlay-v95, .enciso-quiz-feedback-overlay-v97, .enciso-quiz-feedback-overlay-v99, .enciso-quiz-feedback-overlay-v102').forEach((node) => node.remove());
+    document.querySelectorAll('[data-quiz-global-feedback]').forEach((node) => node.remove());
     document.querySelectorAll('.quiz-stage.quiz-feedback-visible').forEach((stage) => stage.classList.remove('quiz-feedback-visible'));
-  }
-
-  function ensureQuizGlobalFeedbackStyles() {
-    // v0.24.106: the feedback overlay uses inline styles and Web Animations.
-    // This intentionally bypasses the accumulated old .quiz-feedback-card CSS rules.
   }
 
   function quizFeedbackParts(correct, neutralText = '', question = null) {
@@ -6238,135 +5548,7 @@
       ? { kind: 'correct', emoji: '', title: '¡Correcto!', phrase: correctPhrases[(correctCount - 1 + correctPhrases.length) % correctPhrases.length] }
       : { kind: 'wrong', emoji: '', title: '¡Incorrecto!', phrase: wrongPhrases[(wrongCount - 1 + wrongPhrases.length) % wrongPhrases.length] };
   }
-
-  function quizGlobalFeedbackHTML(correct, neutralText = '', question = null) {
-    const parts = quizFeedbackParts(correct, neutralText, question);
-    return `
-      <span class="enciso-quiz-feedback-mesh-v102" aria-hidden="true"></span>
-      <strong class="enciso-quiz-feedback-title-v102">${escapeHTML(parts.title)}</strong>
-      ${parts.phrase ? `<p class="enciso-quiz-feedback-phrase-v102">${escapeHTML(parts.phrase)}</p>` : ''}
-    `;
-  }
-
-  function applyInlineFeedbackBandStyles(band, kind = 'neutral') {
-    if (!band) return;
-    const safe = getQuizFeedbackTune();
-    const isCorrect = kind === 'correct';
-    const isWrong = kind === 'wrong';
-    const isTimeout = kind === 'timeout';
-    const solid = isTimeout ? '#ffffff' : isCorrect ? '#58cc02' : isWrong ? '#e21b3c' : '#1368ce';
-    const glow = isTimeout ? 'rgba(255,255,255,.28)' : isCorrect ? 'rgba(88,204,2,.24)' : isWrong ? 'rgba(226,27,60,.24)' : 'rgba(19,104,206,.20)';
-    const line = isTimeout ? 'rgba(0,0,0,.12)' : isCorrect ? 'rgba(214,255,201,.34)' : isWrong ? 'rgba(255,216,224,.32)' : 'rgba(219,234,254,.30)';
-    const rotation = Number.isFinite(Number(safe.bandRotation)) ? Number(safe.bandRotation) : QUIZ_FEEDBACK_TUNE_DEFAULTS.bandRotation;
-    const zoom = (Number(safe.bandZoom) || 100) / 100;
-    const bandWidth = Math.max(110, Math.min(180, Number(safe.bandWidth) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandWidth));
-    const bandHeight = Math.max(92, Math.min(156, Number(safe.bandHeight) || QUIZ_FEEDBACK_TUNE_DEFAULTS.bandHeight));
-    band.dataset.feedbackKind = kind;
-    band.dataset.feedbackRotation = String(rotation);
-    band.dataset.feedbackZoom = String(zoom);
-    band.style.setProperty('--quiz-feedback-band-rotation', `${rotation}deg`);
-    band.style.setProperty('--quiz-feedback-band-scale', String(zoom));
-    band.style.cssText = [
-      'position:fixed',
-      `left:calc(50% + ${Number(safe.bandX) || 0}px)`,
-      `top:calc(50% + ${Number(safe.bandY) || 0}px)`,
-      `width:${bandWidth}vw`,
-      'max-width:1320px',
-      'min-width:min(96vw,760px)',
-      `height:${bandHeight}px`,
-      `min-height:${bandHeight}px`,
-      'box-sizing:border-box',
-      'border-radius:6px',
-      isTimeout ? 'border:1px solid rgba(0,0,0,.10)' : 'border:1px solid rgba(255,255,255,.12)',
-      'padding:clamp(14px,2.4vw,22px) clamp(20px,5vw,54px)',
-      'display:grid',
-      'grid-template-columns:minmax(0,1fr)',
-      'grid-template-rows:auto auto',
-      'grid-template-areas:"title" "phrase"',
-      'align-content:center',
-      'align-items:center',
-      'justify-items:center',
-      'justify-content:center',
-      'row-gap:clamp(6px,1.2vh,10px)',
-      'overflow:hidden',
-      `background:${solid}`,
-      isTimeout ? 'color:#000' : 'color:#fff',
-      `box-shadow:0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 52px ${glow}, 0 12px 34px rgba(0,0,0,.42)`,
-      'filter:none',
-      'text-shadow:none',
-      'opacity:1',
-      `transform:translate(-50%,-50%) rotate(${rotation}deg)`,
-      'transform-origin:center center',
-      'transform-style:flat',
-      `zoom:${zoom}`,
-      `--quiz-feedback-band-rotation:${rotation}deg`,
-      `--quiz-feedback-band-zoom:${zoom}`,
-      'will-change:opacity',
-      'pointer-events:none',
-      'z-index:2147483000',
-      "font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-    ].join(';') + ';';
-    const mesh = band.querySelector('.enciso-quiz-feedback-mesh-v102');
-    if (mesh) {
-      mesh.style.cssText = [
-        'position:absolute', 'inset:-20%', 'display:block', 'z-index:0', 'pointer-events:none', 'opacity:.66',
-        `background-image:linear-gradient(90deg, ${line} 1px, transparent 1px), linear-gradient(0deg, ${line} 1px, transparent 1px)`,
-        'background-size:42px 42px, 42px 42px',
-        'transform:translate3d(0,0,0)',
-        'backface-visibility:hidden',
-        'will-change:transform',
-        'mix-blend-mode:normal'
-      ].join(';') + ';';
-      try { mesh.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-    }
-    const titlePreset = quizPresetParts(safe.titlePreset || QUIZ_FEEDBACK_TUNE_DEFAULTS.titlePreset);
-    const textPreset = quizPresetParts(safe.textPreset || QUIZ_FEEDBACK_TUNE_DEFAULTS.textPreset);
-    const title = band.querySelector('.enciso-quiz-feedback-title-v102');
-    if (title) title.style.cssText = [
-      'grid-area:title', 'display:block', 'position:relative', 'z-index:1', isTimeout ? 'color:#000' : 'color:#fff',
-      `font-size:${Math.max(18, Math.min(54, Number(safe.titleSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.titleSize))}px`,
-      'line-height:1', `font-weight:${titlePreset.weight}`, `font-style:${titlePreset.style}`, 'margin:0', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'width:100%', 'max-width:100%', 'text-align:center',
-      isTimeout ? 'text-shadow:none' : 'text-shadow:0 2px 16px rgba(0,0,0,.32)', 'letter-spacing:-.03em',
-      `transform:translate3d(0, ${Number(safe.titleY) || 0}px, 0)`, 'transform-origin:center center'
-    ].join(';') + ';';
-    const phrase = band.querySelector('.enciso-quiz-feedback-phrase-v102');
-    if (phrase) phrase.style.cssText = [
-      'grid-area:phrase', 'display:block', 'position:relative', 'z-index:1', isTimeout ? 'color:rgba(0,0,0,.82)' : 'color:rgba(255,255,255,.94)',
-      `font-size:${Math.max(11, Math.min(30, Number(safe.textSize) || QUIZ_FEEDBACK_TUNE_DEFAULTS.textSize))}px`,
-      'line-height:1.1', `font-weight:${textPreset.weight}`, `font-style:${textPreset.style}`, 'margin:0', 'width:100%', 'max-width:100%', 'white-space:nowrap', 'overflow:hidden', 'text-overflow:ellipsis', 'text-align:center', 'text-shadow:0 2px 14px rgba(0,0,0,.26)',
-      `transform:translate3d(0, ${Number(safe.textY) || 0}px, 0)`, 'transform-origin:center center'
-    ].join(';') + ';';
-  }
-
-  function startFeedbackMeshDrift(band) {
-    const mesh = band?.querySelector?.('.enciso-quiz-feedback-mesh-v102');
-    try { mesh?.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-    if (mesh) {
-      mesh.style.transform = 'translate3d(0,0,0)';
-      mesh.style.willChange = 'transform';
-      try {
-        mesh.animate([
-          { transform: 'translate3d(0,0,0)' },
-          { transform: 'translate3d(-42px,-42px,0)' }
-        ], { duration: 9000, iterations: Infinity, easing: 'linear' });
-      } catch (_) {
-        mesh.style.animation = 'encisoFeedbackMeshDrift140 9s linear infinite';
-      }
-    }
-  }
-
-  function playFeedbackBandAnimation(band) {
-    if (!band) return;
-    try { band.getAnimations?.().forEach((anim) => anim.cancel()); } catch (_) {}
-    band.classList.remove('play-feedback');
-    band.style.opacity = '';
-    void band.offsetWidth;
-    band.classList.add('play-feedback');
-    startFeedbackMeshDrift(band);
-  }
-
-
-  function feedbackStateFromKind(kind = 'neutral') {
+function feedbackStateFromKind(kind = 'neutral') {
     if (kind === 'correct') return 'correcto';
     if (kind === 'wrong') return 'incorrecto';
     if (kind === 'timeout') return 'tiempo';
@@ -6375,10 +5557,9 @@
 
   function showQuizFeedbackBand(stage, correct, question = null, neutralText = '') {
     removeQuizGlobalFeedback();
-    ensureQuizGlobalFeedbackStyles();
     const parts = quizFeedbackParts(correct, neutralText, question);
     const overlay = document.createElement('div');
-    overlay.className = 'enciso-quiz-feedback-overlay-v102 quiz-feedback-stage em-feedback-host';
+    overlay.className = 'enciso-feedback-overlay em-feedback-host';
     overlay.dataset.quizGlobalFeedback = 'true';
     overlay.setAttribute('aria-live', 'assertive');
     overlay.style.cssText = [
@@ -6439,12 +5620,7 @@
     session.answers.push(answerRecord);
     return answerRecord;
   }
-
-  function scheduleQuizAdvance() {
-    scheduleQuizTimer(() => continueQuizAfterFeedback(), 4000);
-  }
-
-  function continueQuizAfterFeedback() {
+function continueQuizAfterFeedback() {
     removeQuizGlobalFeedback();
     const quiz = getActiveQuiz();
     if (!quiz || !Array.isArray(quiz.questions)) return;
@@ -6508,29 +5684,7 @@
     showQuizItemTransition(0, { fromIntro: true });
     requestQuizFullscreenMode();
   }
-
-  function showQuizResultsFromConfirm() {
-    const quiz = getActiveQuiz();
-    if (!quiz) return;
-    const selectedMode = document.querySelector('[data-quiz-time-scoring-mode]')?.value || getQuizTimeScoringMode();
-    saveQuizTimeScoringMode(selectedMode);
-    const session = getQuizSession();
-    session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
-    session.phase = 'results';
-    session.locked = false;
-    session.feedback = null;
-    session.transitionFromIntro = false;
-    session.manualResultPoints = null;
-    closeModal(false);
-    stopQuizQuestionMusic(false);
-    removeQuizGlobalFeedback();
-    clearQuizTimers();
-    state.quizFullscreenActive = false;
-    unlockQuizHistory();
-    renderQuizFullscreen(quiz);
-  }
-
-  function showQuizItemTransition(index = 0, options = {}) {
+function showQuizItemTransition(index = 0, options = {}) {
     const quiz = getActiveQuiz();
     if (!quiz) return;
     clearQuizTimers();
@@ -6558,17 +5712,7 @@
     unlockQuizHistory();
     renderQuizFullscreen(quiz);
   }
-
-  function quizFastNavHTML(total = 0) {
-    if (!total) return '';
-    const buttons = Array.from({ length: total }, (_, index) => {
-      const active = index === state.quizQuestionIndex ? 'active' : '';
-      return `<button class="quiz-fast-btn ${active}" type="button" data-quiz-jump="${index}">${index + 1}</button>`;
-    }).join('');
-    return `<nav class="quiz-fast-nav" aria-label="Navegación rápida de preguntas">${buttons}</nav>`;
-  }
-
-  function renderQuizFullscreen(quiz = getActiveQuiz()) {
+function renderQuizFullscreen(quiz = getActiveQuiz()) {
     removeQuizGlobalFeedback();
     if (!quiz) return;
     let layer = document.getElementById('quizFullscreenLayer');
@@ -6585,7 +5729,7 @@
     layer.className = `quiz-fullscreen-layer quiz-phase-${phase}${phase === 'transition' ? ` ${quizTransitionClassNames()}${transitionWithIntro ? ' quiz-transition-with-intro' : ''}` : ''}${phase === 'question' ? ' quiz-item-motion-ready' : ''}`;
     let content = '';
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
-    else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
+    else if (phase === 'intro') content = quizStartGateHTML(quiz);
     else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length, quiz, transitionWithIntro);
     else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
@@ -6693,7 +5837,6 @@
           <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
           ${quizTimeScoringSelectorHTML()}
           <button class="primary-btn quiz-start-confirm" type="button" data-quiz-start-confirm>Empezar quiz</button>
-          <button class="ghost-btn quiz-start-results-shortcut" type="button" data-quiz-skip-results>Pasar a resultados</button>
         </div>
       </div>
     `;
@@ -6713,19 +5856,7 @@
       </section>
     `;
   }
-
-  function quizIntroSplashHTML(quiz) {
-    return `
-      <section class="quiz-intro-splash quiz-burst-scene">
-        <div class="quiz-burst-shapes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="section-kicker">Preparando quiz</p>
-        <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
-        <p>${escapeHTML(quiz.description || quiz.mode || 'Lee con calma, responde rápido y aprende jugando.')}</p>
-      </section>
-    `;
-  }
-
-  function quizItemTransitionHTML(item, total, quiz = getActiveQuiz(), withIntroInfo = false) {
+function quizItemTransitionHTML(item, total, quiz = getActiveQuiz(), withIntroInfo = false) {
     const current = Math.max(1, Number(item) || 1);
     const count = Math.max(1, Number(total) || 1);
     return `
@@ -6735,88 +5866,7 @@
       </section>
     `;
   }
-
-
-  function quizResultItemCardsHTML(quiz, answers = []) {
-    const questions = Array.isArray(quiz?.questions) ? quiz.questions.slice(0, 10) : [];
-    const answerMap = new Map((Array.isArray(answers) ? answers : []).map((answer) => [Number(answer.index), answer]));
-    if (!questions.length) return '';
-    const cards = questions.map((question, index) => {
-      const answer = answerMap.get(index);
-      const isOpen = question?.type === 'open';
-      const correct = answer?.correct === true;
-      const wrong = answer?.correct === false;
-      const revisable = answer && !correct && !wrong;
-      const openHasText = isOpen && Boolean(String(answer?.text || '').trim());
-      const openStateClass = openHasText ? 'is-open is-open-answered' : 'is-open is-open-empty';
-      const stateClass = isOpen ? openStateClass : (correct || revisable ? 'is-correct' : 'is-wrong');
-      const label = isOpen ? (openHasText ? 'Respuesta abierta enviada' : 'Respuesta abierta sin texto') : (correct ? 'Correcto' : (wrong ? 'Incorrecto' : 'Registrado'));
-      const typeLabel = {
-        multiple_choice: 'Opción múltiple',
-        true_false: 'Verdadero/Falso',
-        open: 'Respuesta abierta',
-        order: 'Organizar',
-        flip: 'Flip'
-      }[question?.type] || 'Pregunta';
-      return `
-        <article class="quiz-ranking-item-card ${stateClass}" style="--item-delay:${index * 90 + 720}ms" aria-label="Ítem ${index + 1}: ${escapeHTML(label)}">
-          <span class="quiz-ranking-item-number">Ítem ${index + 1}</span>
-          <span class="quiz-ranking-item-type">${escapeHTML(typeLabel)}</span>
-        </article>
-      `;
-    }).join('');
-    return `<section class="quiz-ranking-items" aria-label="Resultado por ítem">${cards}</section>`;
-  }
-
-  function normalizeQuizRankingPodiumTune(tune = {}) {
-    const safe = { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
-    QUIZ_RANKING_PODIUM_TUNE_FIELDS.forEach((field) => {
-      const raw = Number(tune[field.key]);
-      safe[field.key] = Number.isFinite(raw) ? Math.max(field.min, Math.min(field.max, Math.round(raw))) : QUIZ_RANKING_PODIUM_TUNE_DEFAULTS[field.key];
-    });
-    return safe;
-  }
-
-  function getQuizRankingPodiumTune() {
-    try {
-      return normalizeQuizRankingPodiumTune(JSON.parse(localStorage.getItem(QUIZ_RANKING_PODIUM_TUNE_KEY) || '{}'));
-    } catch (_) {
-      return { ...QUIZ_RANKING_PODIUM_TUNE_DEFAULTS };
-    }
-  }
-
-
-  function quizRankingPodiumHTML(stats) {
-    const scoreBase = Math.max(1, stats.scorable || stats.total || 1);
-    const userScore = Math.max(0, stats.correct || 0);
-    const podium = [
-      { rank: 2, name: 'Sofía', avatar: 'S', score: Math.max(0, Math.min(scoreBase, userScore - 1)), order: 'left' },
-      { rank: 1, name: 'Tú', avatar: '★', score: userScore, order: 'center' },
-      { rank: 3, name: 'Mateo', avatar: 'M', score: Math.max(0, Math.min(scoreBase, userScore - 2)), order: 'right' }
-    ];
-    return `
-      <section class="quiz-ranking-panel" aria-label="Ranking del quiz">
-        <div class="quiz-ranking-podium" data-quiz-ranking-podium aria-hidden="false">
-          ${podium.map((slot) => `
-            <div class="quiz-podium-slot quiz-podium-${slot.rank} quiz-podium-${slot.order}" data-podium-rank="${slot.rank}" style="--podium-delay:${slot.rank === 3 ? 90 : slot.rank === 2 ? 310 : 540}ms">
-              <div class="quiz-podium-adjust">
-                <div class="quiz-podium-profile">
-                  <span class="quiz-podium-avatar" aria-hidden="true">${escapeHTML(slot.avatar)}</span>
-                  <strong>${escapeHTML(slot.name)}</strong>
-                </div>
-                <div class="quiz-podium-step">
-                  <span>${slot.rank}</span>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-          <div class="quiz-podium-base" aria-hidden="true"></div>
-        </div>
-      </section>
-    `;
-  }
-
-  const ENCISO_RESULT_STATES = {
+const ENCISO_RESULT_STATES = {
     red: {
       color: '#e21b3c',
       glow: 'rgba(226,27,60,.55)',
@@ -7449,15 +6499,7 @@
       extraPoints: Number(root?.dataset.extraPoints) || 0
     };
   }
-
-  function encisoBuildFinalPayloadFromPoints(correctPoints, timePoints) {
-    const result = encisoCalculateFinalScore(Math.round(Number(correctPoints) || 0), Math.round(Number(timePoints) || 0));
-    const stateKey = encisoGetResultStateKeyByGrade(result.finalGrade);
-    const stateInfo = ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
-    return { ...result, fakeGrade: encisoMakeFakeGrade(result.finalGrade), stateKey, stateInfo };
-  }
-
-  function encisoApplyFinalPayloadToRoot(root, payload) {
+function encisoApplyFinalPayloadToRoot(root, payload) {
     if (!root || !payload) return;
     const stateKey = payload.stateKey || encisoGetResultStateKeyByGrade(payload.finalGrade);
     const stateInfo = payload.stateInfo || ENCISO_RESULT_STATES[stateKey] || ENCISO_RESULT_STATES.red;
@@ -7559,7 +6601,7 @@
     const root = layer?.querySelector?.('[data-final-results]');
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
     root.dataset.encisoFinalStarted = 'true';
-    applyEncisoFinalTune(root, getEncisoFinalTune());
+    applyEncisoFinalLayout(root, getEncisoFinalLayout());
     encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
   }
 
@@ -7618,9 +6660,7 @@
       </div>
     `).join('');
   }
-
-  const ENCISO_FINAL_TUNE_STORAGE_KEY = 'encisomath:finalResultsTune:v0.24.248';
-  const ENCISO_FINAL_TUNE_DEFAULTS = {
+const ENCISO_FINAL_LAYOUT_DEFAULTS = {
     heroHeight: 23,
     heroX: 0,
     heroY: -12,
@@ -7663,88 +6703,15 @@
     replayButtonHeight: 100,
     continueButtonHeight: 100
   };
-  const ENCISO_FINAL_TUNE_TABS = [
-    {
-      key: 'hero',
-      label: 'Hero',
-      fields: [
-        ['heroHeight', 'Altura'],
-        ['heroX', 'Posición X'],
-        ['heroY', 'Posición Y'],
-        ['heroZoom', 'Zoom'],
-        ['heroKickerX', 'Posición X quiz'],
-        ['heroKickerY', 'Posición Y quiz'],
-        ['heroTitleSize', 'Tamaño título'],
-        ['heroTitleY', 'Posición Y título'],
-        ['heroMessageSize', 'Tamaño subtítulo'],
-        ['heroMessageY', 'Posición Y subtítulo'],
-        ['heroSparklesX', 'Posición X estrellas'],
-        ['heroSparklesY', 'Posición Y estrellas'],
-        ['heroSparklesZoom', 'Zoom estrellas'],
-        ['heroSparklesCount', 'Cantidad estrellas']
-      ]
-    },
-    {
-      key: 'score',
-      label: 'Puntaje',
-      fields: [
-        ['scoreHeight', 'Altura'],
-        ['scoreX', 'Posición X'],
-        ['scoreY', 'Posición Y'],
-        ['scoreZoom', 'Zoom'],
-        ['scoreLabelX', 'Posición X texto'],
-        ['scoreLabelY', 'Posición Y texto'],
-        ['scoreNumberX', 'Posición X número'],
-        ['scoreNumberY', 'Posición Y número'],
-        ['gradePolyZoom', 'Zoom polígono'],
-        ['gradePolyX', 'Posición X polígono'],
-        ['gradePolyY', 'Posición Y polígono'],
-        ['gradeNoteSize', 'Tamaño número nota'],
-        ['gradeNoteX', 'Posición X número nota'],
-        ['gradeNoteY', 'Posición Y número nota']
-      ]
-    },
-    { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumY', 'Posición Y'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
-    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewY', 'Posición Y'], ['reviewZoom', 'Zoom']] },
-    { key: 'buttons', label: 'Botones', fields: [['actionsHeight', 'Altura contenedor'], ['actionsY', 'Posición Y'], ['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] },
-    { key: 'points', label: 'Puntos', fields: [] }
-  ];
-
-  function encisoFinalTuneFieldMeta(key) {
-    if (key === 'heroSparklesCount') return { min: 0, max: 24, step: 1, unit: '' };
-    if (key === 'actionsHeight') return { min: 1, max: 60, step: 1, unit: '%' };
-    if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 25, max: 260, step: 1, unit: '%' };
-    if (key.endsWith('Height')) return { min: 1, max: 120, step: 1, unit: '%' };
-    if (key === 'heroZoom') return { min: 20, max: 420, step: 1, unit: '%' };
-    if (key === 'gradePolyZoom') return { min: 20, max: 420, step: 1, unit: '%' };
-    if (key.endsWith('Zoom')) return { min: 20, max: 360, step: 1, unit: '%' };
-    if (key.endsWith('Size')) return { min: 20, max: 360, step: 1, unit: '%' };
-    if (key.endsWith('X')) return { min: -220, max: 220, step: 1, unit: '%' };
-    if (key.endsWith('Y')) return { min: -220, max: 220, step: 1, unit: '%' };
-    return { min: -220, max: 220, step: 1, unit: '%' };
+function normalizeEncisoFinalLayout() {
+    return { ...ENCISO_FINAL_LAYOUT_DEFAULTS };
   }
-
-  function normalizeEncisoFinalTune(raw = {}) {
-    const out = { ...ENCISO_FINAL_TUNE_DEFAULTS };
-    Object.keys(out).forEach((key) => {
-      const meta = encisoFinalTuneFieldMeta(key);
-      const value = Number(raw?.[key]);
-      if (Number.isFinite(value)) out[key] = encisoClamp(value, meta.min, meta.max);
-    });
-    return out;
+function getEncisoFinalLayout() {
+    return { ...ENCISO_FINAL_LAYOUT_DEFAULTS };
   }
-
-  function getEncisoFinalTune() {
-    try {
-      return normalizeEncisoFinalTune(JSON.parse(localStorage.getItem(ENCISO_FINAL_TUNE_STORAGE_KEY) || '{}'));
-    } catch (_) {
-      return normalizeEncisoFinalTune();
-    }
-  }
-
-  function applyEncisoFinalTune(root, tune = getEncisoFinalTune()) {
-    if (!root) return normalizeEncisoFinalTune(tune);
-    const safe = normalizeEncisoFinalTune(tune);
+function applyEncisoFinalLayout(root, layout = getEncisoFinalLayout()) {
+    if (!root) return normalizeEncisoFinalLayout(layout);
+    const safe = normalizeEncisoFinalLayout(layout);
     root.style.setProperty('--enciso-hero-row', `${safe.heroHeight}fr`);
     root.style.setProperty('--enciso-score-row', `${safe.scoreHeight}fr`);
     root.style.setProperty('--enciso-podium-row', `${safe.podiumHeight}fr`);
@@ -7794,16 +6761,7 @@
     root.style.setProperty('--enciso-actions-y', `${safe.actionsY}%`);
     return safe;
   }
-
-  function encisoClampFinalPointInput(value) {
-    return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
-  }
-
-  function encisoHeroSparklesHTML(count = 24) {
-    return Array.from({ length: count }, () => '<span></span>').join('');
-  }
-
-  const ENCISO_RETO_HERO_FIGURAS_TOTAL = 10;
+const ENCISO_RETO_HERO_FIGURAS_TOTAL = 10;
   const ENCISO_RETO_HERO_VELOCIDAD = 0.4;
   const ENCISO_RETO_HERO_TIPOS = ['circulo', 'cuadrado', 'triangulo', 'equis'];
 
@@ -8050,16 +7008,7 @@
       </section>
     `;
   }
-
-  function getQuizStats(quiz) {
-    const answers = getQuizSession().answers || [];
-    const scorableAnswers = answers.filter((answer) => typeof answer.correct === 'boolean');
-    const correct = scorableAnswers.filter((answer) => answer.correct).length;
-    const total = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
-    return { total, answered: answers.length, scorable: scorableAnswers.length, correct };
-  }
-
-  function closeQuizFullscreen(target = 'quizzes') {
+function closeQuizFullscreen(target = 'quizzes') {
     stopQuizQuestionMusic(false);
     stopQuizResultsMusic(false);
     removeQuizGlobalFeedback();
@@ -8864,7 +7813,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.274', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.275', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

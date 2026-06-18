@@ -1,17 +1,11 @@
-## v0.24.274
 
-Base: v0.24.273.
+## v0.24.275
 
-Cambios:
-- Limpieza de interfaz de calibración/debug de Quizzes: se quitaron las tuerquitas y paneles temporales del quiz en vivo, feedback, transición, ranking/podio y resultados finales.
-- ROCKSTARS ahora usa directamente el contenedor padre `.rockstar-hero.em-rs-hero-host` como host visual, igual que QUIZZES y CLASES; se eliminó el wrapper interno `.em-rs-heroSkin` del render.
-- Se mantuvieron los elementos visuales de ROCKSTARS: fondo navy, cohete CSS, fuego animado, estrellas/circulitos en movimiento, textos y responsive.
-- Se retiraron funciones JS de paneles/tune/debug que ya no se renderizaban y se neutralizó la lectura de ajustes viejos de localStorage para que no sigan afectando el quiz.
-- Se agregó override final de CSS para normalizar ROCKSTARS con la misma base de layout de QUIZZES/CLASES.
-
-No se tocaron preguntas, datos base, tipos de pregunta, validación, countdown, música, puntajes, ranking/podio visual final ni listas de Rockstars/Clases/Estudiantes.
-
-Version/cache busting actualizado a 0.24.274.
+- Limpieza agresiva de código legado y capas de depuración del módulo Quizzes.
+- Eliminados paneles/tuerquitas antiguos de feedback, layout, transición, ranking/podio y resultados.
+- Eliminado CSS viejo de feedbacks anteriores, ranking/podio antiguo, transición antigua y heroes heredados que ya no participan en el flujo actual.
+- ROCKSTARS mantiene la estructura directa sobre `.rockstar-hero.em-rs-hero-host` sin wrapper visual hijo, alineado con QUIZZES y CLASES.
+- Se mantienen preguntas, tipos, validación, countdown, música, puntajes, resultados finales actuales, Rockstars, Clases y datos base.
 
 ## v0.24.273
 
