@@ -1,10 +1,41 @@
-## v0.24.280 - Compactacion HOME asignaturas
+## v0.24.284 - Botonera de asignatura y controles de asistencia
+
+Base: v0.24.283.
+
+Cambios limitados a la zona superior de asignatura seleccionada y a los controles superiores de ESTUDIANTES: se integró botonera horizontal responsive `em-subject-top-tabs` para Estudiantes, Clases, Rockstars y Quizzes, conservando la navegación existente; el botón activo toma el color real de la asignatura. Se reemplazó visualmente el bloque superior de ESTUDIANTES por `em-students-attendance-tools` con tarjeta de Asistencia diaria, fecha, buscador y botón Añadir; la fecha/bandita usan `--em-current-subject-color` y buscador/Añadir usan `--em-current-support-color` calculado según la paleta EncisoMath. Se agregaron figuras random suaves en la bandita de asistencia. No se tocaron datos, lógica de quizzes, clases, rockstars, ranking, podio, música, countdown ni base de datos.
+
+Version/cache busting actualizado a 0.24.284.
+
+## v0.24.283 - Banner asignatura sin gestor visual y chip de área
+
+- Cambio limitado al banner interno de asignatura: se eliminó el botón de tres puntos `...` y el modal/contenido de gestor visual asociado.
+- Se conservó el desplazamiento del contenedor de información de la materia con X `10px`.
+- El área de la materia, por ejemplo `MATEMÁTICAS`, ahora se muestra como etiqueta/chip con fondo más oscuro que el color activo de la asignatura y texto blanco.
+- No se tocaron HOME, tarjetas, Quizzes, Rockstars, Estudiantes/asistencia, datos, música, countdown, ranking ni podio.
+- Version/cache busting actualizado a 0.24.283.
+
+## v0.24.282 - Limpieza flat banner HOME y asignatura
+- Correccion visual limitada a fondos/banners: se neutralizo la contaminacion vieja de gradientes, radiales, glow, sombras y filtros en `profile-cover.em-flat-background` y `subject-banner.em-flat-background`.
+- En el banner de asignatura se quitaron el icono visual, el resplandor/sombra oscura de textos y el filtro/drop-shadow; el texto ocupa el espacio del icono sin cambiar el contenedor externo.
+- El boton `...` del banner de asignatura queda en la esquina superior izquierda con `top: 3px` y `left: 3px`.
+- No se tocaron contenedores externos, navegacion, datos base, quizzes, rockstars, estudiantes, asistencia, ranking, podio, musica ni countdown.
+- Version/cache busting actualizado a 0.24.282.
+
+## v0.24.282 - Fondo flat reutilizable
+
+- Se agregó el fondo reutilizable `em-flat-background` con color sólido flat y figuras geométricas oscuras animadas.
+- Se aplicó a la portada superior del HOME, al banner de asignatura, al modal de inicio de quiz, al aviso de seguridad del quiz y al hero de clase (`lesson-head`).
+- Se conectó el color activo de asignatura mediante `--em-current-subject-color`, sincronizado con el color de la tarjeta del HOME.
+- No se modificaron contenedores externos, navegación, datos base, quizzes, rockstars, estudiantes, asistencia, ranking, podio, música ni countdown.
+- Version/cache busting actualizado a 0.24.282.
+
+## v0.24.282 - Compactacion HOME asignaturas
 
 Base: v0.24.279.
 
 Cambio limitado al grid interno de asignaturas del HOME: se aplico la compactacion calibrada por consola en las tarjetas `em-sub-`, reduciendo altura de card y portada, eliminando el colchon vertical del bloque de texto con `min-height: 0` y `align-content: start`, manteniendo tipografias legibles y textos mas juntos verticalmente. No se tocaron contenedores externos del HOME, navegacion, datos base, clases, quizzes, rockstars, estudiantes, asistencia, ranking, podio, musica ni countdown.
 
-Version/cache busting actualizado a 0.24.280.
+Version/cache busting actualizado a 0.24.282.
 
 Validacion: `node --check app.js`, `node --check sw.js`, JSON/manifest validos y `unzip -t` sin errores.
 

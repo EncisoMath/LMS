@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.280';
+  const APP_VERSION = '0.24.284';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -556,6 +556,7 @@
       $app.classList.remove('is-leaving');
       if (!optimizedRoute) $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
+      emFlatApplyBackgrounds($app);
       window.setTimeout(() => $app.classList.remove('is-entering'), optimizedRoute ? 90 : 620);
       firstPaint = false;
     };
@@ -805,9 +806,7 @@
     const markup = `
       <main class="screen home-screen">
         <section class="twitter-profile">
-          <div class="profile-cover animated-cover">
-            ${coverMotionHTML('home')}
-          </div>
+          <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
               <button class="round-action" id="profileMenuBtn" aria-label="Opciones de perfil">•••</button>
@@ -870,6 +869,8 @@
         const assignmentId = button.dataset.openAssignment || button.dataset.subjectId;
         const assignment = assignments.find((item) => String(item.id) === String(assignmentId));
         if (!assignment) return;
+        const subjectColor = button.dataset.subjectColor || emGetSubjectColorForAssignment(assignment);
+        emSetCurrentSubjectColor(subjectColor);
         state.assignment = assignment;
         renderSubjectDetail('students');
       });
@@ -880,7 +881,7 @@
     const assignment = state.assignment;
     if (!assignment) return renderTeacherHome(options);
     commitAppRoute({ screen: 'subject', assignmentId: assignment.id, tab }, options);
-    const coverStyle = coverBackgroundStyle(assignment);
+    emSetCurrentSubjectColor(emGetSubjectColorForAssignment(assignment));
     const iconSrc = getAssignmentIcon(assignment);
 
     const studentCount = getStudentsForAssignment(assignment).length;
@@ -892,10 +893,7 @@
           <span class="spacer"></span>
           <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
         </header>
-        <section class="subject-banner animated-cover ${getAssignmentCover(assignment) ? 'has-custom-cover' : 'is-default-cover'}" ${coverStyle} data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
-          ${coverMotionHTML('subject')}
-          <div class="subject-banner-shade" aria-hidden="true"></div>
-          <button class="subject-menu-btn" id="subjectMenuBtn" aria-label="Gestor visual">•••</button>
+        <section class="subject-banner" data-em-flat-bg data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
           <div class="subject-banner-content">
             ${isSubjectIconVisible(assignment) ? `<img class="subject-icon xl" src="${escapeAttr(iconSrc)}" alt="Icono de asignatura" />` : ''}
             <div class="subject-copy">
@@ -909,12 +907,14 @@
             </div>
           </div>
         </section>
-        <div class="tab-row sticky-tabs">
-          <button class="tab-btn ${tab === 'students' ? 'active' : ''}" id="studentsTab">👥 Estudiantes</button>
-          <button class="tab-btn ${tab === 'classes' ? 'active' : ''}" id="classesTab">📚 Clases</button>
-          <button class="tab-btn ${tab === 'rockstars' ? 'active' : ''}" id="rockstarsTab">🚀 Rockstars</button>
-          <button class="tab-btn ${tab === 'quizzes' ? 'active' : ''}" id="quizzesTab">🎮 Quizzes</button>
-        </div>
+        <nav class="em-subject-top-tabs sticky-tabs" aria-label="Pestañas de asignatura">
+          <div class="em-subject-top-tabs-track">
+            <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students">👥 Estudiantes</button>
+            <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes">📚 Clases</button>
+            <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars">🚀 Rockstars</button>
+            <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes">🎮 Quizzes</button>
+          </div>
+        </nav>
         <section id="tabContent" class="section tab-section"></section>
         ${bottomNav('profe')}
       </main>
@@ -927,7 +927,7 @@
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
-      document.getElementById('subjectMenuBtn').addEventListener('click', openVisualManagerModal);
+      emInitSubjectToolbar(document);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
@@ -960,62 +960,21 @@
     const content = document.getElementById('tabContent');
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     setActiveSubjectTabMeta(tab);
-    document.getElementById('studentsTab')?.classList.toggle('active', tab === 'students');
-    document.getElementById('classesTab')?.classList.toggle('active', tab === 'classes');
-    document.getElementById('rockstarsTab')?.classList.toggle('active', tab === 'rockstars');
-    document.getElementById('quizzesTab')?.classList.toggle('active', tab === 'quizzes');
+    const updateSubjectTopTab = (id, isActive) => {
+      const button = document.getElementById(id);
+      if (!button) return;
+      button.classList.toggle('active', isActive);
+      button.classList.toggle('is-active', isActive);
+    };
+    updateSubjectTopTab('studentsTab', tab === 'students');
+    updateSubjectTopTab('classesTab', tab === 'classes');
+    updateSubjectTopTab('rockstarsTab', tab === 'rockstars');
+    updateSubjectTopTab('quizzesTab', tab === 'quizzes');
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
-  }
-  function openVisualManagerModal() {
-    const assignment = state.assignment;
-    if (!assignment) return;
-    const iconSrc = getAssignmentIcon(assignment);
-    const coverStyle = coverBackgroundStyle(assignment);
-    openModal(`
-      <div class="modal-card visual-modal">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="modal-title-row">
-          <div>
-            <p class="section-kicker">Gestor visual</p>
-            <h2>${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</h2>
-          </div>
-        </div>
-        <div class="visual-manager-grid">
-          <article class="manager-card">
-            <h3>Portada de la asignatura</h3>
-            <p>Esta imagen aparece en la vista interna y como franja en la cuadrícula.</p>
-            <div class="manager-preview-cover animated-cover" ${coverStyle}>${coverMotionHTML('preview')}</div>
-            <div class="manager-actions">
-              <label class="primary-btn">Cambiar portada<input id="coverInput" type="file" accept="image/*" hidden /></label>
-              <button class="danger-btn" id="resetCoverBtn">Restablecer</button>
-            </div>
-          </article>
-          <article class="manager-card">
-            <h3>Icono de la asignatura</h3>
-            <p>Úsalo para diferenciar rápido cada carga académica.</p>
-            <label class="toggle-row" for="showSubjectIconToggle">
-              <span>Mostrar icono en el banner</span>
-              <input id="showSubjectIconToggle" type="checkbox" ${isSubjectIconVisible(assignment) ? 'checked' : ''} />
-            </label>
-            <img class="manager-preview-icon" src="${escapeAttr(iconSrc)}" alt="Icono actual" />
-            <div class="manager-actions">
-              <label class="primary-btn">Cambiar icono<input id="iconInput" type="file" accept="image/*,.svg" hidden /></label>
-              <button class="danger-btn" id="resetIconBtn">Restablecer</button>
-            </div>
-          </article>
-        </div>
-      </div>
-    `, () => {
-      document.getElementById('coverInput').addEventListener('change', (event) => saveImageOverride(event, 'cover'));
-      document.getElementById('iconInput').addEventListener('change', (event) => saveImageOverride(event, 'icon'));
-      document.getElementById('resetCoverBtn').addEventListener('click', () => resetAssignmentVisual('cover'));
-      document.getElementById('resetIconBtn').addEventListener('click', () => resetAssignmentVisual('icon'));
-      document.getElementById('showSubjectIconToggle').addEventListener('change', (event) => toggleSubjectIconVisibility(event.target.checked));
-    });
   }
   function openProfileMenuModal() {
     openModal(`
@@ -1110,23 +1069,37 @@
     setActiveSubjectTabMeta('students');
 
     $content.innerHTML = `
-      <div class="date-card">
-        <div><strong>Asistencia diaria</strong><br><span class="card-sub">${readableDate(state.attendanceDate)}</span></div>
-        <input id="attendanceDate" type="date" value="${state.attendanceDate}" />
-      </div>
-      <div class="student-tools">
-        <div class="search-wrap">
-          <span aria-hidden="true">🔎</span>
-          <input class="input search-input" id="studentSearch" placeholder="Buscar estudiante" value="${escapeAttr(state.studentSearch || '')}" />
+      <section class="em-students-attendance-tools">
+        <div class="em-attendance-date-card" data-em-attendance-band>
+          <span class="em-attendance-shape" aria-hidden="true"></span>
+          <span class="em-attendance-shape" aria-hidden="true"></span>
+
+          <div class="em-attendance-title-box">
+            <h1 class="em-attendance-title">Asistencia diaria</h1>
+            <p class="em-attendance-subtitle" id="attendanceReadableDate">${readableDate(state.attendanceDate)}</p>
+          </div>
+
+          <label class="em-date-pill" for="attendanceDate">
+            <input id="attendanceDate" type="date" value="${state.attendanceDate}" />
+          </label>
         </div>
-        <button class="primary-btn" id="openAddStudentBtn" type="button">Añadir</button>
-      </div>
+
+        <div class="em-attendance-actions-row">
+          <label class="em-search-box" for="studentSearch">
+            <span class="em-search-tag">Buscar</span>
+            <input class="em-search-input" id="studentSearch" type="search" placeholder="Nombre o código" value="${escapeAttr(state.studentSearch || '')}" />
+          </label>
+
+          <button class="em-add-button" id="openAddStudentBtn" type="button">Añadir</button>
+        </div>
+      </section>
       <div id="studentList" class="student-list em-rs-list">
         ${studentListHTML()}
       </div>
     `;
 
     bindStudentTabEvents();
+    emRandomizeAttendanceBandShapes($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function studentListHTML() {
@@ -1150,6 +1123,8 @@
     const assignment = state.assignment;
     document.getElementById('attendanceDate').addEventListener('change', (event) => {
       state.attendanceDate = event.target.value || todayISO();
+      const readable = document.getElementById('attendanceReadableDate');
+      if (readable) readable.textContent = readableDate(state.attendanceDate);
       refreshStudentList();
     });
 
@@ -5445,6 +5420,7 @@
     wrapper.className = 'modal-layer quiz-security-layer';
     wrapper.innerHTML = quizSecurityWarningHTML(reason);
     document.body.appendChild(wrapper);
+    emFlatApplyBackgrounds(wrapper);
     document.body.classList.add('modal-open', 'quiz-security-warning-open');
     requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
     wrapper.querySelector('[data-quiz-security-continue]')?.addEventListener('click', continueQuizAfterSecurityWarning);
@@ -5453,8 +5429,7 @@
   function quizSecurityWarningHTML(reason = '') {
     return `
       <div class="modal-card danger-modal quiz-security-modal" role="dialog" aria-modal="true" aria-label="Advertencia de seguridad del quiz">
-        <div class="danger-head">
-          <span class="danger-red-mesh" aria-hidden="true"></span>
+        <div class="danger-head quiz-security-flat-head" data-em-flat-bg>
           <div class="warning-tune-stack">
             <div class="warning-icon quiz-security-emoji" aria-hidden="true">😡</div>
           </div>
@@ -6486,8 +6461,7 @@
     return `
       <div class="modal-card quiz-start-modal">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="quiz-start-modal-head">
-          <div class="quiz-start-modal-mesh" aria-hidden="true"></div>
+        <div class="quiz-start-modal-head" data-em-flat-bg>
           <p class="section-kicker">Antes de empezar</p>
           <h2>¿Iniciarás este quiz?</h2>
           <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
@@ -8044,7 +8018,7 @@
           <h1>Clase</h1>
           <span class="spacer"></span>
         </header>
-        <section class="lesson-head">
+        <section class="lesson-head" data-em-flat-bg>
           <div class="class-emoji">${escapeHTML(lesson.emoji || '📘')}</div>
           <div>
             <h2>${escapeHTML(lesson.title)}</h2>
@@ -8064,6 +8038,192 @@
       document.getElementById('logoutBtn').addEventListener('click', logout);
     });
   }
+  const EM_FLAT_BACKGROUND_SHAPES = [
+    'circle',
+    'x',
+    'triangle',
+    'square',
+    'circle',
+    'triangle',
+    'square',
+    'x'
+  ];
+
+  const EM_SUBJECT_COLORS = [
+    '#1368ce',
+    '#ff7a00',
+    '#24b49a',
+    '#54c600',
+    '#EBB513',
+    '#e21b3c'
+  ];
+
+  const EM_SUBJECT_THEME_MAP = {
+    '#1368ce': {
+      main: '#1368ce',
+      support: '#24b49a',
+      mainInk: '#ffffff',
+      supportInk: '#001814',
+      shape: 'rgba(19, 104, 206, .28)'
+    },
+    '#ff7a00': {
+      main: '#ff7a00',
+      support: '#EBB513',
+      mainInk: '#ffffff',
+      supportInk: '#181100',
+      shape: 'rgba(255, 122, 0, .28)'
+    },
+    '#24b49a': {
+      main: '#24b49a',
+      support: '#1368ce',
+      mainInk: '#001814',
+      supportInk: '#ffffff',
+      shape: 'rgba(36, 180, 154, .28)'
+    },
+    '#54c600': {
+      main: '#54c600',
+      support: '#EBB513',
+      mainInk: '#092300',
+      supportInk: '#181100',
+      shape: 'rgba(84, 198, 0, .28)'
+    },
+    '#ebb513': {
+      main: '#EBB513',
+      support: '#ff7a00',
+      mainInk: '#181100',
+      supportInk: '#ffffff',
+      shape: 'rgba(235, 181, 19, .28)'
+    },
+    '#e21b3c': {
+      main: '#e21b3c',
+      support: '#ff7a00',
+      mainInk: '#ffffff',
+      supportInk: '#ffffff',
+      shape: 'rgba(226, 27, 60, .28)'
+    }
+  };
+
+  const EM_ATTENDANCE_SHAPE_TYPES = ['circle', 'square', 'triangle', 'x'];
+
+  const EM_ATTENDANCE_MOVEMENT_PAIRS = [
+    ['move-a1', 'move-b1'],
+    ['move-a2', 'move-b2'],
+    ['move-a3', 'move-b3'],
+    ['move-a4', 'move-b4']
+  ];
+
+  function emNormalizeHexColor(color) {
+    return String(color || '#1368ce').trim().toLowerCase();
+  }
+
+  function emGetSubjectTheme(color) {
+    const normalized = emNormalizeHexColor(color);
+    return EM_SUBJECT_THEME_MAP[normalized] || EM_SUBJECT_THEME_MAP['#1368ce'];
+  }
+
+  function emApplySubjectTheme(color, root = document.documentElement) {
+    const theme = emGetSubjectTheme(color);
+
+    root.style.setProperty('--em-current-subject-color', theme.main);
+    root.style.setProperty('--em-current-support-color', theme.support);
+    root.style.setProperty('--em-current-subject-ink', theme.mainInk);
+    root.style.setProperty('--em-current-support-ink', theme.supportInk);
+    root.style.setProperty('--em-current-shape-color', theme.shape);
+  }
+
+  function emRandomFrom(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function emRandomizeAttendanceBandShapes(root = document) {
+    const cards = root.querySelectorAll?.('[data-em-attendance-band]') || [];
+
+    cards.forEach((card) => {
+      const shapes = card.querySelectorAll('.em-attendance-shape');
+      const pair = emRandomFrom(EM_ATTENDANCE_MOVEMENT_PAIRS);
+
+      shapes.forEach((shape, index) => {
+        const randomShape = emRandomFrom(EM_ATTENDANCE_SHAPE_TYPES);
+        const movement = pair[index] || pair[0];
+
+        shape.className = 'em-attendance-shape';
+        shape.classList.add(randomShape, movement);
+        shape.setAttribute('aria-hidden', 'true');
+      });
+    });
+  }
+
+  function emInitSubjectToolbar(root = document) {
+    root.querySelectorAll?.('.em-subject-tab-btn').forEach((button) => {
+      if (button.dataset.emToolbarBound === 'true') return;
+      button.dataset.emToolbarBound = 'true';
+      button.addEventListener('click', () => {
+        const group = button.closest('.em-subject-top-tabs');
+        if (!group) return;
+
+        group.querySelectorAll('.em-subject-tab-btn').forEach((item) => {
+          item.classList.remove('is-active', 'active');
+        });
+
+        button.classList.add('is-active', 'active');
+      });
+    });
+  }
+
+  function emGetSubjectColorByIndex(index) {
+    const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
+    return EM_SUBJECT_COLORS[((safeIndex % EM_SUBJECT_COLORS.length) + EM_SUBJECT_COLORS.length) % EM_SUBJECT_COLORS.length];
+  }
+
+  function emSetCurrentSubjectColor(color) {
+    const safeColor = color || '#1368ce';
+    emApplySubjectTheme(safeColor);
+  }
+
+  function emFlatEnsureBackground(element, color) {
+    if (!element) return;
+    element.classList.add('em-flat-background');
+
+    if (color) {
+      element.style.setProperty('--em-flat-bg-color', color);
+    }
+
+    let layer = element.querySelector(':scope > .em-flat-background-layer');
+
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'em-flat-background-layer';
+      layer.setAttribute('aria-hidden', 'true');
+
+      EM_FLAT_BACKGROUND_SHAPES.forEach((shapeType) => {
+        const shape = document.createElement('span');
+        shape.className = `em-bg-shape ${shapeType}`;
+        layer.appendChild(shape);
+      });
+
+      element.prepend(layer);
+    }
+  }
+
+  function emFlatApplyBackgrounds(root = document) {
+    root.querySelectorAll?.('[data-em-flat-bg]').forEach((element) => {
+      const color = element.getAttribute('data-em-flat-bg-color');
+      emFlatEnsureBackground(element, color);
+    });
+  }
+
+  function emGetSubjectColorForAssignment(subject) {
+    if (!subject) return '#1368ce';
+    if (subject.__emColor) return subject.__emColor;
+
+    const teacherAssignments = getTeacherAssignments(state.user?.id);
+    const sortedSubjects = emSubSortSubjects(teacherAssignments);
+    const index = sortedSubjects.findIndex((item) => String(emSubGetSubjectId(item)) === String(emSubGetSubjectId(subject)));
+    const color = emGetSubjectColorByIndex(index >= 0 ? index : 0);
+    subject.__emColor = color;
+    return color;
+  }
+
   const EM_SUB_SHAPE_PAIRS = [
     ['circle', 'x'],
     ['triangle', 'circle'],
@@ -8154,8 +8314,10 @@
     const pairIndex = index % EM_SUB_SHAPE_PAIRS.length;
     const shapes = EM_SUB_SHAPE_PAIRS[pairIndex];
     const moves = EM_SUB_MOVE_PAIRS[pairIndex];
+    const subjectColor = emGetSubjectColorByIndex(index);
+    subject.__emColor = subjectColor;
     return `
-      <article class="em-sub-card" data-subject-id="${escapeAttr(id)}" role="button" tabindex="0">
+      <article class="em-sub-card" data-subject-id="${escapeAttr(id)}" data-subject-color="${escapeAttr(subjectColor)}" style="--main: ${escapeAttr(subjectColor)};" role="button" tabindex="0">
         <div class="em-sub-cover">
           <span class="em-sub-shape ${escapeAttr(shapes[0])} ${escapeAttr(moves[0])}"></span>
           <span class="em-sub-shape ${escapeAttr(shapes[1])} ${escapeAttr(moves[1])}"></span>
@@ -8670,6 +8832,7 @@
     });
     document.addEventListener('keydown', escCloseModal);
     if (typeof afterRender === 'function') afterRender();
+    emFlatApplyBackgrounds(wrapper);
     requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
   }
   function closeModal(animate = true) {
@@ -8711,7 +8874,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.280', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.284', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
