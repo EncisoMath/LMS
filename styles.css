@@ -24831,7 +24831,7 @@ body.quiz-fullscreen-active [class*="Feedback"] [class*="subtitle"] {
   }
 }
 
-/* v0.24.296 Quiz Studio: pantalla completa para crear quizzes */
+/* v0.24.297 Quiz Studio: pantalla completa para crear quizzes */
 .em-add-quiz-group-btn {
   position: relative;
   overflow: hidden;
@@ -25750,4 +25750,142 @@ body.quiz-fullscreen-active [class*="Feedback"] [class*="subtitle"] {
 @media (max-width: 360px) {
   .em-quiz-studio-answer-grid,
   .em-quiz-studio-preview-options { grid-template-columns: 1fr; }
+}
+
+/* v0.24.297 Quiz Studio: ajustes finales de creador y fix de tarjetas publicadas */
+.em-quiz-studio-screen {
+  padding-bottom: 96px !important;
+}
+.em-quiz-studio-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.em-quiz-studio-savebar {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.em-quiz-studio-screen button,
+.em-quiz-studio-screen .em-quiz-studio-tab-btn,
+.em-quiz-studio-screen .em-quiz-studio-toggle,
+.em-quiz-studio-screen .em-quiz-studio-image-btn,
+.em-quiz-studio-screen .em-quiz-studio-image-remove,
+.em-quiz-studio-screen .em-quiz-studio-mini-btn,
+.em-quiz-studio-screen .em-quiz-studio-add-question,
+.em-quiz-studio-screen .em-quiz-studio-replicate-item,
+.em-quiz-studio-savebar .em-quiz-studio-save-btn {
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  text-transform: none !important;
+  letter-spacing: -0.015em !important;
+}
+.em-quiz-studio-screen input,
+.em-quiz-studio-screen textarea,
+.em-quiz-studio-screen select,
+.em-quiz-studio-screen .em-quiz-studio-input,
+.em-quiz-studio-screen .em-quiz-studio-select,
+.em-quiz-studio-screen .em-quiz-studio-textarea {
+  font-weight: 400 !important;
+  font-variation-settings: "wght" 400 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+}
+.em-quiz-studio-screen .em-quiz-studio-card-title,
+.em-quiz-studio-screen .em-quiz-studio-image-title strong {
+  font-weight: 700 !important;
+  font-variation-settings: "wght" 700 !important;
+  text-transform: none !important;
+  letter-spacing: -0.035em !important;
+}
+.em-quiz-studio-screen .em-quiz-studio-card-mini,
+.em-quiz-studio-screen .em-quiz-studio-label,
+.em-quiz-studio-screen .em-quiz-studio-toggle strong,
+.em-quiz-studio-screen .em-quiz-studio-toggle span,
+.em-quiz-studio-screen .em-quiz-studio-type-info strong,
+.em-quiz-studio-screen .em-quiz-studio-image-title span,
+.em-quiz-studio-screen .em-quiz-studio-image-empty span,
+.em-quiz-studio-screen .em-quiz-studio-replicate-copy span,
+.em-quiz-studio-screen .em-quiz-studio-empty,
+.em-quiz-studio-screen .em-quiz-studio-topbar span,
+.em-quiz-studio-screen .em-quiz-studio-preview-meta,
+.em-quiz-studio-screen .em-quiz-studio-preview-short span {
+  text-transform: none !important;
+}
+.em-quiz-studio-screen .em-quiz-studio-toggle strong,
+.em-quiz-studio-screen .em-quiz-studio-replicate-copy strong {
+  font-weight: 600 !important;
+  font-variation-settings: "wght" 600 !important;
+  letter-spacing: -0.025em !important;
+}
+.em-quiz-studio-screen .em-quiz-studio-toggle span,
+.em-quiz-studio-screen .em-quiz-studio-replicate-copy span {
+  font-weight: 400 !important;
+  font-variation-settings: "wght" 400 !important;
+}
+.em-quiz-studio-toggles,
+.em-quiz-studio-mini-actions,
+.em-quiz-studio-image-actions,
+.em-quiz-studio-type-time-row {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+.em-quiz-studio-type-time-row {
+  gap: 9px !important;
+}
+.em-quiz-studio-image-preview {
+  cursor: pointer !important;
+}
+.em-quiz-studio-answer-card::before,
+.em-quiz-studio-answer-card::after,
+.em-quiz-studio-short-answer-card::before {
+  display: none !important;
+  content: none !important;
+}
+.em-quiz-studio-answer-card,
+.em-quiz-studio-answer-card:nth-child(1),
+.em-quiz-studio-answer-card:nth-child(2),
+.em-quiz-studio-answer-card:nth-child(3),
+.em-quiz-studio-answer-card:nth-child(4),
+.em-quiz-studio-answer-card:nth-child(5),
+.em-quiz-studio-answer-card:nth-child(6) {
+  color: #ffffff !important;
+}
+.em-quiz-studio-answer-text {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-variation-settings: "wght" 600 !important;
+  letter-spacing: -0.03em !important;
+}
+.em-quiz-studio-preview-option,
+.em-quiz-studio-preview-option:nth-child(3),
+.em-quiz-studio-preview-option:nth-child(4),
+.em-quiz-studio-preview-option:nth-child(5),
+.em-quiz-studio-preview-option:nth-child(6) {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-variation-settings: "wght" 600 !important;
+}
+@media (max-width: 560px) {
+  .em-quiz-studio-screen {
+    padding-bottom: 96px !important;
+  }
+  .em-quiz-studio-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .em-quiz-studio-toggles,
+  .em-quiz-studio-mini-actions,
+  .em-quiz-studio-image-actions,
+  .em-quiz-studio-type-time-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .em-quiz-studio-savebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 360px) {
+  .em-quiz-studio-toggles,
+  .em-quiz-studio-mini-actions,
+  .em-quiz-studio-image-actions,
+  .em-quiz-studio-type-time-row,
+  .em-quiz-studio-savebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
 }

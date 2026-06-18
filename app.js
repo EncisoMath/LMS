@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.296';
+  const APP_VERSION = '0.24.297';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2458,21 +2458,22 @@
     return null;
   }
   function getQuizGradeRaw(quiz) {
-    const gradeKeys = [
-      'grade', 'finalGrade', 'nota', 'calificacion', 'calificación', 'resultGrade',
+    const directGradeKeys = [
+      'finalGrade', 'nota', 'calificacion', 'calificación', 'resultGrade',
       'studentGrade', 'studentScore', 'lastGrade', 'bestGrade', 'quizGrade', 'scoreGrade'
     ];
-    const direct = emQuizDecimalValue(quiz, gradeKeys);
+    const resultGradeKeys = ['grade', ...directGradeKeys];
+    const direct = emQuizDecimalValue(quiz, directGradeKeys);
     if (direct !== null) return direct;
     const containers = [quiz?.result, quiz?.results, quiz?.lastResult, quiz?.attempt, quiz?.lastAttempt, quiz?.bestAttempt, quiz?.studentResult, quiz?.submission];
     for (const container of containers) {
       if (Array.isArray(container)) {
         for (let index = container.length - 1; index >= 0; index -= 1) {
-          const value = emQuizDecimalValue(container[index], gradeKeys);
+          const value = emQuizDecimalValue(container[index], resultGradeKeys);
           if (value !== null) return value;
         }
       } else if (container && typeof container === 'object') {
-        const value = emQuizDecimalValue(container, gradeKeys);
+        const value = emQuizDecimalValue(container, resultGradeKeys);
         if (value !== null) return value;
       }
     }
@@ -2573,13 +2574,25 @@
     };
     return normalizeQuizStudioQuestion(base);
   }
+  function quizStudioDefaultUntilValue() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(23, 59, 0, 0);
+    const yyyy = tomorrow.getFullYear();
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const dd = String(tomorrow.getDate()).padStart(2, '0');
+    const hh = String(tomorrow.getHours()).padStart(2, '0');
+    const mi = String(tomorrow.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }
   function createEmptyQuizStudioDraft(context = createQuizStudioContext()) {
     return {
       title: '',
-      availableUntil: '',
+      availableUntil: quizStudioDefaultUntilValue(),
       attempts: '1',
       shuffleQuestions: true,
       shuffleOptions: true,
+      showCorrectAfterAttempt: false,
       replicateAssignmentIds: [],
       context: { ...context },
       questions: [createQuizStudioQuestion('multiple_choice')]
@@ -2682,8 +2695,42 @@
   function renderQuizStudio() {
     const context = state.quizStudioContext || createQuizStudioContext();
     const draft = getQuizStudioDraft();
-    const tab = state.quizStudioTab === 'questions' ? 'questions' : 'data';
-    mount(quizStudioHTML(context, draft, tab), bindQuizStudioEvents, { noTransition: true });
+    const validTabs = ['data', 'questions', 'replicate'];
+    const tab = validTabs.includes(state.quizStudioTab) ? state.quizStudioTab : 'data';
+    state.quizStudioTab = tab;
+    const existingScreen = document.querySelector('.em-quiz-studio-screen');
+    const scrollEl = document.scrollingElement || document.documentElement;
+    const preserveScroll = Boolean(existingScreen);
+    const scrollX = preserveScroll ? scrollEl.scrollLeft : 0;
+    const scrollY = preserveScroll ? scrollEl.scrollTop : 0;
+    mount(quizStudioHTML(context, draft, tab), () => {
+      bindQuizStudioEvents();
+      if (preserveScroll) {
+        const restore = () => window.scrollTo(scrollX, scrollY);
+        requestAnimationFrame(restore);
+        window.setTimeout(restore, 60);
+      }
+    }, { noTransition: true });
+  }
+  function quizStudioReplicatePanelHTML(targets, selected = []) {
+    return `
+      <section class="em-quiz-studio-card">
+        <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Replicar quiz</h2><p class="em-quiz-studio-card-mini">Otros cursos del mismo grado</p></div></header>
+        <div class="em-quiz-studio-card-body">
+          <div class="em-quiz-studio-replicate-list" id="quizStudioReplicateList">
+            ${targets.length ? targets.map((assignment) => quizStudioReplicateItemHTML(assignment, selected)).join('') : '<div class="em-quiz-studio-empty">No hay otros cursos de este mismo grado.</div>'}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+  function quizStudioQuestionControlsHTML(question) {
+    return `
+      <div class="em-quiz-studio-type-time-row">
+        <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tipo de pregunta</span><select class="em-quiz-studio-select" id="quizStudioQuestionType">${quizStudioTypeOptionsHTML(question.type)}</select></label>
+        <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tiempo</span><select class="em-quiz-studio-select" id="quizStudioQuestionTime">${quizStudioTimeOptionsHTML(question.time)}</select></label>
+      </div>
+    `;
   }
   function quizStudioHTML(context, draft, tab) {
     const question = normalizeQuizStudioQuestion(draft.questions[state.quizStudioQuestionIndex] || createQuizStudioQuestion());
@@ -2706,6 +2753,7 @@
           <nav class="em-quiz-studio-tabs" aria-label="Pestañas del creador">
             <button class="em-quiz-studio-tab-btn ${tab === 'data' ? 'active' : ''}" type="button" data-studio-tab="data">Datos rápidos</button>
             <button class="em-quiz-studio-tab-btn ${tab === 'questions' ? 'active' : ''}" type="button" data-studio-tab="questions">Preguntas</button>
+            <button class="em-quiz-studio-tab-btn ${tab === 'replicate' ? 'active' : ''}" type="button" data-studio-tab="replicate">Replicar</button>
           </nav>
           <section class="em-quiz-studio-tab-panel ${tab === 'data' ? 'active' : ''}" id="quizStudioTabData">
             <section class="em-quiz-studio-card">
@@ -2719,14 +2767,7 @@
                 <div class="em-quiz-studio-toggles">
                   <button class="em-quiz-studio-toggle ${draft.shuffleQuestions ? 'active' : ''}" type="button" id="quizStudioShuffleQuestions"><strong>Preguntas en desorden</strong><span>Mezcla los ítems</span></button>
                   <button class="em-quiz-studio-toggle ${draft.shuffleOptions ? 'active' : ''}" type="button" id="quizStudioShuffleOptions"><strong>Opciones en desorden</strong><span>Mezcla respuestas o tarjetas</span></button>
-                </div>
-              </div>
-            </section>
-            <section class="em-quiz-studio-card">
-              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Replicar quiz</h2><p class="em-quiz-studio-card-mini">Otros cursos del mismo grado</p></div></header>
-              <div class="em-quiz-studio-card-body">
-                <div class="em-quiz-studio-replicate-list" id="quizStudioReplicateList">
-                  ${targets.length ? targets.map((assignment) => quizStudioReplicateItemHTML(assignment, draft.replicateAssignmentIds || [])).join('') : '<div class="em-quiz-studio-empty">No hay otros cursos de este mismo grado.</div>'}
+                  <button class="em-quiz-studio-toggle ${draft.showCorrectAfterAttempt ? 'active' : ''}" type="button" id="quizStudioShowCorrectAfterAttempt"><strong>Mostrar respuesta correcta después del intento</strong><span>El estudiante ve la correcta al terminar</span></button>
                 </div>
               </div>
             </section>
@@ -2737,14 +2778,11 @@
               <div class="em-quiz-studio-card-body"><div class="em-quiz-studio-question-strip" id="quizStudioQuestionStrip">${quizStudioQuestionStripHTML(draft)}</div></div>
             </section>
             <section class="em-quiz-studio-card">
-              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Pregunta actual</h2><p class="em-quiz-studio-card-mini">Tipo, imagen, tiempo y enunciado</p></div></header>
+              <header class="em-quiz-studio-card-head"><div><h2 class="em-quiz-studio-card-title">Pregunta actual</h2><p class="em-quiz-studio-card-mini">Imagen, tipo, tiempo y enunciado</p></div></header>
               <div class="em-quiz-studio-card-body">
-                <div class="em-quiz-studio-grid">
-                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tipo de pregunta</span><select class="em-quiz-studio-select" id="quizStudioQuestionType">${quizStudioTypeOptionsHTML(question.type)}</select></label>
-                  <label class="em-quiz-studio-field"><span class="em-quiz-studio-label">Tiempo</span><select class="em-quiz-studio-select" id="quizStudioQuestionTime">${quizStudioTimeOptionsHTML(question.time)}</select></label>
-                  <label class="em-quiz-studio-field full"><span class="em-quiz-studio-label">Enunciado</span><textarea class="em-quiz-studio-textarea" id="quizStudioQuestionText">${escapeHTML(question.text || '')}</textarea></label>
-                </div>
+                <label class="em-quiz-studio-field full"><span class="em-quiz-studio-label">Enunciado</span><textarea class="em-quiz-studio-textarea" id="quizStudioQuestionText">${escapeHTML(question.text || '')}</textarea></label>
                 ${quizStudioImageEditorHTML(question)}
+                ${quizStudioQuestionControlsHTML(question)}
                 <div class="em-quiz-studio-type-info" id="quizStudioTypeInfo"><strong>${escapeHTML(typeConfig.infoTitle)}</strong><span>${escapeHTML(typeConfig.infoText)}</span></div>
               </div>
             </section>
@@ -2757,10 +2795,12 @@
             </section>
             <section class="em-quiz-studio-preview-box" id="quizStudioPreviewBox" hidden></section>
           </section>
+          <section class="em-quiz-studio-tab-panel ${tab === 'replicate' ? 'active' : ''}" id="quizStudioTabReplicate">
+            ${quizStudioReplicatePanelHTML(targets, draft.replicateAssignmentIds || [])}
+          </section>
         </section>
         <footer class="em-quiz-studio-savebar">
           <button class="em-quiz-studio-save-btn" type="button" id="quizStudioSaveBtn">Guardar</button>
-          <button class="em-quiz-studio-save-btn preview" type="button" id="quizStudioPreviewBtn">Probar</button>
           <button class="em-quiz-studio-save-btn publish" type="button" id="quizStudioPublishBtn">Publicar</button>
         </footer>
       </main>
@@ -2776,7 +2816,7 @@
     return Object.entries(QUIZ_STUDIO_TYPES).map(([value, config]) => `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHTML(config.label)}</option>`).join('');
   }
   function quizStudioTimeOptionsHTML(selected) {
-    const options = [['', 'Sin tiempo'], ['10', '10 segundos'], ['20', '20 segundos'], ['30', '30 segundos'], ['60', '60 segundos']];
+    const options = [['', 'Sin tiempo'], ['10', '10 segundos'], ['20', '20 segundos'], ['30', '30 segundos'], ['60', '60 segundos'], ['90', '90 segundos'], ['120', '120 segundos']];
     return options.map(([value, label]) => `<option value="${escapeAttr(value)}" ${String(selected || '') === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('');
   }
   function quizStudioReplicateItemHTML(assignment, selected = []) {
@@ -2799,7 +2839,7 @@
           <div class="em-quiz-studio-image-title"><strong>Imagen de la pregunta</strong><span>Opcional. Cada pregunta guarda su propia imagen.</span></div>
           <label class="em-quiz-studio-image-btn">Añadir imagen<input class="em-quiz-studio-file-input" id="quizStudioQuestionImage" type="file" accept="image/*" /></label>
         </div>
-        <div class="em-quiz-studio-image-preview ${hasImage ? 'is-filled' : ''}">
+        <div class="em-quiz-studio-image-preview ${hasImage ? 'is-filled' : ''}" id="quizStudioImagePreviewBox" role="button" tabindex="0" aria-label="Añadir o cambiar imagen de la pregunta">
           ${hasImage ? `<img src="${escapeAttr(question.image)}" alt="Imagen de la pregunta" />` : '<div class="em-quiz-studio-image-empty"><strong>Sin imagen</strong><span>Puedes subir una gráfica, foto, captura o recurso visual para esta pregunta.</span></div>'}
         </div>
         <div class="em-quiz-studio-image-actions">
@@ -2829,27 +2869,44 @@
       </div>
     `;
   }
+  function activateQuizStudioTab(tab = 'data') {
+    if (!['data', 'questions', 'replicate'].includes(tab)) tab = 'data';
+    state.quizStudioTab = tab;
+    document.querySelectorAll('[data-studio-tab]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.studioTab === tab);
+    });
+    document.querySelectorAll('.em-quiz-studio-tab-panel').forEach((panel) => {
+      panel.classList.toggle('active', panel.id === `quizStudioTab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`);
+    });
+  }
   function bindQuizStudioEvents() {
     document.getElementById('quizStudioBackBtn')?.addEventListener('click', closeQuizStudio);
-    document.querySelectorAll('[data-studio-tab]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); state.quizStudioTab = button.dataset.studioTab === 'questions' ? 'questions' : 'data'; renderQuizStudio(); }));
+    document.querySelectorAll('[data-studio-tab]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); activateQuizStudioTab(button.dataset.studioTab || 'data'); }));
     document.getElementById('quizStudioTitle')?.addEventListener('input', saveQuizStudioFromDOM);
-    document.getElementById('quizStudioUntil')?.addEventListener('change', saveQuizStudioFromDOM);
+    const untilInput = document.getElementById('quizStudioUntil');
+    untilInput?.addEventListener('change', saveQuizStudioFromDOM);
+    untilInput?.addEventListener('click', () => { try { untilInput.showPicker?.(); } catch (error) {} });
+    untilInput?.addEventListener('focus', () => { try { untilInput.showPicker?.(); } catch (error) {} });
     document.getElementById('quizStudioAttempts')?.addEventListener('change', saveQuizStudioFromDOM);
-    document.getElementById('quizStudioShuffleQuestions')?.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.shuffleQuestions = !draft.shuffleQuestions; renderQuizStudio(); });
-    document.getElementById('quizStudioShuffleOptions')?.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.shuffleOptions = !draft.shuffleOptions; renderQuizStudio(); });
-    document.querySelectorAll('[data-studio-replicate]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); const id = button.dataset.studioReplicate || ''; const set = new Set(draft.replicateAssignmentIds || []); if (set.has(id)) set.delete(id); else set.add(id); draft.replicateAssignmentIds = [...set]; renderQuizStudio(); }));
-    document.querySelectorAll('[data-studio-question-index]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); state.quizStudioQuestionIndex = Number(button.dataset.studioQuestionIndex || 0); renderQuizStudio(); }));
+    document.getElementById('quizStudioShuffleQuestions')?.addEventListener('click', (event) => { const draft = getQuizStudioDraft(); draft.shuffleQuestions = !draft.shuffleQuestions; event.currentTarget.classList.toggle('active', draft.shuffleQuestions); });
+    document.getElementById('quizStudioShuffleOptions')?.addEventListener('click', (event) => { const draft = getQuizStudioDraft(); draft.shuffleOptions = !draft.shuffleOptions; event.currentTarget.classList.toggle('active', draft.shuffleOptions); });
+    document.getElementById('quizStudioShowCorrectAfterAttempt')?.addEventListener('click', (event) => { const draft = getQuizStudioDraft(); draft.showCorrectAfterAttempt = !draft.showCorrectAfterAttempt; event.currentTarget.classList.toggle('active', draft.showCorrectAfterAttempt); });
+    document.querySelectorAll('[data-studio-replicate]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); const id = button.dataset.studioReplicate || ''; const set = new Set(draft.replicateAssignmentIds || []); if (set.has(id)) set.delete(id); else set.add(id); draft.replicateAssignmentIds = [...set]; button.classList.toggle('active', set.has(id)); }));
+    document.querySelectorAll('[data-studio-question-index]').forEach((button) => button.addEventListener('click', () => { saveQuizStudioFromDOM(); state.quizStudioQuestionIndex = Number(button.dataset.studioQuestionIndex || 0); state.quizStudioTab = 'questions'; renderQuizStudio(); }));
     document.getElementById('quizStudioAddQuestionBtn')?.addEventListener('click', () => { saveQuizStudioFromDOM(); const draft = getQuizStudioDraft(); draft.questions.push(createQuizStudioQuestion('multiple_choice')); state.quizStudioQuestionIndex = draft.questions.length - 1; state.quizStudioTab = 'questions'; renderQuizStudio(); toast('Pregunta añadida.'); });
-    document.getElementById('quizStudioQuestionType')?.addEventListener('change', (event) => { const draft = getQuizStudioDraft(); const question = draft.questions[state.quizStudioQuestionIndex]; question.type = event.target.value; Object.assign(question, normalizeQuizStudioQuestion({ ...question, type: event.target.value, options: [...(QUIZ_STUDIO_TYPES[event.target.value]?.defaults || [])], correct: 0 })); renderQuizStudio(); });
-    ['quizStudioQuestionTime','quizStudioQuestionText','quizStudioShortAnswer','quizStudioShortLimit'].forEach((id) => document.getElementById(id)?.addEventListener('input', saveQuizStudioFromDOM));
+    document.getElementById('quizStudioQuestionType')?.addEventListener('change', (event) => { const draft = getQuizStudioDraft(); const question = draft.questions[state.quizStudioQuestionIndex]; question.type = event.target.value; Object.assign(question, normalizeQuizStudioQuestion({ ...question, type: event.target.value, options: [...(QUIZ_STUDIO_TYPES[event.target.value]?.defaults || [])], correct: 0 })); state.quizStudioTab = 'questions'; renderQuizStudio(); });
+    document.getElementById('quizStudioQuestionTime')?.addEventListener('change', saveQuizStudioFromDOM);
+    ['quizStudioQuestionText','quizStudioShortAnswer','quizStudioShortLimit'].forEach((id) => document.getElementById(id)?.addEventListener('input', saveQuizStudioFromDOM));
     document.querySelectorAll('[data-studio-option-index]').forEach((input) => input.addEventListener('input', saveQuizStudioFromDOM));
-    document.querySelectorAll('[data-studio-correct-index]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.questions[state.quizStudioQuestionIndex].correct = Number(button.dataset.studioCorrectIndex || 0); renderQuizStudio(); }));
+    document.querySelectorAll('[data-studio-correct-index]').forEach((button) => button.addEventListener('click', () => { const draft = getQuizStudioDraft(); draft.questions[state.quizStudioQuestionIndex].correct = Number(button.dataset.studioCorrectIndex || 0); document.querySelectorAll('[data-studio-correct-index]').forEach((item) => item.classList.toggle('active', item === button)); }));
     document.getElementById('quizStudioQuestionImage')?.addEventListener('change', handleQuizStudioImage);
     document.getElementById('quizStudioQuestionImageAlt')?.addEventListener('change', handleQuizStudioImage);
-    document.getElementById('quizStudioRemoveImageBtn')?.addEventListener('click', () => { getQuizStudioDraft().questions[state.quizStudioQuestionIndex].image = ''; renderQuizStudio(); toast('Imagen quitada.'); });
+    const imagePreview = document.getElementById('quizStudioImagePreviewBox');
+    imagePreview?.addEventListener('click', () => document.getElementById('quizStudioQuestionImage')?.click());
+    imagePreview?.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.getElementById('quizStudioQuestionImage')?.click(); } });
+    document.getElementById('quizStudioRemoveImageBtn')?.addEventListener('click', () => { getQuizStudioDraft().questions[state.quizStudioQuestionIndex].image = ''; state.quizStudioTab = 'questions'; renderQuizStudio(); toast('Imagen quitada.'); });
     document.getElementById('quizStudioDuplicateBtn')?.addEventListener('click', duplicateQuizStudioQuestion);
     document.getElementById('quizStudioDeleteBtn')?.addEventListener('click', deleteQuizStudioQuestion);
-    document.getElementById('quizStudioPreviewBtn')?.addEventListener('click', openQuizStudioPreview);
     document.getElementById('quizStudioSaveBtn')?.addEventListener('click', () => saveQuizStudio('draft'));
     document.getElementById('quizStudioPublishBtn')?.addEventListener('click', () => saveQuizStudio('published'));
   }
@@ -2861,6 +2918,8 @@
     if (title) draft.title = title.value;
     if (until) draft.availableUntil = until.value;
     if (attempts) draft.attempts = attempts.value;
+    const showCorrect = document.getElementById('quizStudioShowCorrectAfterAttempt');
+    if (showCorrect) draft.showCorrectAfterAttempt = showCorrect.classList.contains('active');
     const question = draft.questions[state.quizStudioQuestionIndex];
     if (!question) return draft;
     const type = document.getElementById('quizStudioQuestionType');
@@ -2990,13 +3049,15 @@
       assignmentIds: [assignment.id],
       subject: assignment.subject,
       area: assignment.area,
-      grade: assignment.grade,
+      academicGrade: assignment.grade,
+      courseGrade: assignment.grade,
       course: assignment.course,
       groupId: assignment.id,
       availableUntil: draft.availableUntil || '',
       attempts,
       shuffleQuestions: Boolean(draft.shuffleQuestions),
       shuffleOptions: Boolean(draft.shuffleOptions),
+      showCorrectAfterAttempt: Boolean(draft.showCorrectAfterAttempt),
       createdAt: now,
       updatedAt: now,
       questions: draft.questions.map(quizStudioQuestionToApp)
@@ -3009,7 +3070,9 @@
     copy.assignmentIds = [assignment.id];
     copy.subject = assignment.subject;
     copy.area = assignment.area;
-    copy.grade = assignment.grade;
+    delete copy.grade;
+    copy.academicGrade = assignment.grade;
+    copy.courseGrade = assignment.grade;
     copy.course = assignment.course;
     copy.groupId = assignment.id;
     copy.createdAt = Date.now();
@@ -9629,7 +9692,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.296', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.297', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
