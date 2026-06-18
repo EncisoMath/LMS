@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.288';
+  const APP_VERSION = '0.24.286';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2246,61 +2246,6 @@
   function getSleepingTier() {
     return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
   }
-  const EM_CONTENT_SHAPE_PAIRS = [
-    ['circle', 'x'],
-    ['square', 'triangle'],
-    ['triangle', 'circle'],
-    ['x', 'square'],
-    ['circle', 'triangle'],
-    ['square', 'x']
-  ];
-  function emContentShapePairHTML(baseClass = 'em-content-shape', index = 0) {
-    const pair = EM_CONTENT_SHAPE_PAIRS[Math.abs(Number(index) || 0) % EM_CONTENT_SHAPE_PAIRS.length] || EM_CONTENT_SHAPE_PAIRS[0];
-    return `
-      <span class="${baseClass} ${pair[0]} a" aria-hidden="true"></span>
-      <span class="${baseClass} ${pair[1]} b" aria-hidden="true"></span>
-    `;
-  }
-  function getQuizQuestionCount(quiz) {
-    return filterSupportedQuizQuestions(quiz?.questions).length;
-  }
-  function emQuizNumericValue(quiz, keys = []) {
-    for (const key of keys) {
-      const value = quiz?.[key];
-      if (value === undefined || value === null || value === '') continue;
-      const number = Number(value);
-      if (Number.isFinite(number) && number > 0) return Math.floor(number);
-    }
-    return null;
-  }
-  function getQuizAttemptLimit(quiz) {
-    return emQuizNumericValue(quiz, [
-      'attempts',
-      'maxAttempts',
-      'attemptLimit',
-      'availableAttempts',
-      'intentos',
-      'tries',
-      'maxTries'
-    ]) || 1;
-  }
-  function quizHasTimeLimitValue(source) {
-    return emQuizNumericValue(source, [
-      'timeLimit',
-      'timeLimitSeconds',
-      'seconds',
-      'questionTimeLimit',
-      'timePerQuestion',
-      'defaultTimeLimit'
-    ]) !== null;
-  }
-  function isQuizTimed(quiz) {
-    if (typeof quiz?.timed === 'boolean') return quiz.timed;
-    if (typeof quiz?.isTimed === 'boolean') return quiz.isTimed;
-    if (typeof quiz?.cronometrado === 'boolean') return quiz.cronometrado;
-    if (quizHasTimeLimitValue(quiz)) return true;
-    return filterSupportedQuizQuestions(quiz?.questions).some((question) => quizHasTimeLimitValue(question));
-  }
   function renderQuizzesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -2315,8 +2260,8 @@
       <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
       </div>
-      <div class="em-content-list is-grid" id="quizLibrary">
-        ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
+      <div class="quiz-library" id="quizLibrary">
+        ${quizzes.map((quiz) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
       </div>
       <div class="quiz-launch-note" id="quizLaunchNote" ${activeQuiz ? '' : 'hidden'}>Toca un quiz para ver el aviso de inicio.</div>
     `;
@@ -2334,13 +2279,6 @@
       if (button.dataset.boundQuizCard === 'true') return;
       button.dataset.boundQuizCard = 'true';
       button.addEventListener('click', () => {
-        const quizId = button.dataset.quizId || '';
-        if (!quizId) return;
-        startQuiz(quizId);
-      });
-      button.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
         const quizId = button.dataset.quizId || '';
         if (!quizId) return;
         startQuiz(quizId);
@@ -2380,36 +2318,17 @@
     if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
     return active;
   }
-  function quizCardButtonHTML(quiz, active, index = 0) {
-    const total = getQuizQuestionCount(quiz);
-    const attempts = getQuizAttemptLimit(quiz);
-    const timedLabel = isQuizTimed(quiz) ? 'Cronometrado' : 'No cronometrado';
-    const attemptsLabel = attempts === 1 ? 'Intento' : 'Intentos';
+  function quizCardButtonHTML(quiz, active) {
+    const total = filterSupportedQuizQuestions(quiz.questions).length;
     return `
-      <article class="em-quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(quiz.title || 'quiz')}">
-        <div class="em-quiz-cover">
-          ${emContentShapePairHTML('em-quiz-shape', index)}
-          <div class="em-quiz-cover-content">
-            <h3 class="em-quiz-title">${escapeHTML(quiz.title || 'Quiz sin título')}</h3>
-            <button class="em-quiz-start-btn" type="button" tabindex="-1">Iniciar</button>
-          </div>
-        </div>
-        <div class="em-quiz-body">
-          <div class="em-quiz-flat-info">
-            <div class="em-quiz-flat-item">
-              <strong>${total}</strong>
-              <span>Preguntas</span>
-            </div>
-            <div class="em-quiz-flat-item em-quiz-flat-mode">
-              <strong>${timedLabel}</strong>
-            </div>
-            <div class="em-quiz-flat-item">
-              <strong>${attempts}</strong>
-              <span>${attemptsLabel}</span>
-            </div>
-          </div>
-        </div>
-      </article>
+      <button class="quiz-card ${active ? 'active' : ''}" data-quiz-id="${escapeAttr(quiz.id)}">
+        <span class="quiz-card-icon">${escapeHTML(quiz.emoji || '🎮')}</span>
+        <span class="quiz-card-copy">
+          <strong>${escapeHTML(quiz.title || 'Quiz sin título')}</strong>
+          <small>${total} preguntas · ${escapeHTML(quiz.mode || 'Demo')}</small>
+        </span>
+        <span class="quiz-start-pill">Iniciar</span>
+      </button>
     `;
   }
   function quizPlayerHTML(quiz, options = {}) {
@@ -6341,14 +6260,7 @@
     if (phase === 'confirm') content = quizStartGateHTML(quiz);
     else if (phase === 'intro') content = quizIntroSplashHTML(quiz);
     else if (phase === 'transition') content = quizItemTransitionHTML(state.quizQuestionIndex + 1, questions.length, quiz, transitionWithIntro);
-    else if (phase === 'results') {
-      try {
-        content = quizResultsHTML(quiz);
-      } catch (error) {
-        console.error('No se pudo renderizar la pantalla final del quiz:', error);
-        content = quizResultsFallbackHTML(quiz, error);
-      }
-    }
+    else if (phase === 'results') content = quizResultsHTML(quiz);
     else content = quizPlayerHTML(quiz, { fullscreen: true });
     const showTop = phase === 'question';
     const currentQuestion = questions[Math.max(0, Math.min(state.quizQuestionIndex, questions.length - 1))] || null;
@@ -6403,12 +6315,7 @@
       playQuizTransitionScoreCounter(layer);
     } else if (phase === 'results') {
       stopQuizQuestionMusic(true);
-      try {
-        startEncisoFinalResultsScreen(layer);
-      } catch (error) {
-        console.error('No se pudo iniciar la animación de resultados:', error);
-        encisoForceFinalResultsVisible(layer.querySelector('[data-final-results]'));
-      }
+      try { startEncisoFinalResultsScreen(layer); } catch (_) {}
     } else if (phase === 'confirm' || phase === 'idle') {
       stopQuizQuestionMusic(false);
     }
@@ -7153,85 +7060,10 @@
   }
   function startEncisoFinalResultsScreen(layer) {
     const root = layer?.querySelector?.('[data-final-results]');
-    if (!root) return;
-    const alreadyStarted = root.dataset.encisoFinalStarted === 'true';
-    if (!alreadyStarted) {
-      root.dataset.encisoFinalStarted = 'true';
-      try {
-        applyEncisoFinalTune(root, getEncisoFinalTune());
-        encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
-      } catch (error) {
-        console.error('Error en la animación final del quiz:', error);
-        encisoForceFinalResultsVisible(root);
-      }
-    }
-    window.setTimeout(() => {
-      const liveRoot = document.querySelector('[data-final-results]');
-      if (!liveRoot) return;
-      const hasVisibleResult = liveRoot.querySelector('.enciso-result-band.play, .enciso-score-card.play, .enciso-actions-section.play');
-      if (!hasVisibleResult) encisoForceFinalResultsVisible(liveRoot);
-    }, 900);
-  }
-  function encisoForceFinalResultsVisible(root) {
-    if (!root) return;
-    root.dataset.encisoFinalFallback = 'true';
-    [
-      '.enciso-result-band',
-      '.enciso-score-card',
-      '.enciso-podium-section',
-      '.enciso-review-section',
-      '.enciso-actions-section'
-    ].forEach((selector) => {
-      root.querySelectorAll(selector).forEach((node) => {
-        node.classList.add('play');
-        if (node.classList.contains('enciso-actions-section')) node.classList.add('show');
-        node.style.setProperty('opacity', '1', 'important');
-        node.style.setProperty('translate', '0 0', 'important');
-        node.style.setProperty('visibility', 'visible', 'important');
-        node.style.setProperty('filter', 'none', 'important');
-      });
-    });
-  }
-  function quizResultsFallbackHTML(quiz, error) {
-    const session = getQuizSession();
-    const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
-    const answers = Array.isArray(session.answers) ? session.answers : [];
-    const correct = answers.filter((answer) => answer?.correct === true).length;
-    const total = Math.max(questions.length, answers.length, 1);
-    const percent = Math.round((correct / total) * 100);
-    const title = quiz?.title || 'Quiz';
-    const detail = error?.message ? `Detalle técnico: ${error.message}` : 'La animación final no pudo cargarse, pero el resultado se recuperó.';
-    return `
-      <section class="enciso-final-results results-screen ranking-results-screen enciso-result-state-red" data-final-results data-final-grade="0" data-global-score="0" data-correct-points="0" data-time-points="0" data-bonus-grade="0" data-extra-points="0" data-enciso-final-fallback="true">
-        <section class="enciso-result-band em-reto-hero-animado play">
-          <div class="em-reto-figuras-layer" aria-hidden="true"></div>
-          <div class="enciso-result-content">
-            <div class="enciso-result-kicker">Quiz completado</div>
-            <h2 class="enciso-result-title">${escapeHTML(title)}</h2>
-            <p class="enciso-result-message">Resultado recuperado: ${correct}/${total} respuestas correctas (${percent}%).</p>
-          </div>
-        </section>
-        <section class="enciso-score-card play">
-          <div class="enciso-score-inner">
-            <div>
-              <div class="enciso-score-label">Resultado</div>
-              <div class="enciso-score-number">${percent}%</div>
-            </div>
-          </div>
-          <div class="enciso-stats-grid">
-            <div class="enciso-stat"><div class="enciso-stat-value">${correct}</div><div class="enciso-stat-label">Correctas</div></div>
-            <div class="enciso-stat"><div class="enciso-stat-value">${total}</div><div class="enciso-stat-label">Total</div></div>
-          </div>
-        </section>
-        <section class="enciso-review-section play">
-          <div class="enciso-section-title">Resumen</div>
-          <p class="empty">${escapeHTML(detail)}</p>
-        </section>
-        <section class="enciso-actions-section show play">
-          <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
-        </section>
-      </section>
-    `;
+    if (!root || root.dataset.encisoFinalStarted === 'true') return;
+    root.dataset.encisoFinalStarted = 'true';
+    applyEncisoFinalTune(root, getEncisoFinalTune());
+    encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
   }
   function encisoBuildFinalResultsData(quiz) {
     const session = getQuizSession();
@@ -7710,7 +7542,7 @@
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn">☰ Lista</button>
         </div>
       </div>
-      <div id="classGrid" class="em-content-list ${state.classViewMode === 'list' ? 'is-list' : 'is-grid'}">
+      <div id="classGrid" class="class-grid ${state.classViewMode}-mode">
         ${renderClassCardsHTML()}
       </div>
     `;
@@ -7727,7 +7559,7 @@
   }
   function renderClassCardsHTML() {
     const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
-    return filtered.map((item, index) => classCardHTML(item, index)).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
+    return filtered.map(classCardHTML).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
   }
   function bindPeriodButtons() {
     document.querySelectorAll('[data-period]').forEach((button) => {
@@ -7756,22 +7588,16 @@
   }
   function bindClassCards() {
     document.querySelectorAll('[data-class-id]').forEach((button) => {
-      const openClass = () => {
+      button.addEventListener('click', () => {
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
         if (item) renderLesson(item);
-      };
-      button.addEventListener('click', openClass);
-      button.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        openClass();
       });
     });
   }
   function updateClassGrid(animate = false) {
     const grid = document.getElementById('classGrid');
     if (!grid) return;
-    grid.className = `em-content-list ${state.classViewMode === 'list' ? 'is-list' : 'is-grid'}`;
+    grid.className = `class-grid ${state.classViewMode}-mode`;
     grid.innerHTML = renderClassCardsHTML();
     bindClassCards();
     if (animate) pulseElement(grid, 'class-grid-update');
@@ -8220,16 +8046,15 @@
     const info = statusMap[status];
     return `<button class="att-btn att-${status} ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
   }
-  function classCardHTML(item, index = 0) {
+  function classCardHTML(item) {
     return `
-      <article class="em-class-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
-        <div class="em-class-cover">
-          ${emContentShapePairHTML('em-content-shape', index)}
+      <button class="class-card" data-class-id="${escapeAttr(item.id)}">
+        <div class="class-emoji">${escapeHTML(item.emoji || '📘')}</div>
+        <div>
+          <div class="card-title">${escapeHTML(item.title)}</div>
+          <div class="card-sub">${escapeHTML(item.type || 'Clase interactiva')} · ${escapeHTML(item.estimatedTime || '45 min')}</div>
         </div>
-        <div class="em-class-body">
-          <h3 class="em-class-title">${escapeHTML(item.title || 'Clase sin título')}</h3>
-        </div>
-      </article>
+      </button>
     `;
   }
   function selectHTML(id, label, options, selected) {
@@ -8639,7 +8464,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.288', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.286', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
