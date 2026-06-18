@@ -22581,3 +22581,532 @@ html[data-bg-mode="black"] .subject-banner.em-flat-background .subject-banner-co
     font-size: 12px;
   }
 }
+
+/* v0.24.285 - Ajustes finales de navegación, asignatura, asistencia y controles */
+:root {
+  --em-console-tabs-top-space: 14px;
+  --em-console-tabs-bottom-space: 10px;
+  --em-console-tools-bottom-space: 10px;
+  --em-console-list-top-space: 8px;
+  --em-console-tabs-side-pad: 6px;
+  --em-console-attendance-card-height: 54px;
+  --em-console-attendance-card-pad: 6px;
+  --em-console-date-pill-width: 118px;
+  --em-console-date-pill-height: 34px;
+  --em-subject-topbar-bg: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 62%, #000000 38%);
+  --em-subject-topbar-btn-bg: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 48%, #000000 52%);
+}
+
+/* Barra inferior eliminada */
+.bottom-nav { display: none !important; }
+.home-screen,
+.subject-screen {
+  padding-bottom: calc(14px + var(--safe-bottom)) !important;
+}
+
+/* Barra superior de asignatura: mismo color de asignatura, oscurecido desde el render */
+.subject-screen .topbar.em-subject-topbar {
+  background: var(--em-subject-topbar-bg) !important;
+  background-color: var(--em-subject-topbar-bg) !important;
+  background-image: none !important;
+  border-color: var(--em-subject-topbar-bg) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.subject-screen .topbar.em-subject-topbar button,
+.subject-screen .topbar.em-subject-topbar a,
+.subject-screen .topbar.em-subject-topbar [role="button"] {
+  background: var(--em-subject-topbar-btn-bg) !important;
+  background-color: var(--em-subject-topbar-btn-bg) !important;
+  background-image: none !important;
+  border-color: var(--em-subject-topbar-btn-bg) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.subject-screen .topbar.em-subject-topbar button::before,
+.subject-screen .topbar.em-subject-topbar button::after,
+.subject-screen .topbar.em-subject-topbar a::before,
+.subject-screen .topbar.em-subject-topbar a::after {
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Botonera superior de asignatura */
+.subject-screen .em-subject-top-tabs,
+.em-subject-top-tabs {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  margin-top: var(--em-console-tabs-top-space) !important;
+  margin-bottom: var(--em-console-tabs-bottom-space) !important;
+  padding-top: 0 !important;
+  padding-bottom: 2px !important;
+  padding-left: var(--em-console-tabs-side-pad) !important;
+  padding-right: var(--em-console-tabs-side-pad) !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  z-index: 2 !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.subject-screen .em-subject-top-tabs::-webkit-scrollbar,
+.em-subject-top-tabs::-webkit-scrollbar { display: none !important; }
+
+.em-subject-top-tabs-track {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 100% !important;
+  width: max-content !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.subject-screen .em-subject-tab-btn,
+.em-subject-tab-btn,
+.subject-screen .em-subject-tab-btn span,
+.em-subject-tab-btn span {
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  letter-spacing: -0.055em !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.subject-screen .em-subject-tab-btn,
+.em-subject-tab-btn {
+  height: 34px !important;
+  padding-left: 11px !important;
+  padding-right: 11px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  border-radius: 6px !important;
+  border: 2px solid rgba(255,255,255,.10) !important;
+  background: #0b0f18 !important;
+  background-color: #0b0f18 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.subject-screen .em-subject-tab-btn:active,
+.em-subject-tab-btn:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both !important;
+}
+
+.subject-screen .em-subject-tab-btn.active,
+.subject-screen .em-subject-tab-btn.is-active,
+.em-subject-tab-btn.active,
+.em-subject-tab-btn.is-active {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  background-color: var(--em-current-subject-color, #1368ce) !important;
+  background-image: none !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #ffffff) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-text-fill-color: var(--em-current-subject-ink, #ffffff) !important;
+}
+
+.subject-screen #rockstarsTab,
+.subject-screen #rockstarsTab *,
+.subject-screen #quizzesTab,
+.subject-screen #quizzesTab *,
+#rockstarsTab,
+#rockstarsTab *,
+#quizzesTab,
+#quizzesTab * {
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.subject-screen #rockstarsTab.active,
+.subject-screen #rockstarsTab.is-active,
+.subject-screen #rockstarsTab.em-subject-tab-btn.active,
+.subject-screen #rockstarsTab.em-subject-tab-btn.is-active,
+.subject-screen #quizzesTab.active,
+.subject-screen #quizzesTab.is-active,
+.subject-screen #quizzesTab.em-subject-tab-btn.active,
+.subject-screen #quizzesTab.em-subject-tab-btn.is-active,
+#rockstarsTab.active,
+#rockstarsTab.is-active,
+#quizzesTab.active,
+#quizzesTab.is-active {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  background-color: var(--em-current-subject-color, #1368ce) !important;
+  background-image: none !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #ffffff) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: var(--em-current-subject-ink, #ffffff) !important;
+}
+
+.subject-screen #rockstarsTab:not(.active):not(.is-active),
+.subject-screen #quizzesTab:not(.active):not(.is-active),
+#rockstarsTab:not(.active):not(.is-active),
+#quizzesTab:not(.active):not(.is-active) {
+  background: #0b0f18 !important;
+  background-color: #0b0f18 !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.10) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.subject-screen #rockstarsTab::before,
+.subject-screen #rockstarsTab::after,
+.subject-screen #quizzesTab::before,
+.subject-screen #quizzesTab::after,
+#rockstarsTab::before,
+#rockstarsTab::after,
+#quizzesTab::before,
+#quizzesTab::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Asistencia diaria compacta */
+.em-attendance-date-card {
+  min-height: var(--em-console-attendance-card-height) !important;
+  height: var(--em-console-attendance-card-height) !important;
+  grid-template-columns: minmax(0, 1fr) var(--em-console-date-pill-width) !important;
+  gap: 7px !important;
+  padding: var(--em-console-attendance-card-pad) !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+.em-attendance-title-box {
+  gap: 3px !important;
+  align-content: center !important;
+  padding-left: 2px !important;
+  margin: 0 !important;
+}
+
+.em-attendance-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+.em-attendance-subtitle {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+}
+
+.em-date-pill {
+  height: var(--em-console-date-pill-height) !important;
+  min-height: var(--em-console-date-pill-height) !important;
+  padding: 0 7px !important;
+  margin: 0 !important;
+  align-self: center !important;
+}
+
+.em-date-pill input {
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+.em-attendance-shape.circle { width: 60px !important; height: 60px !important; }
+.em-attendance-shape.square { width: 58px !important; height: 58px !important; }
+.em-attendance-shape.x { width: 62px !important; height: 62px !important; }
+.em-attendance-shape.x::before,
+.em-attendance-shape.x::after { width: 64px !important; height: 12px !important; }
+.em-attendance-shape.triangle {
+  border-left-width: 34px !important;
+  border-right-width: 34px !important;
+  border-bottom-width: 60px !important;
+}
+
+.em-add-button {
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  letter-spacing: -0.03em !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.em-search-tag {
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  letter-spacing: -0.02em !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.em-search-input {
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 400 !important;
+  font-variation-settings: "wght" 400 !important;
+  letter-spacing: 0 !important;
+}
+
+.em-students-attendance-tools {
+  margin-bottom: var(--em-console-tools-bottom-space) !important;
+  padding-bottom: 0 !important;
+}
+
+.em-attendance-actions-row {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.em-students-count-title {
+  width: 100% !important;
+  margin: 8px 0 8px 0 !important;
+  padding: 0 2px !important;
+  box-sizing: border-box !important;
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-size: 17px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.em-students-count-title strong {
+  color: var(--em-current-subject-color, #1368ce) !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.055em !important;
+}
+
+/* Periodos 1, 2, 3 y 4 */
+.subject-screen .period-tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.subject-screen .period-tabs::-webkit-scrollbar { display: none !important; }
+
+.subject-screen .period-btn,
+.subject-screen button[data-period],
+.subject-screen button[data-rockstar-period],
+.subject-screen button[data-quiz-period] {
+  min-width: 42px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+  border-radius: 6px !important;
+  border: 2px solid rgba(255,255,255,.10) !important;
+  background: #0b0f18 !important;
+  background-color: #0b0f18 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  font-variation-settings: "wght" 900 !important;
+  letter-spacing: -0.06em !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  transform-origin: center !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.subject-screen .period-btn.active,
+.subject-screen .period-btn.is-active,
+.subject-screen button[data-period].active,
+.subject-screen button[data-period].is-active,
+.subject-screen button[data-rockstar-period].active,
+.subject-screen button[data-rockstar-period].is-active,
+.subject-screen button[data-quiz-period].active,
+.subject-screen button[data-quiz-period].is-active {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  background-color: var(--em-current-subject-color, #1368ce) !important;
+  background-image: none !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #ffffff) !important;
+  -webkit-text-fill-color: var(--em-current-subject-ink, #ffffff) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.subject-screen .period-btn:active,
+.subject-screen button[data-period]:active,
+.subject-screen button[data-rockstar-period]:active,
+.subject-screen button[data-quiz-period]:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both !important;
+}
+
+.subject-screen .period-btn::before,
+.subject-screen .period-btn::after,
+.subject-screen button[data-period]::before,
+.subject-screen button[data-period]::after,
+.subject-screen button[data-rockstar-period]::before,
+.subject-screen button[data-rockstar-period]::after,
+.subject-screen button[data-quiz-period]::before,
+.subject-screen button[data-quiz-period]::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Clases: Cuadricula / Lista */
+.subject-screen #gridModeBtn,
+.subject-screen #listModeBtn {
+  font-family: "Montserrat", Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  transform-origin: center !important;
+}
+
+.subject-screen #gridModeBtn.selected,
+.subject-screen #listModeBtn.selected,
+.subject-screen #gridModeBtn.active,
+.subject-screen #listModeBtn.active,
+.subject-screen #gridModeBtn.is-active,
+.subject-screen #listModeBtn.is-active {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  background-color: var(--em-current-subject-color, #1368ce) !important;
+  background-image: none !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #ffffff) !important;
+  -webkit-text-fill-color: var(--em-current-subject-ink, #ffffff) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.subject-screen #gridModeBtn:not(.selected):not(.active):not(.is-active),
+.subject-screen #listModeBtn:not(.selected):not(.active):not(.is-active) {
+  background: #0b0f18 !important;
+  background-color: #0b0f18 !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.10) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.subject-screen #gridModeBtn:active,
+.subject-screen #listModeBtn:active {
+  animation: emToolbarButtonTap .28s cubic-bezier(.18, 1.42, .28, 1) both !important;
+}
+
+/* Rockstars: sin buscador */
+.subject-screen .rockstar-tools,
+.subject-screen .rockstar-tools .search-wrap,
+.subject-screen #rockstarSearch,
+.subject-screen #rockstarSearch.closest-search-disabled {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* EncisoFlowIn por pestaña activa */
+.tab-section[data-active-tab="students"] .em-attendance-date-card {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 0ms both !important;
+  will-change: transform, opacity !important;
+}
+
+.tab-section[data-active-tab="students"] .em-attendance-actions-row {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 35ms both !important;
+  will-change: transform, opacity !important;
+}
+
+.tab-section[data-active-tab="students"] .em-students-count-title {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 65ms both !important;
+  will-change: transform, opacity !important;
+}
+
+.tab-section[data-active-tab="classes"] .class-hero,
+.tab-section[data-active-tab="classes"] [data-em-classes-hero] {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 0ms both !important;
+  will-change: transform, opacity !important;
+}
+
+.tab-section[data-active-tab="rockstars"] .rockstar-hero,
+.tab-section[data-active-tab="rockstars"] [data-em-rockstars-hero] {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 0ms both !important;
+  will-change: transform, opacity !important;
+}
+
+.tab-section[data-active-tab="quizzes"] .quiz-hero,
+.tab-section[data-active-tab="quizzes"] [data-em-quizzes-hero] {
+  animation: encisoFlowIn var(--enciso-flow-duration, 500ms) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) 0ms both !important;
+  will-change: transform, opacity !important;
+}

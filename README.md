@@ -1,3 +1,17 @@
+## v0.24.286 - Limpieza de menus HOME y resultados quiz
+
+Cambios limitados: se elimino del HOME el boton de tres puntos y su menu de gestion/apariencia; en inicio de quiz se elimino la frase "Antes de empezar"; en resultados finales del quiz se eliminaron la opcion "Repetir animacion", la tuerquita de ajustes y su panel/menu asociado desde la salida visual. Se mantiene la base v0.24.285 con barra inferior PROFE/ESTUDIANTES eliminada, barra superior Back/Home coloreada por asignatura, organizacion de asignatura, asistencia compacta, conteo Estudiantes (X), encisoFlowIn, periodos Montserrat Black, Cuadricula/Lista con color de asignatura y Rockstars sin buscador.
+
+Version/cache busting actualizado a 0.24.286.
+
+## v0.24.285 - Navegación superior/inferior y controles finales de asignatura
+
+Base: v0.24.284.
+
+Cambios limitados a la zona de asignatura seleccionada: se eliminó la barra inferior PROFE/ESTUDIANTES; la barra superior Back/Home ahora toma un color oscurecido derivado del color actual de la asignatura; se consolidaron los ajustes de organización de la botonera superior, asistencia diaria compacta, buscador/Añadir, conteo Estudiantes (X), animación encisoFlowIn por pestaña activa, periodos 1-4 grandes en Montserrat Black, botones Cuadrícula/Lista con color de asignatura y eliminación del buscador de Rockstars. No se tocaron datos base, lógica de quizzes, ranking, podio, música ni countdown.
+
+Version/cache busting actualizado a 0.24.285.
+
 ## v0.24.284 - Botonera de asignatura y controles de asistencia
 
 Base: v0.24.283.
