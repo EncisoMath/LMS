@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.285';
+  const APP_VERSION = '0.24.286';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -809,7 +809,6 @@
           <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
-              <button class="round-action" id="profileMenuBtn" aria-label="Opciones de perfil">•••</button>
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
             <img class="profile-avatar" src="${escapeAttr(teacher.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
@@ -845,10 +844,6 @@
     mount(markup, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('profileMenuBtn').addEventListener('click', (event) => {
-        event.stopPropagation();
-        openProfileMenuModal();
-      });
       bindAssignmentCards(assignments);
     });
   }
@@ -973,92 +968,6 @@
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
-  }
-  function openProfileMenuModal() {
-    openModal(`
-      <div class="modal-card profile-menu-modal">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <p class="section-kicker">Perfil y apariencia</p>
-        <h2>Gestionar EncisoMath</h2>
-        <div class="settings-group">
-          <label class="settings-label" for="accentPicker">Color principal</label>
-          <div class="color-picker-row">
-            <input id="accentPicker" class="color-picker" type="color" value="${escapeAttr(state.prefs.accent)}" aria-label="Escoger color principal" />
-            <div class="color-picker-meta">
-              <input id="accentHex" class="input color-hex-input" value="${escapeAttr(state.prefs.accent)}" maxlength="7" spellcheck="false" aria-label="Color principal en hexadecimal" />
-              <span id="accentPreview" class="color-preview" style="--preview-color:${escapeAttr(state.prefs.accent)}">Color actual</span>
-            </div>
-          </div>
-          <p class="settings-help">Puedes escoger cualquier color medio o intenso. Se bloquean tonos casi negros y tonos casi blancos para conservar contraste.</p>
-          <button class="ghost-btn" id="accentResetBtn" type="button">Restablecer Azul Enciso</button>
-        </div>
-        <div class="settings-group">
-          <label class="settings-label" for="backgroundSelect">Fondo de la app</label>
-          <select id="backgroundSelect" class="select dark-select">
-            ${BACKGROUND_OPTIONS.map((item) => `<option value="${escapeAttr(item.value)}" ${state.prefs.background === item.value ? 'selected' : ''}>${escapeHTML(item.label)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="settings-group settings-effects-group">
-          <label class="settings-label">Rendimiento y efectos</label>
-          <label class="toggle-row" for="visualOptimizedToggle"><span>Visual optimizado sin modo plano</span><input id="visualOptimizedToggle" type="checkbox" ${booleanPrefChecked('visualOptimized')} /></label>
-          <label class="toggle-row" for="heroAnimationsToggle"><span>Animación viva de heroes Rockstars/Quizzes</span><input id="heroAnimationsToggle" type="checkbox" ${booleanPrefChecked('heroAnimations')} /></label>
-          <label class="toggle-row" for="glassEffectsToggle"><span>Blur / vidrio</span><input id="glassEffectsToggle" type="checkbox" ${booleanPrefChecked('glassEffects')} /></label>
-          <label class="toggle-row" for="effectsMotionToggle"><span>Animaciones generales</span><input id="effectsMotionToggle" type="checkbox" ${booleanPrefChecked('effectsMotion')} /></label>
-          <label class="toggle-row" for="effectsMeshToggle"><span>Mallas, brillos y fondos animados</span><input id="effectsMeshToggle" type="checkbox" ${booleanPrefChecked('effectsMesh')} /></label>
-          <label class="toggle-row" for="quizOptionEffectsToggle"><span>Pop / shake en opciones de quiz</span><input id="quizOptionEffectsToggle" type="checkbox" ${booleanPrefChecked('quizOptionEffects')} /></label>
-          <label class="toggle-row" for="quizFeedbackEffectsToggle"><span>Animación de banda Correcto / Incorrecto</span><input id="quizFeedbackEffectsToggle" type="checkbox" ${booleanPrefChecked('quizFeedbackEffects')} /></label>
-          <label class="toggle-row" for="quizSoundsToggle"><span>Sonidos de quiz</span><input id="quizSoundsToggle" type="checkbox" ${booleanPrefChecked('quizSounds')} /></label>
-          <p class="settings-help">Visual optimizado conserva el estilo neón/malla, pero deja los heroes como composiciones estáticas ricas y evita animaciones permanentes pesadas.</p>
-        </div>
-        <div class="profile-menu-actions">
-          <button class="ghost-btn" id="profileSoonBtn">🪪 Gestionar perfil</button>
-          <button class="ghost-btn" id="notifyMenuBtn">🔔 Probar notificación</button>
-          <button class="danger-btn" id="logoutMenuBtn">Cerrar sesión</button>
-        </div>
-      </div>
-    `, () => {
-      const accentPicker = document.getElementById('accentPicker');
-      const accentHex = document.getElementById('accentHex');
-      const syncAccentPreview = (value) => {
-        const normalized = normalizeHexColor(value) || state.prefs.accent;
-        accentPicker.value = normalized;
-        accentHex.value = normalized.toUpperCase();
-        document.getElementById('accentPreview')?.style.setProperty('--preview-color', normalized);
-      };
-      const commitAccent = (value) => {
-        const normalized = normalizeHexColor(value);
-        if (!normalized || !isAllowedAccentColor(normalized)) {
-          syncAccentPreview(state.prefs.accent);
-          toast('Ese color queda demasiado oscuro o demasiado claro. Elige un tono medio o intenso.');
-          return;
-        }
-        updatePreference('accent', normalized);
-        syncAccentPreview(normalized);
-      };
-      accentPicker.addEventListener('input', (event) => syncAccentPreview(event.target.value));
-      accentPicker.addEventListener('change', (event) => commitAccent(event.target.value));
-      accentHex.addEventListener('change', (event) => commitAccent(event.target.value));
-      document.getElementById('accentResetBtn').addEventListener('click', () => commitAccent(DEFAULT_PREFS.accent));
-      document.getElementById('backgroundSelect').addEventListener('change', (event) => updatePreference('background', event.target.value));
-      [
-        ['visualOptimizedToggle', 'visualOptimized'],
-        ['heroAnimationsToggle', 'heroAnimations'],
-        ['glassEffectsToggle', 'glassEffects'],
-        ['effectsMotionToggle', 'effectsMotion'],
-        ['effectsMeshToggle', 'effectsMesh'],
-        ['quizOptionEffectsToggle', 'quizOptionEffects'],
-        ['quizFeedbackEffectsToggle', 'quizFeedbackEffects'],
-        ['quizSoundsToggle', 'quizSounds']
-      ].forEach(([id, key]) => {
-        document.getElementById(id)?.addEventListener('change', (event) => updatePreference(key, event.target.checked));
-      });
-      document.getElementById('profileSoonBtn').addEventListener('click', () => toast('Gestión completa de perfil queda para la siguiente fase.'));
-      document.getElementById('notifyMenuBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('logoutMenuBtn').addEventListener('click', () => {
-        closeModal();
-        logout();
-      });
-    });
   }
   function renderStudentsTab(options = {}) {
     const assignment = state.assignment;
@@ -5246,16 +5155,6 @@
         }
       });
     });
-    document.querySelectorAll('[data-enciso-result-replay]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const quiz = getActiveQuiz();
-        const root = button.closest?.('[data-final-results]');
-        stopQuizResultsMusic(true);
-        encisoPlayResultButtonJello(button);
-        if (root) encisoPlayFinalResultsFlowOut(root, () => { if (quiz) renderQuizFullscreen(quiz); });
-        else if (quiz) renderQuizFullscreen(quiz);
-      });
-    });
     document.querySelectorAll('[data-quiz-restart]').forEach((button) => {
       button.addEventListener('click', () => restartQuiz());
     });
@@ -6451,7 +6350,6 @@
       <div class="modal-card quiz-start-modal">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <div class="quiz-start-modal-head" data-em-flat-bg>
-          <p class="section-kicker">Antes de empezar</p>
           <h2>¿Iniciarás este quiz?</h2>
           <small>${total} ítems · Periodo ${Number(quiz.period || state.quizPeriod || 1)}</small>
         </div>
@@ -6471,7 +6369,6 @@
     return `
       <section class="quiz-start-gate">
         <div class="quiz-kahoot-mark" aria-hidden="true"><span>▲</span><span>◆</span><span>●</span><span>■</span></div>
-        <p class="section-kicker">Antes de empezar</p>
         <h2>${escapeHTML(quiz.title || 'Quiz')}</h2>
         <p>${escapeHTML(quiz.description || quiz.mode || 'Quiz interactivo de práctica.')}</p>
         <div class="quiz-lock-warning">${QUIZ_SECURITY_ENABLED ? '🔒 Cuando empieces, solo podrás salir al finalizar el quiz.' : '🧪 Modo seguro temporalmente desactivado para pruebas.'}</div>
@@ -7166,7 +7063,6 @@
     if (!root || root.dataset.encisoFinalStarted === 'true') return;
     root.dataset.encisoFinalStarted = 'true';
     applyEncisoFinalTune(root, getEncisoFinalTune());
-    bindEncisoFinalTunePanel(root);
     encisoRunFinalResultsAnimations(root, encisoReadFinalPayloadFromRoot(root));
   }
   function encisoBuildFinalResultsData(quiz) {
@@ -7268,294 +7164,6 @@
     replayButtonHeight: 100,
     continueButtonHeight: 100
   };
-  const ENCISO_FINAL_TUNE_TABS = [
-    {
-      key: 'hero',
-      label: 'Hero',
-      fields: [
-        ['heroHeight', 'Altura'],
-        ['heroX', 'Posición X'],
-        ['heroY', 'Posición Y'],
-        ['heroZoom', 'Zoom'],
-        ['heroKickerX', 'Posición X quiz'],
-        ['heroKickerY', 'Posición Y quiz'],
-        ['heroTitleSize', 'Tamaño título'],
-        ['heroTitleY', 'Posición Y título'],
-        ['heroMessageSize', 'Tamaño subtítulo'],
-        ['heroMessageY', 'Posición Y subtítulo'],
-        ['heroSparklesX', 'Posición X estrellas'],
-        ['heroSparklesY', 'Posición Y estrellas'],
-        ['heroSparklesZoom', 'Zoom estrellas'],
-        ['heroSparklesCount', 'Cantidad estrellas']
-      ]
-    },
-    {
-      key: 'score',
-      label: 'Puntaje',
-      fields: [
-        ['scoreHeight', 'Altura'],
-        ['scoreX', 'Posición X'],
-        ['scoreY', 'Posición Y'],
-        ['scoreZoom', 'Zoom'],
-        ['scoreLabelX', 'Posición X texto'],
-        ['scoreLabelY', 'Posición Y texto'],
-        ['scoreNumberX', 'Posición X número'],
-        ['scoreNumberY', 'Posición Y número'],
-        ['gradePolyZoom', 'Zoom polígono'],
-        ['gradePolyX', 'Posición X polígono'],
-        ['gradePolyY', 'Posición Y polígono'],
-        ['gradeNoteSize', 'Tamaño número nota'],
-        ['gradeNoteX', 'Posición X número nota'],
-        ['gradeNoteY', 'Posición Y número nota']
-      ]
-    },
-    { key: 'podium', label: 'Ranking', fields: [['podiumHeight', 'Altura'], ['podiumX', 'Posición X'], ['podiumY', 'Posición Y'], ['podiumZoom', 'Zoom'], ['podiumStarsY', 'Posición Y estrellas']] },
-    { key: 'review', label: 'Preguntas', fields: [['reviewHeight', 'Altura'], ['reviewX', 'Posición X'], ['reviewY', 'Posición Y'], ['reviewZoom', 'Zoom']] },
-    { key: 'buttons', label: 'Botones', fields: [['actionsHeight', 'Altura contenedor'], ['actionsY', 'Posición Y'], ['replayButtonHeight', 'Altura Repetir'], ['continueButtonHeight', 'Altura Continuar']] },
-    { key: 'points', label: 'Puntos', fields: [] }
-  ];
-
-  function encisoFinalTuneFieldMeta(key) {
-    if (key === 'heroSparklesCount') return { min: 0, max: 24, step: 1, unit: '' };
-    if (key === 'actionsHeight') return { min: 1, max: 60, step: 1, unit: '%' };
-    if (key === 'replayButtonHeight' || key === 'continueButtonHeight') return { min: 25, max: 260, step: 1, unit: '%' };
-    if (key.endsWith('Height')) return { min: 1, max: 120, step: 1, unit: '%' };
-    if (key === 'heroZoom') return { min: 20, max: 420, step: 1, unit: '%' };
-    if (key === 'gradePolyZoom') return { min: 20, max: 420, step: 1, unit: '%' };
-    if (key.endsWith('Zoom')) return { min: 20, max: 360, step: 1, unit: '%' };
-    if (key.endsWith('Size')) return { min: 20, max: 360, step: 1, unit: '%' };
-    if (key.endsWith('X')) return { min: -220, max: 220, step: 1, unit: '%' };
-    if (key.endsWith('Y')) return { min: -220, max: 220, step: 1, unit: '%' };
-    return { min: -220, max: 220, step: 1, unit: '%' };
-  }
-  function normalizeEncisoFinalTune(raw = {}) {
-    const out = { ...ENCISO_FINAL_TUNE_DEFAULTS };
-    Object.keys(out).forEach((key) => {
-      const meta = encisoFinalTuneFieldMeta(key);
-      const value = Number(raw?.[key]);
-      if (Number.isFinite(value)) out[key] = encisoClamp(value, meta.min, meta.max);
-    });
-    return out;
-  }
-  function getEncisoFinalTune() {
-    try {
-      return normalizeEncisoFinalTune(JSON.parse(localStorage.getItem(ENCISO_FINAL_TUNE_STORAGE_KEY) || '{}'));
-    } catch (_) {
-      return normalizeEncisoFinalTune();
-    }
-  }
-  function saveEncisoFinalTune(tune) {
-    const safe = normalizeEncisoFinalTune(tune);
-    try { localStorage.setItem(ENCISO_FINAL_TUNE_STORAGE_KEY, JSON.stringify(safe)); } catch (_) {}
-    return safe;
-  }
-  function applyEncisoFinalTune(root, tune = getEncisoFinalTune()) {
-    if (!root) return normalizeEncisoFinalTune(tune);
-    const safe = normalizeEncisoFinalTune(tune);
-    root.style.setProperty('--enciso-hero-row', `${safe.heroHeight}fr`);
-    root.style.setProperty('--enciso-score-row', `${safe.scoreHeight}fr`);
-    root.style.setProperty('--enciso-podium-row', `${safe.podiumHeight}fr`);
-    root.style.setProperty('--enciso-review-row', `${safe.reviewHeight}fr`);
-    root.style.setProperty('--enciso-actions-row', `${safe.actionsHeight}fr`);
-    root.style.setProperty('--enciso-hero-x', `${safe.heroX}%`);
-    root.style.setProperty('--enciso-score-x', `${safe.scoreX}%`);
-    root.style.setProperty('--enciso-score-y', `${safe.scoreY}%`);
-    root.style.setProperty('--enciso-podium-x', `${safe.podiumX}%`);
-    root.style.setProperty('--enciso-podium-y', `${safe.podiumY}%`);
-    root.style.setProperty('--enciso-review-x', `${safe.reviewX}%`);
-    root.style.setProperty('--enciso-review-y', `${safe.reviewY}%`);
-    root.style.setProperty('--enciso-hero-y', `${safe.heroY}%`);
-    root.style.setProperty('--enciso-hero-zoom', `${safe.heroZoom / 100}`);
-    root.style.setProperty('--enciso-hero-kicker-x', `${safe.heroKickerX}%`);
-    root.style.setProperty('--enciso-hero-kicker-y', `${safe.heroKickerY}%`);
-    root.style.setProperty('--enciso-hero-sparkles-x', `${safe.heroSparklesX}%`);
-    root.style.setProperty('--enciso-hero-sparkles-y', `${safe.heroSparklesY}%`);
-    root.style.setProperty('--enciso-hero-sparkles-zoom', `${safe.heroSparklesZoom / 100}`);
-    root.querySelectorAll('.enciso-band-sparkles span').forEach((sparkle, index) => {
-      sparkle.hidden = index >= safe.heroSparklesCount;
-    });
-    root.style.setProperty('--enciso-score-zoom', `${safe.scoreZoom / 100}`);
-    root.style.setProperty('--enciso-score-label-x', `${safe.scoreLabelX}%`);
-    root.style.setProperty('--enciso-score-label-y', `${safe.scoreLabelY}%`);
-    root.style.setProperty('--enciso-score-number-x', `${safe.scoreNumberX}%`);
-    root.style.setProperty('--enciso-score-number-y', `${safe.scoreNumberY}%`);
-    root.style.setProperty('--enciso-grade-poly-zoom', `${safe.gradePolyZoom / 100}`);
-    root.style.setProperty('--enciso-grade-poly-x', `${safe.gradePolyX}%`);
-    root.style.setProperty('--enciso-grade-poly-y', `${safe.gradePolyY}%`);
-    root.style.setProperty('--enciso-grade-note-size', `${safe.gradeNoteSize / 100}`);
-    root.style.setProperty('--enciso-grade-note-x', `${safe.gradeNoteX}%`);
-    root.style.setProperty('--enciso-grade-note-y', `${safe.gradeNoteY}%`);
-    root.style.setProperty('--enciso-podium-zoom', `${safe.podiumZoom / 100}`);
-    root.style.setProperty('--enciso-review-zoom', `${safe.reviewZoom / 100}`);
-    root.style.setProperty('--enciso-hero-title-size', `${safe.heroTitleSize / 100}`);
-    root.style.setProperty('--enciso-hero-title-y', `${safe.heroTitleY}%`);
-    root.style.setProperty('--enciso-hero-message-size', `${safe.heroMessageSize / 100}`);
-    root.style.setProperty('--enciso-hero-message-y', `${safe.heroMessageY}%`);
-    root.style.setProperty('--enciso-podium-stars-y', `${safe.podiumStarsY}%`);
-    root.style.setProperty('--enciso-replay-button-height', `${safe.replayButtonHeight}%`);
-    root.style.setProperty('--enciso-continue-button-height', `${safe.continueButtonHeight}%`);
-    root.style.setProperty('--enciso-replay-button-scale', `${safe.replayButtonHeight / 100}`);
-    root.style.setProperty('--enciso-continue-button-scale', `${safe.continueButtonHeight / 100}`);
-    root.style.setProperty('--enciso-replay-button-height-live', `clamp(${(34 * safe.replayButtonHeight / 100).toFixed(2)}px, ${(5.2 * safe.replayButtonHeight / 100).toFixed(2)}dvh, ${(44 * safe.replayButtonHeight / 100).toFixed(2)}px)`);
-    root.style.setProperty('--enciso-continue-button-height-live', `clamp(${(34 * safe.continueButtonHeight / 100).toFixed(2)}px, ${(5.2 * safe.continueButtonHeight / 100).toFixed(2)}dvh, ${(44 * safe.continueButtonHeight / 100).toFixed(2)}px)`);
-    root.style.setProperty('--enciso-actions-y', `${safe.actionsY}%`);
-    return safe;
-  }
-  function updateEncisoFinalTuneOutputs(root, tune = getEncisoFinalTune()) {
-    const safe = normalizeEncisoFinalTune(tune);
-    root?.querySelectorAll?.('[data-enciso-final-tune-output]').forEach((output) => {
-      const key = output.dataset.encisoFinalTuneOutput;
-      const meta = encisoFinalTuneFieldMeta(key);
-      output.textContent = `${safe[key]}${meta.unit}`;
-    });
-    root?.querySelectorAll?.('[data-enciso-final-tune-field]').forEach((input) => {
-      const key = input.dataset.encisoFinalTuneField;
-      if (Object.prototype.hasOwnProperty.call(safe, key)) input.value = String(safe[key]);
-    });
-  }
-  function encisoFinalTuneSliderHTML(key, label) {
-    const meta = encisoFinalTuneFieldMeta(key);
-    const value = ENCISO_FINAL_TUNE_DEFAULTS[key];
-    return `
-      <label class="enciso-final-tune-slider">
-        <span>${escapeHTML(label)} <b data-enciso-final-tune-output="${escapeAttr(key)}">${value}${escapeHTML(meta.unit)}</b></span>
-        <input type="range" min="${meta.min}" max="${meta.max}" step="${meta.step}" value="${value}" data-enciso-final-tune-field="${escapeAttr(key)}">
-      </label>
-    `;
-  }
-  function encisoFinalPointsTuneHTML() {
-    return `
-      <div class="enciso-final-points-tune">
-        <label class="enciso-final-tune-slider">
-          <span>Correctas <b data-enciso-final-points-output="correct">0</b></span>
-          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="correct">
-        </label>
-        <label class="enciso-final-tune-slider">
-          <span>Tiempo <b data-enciso-final-points-output="time">0</b></span>
-          <input type="number" min="0" max="10000" step="100" value="0" data-enciso-final-points-field="time">
-        </label>
-        <button class="enciso-final-points-replay" type="button" data-enciso-final-points-apply>Reiniciar animación con estos puntos</button>
-      </div>
-    `;
-  }
-  function encisoFinalTunePanelHTML() {
-    return `
-      <button class="enciso-final-tune-toggle" type="button" data-enciso-final-tune-toggle aria-label="Ajustar pantalla final">⚙️</button>
-      <div class="enciso-final-tune-modal" data-enciso-final-tune-modal hidden aria-hidden="true">
-        <div class="enciso-final-tune-card" role="dialog" aria-modal="true" aria-label="Ajustes pantalla final">
-          <div class="enciso-final-tune-head">
-            <strong>Ajustar resultados</strong>
-            <button type="button" data-enciso-final-tune-close aria-label="Cerrar">×</button>
-          </div>
-          <div class="enciso-final-tune-tabs" role="tablist">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `<button type="button" class="${index === 0 ? 'active' : ''}" data-enciso-final-tune-tab="${escapeAttr(tab.key)}">${escapeHTML(tab.label)}</button>`).join('')}
-          </div>
-          <div class="enciso-final-tune-body">
-            ${ENCISO_FINAL_TUNE_TABS.map((tab, index) => `
-              <section class="enciso-final-tune-pane ${index === 0 ? 'active' : ''}" data-enciso-final-tune-pane="${escapeAttr(tab.key)}">
-                ${tab.key === 'points' ? encisoFinalPointsTuneHTML() : (tab.fields || []).map(([fieldKey, fieldLabel]) => encisoFinalTuneSliderHTML(fieldKey, fieldLabel)).join('')}
-              </section>
-            `).join('')}
-          </div>
-          <div class="enciso-final-tune-foot">
-            <button type="button" data-enciso-final-tune-reset>Restablecer</button>
-            <button type="button" data-enciso-final-tune-close>Listo</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-  function encisoClampFinalPointInput(value) {
-    return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
-  }
-  function syncEncisoFinalPointControls(root) {
-    if (!root) return;
-    const correct = encisoClampFinalPointInput(root.dataset.correctPoints);
-    const time = encisoClampFinalPointInput(root.dataset.timePoints);
-    root.querySelectorAll('[data-enciso-final-points-field="correct"]').forEach((input) => { input.value = String(correct); });
-    root.querySelectorAll('[data-enciso-final-points-field="time"]').forEach((input) => { input.value = String(time); });
-    root.querySelectorAll('[data-enciso-final-points-output="correct"]').forEach((output) => { output.textContent = encisoFormatNumber(correct); });
-    root.querySelectorAll('[data-enciso-final-points-output="time"]').forEach((output) => { output.textContent = encisoFormatNumber(time); });
-  }
-  function encisoApplyManualResultPoints(root) {
-    if (!root) return;
-    const correct = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="correct"]')?.value);
-    const time = encisoClampFinalPointInput(root.querySelector('[data-enciso-final-points-field="time"]')?.value);
-    const session = getQuizSession();
-    session.manualResultPoints = { correctPoints: correct, timePoints: time };
-    const payload = encisoBuildFinalPayloadFromPoints(correct, time);
-    encisoApplyFinalPayloadToRoot(root, payload);
-    syncEncisoFinalPointControls(root);
-    const modal = root.querySelector('[data-enciso-final-tune-modal]');
-    if (modal) {
-      modal.hidden = true;
-      modal.setAttribute('aria-hidden', 'true');
-      modal.classList.remove('open');
-    }
-    stopQuizResultsMusic(true);
-    window.setTimeout(() => encisoRunFinalResultsAnimations(root, payload), QUIZ_RESULTS_MUSIC_FADE_MS);
-  }
-  function bindEncisoFinalTunePanel(root) {
-    if (!root || root.dataset.encisoFinalTuneBound === 'true') return;
-    root.dataset.encisoFinalTuneBound = 'true';
-    let tune = applyEncisoFinalTune(root, getEncisoFinalTune());
-    updateEncisoFinalTuneOutputs(root, tune);
-    syncEncisoFinalPointControls(root);
-    const modal = root.querySelector('[data-enciso-final-tune-modal]');
-    const openModal = () => {
-      if (!modal) return;
-      modal.hidden = false;
-      modal.setAttribute('aria-hidden', 'false');
-      modal.classList.add('open');
-    };
-    const closeModal = () => {
-      if (!modal) return;
-      modal.hidden = true;
-      modal.setAttribute('aria-hidden', 'true');
-      modal.classList.remove('open');
-    };
-    root.querySelectorAll('[data-enciso-final-tune-toggle]').forEach((button) => button.addEventListener('click', openModal));
-    root.querySelectorAll('[data-enciso-final-tune-close]').forEach((button) => button.addEventListener('click', closeModal));
-    root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const key = button.dataset.encisoFinalTuneTab;
-        root.querySelectorAll('[data-enciso-final-tune-tab]').forEach((item) => item.classList.toggle('active', item === button));
-        root.querySelectorAll('[data-enciso-final-tune-pane]').forEach((pane) => pane.classList.toggle('active', pane.dataset.encisoFinalTunePane === key));
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-tune-field]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.encisoFinalTuneField;
-        tune = normalizeEncisoFinalTune({ ...tune, [key]: Number(input.value) });
-        saveEncisoFinalTune(tune);
-        applyEncisoFinalTune(root, tune);
-        updateEncisoFinalTuneOutputs(root, tune);
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-points-field]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const key = input.dataset.encisoFinalPointsField;
-        const value = encisoClampFinalPointInput(input.value);
-        root.querySelectorAll(`[data-enciso-final-points-output="${escapeSelector(key)}"]`).forEach((output) => {
-          output.textContent = encisoFormatNumber(value);
-        });
-      });
-    });
-    root.querySelectorAll('[data-enciso-final-points-apply]').forEach((button) => {
-      button.addEventListener('click', () => encisoApplyManualResultPoints(root));
-    });
-    root.querySelectorAll('[data-enciso-final-tune-reset]').forEach((button) => {
-      button.addEventListener('click', () => {
-        tune = saveEncisoFinalTune(ENCISO_FINAL_TUNE_DEFAULTS);
-        applyEncisoFinalTune(root, tune);
-        updateEncisoFinalTuneOutputs(root, tune);
-        syncEncisoFinalPointControls(root);
-      });
-    });
-    modal?.addEventListener('click', (event) => {
-      if (event.target === modal) closeModal();
-    });
-  }
   const ENCISO_RETO_HERO_FIGURAS_TOTAL = 10;
   const ENCISO_RETO_HERO_VELOCIDAD = 0.4;
   const ENCISO_RETO_HERO_TIPOS = ['circulo', 'cuadrado', 'triangulo', 'equis'];
@@ -7785,10 +7393,8 @@
         </section>
 
         <section class="enciso-actions-section" data-actions-section>
-          <button class="enciso-replay-btn ranking-repeat-animation" type="button" data-enciso-result-replay data-repeat-ranking-animation>Repetir animación</button>
           <button class="enciso-continue-btn" type="button" data-quiz-result-target="quizzes">Continuar</button>
         </section>
-        ${encisoFinalTunePanelHTML()}
       </section>
     `;
   }
@@ -8858,7 +8464,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.285', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.286', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
