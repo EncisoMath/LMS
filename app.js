@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.301';
+  const APP_VERSION = '0.24.302';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6245,6 +6245,158 @@
     window.visualViewport?.addEventListener?.('resize', scheduleQuizQuestionContentCenter, { passive: true });
   }
 
+  // v0.24.302: ajustes persistentes del player para que ABCD no se corte
+  // y Verdadero/Falso conserve el flujo normal con el texto de pregunta centrado verticalmente y alineado a la izquierda.
+  function quizActiveFullscreenStage(root = document) {
+    return root?.querySelector?.('.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results) .quiz-stage-fullscreen') || null;
+  }
+
+  function quizStageAnswerParts(stage) {
+    const answerZone = stage?.querySelector?.('.quiz-answer-zone.quiz-tune-box') || null;
+    const grid = stage?.querySelector?.('.kahoot-grid') || null;
+    const options = grid ? Array.from(grid.querySelectorAll('.kahoot-option')) : [];
+    return { answerZone, grid, options };
+  }
+
+  function quizStageIsTrueFalse(stage) {
+    if (!stage?.classList?.contains?.('quiz-type-true_false')) return false;
+    const { options } = quizStageAnswerParts(stage);
+    if (options.length !== 2) return false;
+    const txt = options.map((option) => String(option.textContent || '').trim().toLowerCase()).join(' ');
+    return txt.includes('verdadero') && txt.includes('falso');
+  }
+
+  function quizStageIsAbcd(stage) {
+    if (!stage?.classList?.contains?.('quiz-type-multiple_choice')) return false;
+    const { grid, options } = quizStageAnswerParts(stage);
+    return Boolean(grid && options.length >= 4 && !stage.querySelector('textarea, input[type="text"]'));
+  }
+
+  function removeQuizAnswerInlineLayout(nodes = []) {
+    const props = [
+      'position', 'left', 'right', 'top', 'bottom', 'transform', 'translate', 'z-index',
+      'width', 'max-width', 'min-width', 'height', 'max-height', 'min-height',
+      'margin', 'margin-left', 'margin-right', 'padding', 'grid-template-columns', 'grid-template-rows'
+    ];
+    nodes.filter(Boolean).forEach((node) => {
+      props.forEach((prop) => node.style?.removeProperty?.(prop));
+    });
+  }
+
+  function quizViewportHeight() {
+    return Math.floor(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0);
+  }
+
+  function applyQuizAbcdNoCutLayout(root = document) {
+    const stage = quizActiveFullscreenStage(root);
+    if (!stage) return;
+    const { answerZone, grid, options } = quizStageAnswerParts(stage);
+    if (!answerZone || !grid || !quizStageIsAbcd(stage)) {
+      stage.classList?.remove?.('em-abcd-no-cut-hard');
+      stage.style?.removeProperty?.('--em-abcd-hard-zone-h');
+      stage.style?.removeProperty?.('--em-abcd-hard-grid-h');
+      return;
+    }
+
+    stage.classList.add('em-abcd-no-cut-hard');
+
+    const viewportH = quizViewportHeight();
+    const gridTop = Math.ceil(grid.getBoundingClientRect().top);
+    const safe = Number(state.emAbcdBottomSafe || 38);
+    const available = Math.max(120, viewportH - gridTop - safe);
+
+    stage.style.setProperty('--em-abcd-hard-zone-h', `${available}px`);
+    stage.style.setProperty('--em-abcd-hard-grid-h', `${available}px`);
+  }
+
+  function applyQuizTrueFalseFlowCleanLayout(root = document) {
+    const stage = quizActiveFullscreenStage(root);
+    if (!stage) return;
+    const { answerZone, grid, options } = quizStageAnswerParts(stage);
+    const textA = stage.querySelector('.quiz-text-a.quiz-tune-box');
+
+    if (!answerZone || !grid || !quizStageIsTrueFalse(stage)) {
+      stage.classList.remove('em-tf-flow-clean');
+      stage.style.removeProperty('--em-tf-clean-answer-h');
+      return;
+    }
+
+    removeQuizAnswerInlineLayout([answerZone, grid, ...options]);
+
+    stage.classList.add('em-tf-flow-clean');
+    stage.classList.remove('em-tf-exact-match', 'em-tf-colchon-text', 'em-tf-match-abcd');
+
+    const viewportH = quizViewportHeight();
+    const zoneTop = Math.ceil(answerZone.getBoundingClientRect().top);
+    const safe = Number(state.emTfCleanBottomSafe || state.emAbcdBottomSafe || 38);
+    const h = Math.max(105, viewportH - zoneTop - safe);
+
+    stage.style.setProperty('--em-tf-clean-answer-h', `${h}px`);
+
+    answerZone.style.setProperty('position', 'relative', 'important');
+    answerZone.style.setProperty('width', '100%', 'important');
+    answerZone.style.setProperty('max-width', '100%', 'important');
+    answerZone.style.setProperty('height', `${h}px`, 'important');
+    answerZone.style.setProperty('max-height', `${h}px`, 'important');
+    answerZone.style.setProperty('padding', '0', 'important');
+    answerZone.style.setProperty('margin', '0', 'important');
+    answerZone.style.setProperty('overflow', 'hidden', 'important');
+    answerZone.style.setProperty('box-sizing', 'border-box', 'important');
+
+    grid.style.setProperty('width', '100%', 'important');
+    grid.style.setProperty('height', '100%', 'important');
+    grid.style.setProperty('display', 'grid', 'important');
+    grid.style.setProperty('grid-template-columns', 'repeat(2, minmax(0, 1fr))', 'important');
+    grid.style.setProperty('grid-template-rows', '1fr', 'important');
+    grid.style.setProperty('gap', '6px', 'important');
+    grid.style.setProperty('padding', '0', 'important');
+    grid.style.setProperty('margin', '0', 'important');
+    grid.style.setProperty('box-sizing', 'border-box', 'important');
+
+    options.forEach((option) => {
+      option.style.setProperty('width', '100%', 'important');
+      option.style.setProperty('height', '100%', 'important');
+      option.style.setProperty('min-width', '0', 'important');
+      option.style.setProperty('min-height', '0', 'important');
+      option.style.setProperty('display', 'flex', 'important');
+      option.style.setProperty('align-items', 'center', 'important');
+      option.style.setProperty('justify-content', 'center', 'important');
+      option.style.setProperty('text-align', 'center', 'important');
+      option.style.setProperty('padding', '8px 10px', 'important');
+      option.style.setProperty('margin', '0', 'important');
+      option.style.setProperty('box-sizing', 'border-box', 'important');
+    });
+
+    if (textA) {
+      textA.style.setProperty('display', 'flex', 'important');
+      textA.style.setProperty('flex-direction', 'column', 'important');
+      textA.style.setProperty('justify-content', 'center', 'important');
+      textA.style.setProperty('align-items', 'flex-start', 'important');
+      textA.style.setProperty('text-align', 'left', 'important');
+      textA.querySelectorAll('*').forEach((node) => {
+        node.style.setProperty('text-align', 'left', 'important');
+        node.style.setProperty('width', '100%', 'important');
+      });
+    }
+  }
+
+  function applyQuizAnswerLayoutFixes(root = document) {
+    applyQuizAbcdNoCutLayout(root);
+    applyQuizTrueFalseFlowCleanLayout(root);
+  }
+
+  function scheduleQuizAnswerLayoutFixes() {
+    window.clearTimeout(state.quizAnswerLayoutFixTimer);
+    state.quizAnswerLayoutFixTimer = window.setTimeout(() => applyQuizAnswerLayoutFixes(document), 80);
+  }
+
+  function bindQuizAnswerLayoutFixResize() {
+    if (state.quizAnswerLayoutFixResizeBound) return;
+    state.quizAnswerLayoutFixResizeBound = true;
+    window.addEventListener('resize', scheduleQuizAnswerLayoutFixes, { passive: true });
+    window.visualViewport?.addEventListener?.('resize', scheduleQuizAnswerLayoutFixes, { passive: true });
+  }
+
   function bindQuizPlayerEvents() {
     document.getElementById('modalLayer')?.classList.toggle('em-quiz-start-layer', Boolean(document.querySelector('.em-quiz-start-modal')));
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
@@ -6325,6 +6477,8 @@
     applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
     bindQuizQuestionContentCenterResize();
     scheduleQuizQuestionContentCenter();
+    bindQuizAnswerLayoutFixResize();
+    scheduleQuizAnswerLayoutFixes();
   }
   function bindQuizSecurityGuards() {
     if (!QUIZ_SECURITY_ENABLED) return;

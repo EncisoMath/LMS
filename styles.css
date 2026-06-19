@@ -26105,3 +26105,150 @@ body.quiz-fullscreen-active .quiz-stage-fullscreen {
     font-size: 10px;
   }
 }
+
+
+/* =========================================================
+   v0.24.302 - Player quiz: ABCD no se corta + TF en flujo limpio
+   Alcance: pantalla de juego, solo multiple_choice y true_false.
+========================================================= */
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-abcd-no-cut-hard
+.quiz-answer-zone.quiz-tune-box {
+  height: var(--em-abcd-hard-zone-h) !important;
+  max-height: var(--em-abcd-hard-zone-h) !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-abcd-no-cut-hard
+.kahoot-grid {
+  height: var(--em-abcd-hard-grid-h) !important;
+  max-height: var(--em-abcd-hard-grid-h) !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-abcd-no-cut-hard
+.kahoot-option {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-abcd-no-cut-hard
+.kahoot-option * {
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.quiz-answer-zone.quiz-tune-box {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: var(--em-tf-clean-answer-h) !important;
+  max-height: var(--em-tf-clean-answer-h) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  z-index: auto !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.kahoot-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: 1fr !important;
+  gap: 6px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.kahoot-option {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 10px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.kahoot-option,
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.kahoot-option * {
+  text-align: center !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.quiz-text-a.quiz-tune-box {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+body.quiz-fullscreen-active
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results)
+.quiz-stage-fullscreen.em-tf-flow-clean
+.quiz-text-a.quiz-tune-box * {
+  width: 100% !important;
+  text-align: left !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}

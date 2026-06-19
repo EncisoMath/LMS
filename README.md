@@ -1,21 +1,21 @@
-## v0.24.301 - Editar quizzes desde tarjeta
+## v0.24.302 - Ajuste ABCD y Verdadero/Falso en player
 
-Base: v0.24.300-opciones-quiz-studio.
+Base: v0.24.301-editar-quizzes.
 
-Cambio limitado a ASIGNATURA > QUIZZES y Quiz Studio:
-- Se agregó botón `Editar` al lado de `Iniciar` en cada tarjeta de quiz.
-- `Editar` abre Quiz Studio con los datos, reglas e ítems del quiz seleccionado cargados para modificación.
-- Al guardar/publicar un quiz editado, se actualiza el quiz existente por su mismo ID en quizzes locales; si era un quiz base del JSON, queda una copia local con el mismo ID que lo sobreescribe visualmente sin duplicarlo en la lista.
-- Los quizzes locales tienen prioridad sobre los quizzes base cuando comparten ID, evitando tarjetas duplicadas después de editar.
-- Se mantiene `Iniciar` sin cambios, con prevención para que tocar `Editar` no inicie el quiz.
+Cambios limitados a la pantalla de juego del quiz:
+- Se integra el ajuste que evita que las opciones ABCD se corten abajo.
+- Verdadero/Falso vuelve a flujo normal, sin `position: fixed`, para que no se salga hacia la izquierda.
+- Verdadero/Falso usa ancho completo de respuestas, dos columnas y altura calculada con colchón inferior.
+- El texto de la pregunta en Verdadero/Falso queda centrado verticalmente dentro de su zona, pero alineado a la izquierda.
+- Se conserva el centrado estable de `quiz-question-content` de v0.24.299 y las opciones lógicas de v0.24.300.
 
-No se tocaron layouts del player, countdown, resultados, ranking/podio, música, asistencia, estudiantes, Rockstars, clases ni datos base.
+No se tocaron datos base, Quiz Studio visual, tarjetas, navegación, resultados, ranking/podio, música ni countdown.
 
-Validaciones realizadas:
-- node --check app.js
-- node --check sw.js
+Validación:
+- `node --check app.js`
+- `node --check sw.js`
 - JSON/manifest válidos
 - CSS braces balanceado
-- unzip -t sin errores
+- `unzip -t` sin errores
 
-Version/cache busting actualizado a 0.24.301.
+Versión/cache busting actualizado a 0.24.302.
