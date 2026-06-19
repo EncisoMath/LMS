@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.299';
+  const APP_VERSION = '0.24.300';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2555,12 +2555,93 @@
       .map((question, index) => normalizeQuizQuestionForPlayer(question, index))
       .filter((question) => isSupportedQuizQuestionType(question?.type));
   }
+
+  function emQuizShuffleArray(list = []) {
+    const copy = Array.isArray(list) ? [...list] : [];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+  function emQuizRuntimeQuestionKey(question = {}, fallbackIndex = 0) {
+    return String(question?.id || `q-${Number(fallbackIndex) + 1}`);
+  }
+  function emQuizFlagEnabled(quiz = {}, key = '') {
+    return quiz?.[key] === true || String(quiz?.[key] || '').toLowerCase() === 'true';
+  }
+  function shouldShowCorrectAfterAttempt(quiz = getActiveQuiz()) {
+    return emQuizFlagEnabled(quiz, 'showCorrectAfterAttempt');
+  }
+  function buildQuizRuntimeQuestion(question = {}, sourceIndex = 0, displayIndex = 0, quiz = {}, session = getQuizSession()) {
+    const copy = quizStudioDeepClone(question);
+    copy.__sourceIndex = sourceIndex;
+    copy.__displayIndex = displayIndex;
+    if (!emQuizFlagEnabled(quiz, 'shuffleOptions')) return copy;
+
+    const key = emQuizRuntimeQuestionKey(copy, sourceIndex);
+    if (!session.optionOrderByQuestionId || typeof session.optionOrderByQuestionId !== 'object') session.optionOrderByQuestionId = {};
+    const stored = session.optionOrderByQuestionId;
+
+    if (['multiple_choice', 'true_false', 'flip'].includes(copy.type)) {
+      const options = Array.isArray(copy.options) ? copy.options : [];
+      if (options.length > 1) {
+        let order = stored[key];
+        if (!Array.isArray(order) || order.length !== options.length) {
+          order = emQuizShuffleArray(options.map((_, index) => index));
+          stored[key] = order;
+        }
+        copy.options = order.map((index) => options[index]).filter(Boolean);
+      }
+    } else if (copy.type === 'order') {
+      const cards = Array.isArray(copy.cards) ? copy.cards : [];
+      if (cards.length > 1) {
+        let order = stored[key];
+        if (!Array.isArray(order) || order.length !== cards.length) {
+          order = emQuizShuffleArray(cards.map((_, index) => index));
+          stored[key] = order;
+        }
+        copy.cards = order.map((index) => cards[index]).filter(Boolean);
+      }
+    }
+
+    return copy;
+  }
+  function buildQuizRuntimeQuestions(baseQuestions = [], questionOrder = [], quiz = {}, session = getQuizSession()) {
+    const order = Array.isArray(questionOrder) && questionOrder.length === baseQuestions.length
+      ? questionOrder
+      : baseQuestions.map((_, index) => index);
+    return order.map((sourceIndex, displayIndex) => buildQuizRuntimeQuestion(baseQuestions[sourceIndex], sourceIndex, displayIndex, quiz, session)).filter(Boolean);
+  }
+  function prepareQuizAttemptRuntime(quiz = null) {
+    if (!quiz || typeof quiz !== 'object') return [];
+    const session = getQuizSession();
+    const baseQuestions = filterSupportedQuizQuestions(quiz.questions);
+    const baseOrder = baseQuestions.map((_, index) => index);
+    const questionOrder = emQuizFlagEnabled(quiz, 'shuffleQuestions') ? emQuizShuffleArray(baseOrder) : baseOrder;
+    session.runtimeQuizId = quiz.id || '';
+    session.runtimeQuestionOrder = questionOrder;
+    session.optionOrderByQuestionId = {};
+    session.runtimeQuestions = buildQuizRuntimeQuestions(baseQuestions, questionOrder, quiz, session);
+    session.shuffleQuestions = emQuizFlagEnabled(quiz, 'shuffleQuestions');
+    session.shuffleOptions = emQuizFlagEnabled(quiz, 'shuffleOptions');
+    session.showCorrectAfterAttempt = shouldShowCorrectAfterAttempt(quiz);
+    return session.runtimeQuestions;
+  }
+  function getQuizQuestionsForAttempt(quiz = {}) {
+    const baseQuestions = filterSupportedQuizQuestions(quiz.questions);
+    const session = state.quizSession && typeof state.quizSession === 'object' ? state.quizSession : null;
+    if (session?.runtimeQuizId === (quiz?.id || '') && Array.isArray(session.runtimeQuestions) && session.runtimeQuestions.length) {
+      return session.runtimeQuestions;
+    }
+    return baseQuestions;
+  }
   function getActiveQuiz(quizzes = getQuizzesForCurrentAssignment()) {
     if (!quizzes.length) return null;
     const active = quizzes.find((quiz) => quiz.id === state.quizActiveId) || quizzes[0];
     state.quizActiveId = active.id;
     localStorage.setItem('encisomath:quizActiveId', active.id);
-    active.questions = filterSupportedQuizQuestions(active.questions);
+    active.questions = getQuizQuestionsForAttempt(active);
     if (state.quizQuestionIndex < 0 || state.quizQuestionIndex >= active.questions.length) state.quizQuestionIndex = 0;
     return active;
   }
@@ -4132,11 +4213,12 @@
             recordQuizAnswer(question, false, { selected: session.selectedAnswerId, correctAnswer: correctCard?.dataset.quizAnswer || '', timing: answerTiming });
             runRevealAnimation(selected, false);
             playQuizSound('wrong');
-            if (correctCard && correctCard !== selected) {
+            const revealCorrect = shouldShowCorrectAfterAttempt();
+            if (revealCorrect && correctCard && correctCard !== selected) {
               setQuizFlipCardOpen(correctCard, true);
               window.setTimeout(() => runRevealAnimation(correctCard, true), 430);
             }
-            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, correctCard && correctCard !== selected ? 980 : 720));
+            showQuizFeedbackBandAfterDelay(stage, false, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealCorrect && correctCard && correctCard !== selected ? 980 : 720));
           }
         }, 1000);
       });
@@ -4310,6 +4392,7 @@
         const selected = getQuizOrderIds(board);
         const correctOrder = String(board.dataset.correctOrder || '').split('|').filter(Boolean);
         const ok = selected.length === correctOrder.length && selected.every((id, index) => id === correctOrder[index]);
+        const revealOrderCorrect = ok || shouldShowCorrectAfterAttempt();
         session.locked = true;
         const answerTiming = markQuizCountdownResponded();
         board.classList.add('order-locked', 'order-pending', ok ? 'order-correct' : 'order-wrong');
@@ -4354,7 +4437,7 @@
         };
 
         const revealOneCard = (card, index) => {
-          const matched = selected[index] === correctOrder[index];
+          const matched = revealOrderCorrect && selected[index] === correctOrder[index];
           if (typeof card.getAnimations === 'function') {
             card.getAnimations().forEach((animation) => animation.cancel());
           }
@@ -4392,7 +4475,7 @@
             board.classList.remove('order-validating');
             stage?.classList.remove('order-reveal-active');
           }, revealTotal + 120);
-          recordQuizAnswer(question, ok, { order: selected, correctOrder, timing: answerTiming });
+          recordQuizAnswer(question, ok, { order: selected, correctOrder, revealCorrectAfterAttempt: revealOrderCorrect, timing: answerTiming });
           showQuizFeedbackBandAfterDelay(board.closest('.quiz-stage'), ok, question, '', Math.max(QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS, revealTotal + 360));
         }, pendingDelay);
       });
@@ -4461,6 +4544,13 @@
       securityTerminated: false,
       securityPausedFeedback: false,
       manualResultPoints: null,
+      runtimeQuizId: '',
+      runtimeQuestionOrder: [],
+      optionOrderByQuestionId: {},
+      runtimeQuestions: [],
+      shuffleQuestions: false,
+      shuffleOptions: false,
+      showCorrectAfterAttempt: false,
       timeScoringMode: normalizeQuizTimeScoringMode(state.quizTimeScoringMode)
     };
     return state.quizSession;
@@ -6414,26 +6504,29 @@
 
     const selectedCorrect = button.dataset.correct === 'true';
     scheduleQuizTimer(() => {
-      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId, timing: answerTiming });
-      revealQuizAnswer(stage, button, selectedCorrect);
+      const correctButton = stage.querySelector('[data-quiz-answer][data-correct="true"]');
+      recordQuizAnswer(question, selectedCorrect, { selected: session.selectedAnswerId, correctAnswer: correctButton?.dataset.quizAnswer || '', timing: answerTiming });
+      revealQuizAnswer(stage, button, selectedCorrect, shouldShowCorrectAfterAttempt());
       playQuizSound(selectedCorrect ? 'correct' : 'wrong');
       showQuizFeedbackBandAfterDelay(stage, selectedCorrect, question, '', QUIZ_FEEDBACK_AFTER_CHOICE_REVEAL_MS);
     }, 1000);
   }
-  function revealQuizAnswer(stage, selectedButton, selectedCorrect) {
+  function revealQuizAnswer(stage, selectedButton, selectedCorrect, showCorrectAfterAttempt = shouldShowCorrectAfterAttempt()) {
     stage.classList.remove('quiz-choice-pending');
     stage.classList.add('quiz-choice-revealed');
     keepQuizRevealOverflowOpen(1700);
+    const revealCorrect = selectedCorrect || Boolean(showCorrectAfterAttempt);
     const items = Array.from(stage.querySelectorAll('[data-quiz-answer]'));
     const revealItems = [];
     items.forEach((item) => {
       const isCorrect = item.dataset.correct === 'true';
       const isWrongSelection = item === selectedButton && !selectedCorrect;
-      const unused = !isCorrect && !isWrongSelection;
+      const shouldRevealItem = isWrongSelection || (isCorrect && revealCorrect);
+      const unused = !shouldRevealItem;
       item.classList.remove('selected', 'correct-reveal', 'wrong-reveal', 'unused-reveal', 'kahoot-reveal-pop', 'kahoot-reveal-wrong', 'kahoot-reveal-correct');
       item.classList.toggle('is-dimmed', unused);
       item.classList.toggle('unused-reveal', unused);
-      if (isCorrect || isWrongSelection) revealItems.push({ item, isCorrect });
+      if (shouldRevealItem) revealItems.push({ item, isCorrect });
     });
     revealItems.forEach(({ item, isCorrect }, index) => {
       scheduleQuizTimer(() => {
@@ -7133,6 +7226,7 @@
     saveQuizTimeScoringMode(selectedMode);
     const session = getQuizSession();
     session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
+    prepareQuizAttemptRuntime(quiz);
     closeModal(false);
     preloadQuizSounds();
     clearQuizTimers();
@@ -9897,7 +9991,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.299', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.300', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
