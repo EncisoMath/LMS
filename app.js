@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.300';
+  const APP_VERSION = '0.24.301';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2371,6 +2371,16 @@
   }
   function bindQuizTabEvents() {
     document.getElementById('openQuizStudioBtn')?.addEventListener('click', () => openQuizStudio(createQuizStudioContext()));
+    document.querySelectorAll('[data-edit-quiz-id]').forEach((button) => {
+      if (button.dataset.boundQuizEdit === 'true') return;
+      button.dataset.boundQuizEdit = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const quizId = button.dataset.editQuizId || button.closest('[data-quiz-id]')?.dataset.quizId || '';
+        openQuizStudioForQuiz(quizId);
+      });
+    });
     document.querySelectorAll('[data-quiz-period]').forEach((button) => {
       if (button.dataset.boundQuizPeriod === 'true') return;
       button.dataset.boundQuizPeriod = 'true';
@@ -2380,6 +2390,7 @@
       if (card.dataset.boundQuizCard === 'true') return;
       card.dataset.boundQuizCard = 'true';
       const launchQuizFromCard = (event) => {
+        if (event?.target?.closest?.('.em-quiz-edit')) return;
         const quizId = card.dataset.quizId || '';
         if (!quizId || card.dataset.quizGraded === 'true') return;
         if (card.dataset.quizStarting === 'true') return;
@@ -2429,7 +2440,9 @@
   function getBaseQuizzes() {
     const source = state.data.quizzes;
     const base = Array.isArray(source) ? source : (Array.isArray(source?.quizzes) ? source.quizzes : []);
-    return [...base, ...getLocalQuizzes()];
+    const local = getLocalQuizzes();
+    const localIds = new Set(local.map((quiz) => String(quiz?.id || '')).filter(Boolean));
+    return [...base.filter((quiz) => !localIds.has(String(quiz?.id || ''))), ...local];
   }
   function getQuizzesForCurrentAssignment() {
     const assignment = state.assignment;
@@ -2720,6 +2733,7 @@
           <h3 class="em-quiz-title">${escapeHTML(title)}</h3>
 
           <div class="em-quiz-action-slot">
+            <button class="em-quiz-edit" type="button" tabindex="-1" data-edit-quiz-id="${escapeAttr(quiz.id)}">Editar</button>
             <button class="em-quiz-start" type="button" ${actionAttrs}>Iniciar</button>
           </div>
         </header>
@@ -2878,9 +2892,85 @@
       .filter((assignment) => String(assignment.id || '') !== String(context.assignmentId || ''))
       .sort((a, b) => `${a.subject} ${a.course}`.localeCompare(`${b.subject} ${b.course}`, 'es'));
   }
-  function openQuizStudio(context = createQuizStudioContext()) {
+  function getQuizById(quizId = '') {
+    const id = String(quizId || '');
+    if (!id) return null;
+    return getBaseQuizzes().find((quiz) => String(quiz?.id || '') === id) || null;
+  }
+  function quizAttemptValueForStudio(quiz = {}) {
+    const value = quiz.attempts ?? quiz.maxAttempts ?? quiz.attemptLimit ?? quiz.availableAttempts;
+    if (value === null || value === undefined || value === '' || String(value) === 'Infinity') return '∞';
+    return String(value || '1');
+  }
+  function quizQuestionToStudioQuestion(question = {}, index = 0) {
+    const normalized = normalizeQuizQuestionForPlayer(question, index);
+    const type = QUIZ_STUDIO_TYPES[normalized.type] ? normalized.type : 'multiple_choice';
+    const base = {
+      id: quizStudioId('studio_q'),
+      type,
+      time: String(normalized.timeLimit ?? normalized.time ?? normalized.seconds ?? '20'),
+      text: String(normalized.textA || normalized.prompt || normalized.text || normalized.question || ''),
+      image: String(normalized.image || ''),
+      options: [],
+      correct: 0,
+      shortAnswer: '',
+      charLimit: Number(normalized.charLimit || normalized.maxLength || 40)
+    };
+    if (type === 'open') {
+      base.shortAnswer = String(normalized.expectedAnswer || normalized.shortAnswer || normalized.answer || '');
+      return normalizeQuizStudioQuestion(base);
+    }
+    if (type === 'order') {
+      const cards = Array.isArray(normalized.cards) ? normalized.cards : [];
+      const cardById = new Map(cards.map((card) => [String(card.id || ''), card]));
+      const orderedIds = Array.isArray(normalized.correctOrder) && normalized.correctOrder.length ? normalized.correctOrder.map(String) : cards.slice().sort((a, b) => Number(a.order || 0) - Number(b.order || 0)).map((card) => String(card.id || ''));
+      base.options = orderedIds.map((id) => String(cardById.get(id)?.text || '')).filter(Boolean);
+      if (!base.options.length) base.options = cards.map((card) => String(card.text || ''));
+      return normalizeQuizStudioQuestion(base);
+    }
+    const options = Array.isArray(normalized.options) ? normalized.options : [];
+    base.options = options.map((option) => String(option?.text ?? option?.label ?? option ?? ''));
+    const correctIndex = options.findIndex((option) => Boolean(option?.correct));
+    base.correct = correctIndex >= 0 ? correctIndex : 0;
+    if (type === 'true_false') base.options = ['Verdadero', 'Falso'];
+    return normalizeQuizStudioQuestion(base);
+  }
+  function quizToQuizStudioDraft(quiz = {}, context = createQuizStudioContext()) {
+    const questions = filterSupportedQuizQuestions(quiz.questions || []).map(quizQuestionToStudioQuestion);
+    return {
+      editQuizId: quiz.id || '',
+      createdAt: quiz.createdAt || Date.now(),
+      title: String(quiz.title || ''),
+      availableUntil: String(quiz.availableUntil || quiz.closeAt || quiz.endsAt || quiz.dueAt || quiz.deadline || quizStudioDefaultUntilValue()),
+      attempts: quizAttemptValueForStudio(quiz),
+      shuffleQuestions: Boolean(quiz.shuffleQuestions),
+      shuffleOptions: Boolean(quiz.shuffleOptions),
+      showCorrectAfterAttempt: Boolean(quiz.showCorrectAfterAttempt),
+      replicateAssignmentIds: [],
+      context: { ...context, editQuizId: quiz.id || '', editing: true },
+      questions: questions.length ? questions : [createQuizStudioQuestion('multiple_choice')]
+    };
+  }
+  function openQuizStudioForQuiz(quizId = '') {
+    const quiz = getQuizById(quizId);
+    if (!quiz) { toast('No encontré ese quiz para editar.'); return; }
+    const assignment = state.assignment || {};
+    const context = {
+      ...createQuizStudioContext(),
+      assignmentId: assignment.id || quiz.assignmentIds?.[0] || '',
+      subjectName: assignment.subject || quiz.subject || '',
+      courseName: assignment.course || quiz.course || '',
+      grade: assignment.grade || quiz.academicGrade || quiz.courseGrade || '',
+      area: assignment.area || quiz.area || '',
+      period: Number(quiz.period || state.quizPeriod || 1),
+      editQuizId: quiz.id || '',
+      editing: true
+    };
+    openQuizStudio(context, quiz);
+  }
+  function openQuizStudio(context = createQuizStudioContext(), sourceQuiz = null) {
     state.quizStudioContext = { ...context };
-    state.quizStudioDraft = createEmptyQuizStudioDraft(context);
+    state.quizStudioDraft = sourceQuiz ? quizToQuizStudioDraft(sourceQuiz, context) : createEmptyQuizStudioDraft(context);
     state.quizStudioQuestionIndex = 0;
     state.quizStudioTab = 'data';
     renderQuizStudio();
@@ -2947,7 +3037,7 @@
             <span class="em-quiz-studio-shape circle" aria-hidden="true"></span>
             <span class="em-quiz-studio-shape x" aria-hidden="true"></span>
             <div class="em-quiz-studio-hero-copy">
-              <h1 class="em-quiz-studio-title">Quiz Studio</h1>
+              <h1 class="em-quiz-studio-title">${draft.editQuizId ? 'Editar quiz' : 'Quiz Studio'}</h1>
             </div>
           </header>
           <nav class="em-quiz-studio-tabs" aria-label="Pestañas del creador">
@@ -3273,8 +3363,9 @@
   function quizStudioDraftToAppQuiz(draft, assignment, status = 'draft') {
     const now = Date.now();
     const attempts = String(draft.attempts || '1') === '∞' ? null : Number(draft.attempts || 1);
+    const editQuizId = String(draft.editQuizId || draft.context?.editQuizId || '');
     const quiz = {
-      id: quizStudioId('quiz'),
+      id: editQuizId || quizStudioId('quiz'),
       title: String(draft.title || '').trim(),
       emoji: '🎮',
       mode: status === 'published' ? 'Publicado' : 'Borrador',
@@ -3294,7 +3385,7 @@
       shuffleQuestions: Boolean(draft.shuffleQuestions),
       shuffleOptions: Boolean(draft.shuffleOptions),
       showCorrectAfterAttempt: Boolean(draft.showCorrectAfterAttempt),
-      createdAt: now,
+      createdAt: draft.createdAt || now,
       updatedAt: now,
       questions: draft.questions.map(quizStudioQuestionToApp)
     };
@@ -3325,7 +3416,7 @@
     const baseQuiz = quizStudioDraftToAppQuiz(draft, currentAssignment, status);
     const targets = getSameGradeQuizStudioTargets(context).filter((assignment) => (draft.replicateAssignmentIds || []).includes(assignment.id));
     const copies = targets.map((assignment) => cloneQuizForAssignment(baseQuiz, assignment));
-    const local = getLocalQuizzes();
+    const local = getLocalQuizzes().filter((quiz) => String(quiz?.id || '') !== String(baseQuiz.id || ''));
     saveLocalQuizzes([...local, baseQuiz, ...copies]);
     state.quizActiveId = baseQuiz.id;
     localStorage.setItem('encisomath:quizActiveId', baseQuiz.id);
@@ -9991,7 +10082,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.300', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.301', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

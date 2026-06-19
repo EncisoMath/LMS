@@ -1,15 +1,15 @@
-## v0.24.300 - Opciones activas del Quiz Studio
+## v0.24.301 - Editar quizzes desde tarjeta
 
-Base: v0.24.299-quiz-question-content-centrado.
+Base: v0.24.300-opciones-quiz-studio.
 
-Cambios limitados a la lógica del player de Quizzes:
-- Se conectó `showCorrectAfterAttempt` para que, cuando esté activo, al fallar se revele también la respuesta correcta; si está apagado, solo se marca la respuesta seleccionada incorrecta.
-- Se conectó `shuffleQuestions` para crear un orden aleatorio fijo por intento al iniciar el quiz.
-- Se conectó `shuffleOptions` para crear un orden aleatorio fijo por intento en opciones, verdadero/falso, flip y tarjetas de ordenar.
-- El orden se guarda en la sesión del intento para evitar que cambie en cada render.
-- Se conserva el centrado de `.quiz-question-content` de v0.24.299.
+Cambio limitado a ASIGNATURA > QUIZZES y Quiz Studio:
+- Se agregó botón `Editar` al lado de `Iniciar` en cada tarjeta de quiz.
+- `Editar` abre Quiz Studio con los datos, reglas e ítems del quiz seleccionado cargados para modificación.
+- Al guardar/publicar un quiz editado, se actualiza el quiz existente por su mismo ID en quizzes locales; si era un quiz base del JSON, queda una copia local con el mismo ID que lo sobreescribe visualmente sin duplicarlo en la lista.
+- Los quizzes locales tienen prioridad sobre los quizzes base cuando comparten ID, evitando tarjetas duplicadas después de editar.
+- Se mantiene `Iniciar` sin cambios, con prevención para que tocar `Editar` no inicie el quiz.
 
-No se tocaron layouts visuales, alturas, tarjetas de estudiantes/Rockstars/Clases, Home, ranking/podio, música, countdown ni datos base.
+No se tocaron layouts del player, countdown, resultados, ranking/podio, música, asistencia, estudiantes, Rockstars, clases ni datos base.
 
 Validaciones realizadas:
 - node --check app.js
@@ -18,4 +18,4 @@ Validaciones realizadas:
 - CSS braces balanceado
 - unzip -t sin errores
 
-Version/cache busting actualizado a 0.24.300.
+Version/cache busting actualizado a 0.24.301.
