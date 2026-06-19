@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.298';
+  const APP_VERSION = '0.24.299';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -6017,6 +6017,53 @@
       applyInlineFeedbackBandStyles(band, band.dataset.feedbackKind || 'neutral');
     });
   }
+
+  // v0.24.299: centra horizontalmente quiz-question-content contra el viewport real
+  // sin cambiar alturas, grillas, respuestas, imagen ni contenido interno.
+  function quizQuestionContentTarget(root = document) {
+    return root?.querySelector?.('.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results) .quiz-stage-fullscreen .quiz-question-content') || null;
+  }
+
+  function quizQuestionContentViewportWidth() {
+    return Math.floor(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || 0);
+  }
+
+  function quizQuestionContentCurrentShift(node) {
+    const raw = Number.parseFloat(node?.style?.getPropertyValue?.('--em-qcontent-stable-x') || '0');
+    return Number.isFinite(raw) ? raw : 0;
+  }
+
+  function centerQuizQuestionContent(iteration = 0) {
+    const node = quizQuestionContentTarget();
+    const viewport = quizQuestionContentViewportWidth();
+    if (!node || !viewport) return;
+
+    const rect = node.getBoundingClientRect();
+    const currentX = quizQuestionContentCurrentShift(node);
+    const leftGap = rect.left;
+    const rightGap = viewport - rect.right;
+    const correction = (rightGap - leftGap) / 2;
+    const nextX = Math.round(currentX + correction);
+
+    node.style.setProperty('--em-qcontent-stable-x', `${nextX}px`);
+
+    if (iteration < 4 && Math.abs(correction) > 0.35) {
+      window.requestAnimationFrame(() => centerQuizQuestionContent(iteration + 1));
+    }
+  }
+
+  function scheduleQuizQuestionContentCenter() {
+    window.clearTimeout(state.quizQuestionContentCenterTimer);
+    state.quizQuestionContentCenterTimer = window.setTimeout(() => centerQuizQuestionContent(0), 80);
+  }
+
+  function bindQuizQuestionContentCenterResize() {
+    if (state.quizQuestionContentCenterResizeBound) return;
+    state.quizQuestionContentCenterResizeBound = true;
+    window.addEventListener('resize', scheduleQuizQuestionContentCenter, { passive: true });
+    window.visualViewport?.addEventListener?.('resize', scheduleQuizQuestionContentCenter, { passive: true });
+  }
+
   function bindQuizPlayerEvents() {
     document.getElementById('modalLayer')?.classList.toggle('em-quiz-start-layer', Boolean(document.querySelector('.em-quiz-start-modal')));
     document.querySelectorAll('[data-quiz-start-confirm]').forEach((button) => {
@@ -6095,6 +6142,8 @@
     applyQuizTypographyTune(getQuizTypographyTune());
     applyQuizCountdownTune(getQuizCountdownTune());
     applyQuizPaddingDebugTune(getQuizPaddingDebugTune());
+    bindQuizQuestionContentCenterResize();
+    scheduleQuizQuestionContentCenter();
   }
   function bindQuizSecurityGuards() {
     if (!QUIZ_SECURITY_ENABLED) return;
@@ -9848,7 +9897,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.298', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.299', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

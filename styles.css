@@ -26013,3 +26013,25 @@ body.quiz-fullscreen-active [class*="Feedback"] [class*="subtitle"] {
   height: 100% !important;
   min-height: 100% !important;
 }
+
+/* v0.24.299 - Centrado estable de quiz-question-content sin tocar layout interno */
+.quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results) .quiz-stage-fullscreen .quiz-question-content {
+  position: relative !important;
+  width: calc(100vw - 2px) !important;
+  max-width: calc(100vw - 2px) !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  left: var(--em-qcontent-stable-x, 0px) !important;
+  right: auto !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+body.quiz-fullscreen-active,
+body.quiz-fullscreen-active .quiz-fullscreen-layer:not(.quiz-phase-transition):not(.quiz-phase-results),
+body.quiz-fullscreen-active .quiz-fullscreen-content,
+body.quiz-fullscreen-active .quiz-stage-fullscreen {
+  overflow-x: hidden !important;
+}
