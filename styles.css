@@ -28125,17 +28125,17 @@ html body .modal-layer .modal-card {
 }
 
 .em-activity-modal-tabs {
-  position: sticky;
-  top: -22px;
-  z-index: 4;
+  position: relative;
+  top: auto;
+  z-index: auto;
   gap: 8px;
-  margin: 18px -4px 16px;
+  margin: 18px 0 16px;
   padding: 7px;
   border: 1px solid rgba(255,255,255,.09);
-  background: color-mix(in srgb, var(--modal-bg) 92%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 20px rgba(0,0,0,.16);
+  background: rgba(255,255,255,.035);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 .em-activity-modal-tabs button {
   min-height: 44px;
@@ -28309,9 +28309,9 @@ html body .modal-layer .modal-card {
   margin: 0 -22px -22px;
   padding: 16px 22px max(16px, env(safe-area-inset-bottom));
   align-items: center;
-  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--modal-bg) 97%, transparent) 28%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--modal-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .em-activity-modal-actions .primary-btn,
 .em-activity-modal-actions .ghost-btn {
@@ -28330,9 +28330,9 @@ html body .modal-layer .modal-card {
     border-radius: 15px;
   }
   .em-activity-modal-tabs {
-    top: -17px;
-    margin-left: -1px;
-    margin-right: -1px;
+    top: auto;
+    margin-left: 0;
+    margin-right: 0;
   }
   .em-activity-form-block {
     padding: 14px 12px;
@@ -28383,3 +28383,5 @@ html body .modal-layer .modal-card {
   color: var(--em-current-subject-ink, #fff) !important;
   border-color: var(--em-current-subject-color, #1368ce) !important;
 }
+
+/* v0.24.327 - pestañas de actividad en flujo normal, sin superposición */
