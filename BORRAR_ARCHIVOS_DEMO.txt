@@ -1,0 +1,9 @@
+Al actualizar únicamente con los archivos modificados, elimina del repositorio anterior:
+
+- La carpeta completa: classes/
+- assets/quiz-demo-statistics.svg
+- ACTUALIZACION_v0.24.305.md
+- SUPABASE_MIGRATION_v0.24.305.sql
+
+En Windows puedes copiar BORRAR_ARCHIVOS_DEMO.cmd a la raíz del proyecto y ejecutarlo.
+El ZIP completo v0.24.306 ya viene limpio y no necesita este paso.

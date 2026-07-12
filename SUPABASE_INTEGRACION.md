@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.305 + Supabase
+# EncisoMath LMS v0.24.306 + Supabase
 
 Esta versión conecta el LMS estático de GitHub Pages con el proyecto:
 
@@ -13,7 +13,7 @@ Esta versión conecta el LMS estático de GitHub Pages con el proyecto:
 - `supabase-adapter.js`: toda la comunicación con Auth, Database y Storage.
 - `app.js`: conecta la interfaz existente con el adaptador.
 - `index.html`: carga `supabase-js`, configuración, adaptador y aplicación.
-- `sw.js`: versión de actualización `0.24.305`.
+- `sw.js`: versión de actualización `0.24.306`.
 
 ## Privacidad del repositorio público
 
@@ -68,14 +68,14 @@ No comparta esa contraseña.
 
 Después compruebe:
 
-1. Deben aparecer las diez cargas de Estadística de 9.º a 11.º.
+1. Deben aparecer las once cargas de Estadística de 8-4 a 11-3.
 2. Abra 9-1 y verifique que aparezca el listado real del grupo.
 3. Marque una asistencia.
 4. En Supabase abra `Table Editor > attendance_records` y compruebe la fila.
 5. Marque al estudiante como presente y agregue un punto Rockstar.
 6. Compruebe `rockstar_events`.
-7. Ejecute un quiz hasta resultados.
-8. Compruebe `quiz_attempts` y `quiz_answers`.
+7. En CLASES, ACTIVIDADES y QUIZZES debe aparecer el estado vacío del periodo seleccionado.
+8. Cuando cree un quiz real, compruebe `quiz_attempts` y `quiz_answers`.
 
 ## Cuentas de estudiantes
 

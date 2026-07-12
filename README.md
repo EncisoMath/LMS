@@ -68,4 +68,13 @@ Validación:
 - Nueva carga docente para Estadística 8-4 mediante migración Supabase.
 - La papelera de ESTUDIANTES ahora retira/inactiva la matrícula con confirmación.
 - Nueva pestaña ACTIVIDADES con héroe animado y selector horizontal por periodos.
-- Consulta `ACTUALIZACION_v0.24.305.md` antes de publicar.
+- Esta actualización queda incorporada y reemplazada por v0.24.306.
+
+## v0.24.306
+
+- El héroe de **ACTIVIDADES** ahora reinicia y fuerza sus animaciones al abrir la pestaña.
+- Se eliminaron del proyecto los siete archivos de clases demo y la ilustración del quiz demo.
+- `data/classes.json` y `data/quizzes.json` quedan vacíos.
+- CLASES, ACTIVIDADES y QUIZZES muestran un estado vacío completo por periodo.
+- Incluye `SUPABASE_MIGRATION_v0.24.306.sql` para retirar de Supabase únicamente los registros demo conocidos.
+- No se eliminan estudiantes, matrículas, asistencia, Rockstars, asignaciones ni configuración de Supabase.

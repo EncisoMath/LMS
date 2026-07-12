@@ -26726,3 +26726,159 @@ body.quiz-fullscreen-active
     transition: none !important;
   }
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.24.306 - ACTIVIDADES ANIMADO + VACIOS
+   El heroe de ACTIVIDADES conserva movimiento aun cuando una
+   preferencia antigua haya dejado apagado el movimiento global.
+========================================================= */
+.activity-hero.em-act-hero-host {
+  --em-act-board-scale: .82;
+}
+
+:root .activity-hero.em-act-hero-host.is-live .em-act-shape {
+  animation: emAct306ShapeFloat var(--em-act-shape-duration, 9s) var(--em-act-shape-delay, 0s) ease-in-out infinite !important;
+  animation-play-state: running !important;
+  animation-iteration-count: infinite !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-board {
+  animation: emAct306BoardFloat 2.65s ease-in-out infinite !important;
+  animation-play-state: running !important;
+  animation-iteration-count: infinite !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-sheet-back {
+  animation: emAct306SheetBack 3.15s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-sheet-mid {
+  animation: emAct306SheetMid 3.15s .14s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-sheet-front {
+  animation: emAct306SheetFront 3.15s .27s cubic-bezier(.18, 1.42, .28, 1) infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-check-one {
+  animation: emAct306CheckPop 2.3s .18s cubic-bezier(.18, 1.42, .28, 1) infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-check-two {
+  animation: emAct306CheckPop 2.3s .72s cubic-bezier(.18, 1.42, .28, 1) infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-pencil {
+  animation: emAct306PencilWrite 1.35s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-sheet-line {
+  transform-origin: left center;
+  animation: emAct306LineWrite 2.3s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+:root .activity-hero.em-act-hero-host.is-live .em-act-line-two { animation-delay: .24s !important; }
+:root .activity-hero.em-act-hero-host.is-live .em-act-line-three { animation-delay: .48s !important; }
+:root .activity-hero.em-act-hero-host.is-live .em-act-title {
+  animation: emAct306TitlePop 3.9s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+
+@keyframes emAct306ShapeFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(.90); }
+  28% { transform: translate3d(20px, 10px, 0) rotate(12deg) scale(1.08); }
+  58% { transform: translate3d(-12px, 20px, 0) rotate(-10deg) scale(.96); }
+  82% { transform: translate3d(8px, -7px, 0) rotate(6deg) scale(1.03); }
+}
+@keyframes emAct306BoardFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg) scale(var(--em-act-board-scale)); }
+  32% { transform: translate3d(2px, -7px, 0) rotate(-1deg) scale(calc(var(--em-act-board-scale) + .025)); }
+  65% { transform: translate3d(-2px, 2px, 0) rotate(-7deg) scale(calc(var(--em-act-board-scale) - .012)); }
+}
+@keyframes emAct306SheetBack {
+  0%, 100% { transform: translate(-8px, 6px) rotate(-8deg); }
+  42% { transform: translate(-15px, 1px) rotate(-15deg); }
+  68% { transform: translate(-5px, 9px) rotate(-5deg); }
+}
+@keyframes emAct306SheetMid {
+  0%, 100% { transform: translate(7px, 5px) rotate(7deg); }
+  42% { transform: translate(14px, 0) rotate(14deg); }
+  68% { transform: translate(4px, 9px) rotate(3deg); }
+}
+@keyframes emAct306SheetFront {
+  0%, 100% { transform: rotate(1deg) scale(1); }
+  40% { transform: rotate(-2deg) scaleX(1.055) scaleY(.95); }
+  58% { transform: rotate(2deg) scaleX(.97) scaleY(1.055); }
+  72% { transform: rotate(0deg) scale(1); }
+}
+@keyframes emAct306CheckPop {
+  0%, 28%, 100% { transform: scale(.25) rotate(-12deg); opacity: .25; }
+  42% { transform: scale(1.45) rotate(7deg); opacity: 1; }
+  55% { transform: scale(.88) rotate(-3deg); opacity: 1; }
+  66%, 86% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes emAct306PencilWrite {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-23deg); }
+  22% { transform: translate3d(-8px, 3px, 0) rotate(-14deg); }
+  48% { transform: translate3d(3px, -4px, 0) rotate(-28deg); }
+  72% { transform: translate3d(-5px, -1px, 0) rotate(-18deg); }
+}
+@keyframes emAct306LineWrite {
+  0%, 18%, 100% { transform: scaleX(.18); opacity: .42; }
+  42%, 82% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes emAct306TitlePop {
+  0%, 68%, 100% { transform: scale(1) rotate(0deg); }
+  75% { transform: scaleX(1.045) scaleY(.965) rotate(-.4deg); }
+  82% { transform: scaleX(.98) scaleY(1.04) rotate(.28deg); }
+}
+
+.em-period-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding: 24px 18px;
+  border: 2px solid rgba(255,255,255,.10);
+  border-radius: var(--radius);
+  background: #080d17;
+  color: #ffffff;
+  text-align: center;
+}
+.em-period-empty-icon {
+  font-size: 42px;
+  line-height: 1;
+  animation: emActEmptyBounce 2.6s ease-in-out infinite;
+}
+.em-period-empty .section-kicker {
+  margin: 4px 0 0;
+  color: var(--maincolor, #1368ce);
+  font-weight: 900;
+}
+.em-period-empty-activities .section-kicker { color: #e21b3c; }
+.em-period-empty-classes .section-kicker { color: #24b49a; }
+.em-period-empty-quizzes .section-kicker { color: #ff7a00; }
+.em-period-empty h2 {
+  margin: 0;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(22px, 5vw, 34px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -.05em;
+}
+.em-period-empty > p:last-child {
+  max-width: 540px;
+  margin: 0;
+  color: rgba(255,255,255,.68);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+@media (max-width: 560px) {
+  .activity-hero.em-act-hero-host { --em-act-board-scale: .68; }
+}
+@media (max-width: 400px) {
+  .activity-hero.em-act-hero-host { --em-act-board-scale: .60; }
+}

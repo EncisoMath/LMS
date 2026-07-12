@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.305';
+  const APP_VERSION = '0.24.306';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -509,6 +509,17 @@
   if (!localStorage.getItem(HERO_ANIMATIONS_RESTORE_KEY)) {
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
     localStorage.setItem(HERO_ANIMATIONS_RESTORE_KEY, '1');
+  }
+
+  // v0.24.306: el proyecto parte sin contenido de demostracion.
+  // Se limpian solamente quizzes locales heredados; estudiantes, asistencia
+  // y puntos Rockstar permanecen intactos.
+  const DEMO_CONTENT_CLEANUP_KEY = 'encisomath:demoContentCleaned:v0.24.306';
+  if (!localStorage.getItem(DEMO_CONTENT_CLEANUP_KEY)) {
+    localStorage.removeItem('encisomath:localQuizzes');
+    localStorage.removeItem('encisomath:quizActiveId');
+    state.quizActiveId = '';
+    localStorage.setItem(DEMO_CONTENT_CLEANUP_KEY, '1');
   }
 
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
@@ -2500,7 +2511,7 @@
       </div>
       <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz a este grupo</button>
       <div class="em-content-list is-grid" id="quizLibrary">
-        ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`}
+        ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod)}
       </div>
     `;
     bindQuizTabEvents();
@@ -6880,7 +6891,7 @@
     if (!library) return;
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
-    library.innerHTML = quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || `<div class="empty">Aún no hay quizzes para este periodo.</div>`;
+    library.innerHTML = quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod);
     const note = document.getElementById('quizLaunchNote');
     if (note) note.hidden = !activeQuiz;
     bindQuizTabEvents();
@@ -9517,6 +9528,53 @@
     `;
   }
 
+  function emPeriodEmptyStateHTML(type, period) {
+    const safePeriod = [1, 2, 3, 4].includes(Number(period)) ? Number(period) : 1;
+    const content = {
+      activities: {
+        icon: '📝',
+        title: 'Aún no hay actividades',
+        copy: 'Este espacio queda para las actividades, entregas y trabajos del periodo.'
+      },
+      classes: {
+        icon: '📚',
+        title: 'Aún no hay clases',
+        copy: 'Este espacio queda para las clases, explicaciones y recursos del periodo.'
+      },
+      quizzes: {
+        icon: '🎮',
+        title: 'Aún no hay quizzes',
+        copy: 'Este espacio queda para las evaluaciones, prácticas y retos del periodo.'
+      }
+    }[type] || {
+      icon: '📂',
+      title: 'Aún no hay contenido',
+      copy: 'Este espacio queda preparado para el contenido del periodo.'
+    };
+    return `
+      <section class="em-period-empty em-period-empty-${escapeAttr(type)}" aria-live="polite">
+        <div class="em-period-empty-icon" aria-hidden="true">${content.icon}</div>
+        <p class="section-kicker">PERIODO ${safePeriod}</p>
+        <h2>${content.title}</h2>
+        <p>${content.copy}</p>
+      </section>
+    `;
+  }
+
+  function emActInitActivitiesHero(root = document) {
+    const hero = root.querySelector?.('[data-em-activities-hero]');
+    if (!hero) return;
+    hero.classList.remove('is-live');
+    // Reinicia las animaciones al entrar a la pestaña, incluso si el DOM se
+    // acaba de reconstruir o una preferencia antigua había pausado efectos.
+    void hero.offsetWidth;
+    hero.classList.add('is-live');
+    hero.querySelectorAll('.em-act-shape').forEach((shape, index) => {
+      shape.style.setProperty('--em-act-shape-delay', `${-1.4 * (index + 1)}s`);
+      shape.style.setProperty('--em-act-shape-duration', `${7.6 + index * 1.15}s`);
+    });
+  }
+
   function renderActivitiesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -9530,22 +9588,18 @@
       <div class="period-tabs activity-period-tabs" id="activityPeriodTabs">
         ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.activitiesPeriod) === period ? 'active' : ''}" data-activity-period="${period}">${period}°</button>`).join('')}
       </div>
-      <section class="em-activities-empty" id="activitiesPeriodContent" aria-live="polite">
+      <div id="activitiesPeriodContent">
         ${activitiesPeriodHTML()}
-      </section>
+      </div>
     `;
 
     bindActivitiesTabEvents();
+    emActInitActivitiesHero($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
   function activitiesPeriodHTML() {
-    return `
-      <div class="em-activities-empty-icon" aria-hidden="true">📝</div>
-      <p class="section-kicker">PERIODO ${Number(state.activitiesPeriod) || 1}</p>
-      <h2>Aún no hay actividades</h2>
-      <p>Este espacio queda preparado para las actividades, entregas y trabajos del periodo.</p>
-    `;
+    return emPeriodEmptyStateHTML('activities', state.activitiesPeriod);
   }
 
   function bindActivitiesTabEvents() {
@@ -9608,7 +9662,7 @@
   }
   function renderClassCardsHTML() {
     const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
-    return filtered.map((item, index) => classCardHTML(item, index)).join('') || `<div class="empty">Aún no hay clases para este periodo.</div>`;
+    return filtered.map((item, index) => classCardHTML(item, index)).join('') || emPeriodEmptyStateHTML('classes', state.period);
   }
   function bindPeriodButtons() {
     document.querySelectorAll('[data-period]').forEach((button) => {
@@ -10585,7 +10639,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.305', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.306', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
