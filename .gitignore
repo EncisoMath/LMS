@@ -1,0 +1,26 @@
+# Secretos y variables locales
+.env
+.env.*
+!.env.example
+
+# Base de datos y migraciones privadas
+*.sql
+supabase/
+
+# Listados y datos personales
+*.xlsx
+*.xls
+*.csv
+
+# Paquetes y copias locales
+*.zip
+*.7z
+*.rar
+*.bak
+*.tmp
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
