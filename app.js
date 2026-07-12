@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.322';
+  const APP_VERSION = '0.24.323';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -501,7 +501,7 @@
   const $toast = document.getElementById('toast');
 
   const state = {
-    data: { users: [], assignments: [], students: [], classes: [], rockstars: [], quizzes: [] },
+    data: { users: [], assignments: [], students: [], classes: [], activities: [], rockstars: [], quizzes: [] },
     user: null,
     assignment: null,
     activePeriod: 1,
@@ -657,6 +657,7 @@
       const content = document.getElementById('activitiesPeriodContent');
       if (content) {
         content.innerHTML = activitiesPeriodHTML();
+        bindActivityCards();
         if (animate) pulseElement(content, 'class-grid-update');
       }
     } else if (tab === 'rockstars') refreshRockstarList(animate);
@@ -1212,16 +1213,18 @@
             </div>
           </div>
         </section>
-        <nav class="em-subject-top-tabs" aria-label="Pestañas de asignatura">
-          <div class="em-subject-top-tabs-track">
-            <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students">👥 Estudiantes</button>
-            <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes">📚 Clases</button>
-            <button class="em-subject-tab-btn ${tab === 'activities' ? 'is-active active' : ''}" id="activitiesTab" type="button" data-tab="activities">📝 Actividades</button>
-            <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars">🚀 Rockstars</button>
-            <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes">🎮 Quizzes</button>
-          </div>
-        </nav>
-        <section id="tabContent" class="section tab-section"></section>
+        <div class="em-subject-workspace">
+          <nav class="em-subject-top-tabs" aria-label="Pestañas de asignatura">
+            <div class="em-subject-top-tabs-track">
+              <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students"><span aria-hidden="true">👥</span><span>Estudiantes</span></button>
+              <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes"><span aria-hidden="true">📚</span><span>Clases</span></button>
+              <button class="em-subject-tab-btn ${tab === 'activities' ? 'is-active active' : ''}" id="activitiesTab" type="button" data-tab="activities"><span aria-hidden="true">📝</span><span>Actividades</span></button>
+              <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars"><span aria-hidden="true">🚀</span><span>Rockstars</span></button>
+              <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes"><span aria-hidden="true">🎮</span><span>Quizzes</span></button>
+            </div>
+          </nav>
+          <section id="tabContent" class="section tab-section"></section>
+        </div>
       </main>
     `;
 
@@ -9753,6 +9756,50 @@
     });
   }
 
+  function getActivitiesForCurrentAssignment() {
+    const assignmentId = String(state.assignment?.id || '');
+    return (state.data.activities || [])
+      .filter((item) => {
+        const ids = Array.isArray(item.assignmentIds) ? item.assignmentIds : [item.assignmentId].filter(Boolean);
+        return ids.includes(assignmentId);
+      })
+      .sort((a, b) => Number(b.sortOrder || 0) - Number(a.sortOrder || 0));
+  }
+
+  function activityTypeLabel(type) {
+    return ({ pdf: 'PDF', image: 'Imágenes', rich_text: 'Texto enriquecido', html_css: 'HTML + CSS' })[type] || 'Contenido';
+  }
+
+  function activityRelatedLesson(activity) {
+    return (state.data.classes || []).find((item) => String(item.id) === String(activity.lessonId || '')) || null;
+  }
+
+  function activityCardHTML(activity, index = 0) {
+    const lesson = activityRelatedLesson(activity);
+    const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha máxima';
+    const rubricCount = Array.isArray(activity.rubric) ? activity.rubric.length : 0;
+    return `
+      <article class="em-activity-card" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index}">
+        <div class="em-activity-card-mark" aria-hidden="true">✓</div>
+        <div class="em-activity-card-copy">
+          <span class="em-activity-card-period">Periodo ${Number(activity.period || 1)}</span>
+          <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
+          <p>${lesson ? `Tema: ${escapeHTML(lesson.title || 'Clase')}` : 'Tema no disponible'}</p>
+          <div class="em-activity-card-meta">
+            <span>${escapeHTML(activityTypeLabel(activity.contentType))}</span>
+            <span>Entrega: ${escapeHTML(due)}</span>
+            <span>${rubricCount} criterio${rubricCount === 1 ? '' : 's'}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function activitiesPeriodHTML() {
+    const activities = getActivitiesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.activitiesPeriod));
+    return activities.map(activityCardHTML).join('') || emPeriodEmptyStateHTML('activities', state.activitiesPeriod);
+  }
+
   function renderActivitiesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -9763,7 +9810,8 @@
       <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="view-row em-content-toolbar em-content-toolbar-views-only">
+      <div class="view-row em-content-toolbar em-content-toolbar-has-action">
+        <button class="em-add-content-btn" id="openAddActivityBtn" type="button">＋ Añadir actividad</button>
         <div class="em-view-switch" aria-label="Vista de actividades">
           <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
@@ -9775,18 +9823,341 @@
     `;
 
     bindActivityViewButtons();
+    bindActivityCards();
+    document.getElementById('openAddActivityBtn')?.addEventListener('click', openAddActivityModal);
     emActInitActivitiesHero($content);
     emPlayTabEntrance($content, 'activities');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
-  function activitiesPeriodHTML() {
-    return emPeriodEmptyStateHTML('activities', state.activitiesPeriod);
-  }
-
   function bindActivityViewButtons() {
     document.getElementById('activityGridModeBtn')?.addEventListener('click', () => setActivityViewMode('grid'));
     document.getElementById('activityListModeBtn')?.addEventListener('click', () => setActivityViewMode('list'));
+  }
+
+  function bindActivityCards() {
+    document.querySelectorAll('[data-activity-id]').forEach((card) => {
+      const open = () => {
+        const activity = (state.data.activities || []).find((item) => item.id === card.dataset.activityId);
+        if (activity) openActivitySummaryModal(activity);
+      };
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        open();
+      });
+    });
+  }
+
+  function openActivitySummaryModal(activity) {
+    const lesson = activityRelatedLesson(activity);
+    const rubric = Array.isArray(activity.rubric) ? activity.rubric : [];
+    openModal(`
+      <section class="modal-card em-activity-summary-modal" role="dialog" aria-modal="true" aria-labelledby="activitySummaryTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Periodo ${Number(activity.period || 1)}</p>
+        <h2 id="activitySummaryTitle">${escapeHTML(activity.title || 'Actividad')}</h2>
+        <p class="card-sub">${lesson ? `Relacionada con ${escapeHTML(lesson.title || 'una clase')}` : 'Sin clase relacionada'}</p>
+        <div class="em-activity-summary-grid">
+          <div><span>Inicio</span><strong>${escapeHTML(formatAcademicDate(String(activity.startsAt || '').slice(0, 10)))}</strong></div>
+          <div><span>Entrega máxima</span><strong>${escapeHTML(formatAcademicDate(String(activity.dueAt || '').slice(0, 10)))}</strong></div>
+          <div><span>Actividad</span><strong>${escapeHTML(activityTypeLabel(activity.contentType))}</strong></div>
+          <div><span>Respuesta</span><strong>${escapeHTML(activityTypeLabel(activity.reviewType))}</strong></div>
+        </div>
+        <h3 class="em-activity-rubric-title">Criterios de evaluación</h3>
+        <div class="em-activity-rubric-summary">
+          ${rubric.map((item) => `<div><span>${escapeHTML(item.name || 'Criterio')}</span><strong>${Number(item.percentage || 0)}%</strong></div>`).join('')}
+        </div>
+      </section>
+    `);
+  }
+
+  function activityContentEditorHTML(prefix, type = 'pdf') {
+    return `
+      <div class="em-activity-content-editor" data-content-editor="${escapeAttr(prefix)}">
+        <label class="field-label" for="${prefix}Type">Formato</label>
+        <div class="em-activity-type-grid" role="radiogroup" aria-label="Formato del contenido">
+          ${[
+            ['pdf', 'PDF', '📄'],
+            ['image', 'Imágenes', '🖼️'],
+            ['rich_text', 'Texto enriquecido', '✍️'],
+            ['html_css', 'HTML + CSS', '⌨️']
+          ].map(([value, label, icon]) => `<label class="em-activity-type-option"><input type="radio" name="${prefix}Type" value="${value}" ${type === value ? 'checked' : ''}/><span><b>${icon}</b>${label}</span></label>`).join('')}
+        </div>
+        <div class="em-activity-editor-panel" data-editor-panel="pdf">
+          <label class="em-file-drop" for="${prefix}PdfInput"><strong>Seleccionar PDF</strong><span data-file-name>Máximo 20 MB</span></label>
+          <input class="em-hidden-file" id="${prefix}PdfInput" type="file" accept="application/pdf,.pdf" />
+        </div>
+        <div class="em-activity-editor-panel" data-editor-panel="image" hidden>
+          <label class="em-file-drop" for="${prefix}ImageInput"><strong>Seleccionar imágenes</strong><span data-file-name>PNG, JPG o WEBP · hasta 10 imágenes</span></label>
+          <input class="em-hidden-file" id="${prefix}ImageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple />
+        </div>
+        <div class="em-activity-editor-panel" data-editor-panel="rich_text" hidden>
+          <div class="em-rich-toolbar" role="toolbar" aria-label="Formato de texto">
+            <button type="button" data-rich-command="bold"><b>B</b></button>
+            <button type="button" data-rich-command="italic"><i>I</i></button>
+            <button type="button" data-rich-command="insertUnorderedList">• Lista</button>
+          </div>
+          <div class="em-rich-editor" id="${prefix}RichInput" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Escribe el contenido..."></div>
+        </div>
+        <div class="em-activity-editor-panel" data-editor-panel="html_css" hidden>
+          <label class="field-label" for="${prefix}HtmlInput">HTML</label>
+          <textarea class="input em-code-input" id="${prefix}HtmlInput" rows="7" spellcheck="false" placeholder="<section>...</section>"></textarea>
+          <label class="field-label" for="${prefix}CssInput">CSS</label>
+          <textarea class="input em-code-input" id="${prefix}CssInput" rows="6" spellcheck="false" placeholder=".actividad { ... }"></textarea>
+        </div>
+      </div>
+    `;
+  }
+
+  function openAddActivityModal() {
+    const assignment = state.assignment;
+    if (!assignment) return;
+    const lessons = getClassesForCurrentAssignment();
+    const automaticPeriod = getAutomaticAcademicPeriod();
+    const today = todayISO();
+    openModal(`
+      <section class="modal-card em-activity-create-modal" role="dialog" aria-modal="true" aria-labelledby="addActivityTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Gestión de actividades</p>
+        <h2 id="addActivityTitle">Añadir actividad</h2>
+        <div class="em-activity-modal-tabs" role="tablist">
+          <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-modal-tab="assign">Asignar actividad</button>
+          <button type="button" role="tab" aria-selected="false" data-activity-modal-tab="review">Revisión de actividad</button>
+        </div>
+        <form id="addActivityForm" class="em-activity-create-form">
+          <section data-activity-tab-panel="assign">
+            <label class="field-label" for="activityTitleInput">Nombre de la actividad</label>
+            <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" required />
+
+            <label class="field-label" for="activityLessonInput">Clase o tema relacionado</label>
+            <select class="select" id="activityLessonInput" required ${lessons.length ? '' : 'disabled'}>
+              <option value="">Selecciona una clase</option>
+              ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}">${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
+            </select>
+            ${lessons.length ? '' : '<p class="em-activity-inline-warning">Primero debes crear una clase para relacionar esta actividad.</p>'}
+
+            <div class="em-activity-date-grid">
+              <label><span>Periodo</span><select class="select" id="activityPeriodInput">${[1,2,3,4].map((period) => `<option value="${period}" ${period === automaticPeriod ? 'selected' : ''}>Periodo ${period}</option>`).join('')}</select></label>
+              <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${today}" required /></label>
+              <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${today}" required /></label>
+            </div>
+
+            ${activityContentEditorHTML('activityContent', 'pdf')}
+          </section>
+
+          <section data-activity-tab-panel="review" hidden>
+            <p class="card-sub">Añade la respuesta, solución o guía de revisión y define cómo se calificará.</p>
+            ${activityContentEditorHTML('activityReview', 'rich_text')}
+            <div class="em-rubric-head">
+              <div><span class="field-label">Criterios de evaluación</span><small>La suma debe ser exactamente 100%.</small></div>
+              <button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button>
+            </div>
+            <div class="em-rubric-list" id="activityRubricList"></div>
+            <div class="em-rubric-total" id="activityRubricTotal"><span>Total</span><strong>0%</strong></div>
+          </section>
+
+          <p class="em-class-create-error" id="activityCreateError" role="alert"></p>
+          <div class="em-activity-modal-actions">
+            <button class="ghost-btn" type="button" id="activityPreviousTabBtn" hidden>Volver</button>
+            <button class="primary-btn" type="button" id="activityNextTabBtn">Continuar</button>
+            <button class="primary-btn" type="submit" id="createActivitySubmitBtn" hidden disabled>Guardar actividad</button>
+          </div>
+        </form>
+      </section>
+    `, initAddActivityModal);
+  }
+
+  function initAddActivityModal() {
+    const modal = document.querySelector('.em-activity-create-modal');
+    const form = document.getElementById('addActivityForm');
+    const next = document.getElementById('activityNextTabBtn');
+    const previous = document.getElementById('activityPreviousTabBtn');
+    const submit = document.getElementById('createActivitySubmitBtn');
+    let activeTab = 'assign';
+
+    const showTab = (tab) => {
+      activeTab = tab;
+      modal?.querySelectorAll('[data-activity-modal-tab]').forEach((button) => {
+        const active = button.dataset.activityModalTab === tab;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      modal?.querySelectorAll('[data-activity-tab-panel]').forEach((panel) => { panel.hidden = panel.dataset.activityTabPanel !== tab; });
+      next.hidden = tab !== 'assign';
+      previous.hidden = tab !== 'review';
+      submit.hidden = tab !== 'review';
+      if (tab === 'review') updateRubricTotal();
+    };
+
+    modal?.querySelectorAll('[data-activity-modal-tab]').forEach((button) => button.addEventListener('click', () => showTab(button.dataset.activityModalTab)));
+    next?.addEventListener('click', () => {
+      const title = document.getElementById('activityTitleInput')?.value.trim();
+      const lesson = document.getElementById('activityLessonInput')?.value;
+      const start = document.getElementById('activityStartInput')?.value;
+      const due = document.getElementById('activityDueInput')?.value;
+      const errorBox = document.getElementById('activityCreateError');
+      if (errorBox) errorBox.textContent = '';
+      if (!title) return errorBox.textContent = 'Escribe el nombre de la actividad.';
+      if (!lesson) return errorBox.textContent = 'Relaciona la actividad con una clase o tema.';
+      if (!start || !due) return errorBox.textContent = 'Completa las fechas de inicio y entrega.';
+      if (due < start) return errorBox.textContent = 'La fecha de entrega no puede ser anterior a la fecha de inicio.';
+      showTab('review');
+    });
+    previous?.addEventListener('click', () => showTab('assign'));
+
+    modal?.querySelectorAll('[data-content-editor]').forEach(initActivityContentEditor);
+    document.getElementById('addRubricCriterionBtn')?.addEventListener('click', () => addRubricCriterion());
+    addRubricCriterion('Comprensión y desarrollo', 50);
+    addRubricCriterion('Procedimiento, presentación y entrega', 50);
+    form?.addEventListener('submit', submitNewActivity);
+    document.getElementById('activityTitleInput')?.focus();
+  }
+
+  function initActivityContentEditor(editor) {
+    const prefix = editor.dataset.contentEditor;
+    const update = () => {
+      const type = editor.querySelector(`input[name="${prefix}Type"]:checked`)?.value || 'pdf';
+      editor.querySelectorAll('[data-editor-panel]').forEach((panel) => { panel.hidden = panel.dataset.editorPanel !== type; });
+    };
+    editor.querySelectorAll(`input[name="${prefix}Type"]`).forEach((input) => input.addEventListener('change', update));
+    editor.querySelectorAll('input[type="file"]').forEach((input) => input.addEventListener('change', () => {
+      const label = input.closest('.em-activity-editor-panel')?.querySelector('[data-file-name]');
+      const files = [...(input.files || [])];
+      if (label) label.textContent = files.length ? files.map((file) => file.name).join(', ') : 'Selecciona archivos';
+    }));
+    editor.querySelectorAll('[data-rich-command]').forEach((button) => button.addEventListener('click', () => {
+      document.execCommand(button.dataset.richCommand, false, null);
+      editor.querySelector('.em-rich-editor')?.focus();
+    }));
+    update();
+  }
+
+  function addRubricCriterion(name = '', percentage = '') {
+    const list = document.getElementById('activityRubricList');
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'em-rubric-row';
+    row.innerHTML = `
+      <input class="input" data-rubric-name maxlength="120" placeholder="Nombre del criterio" value="${escapeAttr(name)}" />
+      <label><input class="input" data-rubric-percentage type="number" min="0" max="100" step="1" value="${escapeAttr(String(percentage))}" /><span>%</span></label>
+      <button type="button" data-remove-rubric aria-label="Eliminar criterio">×</button>
+    `;
+    row.querySelectorAll('input').forEach((input) => input.addEventListener('input', updateRubricTotal));
+    row.querySelector('[data-remove-rubric]')?.addEventListener('click', () => { row.remove(); updateRubricTotal(); });
+    list.appendChild(row);
+    updateRubricTotal();
+  }
+
+  function getRubricCriteria() {
+    return [...document.querySelectorAll('#activityRubricList .em-rubric-row')].map((row) => ({
+      name: row.querySelector('[data-rubric-name]')?.value.trim() || '',
+      percentage: Number(row.querySelector('[data-rubric-percentage]')?.value || 0)
+    }));
+  }
+
+  function updateRubricTotal() {
+    const criteria = getRubricCriteria();
+    const total = criteria.reduce((sum, item) => sum + Number(item.percentage || 0), 0);
+    const box = document.getElementById('activityRubricTotal');
+    const submit = document.getElementById('createActivitySubmitBtn');
+    if (box) {
+      box.querySelector('strong').textContent = `${total}%`;
+      box.classList.toggle('is-valid', total === 100 && criteria.length > 0 && criteria.every((item) => item.name));
+      box.classList.toggle('is-invalid', total !== 100);
+    }
+    if (submit) submit.disabled = !(total === 100 && criteria.length > 0 && criteria.every((item) => item.name));
+    return { criteria, total };
+  }
+
+  function collectActivityEditor(prefix) {
+    const type = document.querySelector(`input[name="${prefix}Type"]:checked`)?.value || 'pdf';
+    return {
+      type,
+      text: document.getElementById(`${prefix}RichInput`)?.innerHTML.trim() || '',
+      html: document.getElementById(`${prefix}HtmlInput`)?.value.trim() || '',
+      css: document.getElementById(`${prefix}CssInput`)?.value.trim() || '',
+      files: type === 'pdf'
+        ? [...(document.getElementById(`${prefix}PdfInput`)?.files || [])]
+        : type === 'image'
+          ? [...(document.getElementById(`${prefix}ImageInput`)?.files || [])]
+          : []
+    };
+  }
+
+  function validateActivityEditor(editor, label) {
+    if (editor.type === 'pdf') {
+      if (editor.files.length !== 1) return `${label}: selecciona un archivo PDF.`;
+      if (editor.files[0].size > 20 * 1024 * 1024) return `${label}: el PDF supera 20 MB.`;
+    }
+    if (editor.type === 'image') {
+      if (!editor.files.length) return `${label}: selecciona al menos una imagen.`;
+      if (editor.files.length > 10) return `${label}: puedes subir máximo 10 imágenes.`;
+      if (editor.files.some((file) => file.size > 5 * 1024 * 1024)) return `${label}: una imagen supera 5 MB.`;
+    }
+    if (editor.type === 'rich_text' && !editor.text.replace(/<[^>]*>/g, '').trim()) return `${label}: escribe el texto enriquecido.`;
+    if (editor.type === 'html_css' && !editor.html) return `${label}: escribe el contenido HTML.`;
+    return '';
+  }
+
+  async function submitNewActivity(event) {
+    event.preventDefault();
+    const errorBox = document.getElementById('activityCreateError');
+    const submit = document.getElementById('createActivitySubmitBtn');
+    const fail = (message) => { if (errorBox) errorBox.textContent = message; };
+    fail('');
+    const title = document.getElementById('activityTitleInput')?.value.trim() || '';
+    const lessonId = document.getElementById('activityLessonInput')?.value || '';
+    const period = Number(document.getElementById('activityPeriodInput')?.value || getAutomaticAcademicPeriod());
+    const startsAt = document.getElementById('activityStartInput')?.value || '';
+    const dueAt = document.getElementById('activityDueInput')?.value || '';
+    const content = collectActivityEditor('activityContent');
+    const review = collectActivityEditor('activityReview');
+    const { criteria, total } = updateRubricTotal();
+    if (!title || !lessonId) return fail('Completa el nombre y la clase relacionada.');
+    if (!startsAt || !dueAt || dueAt < startsAt) return fail('Revisa las fechas de inicio y entrega.');
+    const contentError = validateActivityEditor(content, 'Actividad');
+    if (contentError) return fail(contentError);
+    const reviewError = validateActivityEditor(review, 'Revisión');
+    if (reviewError) return fail(reviewError);
+    if (total !== 100 || !criteria.length || criteria.some((item) => !item.name)) return fail('Los criterios completos deben sumar exactamente 100%.');
+    if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase.');
+    submit.disabled = true;
+    submit.textContent = 'Guardando...';
+    try {
+      const activity = await cloudAPI().createActivity({
+        currentAssignment: state.assignment,
+        targetAssignmentIds: [state.assignment.id],
+        title,
+        lessonId,
+        period,
+        startsAt,
+        dueAt,
+        contentType: content.type,
+        contentText: content.text,
+        contentHtml: content.html,
+        contentCss: content.css,
+        contentFiles: content.files,
+        reviewType: review.type,
+        reviewText: review.text,
+        reviewHtml: review.html,
+        reviewCss: review.css,
+        reviewFiles: review.files,
+        rubric: criteria
+      });
+      state.data.activities = state.data.activities || [];
+      state.data.activities.push(activity);
+      closeModal(false);
+      syncAcademicPeriodState(period);
+      renderActivitiesTab({ animate: true });
+      toast('Actividad guardada en Supabase.');
+    } catch (error) {
+      fail(error?.message || 'No se pudo guardar la actividad.');
+      reportCloudError('No se pudo guardar la actividad', error, { silent: true });
+      submit.disabled = false;
+      submit.textContent = 'Guardar actividad';
+    }
   }
 
   function renderClassesTab(options = {}) {
@@ -11738,7 +12109,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.322', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.323', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

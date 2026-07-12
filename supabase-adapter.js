@@ -228,6 +228,29 @@
     };
   }
 
+  function mapActivity(row) {
+    const activity = Array.isArray(row?.activity) ? row.activity[0] : row?.activity;
+    if (!activity) return null;
+    return {
+      id: String(activity.id || ''),
+      title: activity.title || 'Actividad',
+      lessonId: activity.lesson_id || '',
+      period: Number(activity.period || 1),
+      startsAt: activity.starts_at || '',
+      dueAt: activity.due_at || '',
+      contentType: activity.content_type || 'rich_text',
+      contentPayload: activity.content_payload && typeof activity.content_payload === 'object' ? activity.content_payload : {},
+      reviewType: activity.review_type || 'rich_text',
+      reviewPayload: activity.review_payload && typeof activity.review_payload === 'object' ? activity.review_payload : {},
+      rubric: Array.isArray(activity.rubric) ? activity.rubric : [],
+      status: activity.status || 'published',
+      assignmentId: row?.assignment_id || '',
+      assignmentIds: row?.assignment_id ? [row.assignment_id] : [],
+      sortOrder: Number(row?.sort_order || 0),
+      createdAt: activity.created_at || ''
+    };
+  }
+
   function cleanQuizPayload(quiz) {
     const payload = JSON.parse(JSON.stringify(quiz || {}));
     [
@@ -341,14 +364,20 @@
     const students = enrollmentRows.map(mapStudent).filter(Boolean).sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
 
     let lessonRows = [];
+    let activityRows = [];
     let quizAssignmentRows = [];
     let attendanceRows = [];
     let rockstarRows = [];
     if (assignmentIds.length) {
-      const [lessonsResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
+      const [lessonsResult, activitiesResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
         supabaseClient
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
+          .in('assignment_id', assignmentIds)
+          .eq('visible', true),
+        supabaseClient
+          .from('activity_assignments')
+          .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
           .in('assignment_id', assignmentIds)
           .eq('visible', true),
         supabaseClient
@@ -366,10 +395,12 @@
           .order('occurred_at', { ascending: true })
       ]);
       if (lessonsResult.error) throw normalizeError(lessonsResult.error, 'No se pudieron cargar las clases.');
+      if (activitiesResult.error) throw normalizeError(activitiesResult.error, 'No se pudieron cargar las actividades.');
       if (quizzesResult.error) throw normalizeError(quizzesResult.error, 'No se pudieron cargar los quizzes.');
       if (attendanceResult.error) throw normalizeError(attendanceResult.error, 'No se pudo cargar la asistencia.');
       if (rockstarResult.error) throw normalizeError(rockstarResult.error, 'No se pudieron cargar los puntos Rockstar.');
       lessonRows = (lessonsResult.data || []).filter((row) => !LEGACY_DEMO_LESSON_IDS.includes(nestedId(row, 'lesson')));
+      activityRows = activitiesResult.data || [];
       quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
       attendanceRows = attendanceResult.data || [];
       rockstarRows = rockstarResult.data || [];
@@ -387,6 +418,17 @@
       existing.sortOrder = Math.min(existing.sortOrder || 0, lesson.sortOrder || 0);
     });
 
+    const uniqueActivities = new Map();
+    activityRows.map(mapActivity).filter(Boolean).forEach((activity) => {
+      const existing = uniqueActivities.get(activity.id);
+      if (!existing) {
+        uniqueActivities.set(activity.id, activity);
+        return;
+      }
+      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(activity.assignmentIds || [])])];
+      existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
+    });
+
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
       .from('user_preferences')
       .select('preferences')
@@ -401,6 +443,7 @@
         assignments,
         students,
         classes: [...uniqueLessons.values()],
+        activities: [...uniqueActivities.values()],
         rockstars: mapRockstarEvents(rockstarRows),
         quizzes: mapQuizAssignments(quizAssignmentRows)
       },
@@ -727,6 +770,106 @@
   }
 
 
+  function newActivityId() {
+    const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `activity-${token}`;
+  }
+
+  async function uploadActivityFiles({ activityId, section, files = [] }) {
+    const supabaseClient = getClient();
+    const activeSession = session || await getSession();
+    const bucket = config.storageBucket || 'lms-public';
+    const uploaded = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const extension = String(file?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+      const path = `${activeSession.user.id}/activities/${activityId}/${section}/${String(index + 1).padStart(2, '0')}-${safeStorageName(file?.name || `archivo.${extension}`)}`;
+      const result = await supabaseClient.storage.from(bucket).upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file?.type || undefined
+      });
+      if (result.error) throw normalizeError(result.error, `No se pudo subir ${file?.name || 'el archivo'}.`);
+      uploaded.push({
+        name: file?.name || `archivo-${index + 1}`,
+        type: file?.type || '',
+        size: Number(file?.size || 0),
+        path,
+        url: supabaseClient.storage.from(bucket).getPublicUrl(path).data?.publicUrl || ''
+      });
+    }
+    return uploaded;
+  }
+
+  async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], rubric = [] }) {
+    const supabaseClient = getClient();
+    const activeSession = session || await getSession();
+    if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
+    const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
+    if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
+    const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
+    if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
+    const activityId = newActivityId();
+    const uploadedPaths = [];
+    try {
+      const assignmentUploads = await uploadActivityFiles({ activityId, section: 'assignment', files: contentFiles });
+      const reviewUploads = await uploadActivityFiles({ activityId, section: 'review', files: reviewFiles });
+      uploadedPaths.push(...assignmentUploads.map((item) => item.path), ...reviewUploads.map((item) => item.path));
+      const contentPayload = { text: contentText, html: contentHtml, css: contentCss, files: assignmentUploads };
+      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads };
+      const row = {
+        id: activityId,
+        owner_id: activeSession.user.id,
+        title: String(title || '').trim(),
+        lesson_id: lessonId || null,
+        period: Number(period || 1),
+        starts_at: startsAt || null,
+        due_at: dueAt || null,
+        content_type: contentType,
+        content_payload: contentPayload,
+        review_type: reviewType,
+        review_payload: reviewPayload,
+        rubric,
+        status: 'published'
+      };
+      const activityResult = await supabaseClient.from('activities').insert(row);
+      if (activityResult.error) throw normalizeError(activityResult.error, 'No se pudo crear la actividad.');
+      const linkRows = ids.map((assignmentId, index) => ({
+        activity_id: activityId,
+        assignment_id: assignmentId,
+        sort_order: Math.floor(Date.now() / 1000) + index,
+        visible: true
+      }));
+      const linksResult = await supabaseClient.from('activity_assignments').insert(linkRows);
+      if (linksResult.error) throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
+      return {
+        id: activityId,
+        title: row.title,
+        lessonId: row.lesson_id || '',
+        period: row.period,
+        startsAt: row.starts_at || '',
+        dueAt: row.due_at || '',
+        contentType: row.content_type,
+        contentPayload,
+        reviewType: row.review_type,
+        reviewPayload,
+        rubric,
+        status: row.status,
+        assignmentId: ids[0],
+        assignmentIds: ids,
+        sortOrder: linkRows[0]?.sort_order || 0,
+        createdAt: new Date().toISOString()
+      };
+    } catch (error) {
+      try { await supabaseClient.from('activity_assignments').delete().eq('activity_id', activityId); } catch (_) {}
+      try { await supabaseClient.from('activities').delete().eq('id', activityId); } catch (_) {}
+      if (uploadedPaths.length) {
+        try { await supabaseClient.storage.from(config.storageBucket || 'lms-public').remove(uploadedPaths); } catch (_) {}
+      }
+      throw error;
+    }
+  }
+
   async function deletePdfLesson({ lessonId, assignmentId, mode = 'all', storagePdfPath = '', storageThumbnailPath = '' }) {
     const supabaseClient = getClient();
     const safeLessonId = String(lessonId || '').trim();
@@ -880,6 +1023,7 @@
     uploadAssignmentImage,
     resetAssignmentImage,
     createPdfLesson,
+    createActivity,
     deletePdfLesson,
     recordLessonView,
     startQuizAttempt,
