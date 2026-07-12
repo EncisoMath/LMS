@@ -10075,6 +10075,8 @@
     const lesson = activityRelatedLesson(activity);
     const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
+    const progress = activityProgressForCurrentAssignment(activity);
+    const gradeCourse = emRsGetAssignmentGradeCourse(state.assignment);
     mount(`
       <main class="screen em-activity-detail-screen">
         <header class="topbar fixed-lock em-activity-detail-topbar">
@@ -10083,13 +10085,43 @@
           <span class="spacer"></span>
         </header>
         <div class="em-activity-detail-wrap">
-          <article class="em-activity-detail-main">
-            <p class="section-kicker">Periodo ${Number(activity.period || 1)}</p>
-            <h2>${escapeHTML(activity.title || 'Actividad')}</h2>
-            <div class="em-activity-detail-meta">
-              <span>${lesson ? escapeHTML(lesson.title || 'Clase') : 'Sin clase relacionada'}</span>
-              <span>Inicio: ${escapeHTML(start)}</span>
-              <span>Entrega: ${escapeHTML(due)}</span>
+          <section class="activity-hero em-act-hero-host em-activity-detail-hero" data-em-activities-hero aria-label="Detalle de la actividad">
+            <div class="em-act-shapes" aria-hidden="true">
+              <span class="em-act-shape em-act-shape-circle"></span>
+              <span class="em-act-shape em-act-shape-square"></span>
+              <span class="em-act-shape em-act-shape-triangle"></span>
+              <span class="em-act-shape em-act-shape-x"></span>
+            </div>
+            <div class="em-act-board" aria-hidden="true">
+              <span class="em-act-sheet em-act-sheet-back"></span>
+              <span class="em-act-sheet em-act-sheet-mid"></span>
+              <span class="em-act-sheet em-act-sheet-front">
+                <i class="em-act-sheet-line em-act-line-one"></i>
+                <i class="em-act-sheet-line em-act-line-two"></i>
+                <i class="em-act-sheet-line em-act-line-three"></i>
+                <i class="em-act-check em-act-check-one">✓</i>
+                <i class="em-act-check em-act-check-two">✓</i>
+              </span>
+              <span class="em-act-pencil">✎</span>
+            </div>
+            <div class="em-act-content em-activity-detail-hero-copy">
+              <span class="em-act-eyebrow">PERIODO ${Number(activity.period || 1)} • ${escapeHTML(gradeCourse)}</span>
+              <h2 class="em-act-title em-activity-detail-title">${escapeHTML(activity.title || 'Actividad')}</h2>
+              <p class="em-act-subtitle">${lesson ? `Clase relacionada: ${escapeHTML(lesson.title || 'Clase')}` : 'Actividad independiente'}</p>
+              <div class="em-activity-detail-meta em-activity-detail-meta-hero">
+                <span>${lesson ? `Tema: ${escapeHTML(lesson.title || 'Clase')}` : 'Sin clase relacionada'}</span>
+                <span>Inicio: ${escapeHTML(start)}</span>
+                <span>Entrega: ${escapeHTML(due)}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="em-activity-detail-main">
+            <div class="em-activity-overview-grid" aria-label="Resumen de la actividad">
+              <article><small>Entregaron</small><strong>${progress.delivered}</strong><span>de ${progress.total}</span></article>
+              <article><small>Calificados</small><strong>${progress.graded}</strong><span>de ${progress.total}</span></article>
+              <article><small>Pendientes</small><strong>${progress.pending}</strong><span>por revisar</span></article>
+              <article><small>Avance</small><strong>${progress.percentage}%</strong><span>completado</span></article>
             </div>
             <section class="em-activity-content-stage" aria-label="Contenido de la actividad">
               ${activityContentShellHTML(activity)}
@@ -10098,7 +10130,7 @@
               <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
               <button class="ghost-btn em-activity-delete-btn" id="deleteActivityBtn" type="button">Eliminar actividad</button>
             </div>
-          </article>
+          </section>
 
           <section class="em-activity-gradebook">
             <div class="em-activity-gradebook-head">
@@ -10120,7 +10152,8 @@
       document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
       initActivityDetailContent(activity);
       loadActivityGradebook(activity);
-      emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), ['.em-activity-detail-main > *', '.em-activity-gradebook'], { duration: 480, stagger: 35, distance: 14, scale: .98 });
+      emActInitActivitiesHero(document);
+      emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook'], { duration: 480, stagger: 35, distance: 14, scale: .985 });
     });
   }
 
@@ -10489,32 +10522,50 @@
     const currentCodes = new Set(currentGroup.map((item) => item.studentCode));
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
+    const notesCount = (record.observations ? 1 : 0) + eventHistory.length;
     openModal(`
       <section class="modal-card em-activity-grade-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <p class="section-kicker">Calificar actividad</p>
         <h2 id="activityGradeTitle">${escapeHTML(record.fullName)}</h2>
+        <div class="em-activity-grade-tabbar" role="tablist" aria-label="Opciones de calificación">
+          <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="notes">Observaciones${notesCount ? `<span class="em-grade-tab-count">${notesCount}</span>` : ''}</button>
+        </div>
         <form id="activityGradeForm" class="em-activity-grade-form">
-          <div class="em-grade-form-section">
-            <div class="em-grade-form-heading"><h3>Grupo</h3><p>Selecciona compañeros si realizaron la actividad juntos.</p></div>
-            <label class="em-grade-group-search"><span>⌕</span><input id="activityGroupSearch" type="search" placeholder="Buscar estudiante" /></label>
-            <div class="em-grade-group-options" id="activityGroupOptions">
-              ${gradebook.map((item) => `<label data-group-option data-search="${escapeAttr(normalizeSearch(`${item.lastName} ${item.firstName} ${item.fullName}`))}"><input type="checkbox" data-group-student="${escapeAttr(item.studentCode)}" ${item.studentCode === record.studentCode || currentCodes.has(item.studentCode) ? 'checked' : ''} ${item.studentCode === record.studentCode ? 'disabled' : ''}/><span>${escapeHTML(item.fullName)}</span></label>`).join('')}
-            </div>
-          </div>
-
-          <div class="em-grade-form-section">
+          <section class="em-grade-form-section" data-grade-modal-panel="score">
+            <div class="em-grade-form-heading"><h3>Calificación</h3><p>Asigna la nota manualmente o utiliza los valores rápidos.</p></div>
             <label class="field-label" for="activityScoreInput">Calificación</label>
             <input class="input em-grade-main-score" id="activityScoreInput" type="number" min="0" max="100" step="1" value="${Number(record.score ?? 40)}" required />
             <div class="em-quick-grades" aria-label="Calificaciones rápidas">
               ${[100,95,90,85,80,75,70,65,60,55,50,45,40].map((score) => `<button type="button" data-quick-grade="${score}" ${Number(record.score) === score ? 'class="is-selected"' : ''}>${score}</button>`).join('')}
             </div>
-            <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
-          </div>
+          </section>
 
-          <hr class="em-grade-divider" />
-          <div class="em-grade-form-section">
-            <div class="em-grade-form-heading"><h3>Intentos de entrega y solicitudes</h3><p>Registra cada seguimiento que hagas sobre la entrega.</p></div>
+          <section class="em-grade-form-section" data-grade-modal-panel="delivery" hidden>
+            <div class="em-grade-form-heading"><h3>Entrega</h3><p>Consulta o reemplaza el archivo que entregó el estudiante.</p></div>
+            ${existingFile ? `<a class="em-submission-current-file" href="${escapeAttr(existingFile.url)}" target="_blank" rel="noopener">📎 ${escapeHTML(existingFile.name || 'Abrir archivo actual')}</a>` : '<p class="em-activity-panel-empty">Este estudiante aún no tiene archivo adjunto.</p>'}
+            <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>${existingFile ? 'Reemplazar archivo' : 'Adjuntar archivo'}</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
+            <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
+          </section>
+
+          <section class="em-grade-form-section" data-grade-modal-panel="group" hidden>
+            <div class="em-grade-form-heading"><h3>Grupo</h3><p>Selecciona compañeros si realizaron la actividad juntos.</p></div>
+            <label class="em-grade-group-search"><span>⌕</span><input id="activityGroupSearch" type="search" placeholder="Buscar estudiante" /></label>
+            <div class="em-grade-group-options" id="activityGroupOptions">
+              ${gradebook.map((item) => `<label data-group-option data-search="${escapeAttr(normalizeSearch(`${item.lastName} ${item.firstName} ${item.fullName}`))}"><input type="checkbox" data-group-student="${escapeAttr(item.studentCode)}" ${item.studentCode === record.studentCode || currentCodes.has(item.studentCode) ? 'checked' : ''} ${item.studentCode === record.studentCode ? 'disabled' : ''}/><span>${escapeHTML(item.fullName)}</span></label>`).join('')}
+            </div>
+            <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
+          </section>
+
+          <section class="em-grade-form-section" data-grade-modal-panel="notes" hidden>
+            <div class="em-grade-form-heading"><h3>Observaciones</h3><p>Registra comentarios, seguimientos e intentos de entrega.</p></div>
+            <label class="field-label" for="activityObservationsInput">Observaciones</label>
+            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe observaciones para el estudiante o el grupo…">${escapeHTML(record.observations || '')}</textarea>
+            <hr class="em-grade-divider" />
+            <div class="em-grade-form-heading em-grade-form-heading-inline"><h3>Intentos de entrega y solicitudes</h3><p>Elige un estado y añade una nota breve si lo necesitas.</p></div>
             <div class="em-delivery-status-grid">
               ${ACTIVITY_DELIVERY_STATUSES.map(([value, label]) => `<button type="button" data-delivery-status="${value}">${label}</button>`).join('')}
             </div>
@@ -10522,22 +10573,10 @@
             <div class="em-delivery-history">
               ${eventHistory.length ? eventHistory.slice().reverse().map((event) => `<div><span>${escapeHTML(activityDeliveryLabel(event.status))}</span><small>${escapeHTML(formatAcademicDate(String(event.occurredAt || '').slice(0, 10)))}${event.note ? ` · ${escapeHTML(event.note)}` : ''}</small></div>`).join('') : '<p>Aún no hay seguimientos registrados.</p>'}
             </div>
-          </div>
-
-          <div class="em-grade-form-section">
-            <label class="field-label" for="activityObservationsInput">Observaciones</label>
-            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe observaciones para el estudiante o el grupo…">${escapeHTML(record.observations || '')}</textarea>
-          </div>
-
-          <div class="em-grade-form-section">
-            <label class="field-label" for="activitySubmissionFile">Archivo de entrega</label>
-            ${existingFile ? `<a class="em-submission-current-file" href="${escapeAttr(existingFile.url)}" target="_blank" rel="noopener">📎 ${escapeHTML(existingFile.name || 'Abrir archivo actual')}</a>` : ''}
-            <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>${existingFile ? 'Reemplazar archivo' : 'Adjuntar archivo'}</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
-            <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
-          </div>
+          </section>
 
           <p class="em-class-create-error" id="activityGradeError" role="alert"></p>
-          <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Guardar calificación</button></div>
+          <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Enviar calificación</button></div>
         </form>
       </section>
     `, () => initActivityGradeModal(activity, record, currentGroup));
@@ -10550,18 +10589,30 @@
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
     let selectedDeliveryStatus = '';
 
+    const setActiveTab = (tabName = 'score') => {
+      document.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
+        const active = button.dataset.gradeModalTab === tabName;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('[data-grade-modal-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.gradeModalPanel !== tabName;
+      });
+    };
+
     const refreshOverrides = () => {
       const host = document.getElementById('activityGroupScoreOverrides');
       if (!host) return;
       const checkedCodes = [...document.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
       const extras = checkedCodes.filter((code) => code !== record.studentCode);
-      host.innerHTML = extras.length ? `<p>Calificación individual dentro del grupo</p>${extras.map((code) => {
+      host.innerHTML = extras.length ? `<p>Si un integrante obtuvo otra nota, ajústala aquí.</p>${extras.map((code) => {
         const member = (state.activityGradebook || []).find((item) => item.studentCode === code);
         const value = existingScores.has(code) ? existingScores.get(code) : Number(mainScore?.value || 40);
         return `<label><span>${escapeHTML(member?.fullName || code)}</span><input class="input" type="number" min="0" max="100" step="1" data-group-score="${escapeAttr(code)}" value="${value}" /></label>`;
-      }).join('')}` : '';
+      }).join('')}` : '<p>Si no seleccionas compañeros, la calificación será individual.</p>';
     };
 
+    document.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
     groupOptions?.querySelectorAll('[data-group-student]').forEach((input) => input.addEventListener('change', refreshOverrides));
     document.getElementById('activityGroupSearch')?.addEventListener('input', (event) => {
       const query = normalizeSearch(event.target.value || '');
@@ -10583,6 +10634,7 @@
       if (label) label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF o imagen · máximo 20 MB';
     });
     refreshOverrides();
+    setActiveTab('score');
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -10626,7 +10678,7 @@
         if (errorBox) errorBox.textContent = error?.message || 'No se pudo guardar la calificación.';
         reportCloudError('No se pudo guardar la calificación', error, { silent: true });
         save.disabled = false;
-        save.textContent = 'Guardar calificación';
+        save.textContent = 'Enviar calificación';
       }
     });
   }
