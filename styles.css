@@ -28044,3 +28044,342 @@ html body #app .em-pdf-loading.is-error {
   .em-subject-section-select-wrap { width: 100%; min-height: 42px; border-radius: 11px; }
   .em-subject-section-select { font-size: .74rem; }
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.325 - MODAL DE ACTIVIDADES / TEMA DEL CURSO
+========================================================= */
+body.modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+body.modal-open #app {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+html body .modal-layer {
+  z-index: 10000 !important;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+  overscroll-behavior: contain;
+  pointer-events: auto !important;
+}
+html body .modal-layer .modal-card {
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + env(safe-area-inset-bottom))) !important;
+  overscroll-behavior: contain;
+}
+
+/* El color activo siempre proviene de la asignatura/curso abierto. */
+.tab-section[data-active-tab="classes"] .em-view-switch .mini-btn,
+.tab-section[data-active-tab="activities"] .em-view-switch .mini-btn,
+.tab-section[data-active-tab="quizzes"] .em-view-switch .mini-btn {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 16%, transparent) !important;
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 52%, white) !important;
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 34%, transparent) !important;
+}
+.tab-section[data-active-tab="classes"] .em-view-switch .mini-btn.selected,
+.tab-section[data-active-tab="activities"] .em-view-switch .mini-btn.selected,
+.tab-section[data-active-tab="quizzes"] .em-view-switch .mini-btn.selected {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #fff) !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 28%, transparent) !important;
+}
+
+.em-activity-create-modal {
+  --maincolor: var(--em-current-subject-color, #1368ce);
+  width: min(780px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px) !important;
+  padding: 22px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-padding-bottom: 96px;
+}
+.em-activity-create-modal > .section-kicker {
+  margin: 0 0 5px;
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, white);
+}
+.em-activity-create-modal > h2 {
+  margin: 0;
+  padding-right: 44px;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  line-height: 1.08;
+}
+.em-activity-create-modal .modal-close {
+  z-index: 5;
+}
+.em-activity-create-modal .primary-btn,
+.em-activity-create-modal #activityNextTabBtn,
+.em-activity-create-modal #createActivitySubmitBtn {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #fff) !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 30%, transparent) !important;
+}
+.em-activity-create-modal .primary-btn:disabled,
+.em-activity-create-modal #createActivitySubmitBtn:disabled {
+  opacity: .42 !important;
+  box-shadow: none !important;
+}
+.em-activity-create-modal .mini-btn {
+  --maincolor: var(--em-current-subject-color, #1368ce);
+}
+
+.em-activity-modal-tabs {
+  position: sticky;
+  top: -22px;
+  z-index: 4;
+  gap: 8px;
+  margin: 18px -4px 16px;
+  padding: 7px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: color-mix(in srgb, var(--modal-bg) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.16);
+}
+.em-activity-modal-tabs button {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: .75rem;
+}
+.em-activity-modal-tabs button.is-active {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #fff) !important;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 28%, transparent) !important;
+}
+
+.em-activity-create-form {
+  display: grid;
+  gap: 16px;
+}
+.em-activity-create-form .em-activity-tab-page {
+  display: grid;
+  gap: 14px;
+}
+.em-activity-create-form .em-activity-tab-page[hidden] {
+  display: none !important;
+}
+.em-activity-form-block {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.em-activity-block-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-width: 0;
+}
+.em-activity-block-head > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.em-activity-block-head h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: .93rem;
+  line-height: 1.2;
+}
+.em-activity-block-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.45;
+}
+.em-activity-step-badge {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--em-current-subject-color, #1368ce);
+  color: var(--em-current-subject-ink, #fff);
+  font: 850 .73rem/1 Montserrat, Arial, sans-serif;
+  box-shadow: 0 6px 15px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 25%, transparent);
+}
+.em-activity-field-stack {
+  display: grid;
+  gap: 7px;
+}
+.em-activity-field-stack + .em-activity-field-stack {
+  margin-top: 1px;
+}
+.em-activity-create-modal .field-label {
+  margin: 0;
+  font-size: .75rem;
+  line-height: 1.25;
+}
+.em-activity-create-modal .input,
+.em-activity-create-modal .select {
+  min-height: 44px;
+}
+.em-activity-date-grid {
+  gap: 12px;
+}
+.em-activity-date-grid label {
+  gap: 7px;
+}
+.em-activity-date-grid label > span {
+  font-size: .71rem;
+  line-height: 1.2;
+}
+.em-activity-content-editor {
+  display: grid;
+  gap: 12px;
+}
+.em-activity-format-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.em-activity-format-head small {
+  color: var(--muted);
+  font-size: .65rem;
+}
+.em-activity-type-grid {
+  gap: 10px;
+}
+.em-activity-type-option span {
+  min-height: 72px;
+  gap: 6px;
+  border-radius: 12px;
+}
+.em-activity-type-option input:checked + span {
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-color, #1368ce) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, transparent) !important;
+}
+.em-activity-editor-panel {
+  gap: 10px;
+}
+.em-activity-editor-panel .em-file-drop {
+  margin-top: 1px;
+}
+.em-rich-toolbar {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.em-rich-toolbar button {
+  min-height: 34px;
+}
+.em-rich-editor {
+  min-height: 170px;
+  line-height: 1.55;
+}
+.em-activity-rubric-block {
+  gap: 13px;
+}
+.em-rubric-head {
+  align-items: flex-start;
+  margin: 0;
+}
+.em-rubric-head .em-activity-block-head {
+  flex: 1 1 auto;
+}
+.em-rubric-head > #addRubricCriterionBtn {
+  flex: 0 0 auto;
+  min-height: 36px;
+  white-space: nowrap;
+}
+.em-rubric-list {
+  gap: 10px;
+}
+.em-rubric-row {
+  gap: 9px;
+}
+.em-rubric-total {
+  min-height: 44px;
+  padding: 11px 14px;
+}
+.em-class-create-error {
+  margin: -3px 0 0;
+}
+.em-activity-modal-actions {
+  position: sticky;
+  z-index: 5;
+  bottom: -22px;
+  min-height: 72px;
+  margin: 0 -22px -22px;
+  padding: 16px 22px max(16px, env(safe-area-inset-bottom));
+  align-items: center;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--modal-bg) 97%, transparent) 28%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.em-activity-modal-actions .primary-btn,
+.em-activity-modal-actions .ghost-btn {
+  min-height: 42px;
+}
+
+@media (max-width: 760px) {
+  html body .modal-layer {
+    align-items: center !important;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)) !important;
+  }
+  .em-activity-create-modal {
+    width: min(100%, calc(100vw - 16px));
+    max-height: calc(100dvh - 16px) !important;
+    padding: 17px 14px;
+    border-radius: 15px;
+  }
+  .em-activity-modal-tabs {
+    top: -17px;
+    margin-left: -1px;
+    margin-right: -1px;
+  }
+  .em-activity-form-block {
+    padding: 14px 12px;
+    gap: 13px;
+  }
+  .em-activity-date-grid {
+    grid-template-columns: 1fr;
+  }
+  .em-activity-type-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .em-rubric-head {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .em-rubric-head > #addRubricCriterionBtn {
+    justify-self: end;
+  }
+  .em-rubric-row {
+    grid-template-columns: minmax(0,1fr) 74px 34px;
+  }
+  .em-activity-modal-actions {
+    bottom: -17px;
+    margin: 0 -14px -17px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* Refuerzo por ID: evita que cualquier regla global vuelva azules estas vistas. */
+#gridModeBtn,
+#listModeBtn,
+#activityGridModeBtn,
+#activityListModeBtn,
+#quizGridModeBtn,
+#quizListModeBtn {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 16%, transparent) !important;
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 52%, white) !important;
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 34%, transparent) !important;
+}
+#gridModeBtn.selected,
+#listModeBtn.selected,
+#activityGridModeBtn.selected,
+#activityListModeBtn.selected,
+#quizGridModeBtn.selected,
+#quizListModeBtn.selected {
+  background: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #fff) !important;
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+}

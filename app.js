@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.324';
+  const APP_VERSION = '0.24.325';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -9869,7 +9869,10 @@
   function activityContentEditorHTML(prefix, type = 'pdf') {
     return `
       <div class="em-activity-content-editor" data-content-editor="${escapeAttr(prefix)}">
-        <label class="field-label" for="${prefix}Type">Formato</label>
+        <div class="em-activity-format-head">
+          <span class="field-label">Formato</span>
+          <small>Selecciona una sola opción</small>
+        </div>
         <div class="em-activity-type-grid" role="radiogroup" aria-label="Formato del contenido">
           ${[
             ['pdf', 'PDF', '📄'],
@@ -9920,35 +9923,67 @@
           <button type="button" role="tab" aria-selected="false" data-activity-modal-tab="review">Revisión de actividad</button>
         </div>
         <form id="addActivityForm" class="em-activity-create-form">
-          <section data-activity-tab-panel="assign">
-            <label class="field-label" for="activityTitleInput">Nombre de la actividad</label>
-            <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" required />
-
-            <label class="field-label" for="activityLessonInput">Clase o tema relacionado</label>
-            <select class="select" id="activityLessonInput" required ${lessons.length ? '' : 'disabled'}>
-              <option value="">Selecciona una clase</option>
-              ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}">${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
-            </select>
-            ${lessons.length ? '' : '<p class="em-activity-inline-warning">Primero debes crear una clase para relacionar esta actividad.</p>'}
-
-            <div class="em-activity-date-grid">
-              <label><span>Periodo</span><select class="select" id="activityPeriodInput">${[1,2,3,4].map((period) => `<option value="${period}" ${period === automaticPeriod ? 'selected' : ''}>Periodo ${period}</option>`).join('')}</select></label>
-              <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${today}" required /></label>
-              <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${today}" required /></label>
+          <section class="em-activity-tab-page" data-activity-tab-panel="assign">
+            <div class="em-activity-form-block">
+              <div class="em-activity-block-head">
+                <span class="em-activity-step-badge">1</span>
+                <div><h3>Información principal</h3><p>Identifica la actividad y relaciónala con el tema que están trabajando.</p></div>
+              </div>
+              <div class="em-activity-field-stack">
+                <label class="field-label" for="activityTitleInput">Nombre de la actividad</label>
+                <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" required />
+              </div>
+              <div class="em-activity-field-stack">
+                <label class="field-label" for="activityLessonInput">Clase o tema relacionado</label>
+                <select class="select" id="activityLessonInput" required ${lessons.length ? '' : 'disabled'}>
+                  <option value="">Selecciona una clase</option>
+                  ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}">${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
+                </select>
+                ${lessons.length ? '' : '<p class="em-activity-inline-warning">Primero debes crear una clase para relacionar esta actividad.</p>'}
+              </div>
             </div>
 
-            ${activityContentEditorHTML('activityContent', 'pdf')}
+            <div class="em-activity-form-block">
+              <div class="em-activity-block-head">
+                <span class="em-activity-step-badge">2</span>
+                <div><h3>Calendario</h3><p>El periodo se selecciona automáticamente, pero puedes cambiarlo.</p></div>
+              </div>
+              <div class="em-activity-date-grid">
+                <label><span>Periodo</span><select class="select" id="activityPeriodInput">${[1,2,3,4].map((period) => `<option value="${period}" ${period === automaticPeriod ? 'selected' : ''}>Periodo ${period}</option>`).join('')}</select></label>
+                <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${today}" required /></label>
+                <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${today}" required /></label>
+              </div>
+            </div>
+
+            <div class="em-activity-form-block">
+              <div class="em-activity-block-head">
+                <span class="em-activity-step-badge">3</span>
+                <div><h3>Contenido de la actividad</h3><p>Elige cómo recibirán los estudiantes las instrucciones.</p></div>
+              </div>
+              ${activityContentEditorHTML('activityContent', 'pdf')}
+            </div>
           </section>
 
-          <section data-activity-tab-panel="review" hidden>
-            <p class="card-sub">Añade la respuesta, solución o guía de revisión y define cómo se calificará.</p>
-            ${activityContentEditorHTML('activityReview', 'rich_text')}
-            <div class="em-rubric-head">
-              <div><span class="field-label">Criterios de evaluación</span><small>La suma debe ser exactamente 100%.</small></div>
-              <button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button>
+          <section class="em-activity-tab-page" data-activity-tab-panel="review" hidden>
+            <div class="em-activity-form-block">
+              <div class="em-activity-block-head">
+                <span class="em-activity-step-badge">4</span>
+                <div><h3>Respuesta o guía de revisión</h3><p>Añade la solución, respuesta esperada o material que usarás para revisar.</p></div>
+              </div>
+              ${activityContentEditorHTML('activityReview', 'rich_text')}
             </div>
-            <div class="em-rubric-list" id="activityRubricList"></div>
-            <div class="em-rubric-total" id="activityRubricTotal"><span>Total</span><strong>0%</strong></div>
+
+            <div class="em-activity-form-block em-activity-rubric-block">
+              <div class="em-rubric-head">
+                <div class="em-activity-block-head em-activity-block-head-compact">
+                  <span class="em-activity-step-badge">5</span>
+                  <div><h3>Criterios de evaluación</h3><p>La suma debe ser exactamente 100% para guardar.</p></div>
+                </div>
+                <button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button>
+              </div>
+              <div class="em-rubric-list" id="activityRubricList"></div>
+              <div class="em-rubric-total" id="activityRubricTotal"><span>Total</span><strong>0%</strong></div>
+            </div>
           </section>
 
           <p class="em-class-create-error" id="activityCreateError" role="alert"></p>
@@ -11901,6 +11936,11 @@
   function openModal(markup, afterRender) {
     const existing = document.getElementById('modalLayer');
     if (existing) existing.remove();
+    const appRoot = document.getElementById('app');
+    if (appRoot) {
+      appRoot.inert = true;
+      appRoot.setAttribute('aria-hidden', 'true');
+    }
     const wrapper = document.createElement('div');
     wrapper.id = 'modalLayer';
     wrapper.className = 'modal-layer';
@@ -11922,6 +11962,11 @@
     const removeLayer = () => {
       layer.remove();
       document.body.classList.remove('modal-open');
+      const appRoot = document.getElementById('app');
+      if (appRoot) {
+        appRoot.inert = false;
+        appRoot.removeAttribute('aria-hidden');
+      }
     };
     if (!animate) {
       removeLayer();
@@ -12102,7 +12147,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.324', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.325', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
