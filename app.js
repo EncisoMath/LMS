@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.304';
+  const APP_VERSION = '0.24.305';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -465,6 +465,7 @@
     period: 1,
     classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
     rockstarPeriod: Number(localStorage.getItem('encisomath:rockstarPeriod') || 1),
+    activitiesPeriod: Number(localStorage.getItem('encisomath:activitiesPeriod') || 1),
     quizPeriod: Number(localStorage.getItem('encisomath:quizPeriod') || 1),
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
@@ -694,7 +695,7 @@
   }
   function normalizeSubjectTab(tab) {
     const value = String(tab || 'students');
-    return ['students', 'classes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
+    return ['students', 'classes', 'activities', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
   function appRouteKey(route) {
     const normalized = normalizeAppRoute(route);
@@ -1009,6 +1010,7 @@
           <div class="em-subject-top-tabs-track">
             <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students">👥 Estudiantes</button>
             <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes">📚 Clases</button>
+            <button class="em-subject-tab-btn ${tab === 'activities' ? 'is-active active' : ''}" id="activitiesTab" type="button" data-tab="activities">📝 Actividades</button>
             <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars">🚀 Rockstars</button>
             <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes">🎮 Quizzes</button>
           </div>
@@ -1022,12 +1024,14 @@
       document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
       document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
+      document.getElementById('activitiesTab').addEventListener('click', () => setSubjectTab('activities'));
       document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
       document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
       emInitSubjectToolbar(document);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
+      else if (tab === 'activities') renderActivitiesTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
       else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
       else renderClassesTab({ animate: true });
@@ -1065,10 +1069,12 @@
     };
     updateSubjectTopTab('studentsTab', tab === 'students');
     updateSubjectTopTab('classesTab', tab === 'classes');
+    updateSubjectTopTab('activitiesTab', tab === 'activities');
     updateSubjectTopTab('rockstarsTab', tab === 'rockstars');
     updateSubjectTopTab('quizzesTab', tab === 'quizzes');
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
+    else if (tab === 'activities') renderActivitiesTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
@@ -1164,20 +1170,6 @@
 
         saveAttendance(assignment.id, state.attendanceDate, current);
         updateStudentCardAttendance(studentId, storedStatus || 'none');
-        syncRockstarListAfterAttendanceChange();
-      });
-    });
-
-    document.querySelectorAll('.em-rs-trash-btn[data-student-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const studentId = button.dataset.studentId;
-        const current = getAttendance(assignment.id, state.attendanceDate);
-
-        emRsReplayClass(button, 'tap', 300);
-        delete current[studentId];
-
-        saveAttendance(assignment.id, state.attendanceDate, current);
-        updateStudentCardAttendance(studentId, 'none');
         syncRockstarListAfterAttendanceChange();
       });
     });
@@ -1298,8 +1290,8 @@
 
           </div>
           <div class="danger-copy">
-            <h2>RETIRARÁS ESTE ESTUDIANTE</h2>
-            <p>Se quitará del curso, pero conservará su historial académico.</p>
+            <h2>PASARÁS ESTE ESTUDIANTE A INACTIVO</h2>
+            <p>Dejará de aparecer en el curso, pero conservará intacto su historial académico.</p>
           </div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
@@ -1309,13 +1301,23 @@
             <span>ID ${escapeHTML(student.id)} · ${escapeHTML(assignment.sede)} · ${escapeHTML(assignment.grade)}° ${escapeHTML(assignment.course)}</span>
           </div>
           <div class="danger-actions">
-            <button class="danger-confirm" id="confirmDeleteStudent">Sí, retirar del curso</button>
+            <button class="danger-confirm" id="confirmDeleteStudent">Sí, pasar a inactivo</button>
             <button class="ghost-btn" data-close-modal>Cancelar</button>
           </div>
         </div>
       </div>
     `, () => {
-      document.getElementById('confirmDeleteStudent').addEventListener('click', () => deleteStudent(student));
+      const confirmButton = document.getElementById('confirmDeleteStudent');
+      confirmButton.addEventListener('click', async () => {
+        if (confirmButton.disabled) return;
+        confirmButton.disabled = true;
+        confirmButton.textContent = 'Guardando...';
+        await deleteStudent(student);
+        if (document.body.contains(confirmButton)) {
+          confirmButton.disabled = false;
+          confirmButton.textContent = 'Sí, pasar a inactivo';
+        }
+      });
       startDeleteWarningMotion();
     });
   }
@@ -1413,7 +1415,7 @@
       const key = cloudAttendanceKey(assignment.id, state.attendanceDate);
       if (state.cloud.attendance[key]) delete state.cloud.attendance[key][student.id];
       closeModal();
-      toast(`${student.fullName} fue retirado del curso en Supabase.`);
+      toast(`${student.fullName} quedó inactivo en este curso.`);
       renderStudentsTab({ animate: false });
     } catch (error) {
       reportCloudError('No se pudo retirar el estudiante', error);
@@ -9485,6 +9487,91 @@
     viewport.addEventListener('pointercancel', endPointer);
     apply();
   }
+
+  function emActActivitiesHeroHTML(subjectName = 'ESTADÍSTICA', gradeCourse = '113PPAL') {
+    const eyebrow = `${escapeHTML(subjectName)} • ${escapeHTML(gradeCourse)}`;
+    return `
+      <div class="em-act-shapes" aria-hidden="true">
+        <span class="em-act-shape em-act-shape-circle"></span>
+        <span class="em-act-shape em-act-shape-square"></span>
+        <span class="em-act-shape em-act-shape-triangle"></span>
+        <span class="em-act-shape em-act-shape-x"></span>
+      </div>
+      <div class="em-act-board" aria-hidden="true">
+        <span class="em-act-sheet em-act-sheet-back"></span>
+        <span class="em-act-sheet em-act-sheet-mid"></span>
+        <span class="em-act-sheet em-act-sheet-front">
+          <i class="em-act-sheet-line em-act-line-one"></i>
+          <i class="em-act-sheet-line em-act-line-two"></i>
+          <i class="em-act-sheet-line em-act-line-three"></i>
+          <i class="em-act-check em-act-check-one">✓</i>
+          <i class="em-act-check em-act-check-two">✓</i>
+        </span>
+        <span class="em-act-pencil">✎</span>
+      </div>
+      <div class="em-act-content">
+        <span class="em-act-eyebrow">${eyebrow}</span>
+        <h1 class="em-act-title">ACTIVIDADES</h1>
+        <p class="em-act-subtitle">Práctica, creación y trabajo para entregar.</p>
+      </div>
+    `;
+  }
+
+  function renderActivitiesTab(options = {}) {
+    const assignment = state.assignment;
+    const $content = document.getElementById('tabContent');
+    if (!assignment || !$content) return;
+    setActiveSubjectTabMeta('activities');
+
+    $content.innerHTML = `
+      <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
+        ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
+      </section>
+      <div class="period-tabs activity-period-tabs" id="activityPeriodTabs">
+        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.activitiesPeriod) === period ? 'active' : ''}" data-activity-period="${period}">${period}°</button>`).join('')}
+      </div>
+      <section class="em-activities-empty" id="activitiesPeriodContent" aria-live="polite">
+        ${activitiesPeriodHTML()}
+      </section>
+    `;
+
+    bindActivitiesTabEvents();
+    if (options.animate) pulseElement($content, 'tab-enter');
+  }
+
+  function activitiesPeriodHTML() {
+    return `
+      <div class="em-activities-empty-icon" aria-hidden="true">📝</div>
+      <p class="section-kicker">PERIODO ${Number(state.activitiesPeriod) || 1}</p>
+      <h2>Aún no hay actividades</h2>
+      <p>Este espacio queda preparado para las actividades, entregas y trabajos del periodo.</p>
+    `;
+  }
+
+  function bindActivitiesTabEvents() {
+    document.querySelectorAll('[data-activity-period]').forEach((button) => {
+      button.addEventListener('click', () => setActivitiesPeriod(Number(button.dataset.activityPeriod)));
+    });
+  }
+
+  function setActivitiesPeriod(period) {
+    if (![1, 2, 3, 4].includes(Number(period))) return;
+    if (Number(state.activitiesPeriod) === Number(period)) return;
+    const previous = document.querySelector(`[data-activity-period="${state.activitiesPeriod}"]`);
+    const next = document.querySelector(`[data-activity-period="${period}"]`);
+    previous?.classList.remove('active');
+    next?.classList.add('active');
+    pulseElement(previous, 'period-shift');
+    pulseElement(next, 'period-shift');
+    state.activitiesPeriod = Number(period);
+    localStorage.setItem('encisomath:activitiesPeriod', String(state.activitiesPeriod));
+    const content = document.getElementById('activitiesPeriodContent');
+    if (content) {
+      content.innerHTML = activitiesPeriodHTML();
+      pulseElement(content, 'class-grid-update');
+    }
+  }
+
   function renderClassesTab(options = {}) {
     const $content = document.getElementById('tabContent');
     if (!$content) return;
@@ -10005,7 +10092,7 @@
           </div>
         </div>
 
-        <button class="em-rs-trash-btn" type="button" data-student-id="${escapeAttr(id)}" aria-label="Limpiar asistencia">🗑️</button>
+        <button class="em-rs-trash-btn" type="button" data-delete-student="${escapeAttr(id)}" aria-label="Pasar estudiante a inactivo" title="Pasar estudiante a inactivo">🗑️</button>
 
         <div class="em-rs-att-actions">
           <button class="em-rs-att-btn present ${visualStatus === 'present' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="present">✅ Asistió</button>
@@ -10498,7 +10585,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.304', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.305', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

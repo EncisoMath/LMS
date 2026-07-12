@@ -1,12 +1,112 @@
 [
-  { "id": "mat-est-11-3", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "11", "course": "3", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-11-2", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "11", "course": "2", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-11-1", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "11", "course": "1", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-10-3", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "10", "course": "3", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-10-2", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "10", "course": "2", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-10-1", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "10", "course": "1", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-9-4", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "9", "course": "4", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-9-3", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "9", "course": "3", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-9-2", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "9", "course": "2", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" },
-  { "id": "mat-est-9-1", "teacherId": "0720", "area": "Matemáticas", "subject": "Estadística", "grade": "9", "course": "1", "sede": "Municipal", "icon": "./assets/subject-statistics.svg" }
+  {
+    "id": "mat-est-11-3",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "11",
+    "course": "3",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-11-2",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "11",
+    "course": "2",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-11-1",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "11",
+    "course": "1",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-10-3",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "10",
+    "course": "3",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-10-2",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "10",
+    "course": "2",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-10-1",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "10",
+    "course": "1",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-9-4",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "9",
+    "course": "4",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-9-3",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "9",
+    "course": "3",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-9-2",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "9",
+    "course": "2",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-9-1",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "9",
+    "course": "1",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  },
+  {
+    "id": "mat-est-8-4",
+    "teacherId": "0720",
+    "area": "Matemáticas",
+    "subject": "Estadística",
+    "grade": "8",
+    "course": "4",
+    "sede": "Municipal",
+    "icon": "./assets/subject-statistics.svg"
+  }
 ]

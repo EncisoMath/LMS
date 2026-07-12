@@ -62,3 +62,10 @@ Validación:
 - El instalador SQL con nombres y códigos se conserva fuera del repositorio público.
 - Los datos académicos se cargan únicamente desde Supabase tras autenticar al usuario.
 
+
+## v0.24.305
+
+- Nueva carga docente para Estadística 8-4 mediante migración Supabase.
+- La papelera de ESTUDIANTES ahora retira/inactiva la matrícula con confirmación.
+- Nueva pestaña ACTIVIDADES con héroe animado y selector horizontal por periodos.
+- Consulta `ACTUALIZACION_v0.24.305.md` antes de publicar.
