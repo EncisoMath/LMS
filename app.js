@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.315';
+  const APP_VERSION = '0.24.317';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10132,15 +10132,10 @@
     }
     const isPdf = lesson.lessonType === 'PDF' || lesson.type === 'PDF' || /\.pdf(?:$|[?#])/i.test(String(lesson.contentUrl || ''));
     const markup = `
-      <main class="screen class-screen em-pdf-class-screen">
-        <header class="topbar fixed-lock lesson-topbar">
-          <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
-          <h1>${escapeHTML(lesson.title || 'Clase')}</h1>
-          <span class="spacer"></span>
-          <a class="em-pdf-open-original" href="${escapeAttr(lesson.contentUrl || '#')}" target="_blank" rel="noopener" aria-label="Abrir PDF original">↗</a>
-        </header>
+      <main class="screen class-screen ${isPdf ? 'em-pdf-class-screen' : ''}">
         ${isPdf ? `
           <section class="em-pdf-notebook" id="pdfNotebook" aria-label="Lector de ${escapeAttr(lesson.title || 'clase')}">
+            <button class="em-pdf-float-btn em-pdf-back" id="backBtn" type="button" aria-label="Volver">←</button>
             <div class="em-pdf-stage" id="pdfStage">
               <button class="em-pdf-nav em-pdf-prev" id="pdfPrevBtn" type="button" aria-label="Página anterior">‹</button>
               <div class="em-pdf-page-viewport" id="pdfPageViewport">
@@ -10154,18 +10149,20 @@
               </div>
               <button class="em-pdf-nav em-pdf-next" id="pdfNextBtn" type="button" aria-label="Página siguiente">›</button>
             </div>
-            <footer class="em-pdf-footer">
-              <strong id="pdfPageIndicator">Página 1</strong>
-              <div class="em-pdf-zoom-controls" aria-label="Controles de zoom">
-                <button type="button" id="pdfZoomOutBtn" aria-label="Alejar">−</button>
-                <span id="pdfZoomIndicator">100%</span>
-                <button type="button" id="pdfZoomInBtn" aria-label="Acercar">＋</button>
-                <button type="button" id="pdfZoomResetBtn" aria-label="Restablecer zoom" title="Ajustar">Ajustar</button>
-              </div>
-              <span class="em-pdf-help">Desliza para cambiar de página · pellizca para ampliar</span>
-            </footer>
+            <div class="em-pdf-floating-zoom" aria-label="Controles de zoom">
+              <button class="em-pdf-float-btn" type="button" id="pdfZoomOutBtn" aria-label="Alejar">−</button>
+              <button class="em-pdf-float-btn" type="button" id="pdfZoomInBtn" aria-label="Acercar">＋</button>
+            </div>
+            <strong class="em-pdf-page-pill" id="pdfPageIndicator" aria-live="polite">1/1</strong>
           </section>
-        ` : `<iframe class="lesson-frame" src="${escapeAttr(lesson.contentUrl || '')}" title="${escapeAttr(lesson.title || 'Clase')}"></iframe>`}
+        ` : `
+          <header class="topbar fixed-lock lesson-topbar">
+            <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
+            <h1>${escapeHTML(lesson.title || 'Clase')}</h1>
+            <span class="spacer"></span>
+          </header>
+          <iframe class="lesson-frame" src="${escapeAttr(lesson.contentUrl || '')}" title="${escapeAttr(lesson.title || 'Clase')}"></iframe>
+        `}
       </main>
     `;
     mount(markup, () => {
@@ -10199,8 +10196,6 @@
     const indicator = document.getElementById('pdfPageIndicator');
     const zoomOut = document.getElementById('pdfZoomOutBtn');
     const zoomIn = document.getElementById('pdfZoomInBtn');
-    const zoomReset = document.getElementById('pdfZoomResetBtn');
-    const zoomIndicator = document.getElementById('pdfZoomIndicator');
     if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !prev || !next || !indicator) return;
 
     loading.hidden = false;
@@ -10243,11 +10238,9 @@
     const updateControls = () => {
       prev.disabled = pageNumber <= 1 || rendering;
       next.disabled = pageNumber >= pdfDocument.numPages || rendering;
-      indicator.textContent = `Página ${pageNumber} de ${pdfDocument.numPages}`;
-      if (zoomIndicator) zoomIndicator.textContent = `${Math.round(zoom * 100)}%`;
+      indicator.textContent = `${pageNumber}/${pdfDocument.numPages}`;
       if (zoomOut) zoomOut.disabled = zoom <= .66 || rendering;
       if (zoomIn) zoomIn.disabled = zoom >= 3.99 || rendering;
-      if (zoomReset) zoomReset.disabled = rendering;
     };
 
     const getFitScale = (baseViewport) => {
@@ -10273,8 +10266,6 @@
       canvas.height = Math.max(1, Math.ceil(renderViewport.height));
       canvas.style.width = `${cssWidth}px`;
       canvas.style.height = `${cssHeight}px`;
-      shell.style.width = `${cssWidth}px`;
-      shell.style.height = `${cssHeight}px`;
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
       renderTask = page.render({ canvasContext: context, viewport: renderViewport });
@@ -10284,27 +10275,21 @@
       return { cssWidth, cssHeight };
     };
 
-    const waitForCanvasAnimation = (element, timeout = 620) => new Promise((resolve) => {
-      let finished = false;
-      let timer = 0;
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        element.removeEventListener('animationend', finish);
-        element.removeEventListener('animationcancel', finish);
-        resolve();
-      };
-      element.addEventListener('animationend', finish, { once: true });
-      element.addEventListener('animationcancel', finish, { once: true });
-      timer = window.setTimeout(finish, timeout);
-    });
+    const SLIDE_DURATION = 500;
+    const SLIDE_EASING = 'cubic-bezier(0.190, 1.000, 0.220, 1.000)';
+    let hasRenderedPage = false;
 
     const waitForPaint = () => new Promise((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(resolve));
     });
 
-    const clearSlideClasses = (canvas) => {
+    const applyShellSize = ({ cssWidth, cssHeight }) => {
+      shell.style.width = `${cssWidth}px`;
+      shell.style.height = `${cssHeight}px`;
+    };
+
+    const resetCanvasVisual = (canvas) => {
+      canvas.getAnimations?.().forEach((animation) => animation.cancel());
       canvas.classList.remove(
         'slide-left',
         'slide-right',
@@ -10313,54 +10298,112 @@
         'em-pdf-slide-ready-left',
         'em-pdf-slide-ready-right'
       );
+      canvas.style.removeProperty('transform');
+      canvas.style.removeProperty('opacity');
+      canvas.style.removeProperty('z-index');
+      canvas.style.removeProperty('visibility');
     };
 
-    const animatePageSlide = async (direction) => {
-      const movingForward = direction === 'next';
-      const readyClass = movingForward ? 'em-pdf-slide-ready-right' : 'em-pdf-slide-ready-left';
-      const enteringClass = movingForward ? 'slide-left' : 'slide-right';
-      const leavingClass = movingForward ? 'em-pdf-slide-out-left' : 'em-pdf-slide-out-right';
-
-      clearSlideClasses(activeCanvas);
-      clearSlideClasses(standbyCanvas);
-      shell.classList.add('is-slide-turning');
-
-      // La página destino ya está completamente renderizada antes de animar.
-      standbyCanvas.hidden = false;
-      standbyCanvas.style.visibility = 'visible';
-      standbyCanvas.classList.add(readyClass);
-      standbyCanvas.setAttribute('aria-hidden', 'true');
-      activeCanvas.style.visibility = 'visible';
-
-      // Dos frames garantizan que el navegador pinte ambos canvas antes del slide.
-      await waitForPaint();
-      standbyCanvas.classList.remove(readyClass);
-      standbyCanvas.classList.add(enteringClass);
-      activeCanvas.classList.add(leavingClass);
-
-      await Promise.all([
-        waitForCanvasAnimation(activeCanvas),
-        waitForCanvasAnimation(standbyCanvas)
-      ]);
+    const exposeCanvas = (canvas, isActive = false) => {
+      canvas.hidden = false;
+      canvas.style.visibility = 'visible';
+      canvas.classList.toggle('is-active', isActive);
+      if (isActive) canvas.removeAttribute('aria-hidden');
+      else canvas.setAttribute('aria-hidden', 'true');
     };
 
-    const finishCanvasSwap = () => {
-      clearSlideClasses(activeCanvas);
-      activeCanvas.hidden = true;
-      activeCanvas.setAttribute('aria-hidden', 'true');
-      activeCanvas.classList.remove('is-active');
-      activeCanvas.style.removeProperty('visibility');
+    const hideCanvas = (canvas) => {
+      resetCanvasVisual(canvas);
+      canvas.hidden = true;
+      canvas.classList.remove('is-active');
+      canvas.setAttribute('aria-hidden', 'true');
+    };
 
-      clearSlideClasses(standbyCanvas);
-      standbyCanvas.hidden = false;
-      standbyCanvas.removeAttribute('aria-hidden');
-      standbyCanvas.classList.add('is-active');
-      standbyCanvas.style.removeProperty('visibility');
+    const completeCanvasSwap = (targetSize, { clearPinchPreview = false } = {}) => {
+      applyShellSize(targetSize);
+      resetCanvasVisual(activeCanvas);
+      resetCanvasVisual(standbyCanvas);
+      hideCanvas(activeCanvas);
+      exposeCanvas(standbyCanvas, true);
 
       const oldCanvas = activeCanvas;
       activeCanvas = standbyCanvas;
       standbyCanvas = oldCanvas;
+
+      if (clearPinchPreview) {
+        shell.classList.remove('is-pinching');
+        shell.style.removeProperty('--em-pdf-pinch-scale');
+      }
       shell.classList.remove('is-slide-turning');
+    };
+
+    const animateWithCssFallback = async (movingForward) => {
+      const enteringClass = movingForward ? 'slide-left' : 'slide-right';
+      const leavingClass = movingForward ? 'em-pdf-slide-out-left' : 'em-pdf-slide-out-right';
+      standbyCanvas.classList.add(enteringClass);
+      activeCanvas.classList.add(leavingClass);
+      const animations = [...standbyCanvas.getAnimations(), ...activeCanvas.getAnimations()];
+      if (animations.length) {
+        await Promise.all(animations.map((animation) => animation.finished.catch(() => undefined)));
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, SLIDE_DURATION + 80));
+      }
+    };
+
+    const animatePageSlide = async (direction, targetSize) => {
+      const movingForward = direction === 'next';
+      resetCanvasVisual(activeCanvas);
+      resetCanvasVisual(standbyCanvas);
+      applyShellSize(targetSize);
+      exposeCanvas(activeCanvas, true);
+      exposeCanvas(standbyCanvas, false);
+      shell.classList.add('is-slide-turning');
+
+      const enterFrom = movingForward ? 'translate3d(100%, 0, 0)' : 'translate3d(-100%, 0, 0)';
+      const leaveTo = movingForward ? 'translate3d(-100%, 0, 0)' : 'translate3d(100%, 0, 0)';
+      const timing = { duration: SLIDE_DURATION, easing: SLIDE_EASING, fill: 'both' };
+
+      // La página destino ya está pintada. Se coloca fuera del borde antes del
+      // primer frame visible; la actual permanece completa debajo. Así nunca se
+      // muestra el destino de golpe ni aparece un lienzo blanco.
+      standbyCanvas.style.zIndex = '3';
+      activeCanvas.style.zIndex = '2';
+      standbyCanvas.style.transform = enterFrom;
+      activeCanvas.style.transform = 'translate3d(0, 0, 0)';
+      await waitForPaint();
+
+      if (typeof standbyCanvas.animate !== 'function' || typeof activeCanvas.animate !== 'function') {
+        standbyCanvas.style.removeProperty('transform');
+        activeCanvas.style.removeProperty('transform');
+        await animateWithCssFallback(movingForward);
+        return;
+      }
+
+      const entering = standbyCanvas.animate([
+        { transform: enterFrom, opacity: 1 },
+        { transform: 'translate3d(0, 0, 0)', opacity: 1 }
+      ], timing);
+      const leaving = activeCanvas.animate([
+        { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+        { transform: leaveTo, opacity: 1 }
+      ], timing);
+
+      await Promise.all([
+        entering.finished.catch(() => undefined),
+        leaving.finished.catch(() => undefined)
+      ]);
+    };
+
+    const replacePageWithoutFlash = async (targetSize, { clearPinchPreview = false } = {}) => {
+      // El canvas actual permanece visible hasta que el nuevo esté renderizado.
+      // El intercambio, el nuevo tamaño y el fin del preview de pellizco ocurren
+      // dentro del mismo frame, por lo que nunca se limpia el lienzo en pantalla.
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          completeCanvasSwap(targetSize, { clearPinchPreview });
+          resolve();
+        });
+      });
     };
 
     const renderPage = async (number, direction = 'none', options = {}) => {
@@ -10372,20 +10415,26 @@
       updateControls();
       const targetZoom = clampZoom(options.zoom ?? zoom);
       try {
-        if (direction === 'none') {
-          await paintPage(number, activeCanvas, targetZoom);
-          activeCanvas.hidden = false;
-          activeCanvas.classList.add('is-active');
-          activeCanvas.removeAttribute('aria-hidden');
+        if (!hasRenderedPage) {
+          const targetSize = await paintPage(number, activeCanvas, targetZoom);
+          applyShellSize(targetSize);
+          exposeCanvas(activeCanvas, true);
+          hideCanvas(standbyCanvas);
+          hasRenderedPage = true;
         } else {
-          standbyCanvas.hidden = true;
+          hideCanvas(standbyCanvas);
           standbyCanvas.className = 'em-pdf-page-canvas';
-          await paintPage(number, standbyCanvas, targetZoom);
-          standbyCanvas.hidden = false;
-          standbyCanvas.setAttribute('aria-hidden', 'true');
-          await animatePageSlide(direction);
-          finishCanvasSwap();
+          const targetSize = await paintPage(number, standbyCanvas, targetZoom);
+          if (direction === 'next' || direction === 'prev') {
+            await animatePageSlide(direction, targetSize);
+            completeCanvasSwap(targetSize);
+          } else {
+            await replacePageWithoutFlash(targetSize, {
+              clearPinchPreview: Boolean(options.clearPinchPreview)
+            });
+          }
         }
+
         pageNumber = number;
         zoom = targetZoom;
         loading.hidden = true;
@@ -10412,24 +10461,41 @@
       renderPage(target, delta > 0 ? 'next' : 'prev').catch(showPdfViewerError);
     };
 
-    const setZoom = (nextZoom) => {
+    const clearPinchPreview = () => {
+      shell.classList.remove('is-pinching');
+      shell.style.removeProperty('--em-pdf-pinch-scale');
+      pinchStartDistance = 0;
+      pinchPreviewZoom = zoom;
+    };
+
+    const setZoom = (nextZoom, options = {}) => {
       if (rendering) return;
       const target = clampZoom(nextZoom);
-      if (Math.abs(target - zoom) < .01) return;
+      const fromPinch = Boolean(options.fromPinch);
+      if (Math.abs(target - zoom) < .01) {
+        if (fromPinch) clearPinchPreview();
+        return;
+      }
+      const previousZoom = zoom;
       const centerX = viewportHost.scrollLeft + viewportHost.clientWidth / 2;
       const centerY = viewportHost.scrollTop + viewportHost.clientHeight / 2;
-      const ratio = target / zoom;
-      renderPage(pageNumber, 'none', { zoom: target }).then(() => {
+      const ratio = target / previousZoom;
+      renderPage(pageNumber, 'none', {
+        zoom: target,
+        clearPinchPreview: fromPinch
+      }).then(() => {
         viewportHost.scrollLeft = Math.max(0, centerX * ratio - viewportHost.clientWidth / 2);
         viewportHost.scrollTop = Math.max(0, centerY * ratio - viewportHost.clientHeight / 2);
-      }).catch(showPdfViewerError);
+      }).catch((error) => {
+        if (fromPinch) clearPinchPreview();
+        showPdfViewerError(error);
+      });
     };
 
     prev.addEventListener('click', () => go(-1), { signal: viewerSignal });
     next.addEventListener('click', () => go(1), { signal: viewerSignal });
     zoomOut?.addEventListener('click', () => setZoom(zoom - .25), { signal: viewerSignal });
     zoomIn?.addEventListener('click', () => setZoom(zoom + .25), { signal: viewerSignal });
-    zoomReset?.addEventListener('click', () => setZoom(1), { signal: viewerSignal });
 
     viewportHost.addEventListener('pointerdown', (event) => {
       if (rendering) return;
@@ -10460,7 +10526,6 @@
         const ratio = pinchPreviewZoom / zoom;
         shell.style.setProperty('--em-pdf-pinch-scale', String(ratio));
         shell.classList.add('is-pinching');
-        if (zoomIndicator) zoomIndicator.textContent = `${Math.round(pinchPreviewZoom * 100)}%`;
         return;
       }
       if (activePointers.size === 1 && zoom > 1.01) {
@@ -10476,11 +10541,11 @@
       const point = activePointers.get(event.pointerId);
       activePointers.delete(event.pointerId);
       if (shell.classList.contains('is-pinching') && activePointers.size < 2) {
-        shell.classList.remove('is-pinching');
-        shell.style.removeProperty('--em-pdf-pinch-scale');
         const target = pinchPreviewZoom;
         pinchStartDistance = 0;
-        setZoom(target);
+        // Conserva el bitmap escalado mientras se genera el canvas nítido.
+        // El preview solo se retira en el mismo frame del intercambio final.
+        setZoom(target, { fromPinch: true });
         return;
       }
       if (activePointers.size === 0 && zoom <= 1.01 && point && !dragged && !rendering) {
@@ -11602,7 +11667,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.315', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.317', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
