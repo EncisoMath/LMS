@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.321';
+  const APP_VERSION = '0.24.322';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10051,24 +10051,44 @@
   function openDeleteClassModal(lesson) {
     const assignmentIds = [...new Set(Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds.filter(Boolean) : [])];
     const shared = assignmentIds.length > 1;
+    const currentCourse = `${state.assignment?.grade || ''}-${state.assignment?.course || ''}`;
     openModal(`
-      <section class="modal-card em-delete-class-modal" role="dialog" aria-modal="true" aria-labelledby="deleteClassTitle">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="em-delete-class-icon" aria-hidden="true">🗑</div>
-        <p class="section-kicker">Biblioteca de clases</p>
-        <h2 id="deleteClassTitle">Eliminar clase</h2>
-        <p>¿Qué deseas hacer con <strong>${escapeHTML(lesson.title || 'esta clase')}</strong>?</p>
-        ${shared ? `<p class="card-sub">Esta clase está disponible en ${assignmentIds.length} cursos. Puedes quitarla solamente de ${escapeHTML(state.assignment?.grade || '')}-${escapeHTML(state.assignment?.course || '')} o eliminarla de todos.</p>` : `<p class="card-sub">Se eliminarán la clase, el PDF y su portada. Esta acción no se puede deshacer.</p>`}
-        <p class="em-delete-class-error" id="deleteClassError" role="alert"></p>
-        <div class="em-delete-class-actions">
-          <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
-          ${shared ? `<button class="ghost-btn" id="removeClassFromCourseBtn" type="button">Quitar de este curso</button>` : ''}
-          <button class="danger-btn" id="deleteClassEverywhereBtn" type="button">Eliminar ${shared ? 'de todos' : 'clase'}</button>
+      <div class="modal-card danger-modal" role="dialog" aria-modal="true" aria-labelledby="deleteClassTitle">
+        <div class="danger-head">
+          <span class="danger-red-mesh" aria-hidden="true"></span>
+          <div class="warning-tune-stack">
+            <div class="warning-icon warning-duo" aria-hidden="true">
+              <span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span>
+              <span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span>
+            </div>
+          </div>
+          <div class="danger-copy">
+            <h2 id="deleteClassTitle">${shared ? 'ELIMINARÁS O RETIRARÁS ESTA CLASE' : 'ELIMINARÁS ESTA CLASE'}</h2>
+            <p>${shared
+              ? `Está compartida con ${assignmentIds.length} cursos. Puedes retirarla solo de ${escapeHTML(currentCourse)} o borrarla completamente.`
+              : 'Se eliminarán la clase, el PDF y su portada. Esta acción no se puede deshacer.'}</p>
+          </div>
+          <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
-      </section>
+        <div class="danger-body">
+          <div class="delete-target">
+            <strong>${escapeHTML(lesson.title || 'Clase sin nombre')}</strong>
+            <span>${shared
+              ? `Disponible en ${assignmentIds.length} cursos · Curso actual ${escapeHTML(currentCourse)}`
+              : `Curso ${escapeHTML(currentCourse)} · Periodo ${escapeHTML(String(lesson.period || state.period || 1))}`}</span>
+          </div>
+          <p class="em-delete-class-error" id="deleteClassError" role="alert"></p>
+          <div class="danger-actions">
+            ${shared ? `<button class="ghost-btn" id="removeClassFromCourseBtn" type="button">Quitar solo de ${escapeHTML(currentCourse)}</button>` : ''}
+            <button class="danger-confirm" id="deleteClassEverywhereBtn" type="button">${shared ? 'Eliminar de todos los cursos' : 'Sí, eliminar clase'}</button>
+            <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+          </div>
+        </div>
+      </div>
     `, () => {
       document.getElementById('removeClassFromCourseBtn')?.addEventListener('click', () => deleteClassRecord(lesson, 'course'));
       document.getElementById('deleteClassEverywhereBtn')?.addEventListener('click', () => deleteClassRecord(lesson, 'all'));
+      startDeleteWarningMotion();
     });
   }
 
@@ -11718,7 +11738,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.321', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.322', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
