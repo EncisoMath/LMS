@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.327';
+  const APP_VERSION = '0.24.328';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -513,6 +513,8 @@
     activitiesPeriod: 1,
     quizPeriod: 1,
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
+    activeActivityId: '',
+    activityGradebook: [],
     quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
@@ -894,6 +896,13 @@
         lessonId: String(route.lessonId || '')
       };
     }
+    if (screen === 'activity') {
+      return {
+        screen: 'activity',
+        assignmentId: String(route.assignmentId || state.assignment?.id || ''),
+        activityId: String(route.activityId || '')
+      };
+    }
     if (['login', 'home', 'student'].includes(screen)) return { screen };
     return null;
   }
@@ -906,6 +915,7 @@
     if (!normalized) return '';
     if (normalized.screen === 'subject') return `subject:${normalized.assignmentId}:${normalized.tab}`;
     if (normalized.screen === 'lesson') return `lesson:${normalized.assignmentId}:${normalized.lessonId}`;
+    if (normalized.screen === 'activity') return `activity:${normalized.assignmentId}:${normalized.activityId}`;
     return normalized.screen;
   }
   function appHistoryState(route, rootGuard = false) {
@@ -1026,6 +1036,18 @@
       }
       state.assignment = assignment;
       renderLesson(lesson, { noHistory: true });
+    }
+
+
+    if (normalized.screen === 'activity') {
+      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
+      const activity = state.data.activities.find((item) => item.id === normalized.activityId);
+      if (!assignment || !activity) {
+        renderTeacherHome({ noHistory: true });
+        return;
+      }
+      state.assignment = assignment;
+      renderActivityDetail(activity, { noHistory: true });
     }
   }
   function renderLogin(options = {}) {
@@ -9832,7 +9854,7 @@
     document.querySelectorAll('[data-activity-id]').forEach((card) => {
       const open = () => {
         const activity = (state.data.activities || []).find((item) => item.id === card.dataset.activityId);
-        if (activity) openActivitySummaryModal(activity);
+        if (activity) renderActivityDetail(activity);
       };
       card.addEventListener('click', open);
       card.addEventListener('keydown', (event) => {
@@ -9843,30 +9865,229 @@
     });
   }
 
-  function openActivitySummaryModal(activity) {
-    const lesson = activityRelatedLesson(activity);
-    const rubric = Array.isArray(activity.rubric) ? activity.rubric : [];
-    openModal(`
-      <section class="modal-card em-activity-summary-modal" role="dialog" aria-modal="true" aria-labelledby="activitySummaryTitle">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <p class="section-kicker">Periodo ${Number(activity.period || 1)}</p>
-        <h2 id="activitySummaryTitle">${escapeHTML(activity.title || 'Actividad')}</h2>
-        <p class="card-sub">${lesson ? `Relacionada con ${escapeHTML(lesson.title || 'una clase')}` : 'Sin clase relacionada'}</p>
-        <div class="em-activity-summary-grid">
-          <div><span>Inicio</span><strong>${escapeHTML(formatAcademicDate(String(activity.startsAt || '').slice(0, 10)))}</strong></div>
-          <div><span>Entrega máxima</span><strong>${escapeHTML(formatAcademicDate(String(activity.dueAt || '').slice(0, 10)))}</strong></div>
-          <div><span>Actividad</span><strong>${escapeHTML(activityTypeLabel(activity.contentType))}</strong></div>
-          <div><span>Respuesta</span><strong>${escapeHTML(activityTypeLabel(activity.reviewType))}</strong></div>
-        </div>
-        <h3 class="em-activity-rubric-title">Criterios de evaluación</h3>
-        <div class="em-activity-rubric-summary">
-          ${rubric.map((item) => `<div><span>${escapeHTML(item.name || 'Criterio')}</span><strong>${Number(item.percentage || 0)}%</strong></div>`).join('')}
-        </div>
-      </section>
-    `);
+  function activityPayloadFiles(payload) {
+    return Array.isArray(payload?.files) ? payload.files.filter((file) => file?.url) : [];
   }
 
-  function activityContentEditorHTML(prefix, type = 'pdf') {
+  function activityContentShellHTML(activity) {
+    const files = activityPayloadFiles(activity.contentPayload);
+    if (activity.contentType === 'pdf') {
+      const file = files[0];
+      return file
+        ? `<div class="em-activity-pdf-viewer" id="activityPdfViewer" data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando actividad…</p></div></div>`
+        : '<div class="em-activity-content-empty">El PDF de esta actividad no está disponible.</div>';
+    }
+    if (activity.contentType === 'image') {
+      return files.length
+        ? `<div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de la actividad" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>`
+        : '<div class="em-activity-content-empty">No hay imágenes disponibles.</div>';
+    }
+    if (activity.contentType === 'html_css') {
+      return '<iframe class="em-activity-html-frame" id="activityHtmlFrame" sandbox="allow-same-origin" title="Contenido interactivo de la actividad"></iframe>';
+    }
+    return '<article class="em-activity-rich-view" id="activityRichView"></article>';
+  }
+
+  function sanitizeActivityRichHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '');
+    template.content.querySelectorAll('script,iframe,object,embed,link,meta,base,form').forEach((node) => node.remove());
+    template.content.querySelectorAll('*').forEach((node) => {
+      [...node.attributes].forEach((attribute) => {
+        const name = attribute.name.toLowerCase();
+        const value = String(attribute.value || '').trim().toLowerCase();
+        if (name.startsWith('on') || value.startsWith('javascript:')) node.removeAttribute(attribute.name);
+      });
+    });
+    return template.innerHTML;
+  }
+
+  async function renderActivityPdfContent(activity) {
+    const host = document.getElementById('activityPdfViewer');
+    const url = host?.dataset.pdfUrl;
+    if (!host || !url) return;
+    try {
+      const pdfjs = await loadPdfJs();
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
+      const bytes = await response.arrayBuffer();
+      const pdfDocument = await pdfjs.getDocument({ data: bytes, isEvalSupported: false }).promise;
+      const pages = document.createElement('div');
+      pages.className = 'em-activity-pdf-pages';
+      host.innerHTML = '';
+      host.appendChild(pages);
+      const availableWidth = Math.max(260, Math.min(980, host.clientWidth - 2));
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.75);
+      for (let number = 1; number <= pdfDocument.numPages; number += 1) {
+        const page = await pdfDocument.getPage(number);
+        const base = page.getViewport({ scale: 1 });
+        const cssScale = availableWidth / Math.max(1, base.width);
+        const viewport = page.getViewport({ scale: cssScale * pixelRatio });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'em-activity-pdf-page';
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        canvas.style.width = `${Math.round(viewport.width / pixelRatio)}px`;
+        canvas.style.height = `${Math.round(viewport.height / pixelRatio)}px`;
+        canvas.setAttribute('aria-label', `Página ${number} de ${pdfDocument.numPages}`);
+        const context = canvas.getContext('2d', { alpha: false });
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        pages.appendChild(canvas);
+        await page.render({ canvasContext: context, viewport }).promise;
+        page.cleanup?.();
+      }
+      await pdfDocument.destroy?.();
+    } catch (error) {
+      host.innerHTML = `<div class="em-activity-content-empty">${escapeHTML(error?.message || 'No se pudo cargar el PDF.')}</div>`;
+    }
+  }
+
+  function initActivityDetailContent(activity) {
+    if (activity.contentType === 'pdf') {
+      renderActivityPdfContent(activity);
+      return;
+    }
+    if (activity.contentType === 'rich_text') {
+      const host = document.getElementById('activityRichView');
+      if (host) host.innerHTML = sanitizeActivityRichHtml(activity.contentPayload?.text || '<p>Sin contenido.</p>');
+      return;
+    }
+    if (activity.contentType === 'html_css') {
+      const frame = document.getElementById('activityHtmlFrame');
+      if (!frame) return;
+      const html = String(activity.contentPayload?.html || '<p>Sin contenido.</p>');
+      const css = String(activity.contentPayload?.css || '');
+      frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}body{padding:18px;box-sizing:border-box}${css}</style></head><body>${html}</body></html>`;
+      frame.addEventListener('load', () => {
+        try {
+          const height = frame.contentDocument?.documentElement?.scrollHeight || frame.contentDocument?.body?.scrollHeight || 0;
+          if (height) frame.style.height = `${Math.max(320, height + 4)}px`;
+        } catch (_) {}
+      }, { once: true });
+    }
+  }
+
+  function activitySemaphore(score) {
+    const value = Number(score || 0);
+    if (value >= 90) return { emoji: '🏆', label: 'Superior', className: 'is-trophy' };
+    if (value >= 80) return { emoji: '🟢', label: 'Alto', className: 'is-green' };
+    if (value >= 70) return { emoji: '🟡', label: 'Básico', className: 'is-yellow' };
+    if (value >= 60) return { emoji: '🟠', label: 'En proceso', className: 'is-orange' };
+    return { emoji: '🔴', label: 'Bajo', className: 'is-red' };
+  }
+
+  function activityGradebookRowsHTML(rows, query = '') {
+    const normalized = normalizeSearch(query);
+    const filtered = (rows || []).filter((row) => !normalized || normalizeSearch(`${row.lastName} ${row.firstName} ${row.fullName} ${row.studentCode}`).includes(normalized));
+    if (!filtered.length) return '<div class="em-activity-grade-empty">No hay estudiantes con ese filtro.</div>';
+    return filtered.map((row) => {
+      const semaphore = activitySemaphore(row.score);
+      return `
+        <button class="em-activity-grade-row" type="button" data-activity-record-id="${escapeAttr(row.recordId)}">
+          <span class="em-grade-lastname">${escapeHTML(row.lastName || row.fullName || '')}</span>
+          <span class="em-grade-firstname">${escapeHTML(row.firstName || '')}</span>
+          <strong class="em-grade-score">${Number(row.score ?? 40)}</strong>
+          <span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function refreshActivityGradebookList() {
+    const list = document.getElementById('activityGradebookList');
+    if (!list) return;
+    const query = document.getElementById('activityGradeSearch')?.value || '';
+    list.innerHTML = activityGradebookRowsHTML(state.activityGradebook || [], query);
+    bindActivityGradeRows();
+  }
+
+  function bindActivityGradeRows() {
+    document.querySelectorAll('[data-activity-record-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const record = (state.activityGradebook || []).find((item) => item.recordId === button.dataset.activityRecordId);
+        const activity = (state.data.activities || []).find((item) => item.id === state.activeActivityId);
+        if (activity && record) openActivityGradeModal(activity, record);
+      });
+    });
+  }
+
+  async function loadActivityGradebook(activity) {
+    const list = document.getElementById('activityGradebookList');
+    if (!list) return;
+    list.innerHTML = '<div class="em-activity-grade-loading"><span></span><p>Preparando lista de estudiantes…</p></div>';
+    try {
+      state.activityGradebook = await cloudAPI().getActivityGradebook({
+        activityId: activity.id,
+        assignmentId: state.assignment?.id || ''
+      });
+      refreshActivityGradebookList();
+    } catch (error) {
+      list.innerHTML = `<div class="em-activity-grade-empty">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</div>`;
+      reportCloudError('No se pudo cargar la actividad', error, { silent: true });
+    }
+  }
+
+  function renderActivityDetail(activity, options = {}) {
+    if (!activity || !state.assignment) return renderSubjectDetail('activities', options);
+    state.activeActivityId = activity.id;
+    commitAppRoute({ screen: 'activity', assignmentId: state.assignment.id, activityId: activity.id }, options);
+    emSetCurrentSubjectColor(emGetSubjectColorForAssignment(state.assignment));
+    const lesson = activityRelatedLesson(activity);
+    const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
+    const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
+    mount(`
+      <main class="screen em-activity-detail-screen">
+        <header class="topbar fixed-lock em-activity-detail-topbar">
+          <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
+          <h1>Actividad</h1>
+          <span class="spacer"></span>
+        </header>
+        <div class="em-activity-detail-wrap">
+          <article class="em-activity-detail-main">
+            <p class="section-kicker">Periodo ${Number(activity.period || 1)}</p>
+            <h2>${escapeHTML(activity.title || 'Actividad')}</h2>
+            <div class="em-activity-detail-meta">
+              <span>${lesson ? escapeHTML(lesson.title || 'Clase') : 'Sin clase relacionada'}</span>
+              <span>Inicio: ${escapeHTML(start)}</span>
+              <span>Entrega: ${escapeHTML(due)}</span>
+            </div>
+            <section class="em-activity-content-stage" aria-label="Contenido de la actividad">
+              ${activityContentShellHTML(activity)}
+            </section>
+            <div class="em-activity-detail-actions">
+              <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
+              <button class="ghost-btn em-activity-delete-btn" id="deleteActivityBtn" type="button">Eliminar actividad</button>
+            </div>
+          </article>
+
+          <section class="em-activity-gradebook">
+            <div class="em-activity-gradebook-head">
+              <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
+              <label class="em-search-box em-activity-grade-search"><span>⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" /></label>
+            </div>
+            <div class="em-activity-grade-columns" aria-hidden="true"><span>Apellido</span><span>Nombre</span><span>Calificación</span><span>Semáforo</span></div>
+            <div id="activityGradebookList" class="em-activity-gradebook-list"></div>
+          </section>
+        </div>
+      </main>
+    `, () => {
+      document.getElementById('backBtn')?.addEventListener('click', () => {
+        if (window.history?.length > 1) window.history.back();
+        else renderSubjectDetail('activities');
+      });
+      document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
+      document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
+      document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
+      initActivityDetailContent(activity);
+      loadActivityGradebook(activity);
+      emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), ['.em-activity-detail-main > *', '.em-activity-gradebook'], { duration: 480, stagger: 35, distance: 14, scale: .98 });
+    });
+  }
+
+  function activityContentEditorHTML(prefix, type = 'pdf', payload = {}) {
+    const files = activityPayloadFiles(payload);
+    const fileText = files.length ? files.map((file) => file.name || 'Archivo guardado').join(', ') : '';
     return `
       <div class="em-activity-content-editor" data-content-editor="${escapeAttr(prefix)}">
         <div class="em-activity-format-head">
@@ -9882,11 +10103,11 @@
           ].map(([value, label, icon]) => `<label class="em-activity-type-option"><input type="radio" name="${prefix}Type" value="${value}" ${type === value ? 'checked' : ''}/><span><b>${icon}</b>${label}</span></label>`).join('')}
         </div>
         <div class="em-activity-editor-panel" data-editor-panel="pdf">
-          <label class="em-file-drop" for="${prefix}PdfInput"><strong>Seleccionar PDF</strong><span data-file-name>Máximo 20 MB</span></label>
+          <label class="em-file-drop" for="${prefix}PdfInput"><strong>Seleccionar PDF</strong><span data-file-name>${escapeHTML(type === 'pdf' && fileText ? fileText : 'Máximo 20 MB')}</span></label>
           <input class="em-hidden-file" id="${prefix}PdfInput" type="file" accept="application/pdf,.pdf" />
         </div>
         <div class="em-activity-editor-panel" data-editor-panel="image" hidden>
-          <label class="em-file-drop" for="${prefix}ImageInput"><strong>Seleccionar imágenes</strong><span data-file-name>PNG, JPG o WEBP · hasta 10 imágenes</span></label>
+          <label class="em-file-drop" for="${prefix}ImageInput"><strong>Seleccionar imágenes</strong><span data-file-name>${escapeHTML(type === 'image' && fileText ? fileText : 'PNG, JPG o WEBP · hasta 10 imágenes')}</span></label>
           <input class="em-hidden-file" id="${prefix}ImageInput" type="file" accept="image/png,image/jpeg,image/webp" multiple />
         </div>
         <div class="em-activity-editor-panel" data-editor-panel="rich_text" hidden>
@@ -9895,29 +10116,42 @@
             <button type="button" data-rich-command="italic"><i>I</i></button>
             <button type="button" data-rich-command="insertUnorderedList">• Lista</button>
           </div>
-          <div class="em-rich-editor" id="${prefix}RichInput" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Escribe el contenido..."></div>
+          <div class="em-rich-editor" id="${prefix}RichInput" contenteditable="true" data-placeholder="Escribe el contenido…">${type === 'rich_text' ? sanitizeActivityRichHtml(payload.text || '') : ''}</div>
         </div>
         <div class="em-activity-editor-panel" data-editor-panel="html_css" hidden>
           <label class="field-label" for="${prefix}HtmlInput">HTML</label>
-          <textarea class="input em-code-input" id="${prefix}HtmlInput" rows="7" spellcheck="false" placeholder="<section>...</section>"></textarea>
+          <textarea class="input em-code-input" id="${prefix}HtmlInput" rows="7" spellcheck="false" placeholder="<section>...</section>">${type === 'html_css' ? escapeHTML(payload.html || '') : ''}</textarea>
           <label class="field-label" for="${prefix}CssInput">CSS</label>
-          <textarea class="input em-code-input" id="${prefix}CssInput" rows="6" spellcheck="false" placeholder=".actividad { ... }"></textarea>
+          <textarea class="input em-code-input" id="${prefix}CssInput" rows="6" spellcheck="false" placeholder=".actividad { ... }">${type === 'html_css' ? escapeHTML(payload.css || '') : ''}</textarea>
         </div>
       </div>
     `;
   }
 
   function openAddActivityModal() {
+    openActivityEditorModal(null);
+  }
+
+  function openEditActivityModal(activity) {
+    openActivityEditorModal(activity);
+  }
+
+  function openActivityEditorModal(activity = null) {
     const assignment = state.assignment;
     if (!assignment) return;
+    const editing = Boolean(activity?.id);
     const lessons = getClassesForCurrentAssignment();
     const automaticPeriod = getAutomaticAcademicPeriod();
     const today = todayISO();
+    const gradeTargets = getClassTargetAssignments('grade');
+    const gradeCourses = gradeTargets.map((item) => `${item.grade}-${item.course}`).join(', ');
+    const activityIds = Array.isArray(activity?.assignmentIds) ? activity.assignmentIds : [];
+    const gradeScope = activityIds.length > 1;
     openModal(`
       <section class="modal-card em-activity-create-modal" role="dialog" aria-modal="true" aria-labelledby="addActivityTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <p class="section-kicker">Gestión de actividades</p>
-        <h2 id="addActivityTitle">Añadir actividad</h2>
+        <h2 id="addActivityTitle">${editing ? 'Editar actividad' : 'Añadir actividad'}</h2>
         <div class="em-activity-modal-tabs" role="tablist">
           <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-modal-tab="assign">Asignar actividad</button>
           <button type="button" role="tab" aria-selected="false" data-activity-modal-tab="review">Revisión de actividad</button>
@@ -9925,88 +10159,70 @@
         <form id="addActivityForm" class="em-activity-create-form">
           <section class="em-activity-tab-page" data-activity-tab-panel="assign">
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head">
-                <span class="em-activity-step-badge">1</span>
-                <div><h3>Información principal</h3><p>Identifica la actividad y relaciónala con el tema que están trabajando.</p></div>
-              </div>
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">1</span><div><h3>Información principal</h3><p>Identifica la actividad y relaciónala con el tema que están trabajando.</p></div></div>
               <div class="em-activity-field-stack">
                 <label class="field-label" for="activityTitleInput">Nombre de la actividad</label>
-                <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" required />
+                <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" value="${escapeAttr(activity?.title || '')}" required />
               </div>
               <div class="em-activity-field-stack">
                 <label class="field-label" for="activityLessonInput">Clase o tema relacionado</label>
                 <select class="select" id="activityLessonInput" required ${lessons.length ? '' : 'disabled'}>
                   <option value="">Selecciona una clase</option>
-                  ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}">${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
+                  ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}" ${String(activity?.lessonId || '') === String(lesson.id) ? 'selected' : ''}>${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
                 </select>
                 ${lessons.length ? '' : '<p class="em-activity-inline-warning">Primero debes crear una clase para relacionar esta actividad.</p>'}
               </div>
             </div>
 
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head">
-                <span class="em-activity-step-badge">2</span>
-                <div><h3>Calendario</h3><p>El periodo se selecciona automáticamente, pero puedes cambiarlo.</p></div>
-              </div>
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">2</span><div><h3>Calendario y alcance</h3><p>El periodo y la fecha de inicio se completan automáticamente, pero puedes cambiarlos.</p></div></div>
               <div class="em-activity-date-grid">
-                <label><span>Periodo</span><select class="select" id="activityPeriodInput">${[1,2,3,4].map((period) => `<option value="${period}" ${period === automaticPeriod ? 'selected' : ''}>Periodo ${period}</option>`).join('')}</select></label>
-                <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${today}" required /></label>
-                <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${today}" required /></label>
+                <label><span>Periodo</span><select class="select" id="activityPeriodInput">${[1,2,3,4].map((period) => `<option value="${period}" ${period === Number(activity?.period || automaticPeriod) ? 'selected' : ''}>Periodo ${period}</option>`).join('')}</select></label>
+                <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${escapeAttr(String(activity?.startsAt || today).slice(0, 10))}" required /></label>
+                <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${escapeAttr(String(activity?.dueAt || today).slice(0, 10))}" required /></label>
               </div>
+              <fieldset class="em-class-scope em-activity-scope">
+                <legend>¿Dónde estará disponible?</legend>
+                <label><input type="radio" name="activityScope" value="course" ${gradeScope ? '' : 'checked'} /><span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span></label>
+                <label><input type="radio" name="activityScope" value="grade" ${gradeScope ? 'checked' : ''} /><span><strong>Todo el grado ${escapeHTML(assignment.grade)}</strong><small>${escapeHTML(gradeCourses || `${assignment.grade}-${assignment.course}`)}</small></span></label>
+              </fieldset>
             </div>
 
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head">
-                <span class="em-activity-step-badge">3</span>
-                <div><h3>Contenido de la actividad</h3><p>Elige cómo recibirán los estudiantes las instrucciones.</p></div>
-              </div>
-              ${activityContentEditorHTML('activityContent', 'pdf')}
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">3</span><div><h3>Contenido de la actividad</h3><p>Elige cómo recibirán los estudiantes las instrucciones.</p></div></div>
+              ${activityContentEditorHTML('activityContent', activity?.contentType || 'pdf', activity?.contentPayload || {})}
             </div>
           </section>
 
           <section class="em-activity-tab-page" data-activity-tab-panel="review" hidden>
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head">
-                <span class="em-activity-step-badge">4</span>
-                <div><h3>Respuesta o guía de revisión</h3><p>Añade la solución, respuesta esperada o material que usarás para revisar.</p></div>
-              </div>
-              ${activityContentEditorHTML('activityReview', 'rich_text')}
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">4</span><div><h3>Respuesta o guía de revisión</h3><p>Añade la solución, respuesta esperada o material que usarás para revisar.</p></div></div>
+              ${activityContentEditorHTML('activityReview', activity?.reviewType || 'rich_text', activity?.reviewPayload || {})}
             </div>
-
             <div class="em-activity-form-block em-activity-rubric-block">
-              <div class="em-rubric-head">
-                <div class="em-activity-block-head em-activity-block-head-compact">
-                  <span class="em-activity-step-badge">5</span>
-                  <div><h3>Criterios de evaluación</h3><p>La suma debe ser exactamente 100% para guardar.</p></div>
-                </div>
-                <button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button>
-              </div>
+              <div class="em-rubric-head"><div class="em-activity-block-head em-activity-block-head-compact"><span class="em-activity-step-badge">5</span><div><h3>Criterios de evaluación</h3><p>La suma debe ser exactamente 100% para guardar.</p></div></div><button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button></div>
               <div class="em-rubric-list" id="activityRubricList"></div>
               <div class="em-rubric-total" id="activityRubricTotal"><span>Total</span><strong>0%</strong></div>
             </div>
           </section>
-
           <p class="em-class-create-error" id="activityCreateError" role="alert"></p>
           <div class="em-activity-modal-actions">
             <button class="ghost-btn" type="button" id="activityPreviousTabBtn" hidden>Volver</button>
             <button class="primary-btn" type="button" id="activityNextTabBtn">Continuar</button>
-            <button class="primary-btn" type="submit" id="createActivitySubmitBtn" hidden disabled>Guardar actividad</button>
+            <button class="primary-btn" type="submit" id="createActivitySubmitBtn" hidden disabled>${editing ? 'Guardar cambios' : 'Guardar actividad'}</button>
           </div>
         </form>
       </section>
-    `, initAddActivityModal);
+    `, () => initActivityEditorModal(activity));
   }
 
-  function initAddActivityModal() {
+  function initActivityEditorModal(activity = null) {
     const modal = document.querySelector('.em-activity-create-modal');
     const form = document.getElementById('addActivityForm');
     const next = document.getElementById('activityNextTabBtn');
     const previous = document.getElementById('activityPreviousTabBtn');
     const submit = document.getElementById('createActivitySubmitBtn');
-    let activeTab = 'assign';
-
     const showTab = (tab) => {
-      activeTab = tab;
       modal?.querySelectorAll('[data-activity-modal-tab]').forEach((button) => {
         const active = button.dataset.activityModalTab === tab;
         button.classList.toggle('is-active', active);
@@ -10018,7 +10234,6 @@
       submit.hidden = tab !== 'review';
       if (tab === 'review') updateRubricTotal();
     };
-
     modal?.querySelectorAll('[data-activity-modal-tab]').forEach((button) => button.addEventListener('click', () => showTab(button.dataset.activityModalTab)));
     next?.addEventListener('click', () => {
       const title = document.getElementById('activityTitleInput')?.value.trim();
@@ -10034,12 +10249,13 @@
       showTab('review');
     });
     previous?.addEventListener('click', () => showTab('assign'));
-
     modal?.querySelectorAll('[data-content-editor]').forEach(initActivityContentEditor);
     document.getElementById('addRubricCriterionBtn')?.addEventListener('click', () => addRubricCriterion());
-    addRubricCriterion('Comprensión y desarrollo', 50);
-    addRubricCriterion('Procedimiento, presentación y entrega', 50);
-    form?.addEventListener('submit', submitNewActivity);
+    const rubric = Array.isArray(activity?.rubric) && activity.rubric.length
+      ? activity.rubric
+      : [{ name: 'Comprensión y desarrollo', percentage: 50 }, { name: 'Procedimiento, presentación y entrega', percentage: 50 }];
+    rubric.forEach((item) => addRubricCriterion(item.name, item.percentage));
+    form?.addEventListener('submit', (event) => submitActivityEditor(event, activity));
     document.getElementById('activityTitleInput')?.focus();
   }
 
@@ -10067,11 +10283,7 @@
     if (!list) return;
     const row = document.createElement('div');
     row.className = 'em-rubric-row';
-    row.innerHTML = `
-      <input class="input" data-rubric-name maxlength="120" placeholder="Nombre del criterio" value="${escapeAttr(name)}" />
-      <label><input class="input" data-rubric-percentage type="number" min="0" max="100" step="1" value="${escapeAttr(String(percentage))}" /><span>%</span></label>
-      <button type="button" data-remove-rubric aria-label="Eliminar criterio">×</button>
-    `;
+    row.innerHTML = `<input class="input" data-rubric-name maxlength="120" placeholder="Nombre del criterio" value="${escapeAttr(name)}" /><label><input class="input" data-rubric-percentage type="number" min="0" max="100" step="1" value="${escapeAttr(String(percentage))}" /><span>%</span></label><button type="button" data-remove-rubric aria-label="Eliminar criterio">×</button>`;
     row.querySelectorAll('input').forEach((input) => input.addEventListener('input', updateRubricTotal));
     row.querySelector('[data-remove-rubric]')?.addEventListener('click', () => { row.remove(); updateRubricTotal(); });
     list.appendChild(row);
@@ -10114,13 +10326,14 @@
     };
   }
 
-  function validateActivityEditor(editor, label) {
+  function validateActivityEditor(editor, label, existingPayload = {}, existingType = '') {
+    const existingFiles = existingType === editor.type ? activityPayloadFiles(existingPayload) : [];
     if (editor.type === 'pdf') {
-      if (editor.files.length !== 1) return `${label}: selecciona un archivo PDF.`;
-      if (editor.files[0].size > 20 * 1024 * 1024) return `${label}: el PDF supera 20 MB.`;
+      if (editor.files.length !== 1 && !existingFiles.length) return `${label}: selecciona un archivo PDF.`;
+      if (editor.files[0]?.size > 20 * 1024 * 1024) return `${label}: el PDF supera 20 MB.`;
     }
     if (editor.type === 'image') {
-      if (!editor.files.length) return `${label}: selecciona al menos una imagen.`;
+      if (!editor.files.length && !existingFiles.length) return `${label}: selecciona al menos una imagen.`;
       if (editor.files.length > 10) return `${label}: puedes subir máximo 10 imágenes.`;
       if (editor.files.some((file) => file.size > 5 * 1024 * 1024)) return `${label}: una imagen supera 5 MB.`;
     }
@@ -10129,7 +10342,7 @@
     return '';
   }
 
-  async function submitNewActivity(event) {
+  async function submitActivityEditor(event, existingActivity = null) {
     event.preventDefault();
     const errorBox = document.getElementById('activityCreateError');
     const submit = document.getElementById('createActivitySubmitBtn');
@@ -10140,23 +10353,27 @@
     const period = Number(document.getElementById('activityPeriodInput')?.value || getAutomaticAcademicPeriod());
     const startsAt = document.getElementById('activityStartInput')?.value || '';
     const dueAt = document.getElementById('activityDueInput')?.value || '';
+    const scope = document.querySelector('input[name="activityScope"]:checked')?.value || 'course';
+    const targets = getClassTargetAssignments(scope);
     const content = collectActivityEditor('activityContent');
     const review = collectActivityEditor('activityReview');
     const { criteria, total } = updateRubricTotal();
     if (!title || !lessonId) return fail('Completa el nombre y la clase relacionada.');
     if (!startsAt || !dueAt || dueAt < startsAt) return fail('Revisa las fechas de inicio y entrega.');
-    const contentError = validateActivityEditor(content, 'Actividad');
+    if (!targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
+    const contentError = validateActivityEditor(content, 'Actividad', existingActivity?.contentPayload, existingActivity?.contentType);
     if (contentError) return fail(contentError);
-    const reviewError = validateActivityEditor(review, 'Revisión');
+    const reviewError = validateActivityEditor(review, 'Revisión', existingActivity?.reviewPayload, existingActivity?.reviewType);
     if (reviewError) return fail(reviewError);
     if (total !== 100 || !criteria.length || criteria.some((item) => !item.name)) return fail('Los criterios completos deben sumar exactamente 100%.');
     if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase.');
     submit.disabled = true;
-    submit.textContent = 'Guardando...';
+    submit.textContent = existingActivity ? 'Guardando cambios…' : 'Guardando…';
     try {
-      const activity = await cloudAPI().createActivity({
+      const payload = {
+        activityId: existingActivity?.id || '',
         currentAssignment: state.assignment,
-        targetAssignmentIds: [state.assignment.id],
+        targetAssignmentIds: targets.map((item) => item.id),
         title,
         lessonId,
         period,
@@ -10167,26 +10384,252 @@
         contentHtml: content.html,
         contentCss: content.css,
         contentFiles: content.files,
+        existingContentPayload: existingActivity?.contentPayload || {},
+        existingContentType: existingActivity?.contentType || '',
         reviewType: review.type,
         reviewText: review.text,
         reviewHtml: review.html,
         reviewCss: review.css,
         reviewFiles: review.files,
+        existingReviewPayload: existingActivity?.reviewPayload || {},
+        existingReviewType: existingActivity?.reviewType || '',
         rubric: criteria
-      });
+      };
+      const activity = existingActivity
+        ? await cloudAPI().updateActivity(payload)
+        : await cloudAPI().createActivity(payload);
       state.data.activities = state.data.activities || [];
-      state.data.activities.push(activity);
+      if (existingActivity) {
+        const index = state.data.activities.findIndex((item) => item.id === existingActivity.id);
+        if (index >= 0) state.data.activities[index] = activity;
+      } else {
+        state.data.activities.push(activity);
+      }
       closeModal(false);
       syncAcademicPeriodState(period);
-      renderActivitiesTab({ animate: true });
-      toast('Actividad guardada en Supabase.');
+      if (existingActivity) renderActivityDetail(activity, { replaceHistory: true });
+      else renderActivitiesTab({ animate: true });
+      toast(existingActivity ? 'Actividad actualizada en Supabase.' : `Actividad guardada para ${targets.length} curso${targets.length === 1 ? '' : 's'}.`);
     } catch (error) {
       fail(error?.message || 'No se pudo guardar la actividad.');
       reportCloudError('No se pudo guardar la actividad', error, { silent: true });
       submit.disabled = false;
-      submit.textContent = 'Guardar actividad';
+      submit.textContent = existingActivity ? 'Guardar cambios' : 'Guardar actividad';
     }
   }
+
+  const ACTIVITY_DELIVERY_STATUSES = [
+    ['delivered', 'Entregada'],
+    ['not_brought', 'No la trajo'],
+    ['not_done', 'No la hizo'],
+    ['next_class', 'Entregará próxima clase'],
+    ['incomplete', 'Incompleta'],
+    ['resubmit', 'Corrección solicitada'],
+    ['late', 'Entrega tardía'],
+    ['absent', 'Ausente'],
+    ['excused', 'Excusa / justificada']
+  ];
+
+  function activityDeliveryLabel(status) {
+    return Object.fromEntries(ACTIVITY_DELIVERY_STATUSES)[status] || status || 'Sin estado';
+  }
+
+  function openActivityGradeModal(activity, record) {
+    const gradebook = state.activityGradebook || [];
+    const currentGroup = record.gradingGroupId
+      ? gradebook.filter((item) => item.gradingGroupId === record.gradingGroupId)
+      : [record];
+    const currentCodes = new Set(currentGroup.map((item) => item.studentCode));
+    const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
+    const existingFile = record.submissionFile?.url ? record.submissionFile : null;
+    openModal(`
+      <section class="modal-card em-activity-grade-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Calificar actividad</p>
+        <h2 id="activityGradeTitle">${escapeHTML(record.fullName)}</h2>
+        <form id="activityGradeForm" class="em-activity-grade-form">
+          <div class="em-grade-form-section">
+            <div class="em-grade-form-heading"><h3>Grupo</h3><p>Selecciona compañeros si realizaron la actividad juntos.</p></div>
+            <label class="em-grade-group-search"><span>⌕</span><input id="activityGroupSearch" type="search" placeholder="Buscar estudiante" /></label>
+            <div class="em-grade-group-options" id="activityGroupOptions">
+              ${gradebook.map((item) => `<label data-group-option data-search="${escapeAttr(normalizeSearch(`${item.lastName} ${item.firstName} ${item.fullName}`))}"><input type="checkbox" data-group-student="${escapeAttr(item.studentCode)}" ${item.studentCode === record.studentCode || currentCodes.has(item.studentCode) ? 'checked' : ''} ${item.studentCode === record.studentCode ? 'disabled' : ''}/><span>${escapeHTML(item.fullName)}</span></label>`).join('')}
+            </div>
+          </div>
+
+          <div class="em-grade-form-section">
+            <label class="field-label" for="activityScoreInput">Calificación</label>
+            <input class="input em-grade-main-score" id="activityScoreInput" type="number" min="0" max="100" step="1" value="${Number(record.score ?? 40)}" required />
+            <div class="em-quick-grades" aria-label="Calificaciones rápidas">
+              ${[100,95,90,85,80,75,70,65,60,55,50,45,40].map((score) => `<button type="button" data-quick-grade="${score}" ${Number(record.score) === score ? 'class="is-selected"' : ''}>${score}</button>`).join('')}
+            </div>
+            <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
+          </div>
+
+          <hr class="em-grade-divider" />
+          <div class="em-grade-form-section">
+            <div class="em-grade-form-heading"><h3>Intentos de entrega y solicitudes</h3><p>Registra cada seguimiento que hagas sobre la entrega.</p></div>
+            <div class="em-delivery-status-grid">
+              ${ACTIVITY_DELIVERY_STATUSES.map(([value, label]) => `<button type="button" data-delivery-status="${value}">${label}</button>`).join('')}
+            </div>
+            <input class="input" id="activityDeliveryNote" maxlength="240" placeholder="Nota opcional para este seguimiento" />
+            <div class="em-delivery-history">
+              ${eventHistory.length ? eventHistory.slice().reverse().map((event) => `<div><span>${escapeHTML(activityDeliveryLabel(event.status))}</span><small>${escapeHTML(formatAcademicDate(String(event.occurredAt || '').slice(0, 10)))}${event.note ? ` · ${escapeHTML(event.note)}` : ''}</small></div>`).join('') : '<p>Aún no hay seguimientos registrados.</p>'}
+            </div>
+          </div>
+
+          <div class="em-grade-form-section">
+            <label class="field-label" for="activityObservationsInput">Observaciones</label>
+            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe observaciones para el estudiante o el grupo…">${escapeHTML(record.observations || '')}</textarea>
+          </div>
+
+          <div class="em-grade-form-section">
+            <label class="field-label" for="activitySubmissionFile">Archivo de entrega</label>
+            ${existingFile ? `<a class="em-submission-current-file" href="${escapeAttr(existingFile.url)}" target="_blank" rel="noopener">📎 ${escapeHTML(existingFile.name || 'Abrir archivo actual')}</a>` : ''}
+            <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>${existingFile ? 'Reemplazar archivo' : 'Adjuntar archivo'}</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
+            <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
+          </div>
+
+          <p class="em-class-create-error" id="activityGradeError" role="alert"></p>
+          <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Guardar calificación</button></div>
+        </form>
+      </section>
+    `, () => initActivityGradeModal(activity, record, currentGroup));
+  }
+
+  function initActivityGradeModal(activity, record, currentGroup) {
+    const form = document.getElementById('activityGradeForm');
+    const groupOptions = document.getElementById('activityGroupOptions');
+    const mainScore = document.getElementById('activityScoreInput');
+    const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
+    let selectedDeliveryStatus = '';
+
+    const refreshOverrides = () => {
+      const host = document.getElementById('activityGroupScoreOverrides');
+      if (!host) return;
+      const checkedCodes = [...document.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
+      const extras = checkedCodes.filter((code) => code !== record.studentCode);
+      host.innerHTML = extras.length ? `<p>Calificación individual dentro del grupo</p>${extras.map((code) => {
+        const member = (state.activityGradebook || []).find((item) => item.studentCode === code);
+        const value = existingScores.has(code) ? existingScores.get(code) : Number(mainScore?.value || 40);
+        return `<label><span>${escapeHTML(member?.fullName || code)}</span><input class="input" type="number" min="0" max="100" step="1" data-group-score="${escapeAttr(code)}" value="${value}" /></label>`;
+      }).join('')}` : '';
+    };
+
+    groupOptions?.querySelectorAll('[data-group-student]').forEach((input) => input.addEventListener('change', refreshOverrides));
+    document.getElementById('activityGroupSearch')?.addEventListener('input', (event) => {
+      const query = normalizeSearch(event.target.value || '');
+      groupOptions?.querySelectorAll('[data-group-option]').forEach((label) => { label.hidden = Boolean(query) && !String(label.dataset.search || '').includes(query); });
+    });
+    document.querySelectorAll('[data-quick-grade]').forEach((button) => button.addEventListener('click', () => {
+      const value = Number(button.dataset.quickGrade || 40);
+      if (mainScore) mainScore.value = String(value);
+      document.querySelectorAll('[data-group-score]').forEach((input) => { input.value = String(value); });
+      document.querySelectorAll('[data-quick-grade]').forEach((item) => item.classList.toggle('is-selected', item === button));
+    }));
+    document.querySelectorAll('[data-delivery-status]').forEach((button) => button.addEventListener('click', () => {
+      selectedDeliveryStatus = button.dataset.deliveryStatus || '';
+      document.querySelectorAll('[data-delivery-status]').forEach((item) => item.classList.toggle('is-selected', item === button));
+    }));
+    document.getElementById('activitySubmissionFile')?.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      const label = document.getElementById('activitySubmissionFileName');
+      if (label) label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF o imagen · máximo 20 MB';
+    });
+    refreshOverrides();
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const errorBox = document.getElementById('activityGradeError');
+      const save = document.getElementById('saveActivityGradeBtn');
+      const primaryScore = Number(mainScore?.value || 0);
+      const selectedCodes = [...document.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
+      const scores = { [record.studentCode]: primaryScore };
+      document.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
+      if (Object.values(scores).some((score) => !Number.isFinite(score) || score < 0 || score > 100)) {
+        if (errorBox) errorBox.textContent = 'Todas las calificaciones deben estar entre 0 y 100.';
+        return;
+      }
+      const file = document.getElementById('activitySubmissionFile')?.files?.[0] || null;
+      if (file && file.size > 20 * 1024 * 1024) {
+        if (errorBox) errorBox.textContent = 'El archivo de entrega supera 20 MB.';
+        return;
+      }
+      save.disabled = true;
+      save.textContent = 'Guardando…';
+      if (errorBox) errorBox.textContent = '';
+      try {
+        state.activityGradebook = await cloudAPI().saveActivityGrades({
+          activityId: activity.id,
+          assignmentId: state.assignment?.id || '',
+          primaryStudentCode: record.studentCode,
+          selectedStudentCodes: selectedCodes,
+          previousGroupStudentCodes: (currentGroup || []).map((item) => item.studentCode),
+          scores,
+          observations: document.getElementById('activityObservationsInput')?.value.trim() || '',
+          existingSubmissionFile: record.submissionFile || {},
+          submissionFile: file,
+          deliveryStatus: selectedDeliveryStatus,
+          deliveryNote: document.getElementById('activityDeliveryNote')?.value.trim() || ''
+        });
+        closeModal(false);
+        refreshActivityGradebookList();
+        toast(selectedCodes.length > 1 ? `Calificación guardada para ${selectedCodes.length} estudiantes.` : 'Calificación guardada.');
+      } catch (error) {
+        if (errorBox) errorBox.textContent = error?.message || 'No se pudo guardar la calificación.';
+        reportCloudError('No se pudo guardar la calificación', error, { silent: true });
+        save.disabled = false;
+        save.textContent = 'Guardar calificación';
+      }
+    });
+  }
+
+  function openDeleteActivityModal(activity) {
+    const assignmentIds = [...new Set(Array.isArray(activity.assignmentIds) ? activity.assignmentIds.filter(Boolean) : [])];
+    const shared = assignmentIds.length > 1;
+    const currentCourse = `${state.assignment?.grade || ''}-${state.assignment?.course || ''}`;
+    openModal(`
+      <div class="modal-card danger-modal" role="dialog" aria-modal="true" aria-labelledby="deleteActivityTitle">
+        <div class="danger-head">
+          <span class="danger-red-mesh" aria-hidden="true"></span>
+          <div class="warning-tune-stack"><div class="warning-icon warning-duo" aria-hidden="true"><span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span><span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span></div></div>
+          <div class="danger-copy"><h2 id="deleteActivityTitle">${shared ? 'ELIMINARÁS O RETIRARÁS ESTA ACTIVIDAD' : 'ELIMINARÁS ESTA ACTIVIDAD'}</h2><p>${shared ? `Está compartida con ${assignmentIds.length} cursos. Puedes retirarla solo de ${escapeHTML(currentCourse)} o borrarla completamente.` : 'Se eliminarán la actividad, sus archivos y únicamente sus registros de calificación.'}</p></div>
+          <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
+        </div>
+        <div class="danger-body">
+          <div class="delete-target"><strong>${escapeHTML(activity.title || 'Actividad')}</strong><span>Curso ${escapeHTML(currentCourse)} · Periodo ${Number(activity.period || 1)}</span></div>
+          <p class="em-delete-class-error" id="deleteActivityError" role="alert"></p>
+          <div class="danger-actions">${shared ? `<button class="ghost-btn" id="removeActivityFromCourseBtn" type="button">Quitar solo de ${escapeHTML(currentCourse)}</button>` : ''}<button class="danger-confirm" id="deleteActivityEverywhereBtn" type="button">${shared ? 'Eliminar de todos los cursos' : 'Sí, eliminar actividad'}</button><button class="ghost-btn" type="button" data-close-modal>Cancelar</button></div>
+        </div>
+      </div>
+    `, () => {
+      document.getElementById('removeActivityFromCourseBtn')?.addEventListener('click', () => deleteActivityRecord(activity, 'course'));
+      document.getElementById('deleteActivityEverywhereBtn')?.addEventListener('click', () => deleteActivityRecord(activity, 'all'));
+      startDeleteWarningMotion();
+    });
+  }
+
+  async function deleteActivityRecord(activity, mode = 'all') {
+    const errorBox = document.getElementById('deleteActivityError');
+    const buttons = document.querySelectorAll('#removeActivityFromCourseBtn, #deleteActivityEverywhereBtn');
+    buttons.forEach((button) => { button.disabled = true; });
+    try {
+      await cloudAPI().deleteActivity({ activityId: activity.id, assignmentId: state.assignment?.id || '', mode });
+      if (mode === 'course') {
+        activity.assignmentIds = (activity.assignmentIds || []).filter((id) => id !== state.assignment?.id);
+        activity.assignmentId = activity.assignmentIds[0] || '';
+      } else {
+        state.data.activities = (state.data.activities || []).filter((item) => item.id !== activity.id);
+      }
+      closeModal(false);
+      renderSubjectDetail('activities');
+      toast(mode === 'course' ? 'Actividad retirada de este curso.' : 'Actividad y sus calificaciones fueron eliminadas.');
+    } catch (error) {
+      if (errorBox) errorBox.textContent = error?.message || 'No se pudo eliminar la actividad.';
+      reportCloudError('No se pudo eliminar la actividad', error, { silent: true });
+      buttons.forEach((button) => { button.disabled = false; });
+    }
+  }
+
 
   function renderClassesTab(options = {}) {
     const $content = document.getElementById('tabContent');
@@ -10300,7 +10743,7 @@
 
           <label class="field-label" for="classPeriodInput">Periodo</label>
           <select class="select" id="classPeriodInput" required>
-            ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(state.period) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
+            ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(getAutomaticAcademicPeriod()) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
           </select>
 
           <label class="field-label" for="classPdfInput">Archivo PDF</label>
@@ -12147,7 +12590,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.327', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.328', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

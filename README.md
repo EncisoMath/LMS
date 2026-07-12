@@ -1,6 +1,6 @@
-# EncisoMath LMS v0.24.324
+# EncisoMath LMS v0.24.328
 
-Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, asistencia, Rockstars y quizzes.
+Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, calificaciones, asistencia, Rockstars y quizzes.
 
 ## Estado actual
 
@@ -59,12 +59,19 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 La apertura de clases usa una transición suave, un cargador geométrico con barra de progreso y una entrada con fade/zoom al mostrar la primera página.
 
 
-## Actividades v0.24.324
+## Actividades v0.24.328
 
-- Navegación vertical por Estudiantes, Clases, Actividades, Rockstars y Quizzes.
-- Creación de actividades relacionada con una clase del curso.
+- Selector desplegable para navegar entre Estudiantes, Clases, Actividades, Rockstars y Quizzes.
+- Creación y edición de actividades relacionadas con una clase del curso.
+- Publicación para un solo curso o para todos los cursos del mismo grado y asignatura.
 - Periodo automático, fecha de inicio y fecha máxima de entrega.
-- Contenido exclusivo por actividad: PDF, imágenes, texto enriquecido o HTML + CSS.
+- Contenido en PDF, secuencia de imágenes, texto enriquecido o HTML + CSS.
 - Solución/revisión en los mismos cuatro formatos.
 - Rúbrica dinámica con validación obligatoria de 100%.
-- Persistencia de actividades y archivos en Supabase.
+- Vista de detalle con el contenido completo de la actividad.
+- Calificación automática inicial de 40 para cada estudiante asignado.
+- Lista por apellido, nombre, calificación y semáforo académico.
+- Calificación individual o grupal, con nota diferente para cada integrante cuando sea necesario.
+- Observaciones, archivo de entrega e historial de solicitudes/estados de entrega.
+- Eliminación en cascada de las calificaciones vinculadas únicamente a la actividad eliminada.
+- Persistencia de actividades, archivos, calificaciones y seguimientos en Supabase.

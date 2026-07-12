@@ -870,6 +870,285 @@
     }
   }
 
+
+  function storedActivityFiles(payload) {
+    return Array.isArray(payload?.files) ? payload.files.filter((item) => item?.path) : [];
+  }
+
+  async function removeStorageFiles(paths = []) {
+    const unique = [...new Set((paths || []).filter(Boolean))];
+    if (!unique.length) return;
+    const result = await getClient().storage.from(config.storageBucket || 'lms-public').remove(unique);
+    if (result.error) console.warn('No se pudieron retirar algunos archivos de Storage.', result.error);
+  }
+
+  async function updateActivity({ activityId, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [] }) {
+    const supabaseClient = getClient();
+    const activeSession = session || await getSession();
+    if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
+    const safeActivityId = String(activityId || '').trim();
+    if (!safeActivityId) throw new Error('No se encontró la actividad que deseas editar.');
+    const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
+    if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
+    const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
+    if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
+
+    const uploadedPaths = [];
+    try {
+      const contentUploads = contentFiles.length
+        ? await uploadActivityFiles({ activityId: safeActivityId, section: `assignment-${Date.now()}`, files: contentFiles })
+        : [];
+      const reviewUploads = reviewFiles.length
+        ? await uploadActivityFiles({ activityId: safeActivityId, section: `review-${Date.now()}`, files: reviewFiles })
+        : [];
+      uploadedPaths.push(...contentUploads.map((item) => item.path), ...reviewUploads.map((item) => item.path));
+
+      const keepContentFiles = !contentUploads.length && contentType === existingContentType
+        ? (Array.isArray(existingContentPayload?.files) ? existingContentPayload.files : [])
+        : [];
+      const keepReviewFiles = !reviewUploads.length && reviewType === existingReviewType
+        ? (Array.isArray(existingReviewPayload?.files) ? existingReviewPayload.files : [])
+        : [];
+      const contentPayload = { text: contentText, html: contentHtml, css: contentCss, files: contentUploads.length ? contentUploads : keepContentFiles };
+      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads.length ? reviewUploads : keepReviewFiles };
+
+      const updateResult = await supabaseClient
+        .from('activities')
+        .update({
+          title: String(title || '').trim(),
+          lesson_id: lessonId || null,
+          period: Number(period || 1),
+          starts_at: startsAt || null,
+          due_at: dueAt || null,
+          content_type: contentType,
+          content_payload: contentPayload,
+          review_type: reviewType,
+          review_payload: reviewPayload,
+          rubric,
+          status: 'published'
+        })
+        .eq('id', safeActivityId)
+        .eq('owner_id', activeSession.user.id);
+      if (updateResult.error) throw normalizeError(updateResult.error, 'No se pudo actualizar la actividad.');
+
+      const currentLinks = await supabaseClient.from('activity_assignments').select('assignment_id').eq('activity_id', safeActivityId);
+      if (currentLinks.error) throw normalizeError(currentLinks.error, 'No se pudieron revisar los cursos actuales de la actividad.');
+      const currentIds = (currentLinks.data || []).map((row) => row.assignment_id);
+      const removedIds = currentIds.filter((id) => !ids.includes(id));
+      if (removedIds.length) {
+        const removeResult = await supabaseClient.from('activity_assignments').delete().eq('activity_id', safeActivityId).in('assignment_id', removedIds);
+        if (removeResult.error) throw normalizeError(removeResult.error, 'No se pudieron retirar los cursos anteriores.');
+      }
+      const linkRows = ids.map((assignmentId, index) => ({
+        activity_id: safeActivityId,
+        assignment_id: assignmentId,
+        sort_order: Math.floor(Date.now() / 1000) + index,
+        visible: true
+      }));
+      const linkResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
+      if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudieron actualizar los cursos de la actividad.');
+
+      const oldPaths = [
+        ...storedActivityFiles(existingContentPayload).map((item) => item.path),
+        ...storedActivityFiles(existingReviewPayload).map((item) => item.path)
+      ];
+      const retainedPaths = [
+        ...storedActivityFiles(contentPayload).map((item) => item.path),
+        ...storedActivityFiles(reviewPayload).map((item) => item.path)
+      ];
+      await removeStorageFiles(oldPaths.filter((path) => !retainedPaths.includes(path)));
+
+      return {
+        id: safeActivityId,
+        title: String(title || '').trim(),
+        lessonId: lessonId || '',
+        period: Number(period || 1),
+        startsAt: startsAt || '',
+        dueAt: dueAt || '',
+        contentType,
+        contentPayload,
+        reviewType,
+        reviewPayload,
+        rubric,
+        status: 'published',
+        assignmentId: ids[0] || '',
+        assignmentIds: ids,
+        sortOrder: linkRows[0]?.sort_order || 0,
+        createdAt: new Date().toISOString()
+      };
+    } catch (error) {
+      if (uploadedPaths.length) await removeStorageFiles(uploadedPaths);
+      throw error;
+    }
+  }
+
+  async function getActivityGradebook({ activityId, assignmentId }) {
+    const supabaseClient = getClient();
+    const recordsResult = await supabaseClient
+      .from('activity_student_records')
+      .select('id,activity_id,assignment_id,student_id,score,observations,submission_file,grading_group_id,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
+      .eq('activity_id', activityId)
+      .eq('assignment_id', assignmentId);
+    if (recordsResult.error) throw normalizeError(recordsResult.error, 'No se pudo cargar la lista de calificaciones.');
+    const records = recordsResult.data || [];
+    const recordIds = records.map((row) => row.id);
+    let events = [];
+    if (recordIds.length) {
+      const eventsResult = await supabaseClient
+        .from('activity_delivery_events')
+        .select('id,activity_record_id,status,note,occurred_at,created_at')
+        .in('activity_record_id', recordIds)
+        .order('occurred_at', { ascending: true });
+      if (eventsResult.error) throw normalizeError(eventsResult.error, 'No se pudo cargar el seguimiento de entregas.');
+      events = eventsResult.data || [];
+    }
+    const eventMap = new Map();
+    events.forEach((event) => {
+      if (!eventMap.has(event.activity_record_id)) eventMap.set(event.activity_record_id, []);
+      eventMap.get(event.activity_record_id).push({
+        id: event.id,
+        status: event.status,
+        note: event.note || '',
+        occurredAt: event.occurred_at || event.created_at || ''
+      });
+    });
+    return records.map((row) => {
+      const student = Array.isArray(row.student) ? row.student[0] : row.student;
+      const firstName = student?.first_name || '';
+      const lastName = student?.last_name || '';
+      const fullName = student?.display_name || `${lastName}, ${firstName}`.replace(/^,\s*/, '').trim();
+      const deliveryEvents = eventMap.get(row.id) || [];
+      return {
+        recordId: row.id,
+        activityId: row.activity_id,
+        assignmentId: row.assignment_id,
+        studentDbId: row.student_id,
+        studentCode: String(student?.student_code || row.student_id || ''),
+        firstName,
+        lastName,
+        fullName,
+        score: Number(row.score ?? 40),
+        observations: row.observations || '',
+        submissionFile: row.submission_file && typeof row.submission_file === 'object' ? row.submission_file : {},
+        gradingGroupId: row.grading_group_id || '',
+        gradedAt: row.graded_at || '',
+        updatedAt: row.updated_at || '',
+        deliveryEvents,
+        latestDeliveryStatus: deliveryEvents.length ? deliveryEvents[deliveryEvents.length - 1].status : ''
+      };
+    }).sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
+  }
+
+  async function uploadActivitySubmission({ activityId, assignmentId, studentCode, file }) {
+    if (!file) return null;
+    const activeSession = session || await getSession();
+    const bucket = config.storageBucket || 'lms-public';
+    const path = `${activeSession.user.id}/activities/${activityId}/submissions/${assignmentId}/${safeStorageName(studentCode)}-${Date.now()}-${safeStorageName(file.name || 'entrega')}`;
+    const result = await getClient().storage.from(bucket).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || undefined
+    });
+    if (result.error) throw normalizeError(result.error, 'No se pudo subir el archivo de entrega.');
+    return {
+      name: file.name || 'Archivo de entrega',
+      type: file.type || '',
+      size: Number(file.size || 0),
+      path,
+      url: getClient().storage.from(bucket).getPublicUrl(path).data?.publicUrl || ''
+    };
+  }
+
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], scores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
+    const supabaseClient = getClient();
+    const activeSession = session || await getSession();
+    if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
+    const codes = [...new Set([primaryStudentCode, ...(selectedStudentCodes || [])].filter(Boolean))];
+    const dbRows = codes.map((code) => ({ code, studentId: resolveStudentDbId(code) }));
+    if (dbRows.some((row) => !row.studentId)) throw new Error('No se encontró uno de los estudiantes seleccionados.');
+    const groupId = codes.length > 1 ? (globalThis.crypto?.randomUUID?.() || null) : null;
+    const newSubmission = await uploadActivitySubmission({ activityId, assignmentId, studentCode: primaryStudentCode, file: submissionFile });
+    const submissionPayload = newSubmission || (existingSubmissionFile && typeof existingSubmissionFile === 'object' ? existingSubmissionFile : {});
+    const gradedAt = new Date().toISOString();
+    const rows = dbRows.map(({ code, studentId }) => ({
+      activity_id: activityId,
+      assignment_id: assignmentId,
+      student_id: studentId,
+      score: Math.max(0, Math.min(100, Number(scores[code] ?? scores[primaryStudentCode] ?? 40))),
+      observations: String(observations || ''),
+      submission_file: submissionPayload,
+      grading_group_id: groupId,
+      graded_by: activeSession.user.id,
+      graded_at: gradedAt
+    }));
+    const upsertResult = await supabaseClient
+      .from('activity_student_records')
+      .upsert(rows, { onConflict: 'activity_id,assignment_id,student_id' })
+      .select('id,student_id');
+    if (upsertResult.error) {
+      if (newSubmission?.path) await removeStorageFiles([newSubmission.path]);
+      throw normalizeError(upsertResult.error, 'No se pudo guardar la calificación.');
+    }
+
+    const removedCodes = [...new Set(previousGroupStudentCodes || [])].filter((code) => !codes.includes(code));
+    const removedIds = removedCodes.map(resolveStudentDbId).filter(Boolean);
+    if (removedIds.length) {
+      const ungroupResult = await supabaseClient
+        .from('activity_student_records')
+        .update({ grading_group_id: null })
+        .eq('activity_id', activityId)
+        .eq('assignment_id', assignmentId)
+        .in('student_id', removedIds);
+      if (ungroupResult.error) throw normalizeError(ungroupResult.error, 'No se pudo actualizar el grupo de trabajo.');
+    }
+
+    if (deliveryStatus) {
+      const eventRows = (upsertResult.data || []).map((row) => ({
+        activity_record_id: row.id,
+        status: deliveryStatus,
+        note: String(deliveryNote || ''),
+        occurred_at: gradedAt,
+        created_by: activeSession.user.id
+      }));
+      const eventResult = await supabaseClient.from('activity_delivery_events').insert(eventRows);
+      if (eventResult.error) throw normalizeError(eventResult.error, 'La nota se guardó, pero no se pudo registrar el seguimiento de entrega.');
+    }
+
+    if (newSubmission?.path && existingSubmissionFile?.path && existingSubmissionFile.path !== newSubmission.path) {
+      await removeStorageFiles([existingSubmissionFile.path]);
+    }
+    return getActivityGradebook({ activityId, assignmentId });
+  }
+
+  async function deleteActivity({ activityId, assignmentId, mode = 'all' }) {
+    const supabaseClient = getClient();
+    const safeActivityId = String(activityId || '').trim();
+    if (!safeActivityId) throw new Error('No se encontró la actividad que deseas eliminar.');
+
+    const activityResult = await supabaseClient.from('activities').select('content_payload,review_payload').eq('id', safeActivityId).maybeSingle();
+    if (activityResult.error) throw normalizeError(activityResult.error, 'No se pudo leer la actividad.');
+    const submissionResult = await supabaseClient.from('activity_student_records').select('submission_file').eq('activity_id', safeActivityId);
+    if (submissionResult.error) throw normalizeError(submissionResult.error, 'No se pudieron revisar los archivos de entrega.');
+    const basePaths = [
+      ...storedActivityFiles(activityResult.data?.content_payload).map((item) => item.path),
+      ...storedActivityFiles(activityResult.data?.review_payload).map((item) => item.path),
+      ...(submissionResult.data || []).map((row) => row.submission_file?.path).filter(Boolean)
+    ];
+
+    if (mode === 'course') {
+      const unlink = await supabaseClient.from('activity_assignments').delete().eq('activity_id', safeActivityId).eq('assignment_id', assignmentId);
+      if (unlink.error) throw normalizeError(unlink.error, 'No se pudo quitar la actividad de este curso.');
+      const remaining = await supabaseClient.from('activity_assignments').select('assignment_id', { count: 'exact', head: true }).eq('activity_id', safeActivityId);
+      if (remaining.error) throw normalizeError(remaining.error, 'No se pudo verificar si la actividad sigue compartida.');
+      if (Number(remaining.count || 0) > 0) return { mode: 'course' };
+    }
+
+    const deleteResult = await supabaseClient.from('activities').delete().eq('id', safeActivityId);
+    if (deleteResult.error) throw normalizeError(deleteResult.error, 'No se pudo eliminar la actividad.');
+    await removeStorageFiles(basePaths);
+    return { mode: 'all' };
+  }
+
   async function deletePdfLesson({ lessonId, assignmentId, mode = 'all', storagePdfPath = '', storageThumbnailPath = '' }) {
     const supabaseClient = getClient();
     const safeLessonId = String(lessonId || '').trim();
@@ -937,7 +1216,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.315', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.328', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -983,7 +1262,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.315',
+          appVersion: '0.24.328',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1024,6 +1303,10 @@
     resetAssignmentImage,
     createPdfLesson,
     createActivity,
+    updateActivity,
+    getActivityGradebook,
+    saveActivityGrades,
+    deleteActivity,
     deletePdfLesson,
     recordLessonView,
     startQuizAttempt,
