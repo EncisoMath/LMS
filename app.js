@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.319';
+  const APP_VERSION = '0.24.320';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10134,14 +10134,27 @@
     const markup = `
       <main class="screen class-screen ${isPdf ? 'em-pdf-class-screen' : ''}">
         ${isPdf ? `
-          <section class="em-pdf-notebook" id="pdfNotebook" aria-label="Lector de ${escapeAttr(lesson.title || 'clase')}">
+          <section class="em-pdf-notebook is-preparing" id="pdfNotebook" aria-label="Lector de ${escapeAttr(lesson.title || 'clase')}">
+            <div class="em-pdf-loading" id="pdfLoading" role="status" aria-live="polite" aria-label="Cargando clase">
+              <div class="em-pdf-loader-geometry" aria-hidden="true">
+                <span class="em-pdf-loader-shape circle shape-a"></span>
+                <span class="em-pdf-loader-shape square shape-b"></span>
+                <span class="em-pdf-loader-shape triangle shape-c"></span>
+                <span class="em-pdf-loader-shape x shape-d"></span>
+                <span class="em-pdf-loader-shape circle outline shape-e"></span>
+                <span class="em-pdf-loader-shape square outline shape-f"></span>
+              </div>
+              <div class="em-pdf-loader-track" aria-hidden="true">
+                <span class="em-pdf-loader-bar" id="pdfLoadingBar"></span>
+              </div>
+              <span class="sr-only">Cargando clase</span>
+            </div>
             <button class="em-pdf-float-btn em-pdf-back" id="backBtn" type="button" aria-label="Volver">←</button>
             <div class="em-pdf-stage" id="pdfStage">
               <button class="em-pdf-nav em-pdf-prev" id="pdfPrevBtn" type="button" aria-label="Página anterior">‹</button>
               <div class="em-pdf-page-viewport" id="pdfPageViewport">
                 <div class="em-pdf-page-shell" id="pdfPageShell">
                   <span class="em-pdf-spiral" aria-hidden="true"></span>
-                  <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
                   <canvas class="em-pdf-page-canvas is-active" id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
                   <canvas class="em-pdf-page-canvas" id="pdfPageCanvasNext" aria-hidden="true" hidden></canvas>
                   <span class="em-pdf-page-shine" aria-hidden="true"></span>
@@ -10177,16 +10190,36 @@
 
   function showPdfViewerError(error) {
     const loading = document.getElementById('pdfLoading');
+    const notebook = document.getElementById('pdfNotebook');
     if (!loading) return;
+    notebook?.classList.remove('is-ready');
+    notebook?.classList.add('is-preparing');
     loading.hidden = false;
     loading.style.removeProperty('display');
-    loading.classList.add('is-error');
-    loading.innerHTML = `<strong>No se pudo abrir el cuaderno.</strong><span>${escapeHTML(error?.message || 'Revisa el archivo PDF.')}</span>`;
+    loading.className = 'em-pdf-loading is-error';
+    loading.innerHTML = `<div class="em-pdf-loader-error"><strong>No se pudo abrir la clase.</strong><span>${escapeHTML(error?.message || 'Revisa el archivo PDF.')}</span></div>`;
   }
 
   async function initPdfNotebookViewer(lesson) {
-    const pdfjs = await loadPdfJs();
     const loading = document.getElementById('pdfLoading');
+    const loadingBar = document.getElementById('pdfLoadingBar');
+    const notebook = document.getElementById('pdfNotebook');
+    const setLoadingProgress = (value) => {
+      if (!loadingBar) return;
+      const safeValue = Math.max(4, Math.min(100, Number(value) || 4));
+      loadingBar.style.setProperty('--em-pdf-load-progress', `${safeValue}%`);
+    };
+    if (loading) {
+      loading.hidden = false;
+      loading.style.removeProperty('display');
+      loading.classList.remove('is-error', 'is-complete');
+    }
+    notebook?.classList.add('is-preparing');
+    notebook?.classList.remove('is-ready');
+    setLoadingProgress(8);
+
+    const pdfjs = await loadPdfJs();
+    setLoadingProgress(22);
     const viewportHost = document.getElementById('pdfPageViewport');
     const shell = document.getElementById('pdfPageShell');
     let activeCanvas = document.getElementById('pdfPageCanvas');
@@ -10198,16 +10231,14 @@
     const zoomIn = document.getElementById('pdfZoomInBtn');
     if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !prev || !next || !indicator) return;
 
-    loading.hidden = false;
-    loading.style.removeProperty('display');
-    loading.classList.remove('is-error');
-    loading.textContent = 'Preparando cuaderno...';
-
     const response = await fetch(lesson.contentUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
+    setLoadingProgress(40);
     const bytes = await response.arrayBuffer();
+    setLoadingProgress(62);
     const documentTask = pdfjs.getDocument({ data: bytes, isEvalSupported: false });
     const pdfDocument = await documentTask.promise;
+    setLoadingProgress(78);
     const viewerController = new AbortController();
     const viewerSignal = viewerController.signal;
     let resizeTimer = 0;
@@ -10278,6 +10309,7 @@
     const SLIDE_DURATION = 500;
     const SLIDE_EASING = 'cubic-bezier(0.190, 1.000, 0.220, 1.000)';
     let hasRenderedPage = false;
+    let viewerReady = false;
 
     const waitForPaint = () => new Promise((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -10437,8 +10469,19 @@
 
         pageNumber = number;
         zoom = targetZoom;
-        loading.hidden = true;
-        loading.style.setProperty('display', 'none', 'important');
+        if (!viewerReady) {
+          viewerReady = true;
+          setLoadingProgress(100);
+          await waitForPaint();
+          notebook?.classList.remove('is-preparing');
+          notebook?.classList.add('is-ready');
+          loading.classList.add('is-complete');
+          window.setTimeout(() => {
+            if (!document.body.contains(loading)) return;
+            loading.hidden = true;
+            loading.style.setProperty('display', 'none', 'important');
+          }, 420);
+        }
         if (zoom <= 1.01) {
           viewportHost.scrollLeft = 0;
           viewportHost.scrollTop = 0;
@@ -11667,7 +11710,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.319', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.320', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

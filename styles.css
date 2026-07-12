@@ -27579,3 +27579,174 @@ html body #app .em-pdf-class-screen .em-pdf-nav {
 html body #app .em-pdf-class-screen .em-pdf-nav:active:not(:disabled) {
   transform: translateY(-50%) scale(.94) !important;
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.24.320 - APERTURA DE CLASE Y LOADER GEOMETRICO
+========================================================= */
+@keyframes emPdfViewerScreenIn {
+  0% { opacity: 0; transform: scale(.985); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes emPdfBookReveal {
+  0% { opacity: 0; transform: scale(.98); filter: blur(2px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes emPdfControlReveal {
+  0% { opacity: 0; transform: translateY(7px) scale(.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes emPdfLoaderShapeFloatA {
+  0%, 100% { transform: translate3d(-8px, 6px, 0) rotate(-12deg) scale(.88); }
+  50% { transform: translate3d(10px, -10px, 0) rotate(18deg) scale(1.08); }
+}
+@keyframes emPdfLoaderShapeFloatB {
+  0%, 100% { transform: translate3d(7px, -7px, 0) rotate(12deg) scale(1); }
+  50% { transform: translate3d(-9px, 9px, 0) rotate(-16deg) scale(.9); }
+}
+@keyframes emPdfLoaderExit {
+  to { opacity: 0; transform: scale(1.025); visibility: hidden; }
+}
+@keyframes emPdfLoaderShimmer {
+  from { transform: translateX(-115%); }
+  to { transform: translateX(260%); }
+}
+
+html body #app .em-pdf-class-screen {
+  animation: emPdfViewerScreenIn .34s cubic-bezier(.22,1,.36,1) both !important;
+}
+html body #app .em-pdf-notebook.is-preparing .em-pdf-page-viewport {
+  opacity: 0 !important;
+  transform: scale(.98) !important;
+  pointer-events: none !important;
+}
+html body #app .em-pdf-notebook.is-ready .em-pdf-page-viewport {
+  animation: emPdfBookReveal .42s cubic-bezier(.22,1,.36,1) both;
+  transform-origin: center center;
+}
+html body #app .em-pdf-notebook.is-preparing .em-pdf-back,
+html body #app .em-pdf-notebook.is-preparing .em-pdf-floating-zoom,
+html body #app .em-pdf-notebook.is-preparing .em-pdf-page-pill,
+html body #app .em-pdf-notebook.is-preparing .em-pdf-nav {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+html body #app .em-pdf-notebook.is-ready .em-pdf-back,
+html body #app .em-pdf-notebook.is-ready .em-pdf-floating-zoom,
+html body #app .em-pdf-notebook.is-ready .em-pdf-page-pill,
+html body #app .em-pdf-notebook.is-ready .em-pdf-nav {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  animation: emPdfControlReveal .34s .08s cubic-bezier(.22,1,.36,1) both;
+}
+
+html body #app .em-pdf-loading {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  display: grid !important;
+  grid-template-rows: 150px auto !important;
+  align-content: center !important;
+  justify-items: center !important;
+  gap: 24px !important;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(19,104,206,.12), transparent 30%),
+    radial-gradient(circle at 82% 80%, rgba(36,180,154,.10), transparent 32%),
+    #07111f !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: hidden !important;
+  opacity: 1;
+  transform: scale(1);
+}
+html body #app .em-pdf-loading.is-complete {
+  animation: emPdfLoaderExit .38s cubic-bezier(.4,0,.2,1) both;
+  pointer-events: none;
+}
+.em-pdf-loader-geometry {
+  position: relative;
+  width: 210px;
+  height: 150px;
+}
+.em-pdf-loader-shape {
+  position: absolute;
+  display: block;
+  background: var(--shape-color, #1368ce);
+  opacity: .95;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,.16));
+  animation: emPdfLoaderShapeFloatA 1.9s ease-in-out infinite;
+}
+.em-pdf-loader-shape.circle { border-radius: 50%; }
+.em-pdf-loader-shape.square { border-radius: 8px; }
+.em-pdf-loader-shape.triangle { clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+.em-pdf-loader-shape.x { background: transparent; }
+.em-pdf-loader-shape.x::before,
+.em-pdf-loader-shape.x::after {
+  content: "";
+  position: absolute;
+  inset: 46% 0 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--shape-color, #e21b3c);
+}
+.em-pdf-loader-shape.x::before { transform: rotate(45deg); }
+.em-pdf-loader-shape.x::after { transform: rotate(-45deg); }
+.em-pdf-loader-shape.outline { background: transparent; border: 5px solid var(--shape-color); }
+.em-pdf-loader-shape.shape-a { --shape-color:#1368ce; width:48px; height:48px; left:17px; top:52px; }
+.em-pdf-loader-shape.shape-b { --shape-color:#EBB513; width:43px; height:43px; left:91px; top:10px; animation-name:emPdfLoaderShapeFloatB; animation-delay:-.55s; }
+.em-pdf-loader-shape.shape-c { --shape-color:#24b49a; width:48px; height:44px; right:12px; top:70px; animation-delay:-.9s; }
+.em-pdf-loader-shape.shape-d { --shape-color:#e21b3c; width:38px; height:38px; left:80px; bottom:8px; animation-name:emPdfLoaderShapeFloatB; animation-delay:-1.2s; }
+.em-pdf-loader-shape.shape-e { --shape-color:#ff7a00; width:31px; height:31px; right:30px; top:16px; animation-delay:-1.5s; }
+.em-pdf-loader-shape.shape-f { --shape-color:#54c600; width:28px; height:28px; left:35px; top:8px; animation-name:emPdfLoaderShapeFloatB; animation-delay:-.25s; }
+.em-pdf-loader-track {
+  position: relative;
+  width: min(58vw, 230px);
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.2);
+}
+.em-pdf-loader-bar {
+  --em-pdf-load-progress: 8%;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--em-pdf-load-progress);
+  min-width: 12px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1368ce 0%, #24b49a 45%, #EBB513 72%, #ff7a00 100%);
+  transition: width .34s cubic-bezier(.22,1,.36,1);
+  overflow: hidden;
+}
+.em-pdf-loader-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent);
+  animation: emPdfLoaderShimmer 1.1s linear infinite;
+}
+html body #app .em-pdf-loading.is-error {
+  grid-template-rows: auto !important;
+  padding: 24px !important;
+  color: #fff;
+}
+.em-pdf-loader-error {
+  width: min(88vw, 430px);
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(4,11,21,.72);
+  border: 1px solid rgba(255,255,255,.13);
+  text-align: center;
+}
+.em-pdf-loader-error strong { font-weight: 800; }
+.em-pdf-loader-error span { color: rgba(255,255,255,.72); font-size: .84rem; font-weight: 500; }
