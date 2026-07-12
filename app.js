@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.320';
+  const APP_VERSION = '0.24.321';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10164,6 +10164,11 @@
             </div>
             <div class="em-pdf-floating-zoom" aria-label="Controles de zoom">
               <button class="em-pdf-float-btn" type="button" id="pdfZoomOutBtn" aria-label="Alejar">−</button>
+              <button class="em-pdf-float-btn em-pdf-fit-btn" type="button" id="pdfZoomFitBtn" aria-label="Ajustar" title="Ajustar a pantalla">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M8 4H5v3M16 4h3v3M8 20H5v-3M16 20h3v-3" />
+                </svg>
+              </button>
               <button class="em-pdf-float-btn" type="button" id="pdfZoomInBtn" aria-label="Acercar">＋</button>
             </div>
             <strong class="em-pdf-page-pill" id="pdfPageIndicator" aria-live="polite">1/1</strong>
@@ -10228,6 +10233,7 @@
     const next = document.getElementById('pdfNextBtn');
     const indicator = document.getElementById('pdfPageIndicator');
     const zoomOut = document.getElementById('pdfZoomOutBtn');
+    const zoomFit = document.getElementById('pdfZoomFitBtn');
     const zoomIn = document.getElementById('pdfZoomInBtn');
     if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !prev || !next || !indicator) return;
 
@@ -10271,6 +10277,7 @@
       next.disabled = pageNumber >= pdfDocument.numPages || rendering;
       indicator.textContent = `${pageNumber}/${pdfDocument.numPages}`;
       if (zoomOut) zoomOut.disabled = zoom <= .66 || rendering;
+      if (zoomFit) zoomFit.disabled = Math.abs(zoom - 1) < .01 || rendering;
       if (zoomIn) zoomIn.disabled = zoom >= 3.99 || rendering;
     };
 
@@ -10538,6 +10545,7 @@
     prev.addEventListener('click', () => go(-1), { signal: viewerSignal });
     next.addEventListener('click', () => go(1), { signal: viewerSignal });
     zoomOut?.addEventListener('click', () => setZoom(zoom - .25), { signal: viewerSignal });
+    zoomFit?.addEventListener('click', () => setZoom(1), { signal: viewerSignal });
     zoomIn?.addEventListener('click', () => setZoom(zoom + .25), { signal: viewerSignal });
 
     viewportHost.addEventListener('pointerdown', (event) => {
@@ -11710,7 +11718,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.320', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.321', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

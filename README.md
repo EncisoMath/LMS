@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.320
+# EncisoMath LMS v0.24.321
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, asistencia, Rockstars y quizzes.
 

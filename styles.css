@@ -27406,6 +27406,19 @@ body.quiz-fullscreen-active
 }
 .em-pdf-float-btn:active:not(:disabled),
 .em-pdf-nav:active:not(:disabled) { scale: .94; }
+
+.em-pdf-fit-btn svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+.em-pdf-fit-btn svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .em-pdf-float-btn:disabled,
 .em-pdf-nav:disabled { opacity: .28; cursor: default; }
 .em-pdf-back {
@@ -27582,7 +27595,7 @@ html body #app .em-pdf-class-screen .em-pdf-nav:active:not(:disabled) {
 
 
 /* =========================================================
-   ENCISOMATH v0.24.320 - APERTURA DE CLASE Y LOADER GEOMETRICO
+   ENCISOMATH v0.24.321 - BOTON AJUSTAR EN VISOR PDF
 ========================================================= */
 @keyframes emPdfViewerScreenIn {
   0% { opacity: 0; transform: scale(.985); }
