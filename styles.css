@@ -26882,3 +26882,72 @@ body.quiz-fullscreen-active
 @media (max-width: 400px) {
   .activity-hero.em-act-hero-host { --em-act-board-scale: .60; }
 }
+
+
+/* v0.24.307 · Periodo global en barra superior */
+.em-topbar-period-select {
+  position: relative;
+  min-width: 126px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--em-subject-topbar-btn-bg, rgba(255,255,255,.10));
+  border: 1px solid rgba(255,255,255,.08);
+  color: #fff;
+}
+.em-topbar-period-select > span {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: none;
+  font-size: .75rem;
+  opacity: .92;
+}
+.em-topbar-period-select select {
+  width: 100%;
+  height: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: 0;
+  padding: 0 29px 0 11px;
+  background: transparent;
+  color: #fff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: .78rem;
+  font-weight: 800;
+  font-variation-settings: "wght" 800;
+  cursor: pointer;
+}
+.em-topbar-period-select select option { color: #071827; background: #fff; }
+.em-topbar-period-select:focus-within { outline: 2px solid rgba(255,255,255,.64); outline-offset: 2px; }
+.em-class-view-only { justify-content: flex-end !important; }
+.em-period-settings-button { padding: 0 !important; font-size: 1.05rem; }
+.em-period-settings-modal { width: min(92vw, 620px); padding: 22px; }
+.em-period-settings-heading { display: flex; gap: 14px; align-items: flex-start; padding-right: 32px; margin-bottom: 18px; }
+.em-period-settings-heading h2 { margin: 2px 0 6px; font-size: clamp(1.35rem, 5vw, 1.9rem); }
+.em-period-settings-heading p { margin: 0; color: var(--muted); line-height: 1.45; }
+.em-period-settings-gear { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; border-radius: 10px; background: var(--maincolor); color: #fff; font-size: 1.35rem; }
+.em-period-settings-grid { display: grid; gap: 10px; }
+.em-period-date-field { display: grid; grid-template-columns: minmax(0,1fr) minmax(150px, .8fr); gap: 12px; align-items: center; padding: 12px; border-radius: 9px; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.09); }
+.em-period-date-field span { display: grid; gap: 2px; }
+.em-period-date-field strong { font-size: .96rem; }
+.em-period-date-field small { color: var(--muted); }
+.em-period-date-field input { width: 100%; min-height: 40px; border-radius: 7px; border: 1px solid rgba(255,255,255,.13); background: rgba(0,0,0,.26); color: var(--ink); padding: 8px 10px; font: inherit; color-scheme: dark; }
+.em-period-auto-preview { display: grid; gap: 3px; margin-top: 14px; padding: 12px 14px; border-radius: 9px; background: color-mix(in srgb, var(--maincolor) 16%, transparent); border: 1px solid color-mix(in srgb, var(--maincolor) 34%, transparent); }
+.em-period-auto-preview span { color: var(--muted); font-size: .86rem; }
+.em-period-settings-error { min-height: 20px; margin: 8px 0 0; color: #fecaca; font-weight: 700; font-size: .86rem; }
+.em-period-settings-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 6px; }
+@media (max-width: 520px) {
+  .subject-screen .topbar.em-subject-topbar { gap: 7px; padding-left: 10px; padding-right: 10px; }
+  .subject-screen .topbar.em-subject-topbar h1 { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .em-topbar-period-select { min-width: 112px; }
+  .em-topbar-period-select select { font-size: .72rem; padding-left: 9px; }
+  .em-period-settings-modal { padding: 18px 14px; }
+  .em-period-date-field { grid-template-columns: 1fr; gap: 8px; }
+  .em-period-settings-actions > button { flex: 1; }
+}

@@ -78,3 +78,13 @@ Validación:
 - CLASES, ACTIVIDADES y QUIZZES muestran un estado vacío completo por periodo.
 - Incluye `SUPABASE_MIGRATION_v0.24.306.sql` para retirar de Supabase únicamente los registros demo conocidos.
 - No se eliminan estudiantes, matrículas, asistencia, Rockstars, asignaciones ni configuración de Supabase.
+
+
+## v0.24.307
+
+- El selector de periodo se trasladó a la barra superior de cada asignatura y reemplaza el icono de inicio.
+- Se eliminaron los navegadores horizontales de periodos de Clases, Actividades, Rockstars y Quizzes.
+- El periodo seleccionado es global para las cuatro pestañas.
+- Se añadió una tuerca junto a `Cerrar sesión` para configurar las fechas de inicio de los cuatro periodos.
+- Al iniciar sesión, EncisoMath calcula automáticamente el periodo vigente usando la fecha del dispositivo.
+- Las fechas se guardan en `user_preferences` de Supabase y también en el respaldo local del navegador.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.306';
+  const APP_VERSION = '0.24.307';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -23,7 +23,8 @@
     glassEffects: false,
     quizOptionEffects: true,
     quizFeedbackEffects: true,
-    quizSounds: true
+    quizSounds: true,
+    academicPeriodStarts: { 1: '', 2: '', 3: '', 4: '' }
   };
 
 
@@ -462,11 +463,12 @@
     data: { users: [], assignments: [], students: [], classes: [], rockstars: [], quizzes: [] },
     user: null,
     assignment: null,
+    activePeriod: 1,
     period: 1,
     classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
-    rockstarPeriod: Number(localStorage.getItem('encisomath:rockstarPeriod') || 1),
-    activitiesPeriod: Number(localStorage.getItem('encisomath:activitiesPeriod') || 1),
-    quizPeriod: Number(localStorage.getItem('encisomath:quizPeriod') || 1),
+    rockstarPeriod: 1,
+    activitiesPeriod: 1,
+    quizPeriod: 1,
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
     quizQuestionIndex: 0,
@@ -570,6 +572,149 @@
     if (!isCloudReady()) return;
     cloudAPI().savePreferences(state.prefs).catch((error) => reportCloudError('No se sincronizaron las preferencias', error, { silent: true }));
   }
+  function normalizeAcademicPeriodStarts(value) {
+    const source = value && typeof value === 'object' ? value : {};
+    return {
+      1: /^\d{4}-\d{2}-\d{2}$/.test(String(source[1] || source.p1 || '')) ? String(source[1] || source.p1) : '',
+      2: /^\d{4}-\d{2}-\d{2}$/.test(String(source[2] || source.p2 || '')) ? String(source[2] || source.p2) : '',
+      3: /^\d{4}-\d{2}-\d{2}$/.test(String(source[3] || source.p3 || '')) ? String(source[3] || source.p3) : '',
+      4: /^\d{4}-\d{2}-\d{2}$/.test(String(source[4] || source.p4 || '')) ? String(source[4] || source.p4) : ''
+    };
+  }
+  function getAcademicPeriodStarts() {
+    return normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
+  }
+  function getAutomaticAcademicPeriod(dateValue = todayISO(), startsValue = getAcademicPeriodStarts()) {
+    const starts = normalizeAcademicPeriodStarts(startsValue);
+    const today = /^\d{4}-\d{2}-\d{2}$/.test(String(dateValue || '')) ? String(dateValue) : todayISO();
+    let current = 1;
+    [1, 2, 3, 4].forEach((period) => {
+      if (starts[period] && today >= starts[period]) current = period;
+    });
+    return current;
+  }
+  function syncAcademicPeriodState(period) {
+    const safe = [1, 2, 3, 4].includes(Number(period)) ? Number(period) : 1;
+    state.activePeriod = safe;
+    state.period = safe;
+    state.rockstarPeriod = safe;
+    state.activitiesPeriod = safe;
+    state.quizPeriod = safe;
+    const selector = document.getElementById('globalPeriodSelect');
+    if (selector) selector.value = String(safe);
+    return safe;
+  }
+  function initializeAcademicPeriodState() {
+    return syncAcademicPeriodState(getAutomaticAcademicPeriod());
+  }
+  function refreshActivePeriodContent(animate = true) {
+    const tab = state.activeSubjectTab;
+    if (tab === 'classes') updateClassGrid(animate);
+    else if (tab === 'activities') {
+      const content = document.getElementById('activitiesPeriodContent');
+      if (content) {
+        content.innerHTML = activitiesPeriodHTML();
+        if (animate) pulseElement(content, 'class-grid-update');
+      }
+    } else if (tab === 'rockstars') refreshRockstarList(animate);
+    else if (tab === 'quizzes') {
+      state.quizQuestionIndex = 0;
+      state.quizActiveId = '';
+      refreshQuizLibrary(animate);
+    }
+  }
+  function setGlobalAcademicPeriod(period, options = {}) {
+    const safe = [1, 2, 3, 4].includes(Number(period)) ? Number(period) : 1;
+    const changed = Number(state.activePeriod) !== safe;
+    syncAcademicPeriodState(safe);
+    if (changed && options.refresh !== false) refreshActivePeriodContent(options.animate !== false);
+  }
+  function academicPeriodSelectorHTML() {
+    return `
+      <label class="em-topbar-period-select" for="globalPeriodSelect" title="Seleccionar periodo">
+        <span aria-hidden="true">▾</span>
+        <select id="globalPeriodSelect" aria-label="Seleccionar periodo académico">
+          ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(state.activePeriod) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
+        </select>
+      </label>
+    `;
+  }
+  function formatAcademicDate(value) {
+    if (!value) return 'Sin configurar';
+    const [year, month, day] = String(value).split('-').map(Number);
+    const date = new Date(year, (month || 1) - 1, day || 1);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function validateAcademicPeriodStarts(starts) {
+    const values = [1, 2, 3, 4].map((period) => starts[period]);
+    if (values.some((value) => !value)) return 'Debes establecer la fecha de inicio de los cuatro periodos.';
+    for (let index = 1; index < values.length; index += 1) {
+      if (values[index] <= values[index - 1]) return `El periodo ${index + 1} debe comenzar después del periodo ${index}.`;
+    }
+    return '';
+  }
+  function openAcademicPeriodsModal() {
+    const starts = getAcademicPeriodStarts();
+    const autoPeriod = getAutomaticAcademicPeriod(todayISO(), starts);
+    openModal(`
+      <section class="modal-card em-period-settings-modal" role="dialog" aria-modal="true" aria-labelledby="periodSettingsTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-period-settings-heading">
+          <span class="em-period-settings-gear" aria-hidden="true">⚙</span>
+          <div>
+            <p class="section-kicker">Calendario académico</p>
+            <h2 id="periodSettingsTitle">Inicio de periodos</h2>
+            <p>EncisoMath seleccionará automáticamente el periodo vigente según la fecha del dispositivo.</p>
+          </div>
+        </div>
+        <div class="em-period-settings-grid">
+          ${[1, 2, 3, 4].map((period) => `
+            <label class="em-period-date-field">
+              <span><strong>Periodo ${period}</strong><small>Fecha de inicio</small></span>
+              <input type="date" data-academic-period-start="${period}" value="${escapeAttr(starts[period])}" />
+            </label>
+          `).join('')}
+        </div>
+        <div class="em-period-auto-preview" id="academicPeriodPreview">
+          <strong>Periodo automático actual: ${autoPeriod}</strong>
+          <span>${starts[autoPeriod] ? `Comenzó el ${escapeHTML(formatAcademicDate(starts[autoPeriod]))}.` : 'Configura las cuatro fechas para activar el calendario automático.'}</span>
+        </div>
+        <p class="em-period-settings-error" id="academicPeriodError" role="alert"></p>
+        <div class="em-period-settings-actions">
+          <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+          <button class="primary-btn" type="button" id="saveAcademicPeriodsBtn">Guardar fechas</button>
+        </div>
+      </section>
+    `, () => {
+      const inputs = [...document.querySelectorAll('[data-academic-period-start]')];
+      const readStarts = () => normalizeAcademicPeriodStarts(Object.fromEntries(inputs.map((input) => [input.dataset.academicPeriodStart, input.value])));
+      const updatePreview = () => {
+        const draft = readStarts();
+        const period = getAutomaticAcademicPeriod(todayISO(), draft);
+        const preview = document.getElementById('academicPeriodPreview');
+        if (!preview) return;
+        const complete = [1, 2, 3, 4].every((item) => Boolean(draft[item]));
+        preview.innerHTML = `<strong>Periodo automático actual: ${period}</strong><span>${complete ? `Según la fecha de hoy (${escapeHTML(formatAcademicDate(todayISO()))}).` : 'Completa las cuatro fechas para activar el calendario automático.'}</span>`;
+      };
+      inputs.forEach((input) => input.addEventListener('change', updatePreview));
+      document.getElementById('saveAcademicPeriodsBtn')?.addEventListener('click', () => {
+        const draft = readStarts();
+        const error = validateAcademicPeriodStarts(draft);
+        const errorBox = document.getElementById('academicPeriodError');
+        if (error) {
+          if (errorBox) errorBox.textContent = error;
+          return;
+        }
+        state.prefs.academicPeriodStarts = draft;
+        localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+        savePreferencesToCloud();
+        setGlobalAcademicPeriod(getAutomaticAcademicPeriod(todayISO(), draft), { refresh: true, animate: true });
+        closeModal();
+        toast(`Calendario guardado. Periodo actual: ${state.activePeriod}.`);
+      });
+    });
+  }
   function authErrorMessage(error) {
     const raw = String(error?.message || '').toLowerCase();
     if (raw.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.';
@@ -594,9 +739,11 @@
       };
       if (cloudData.preferences && typeof cloudData.preferences === 'object') {
         state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
+        state.prefs.academicPeriodStarts = normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
         localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
         applyPreferences();
       }
+      initializeAcademicPeriodState();
       localStorage.setItem('encisomath:lastUser', JSON.stringify({
         id: cloudData.user.email || cloudData.user.id,
         email: cloudData.user.email || '',
@@ -925,6 +1072,7 @@
           <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
+              <button class="round-action em-period-settings-button" id="periodSettingsBtn" type="button" aria-label="Configurar fechas de periodos" title="Configurar periodos">⚙</button>
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
             <img class="profile-avatar" src="${escapeAttr(teacher.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
@@ -959,6 +1107,7 @@
 
     mount(markup, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('periodSettingsBtn')?.addEventListener('click', openAcademicPeriodsModal);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
       bindAssignmentCards(assignments);
     });
@@ -1001,7 +1150,7 @@
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>${escapeHTML(assignment.subject)}</h1>
           <span class="spacer"></span>
-          <button class="icon-btn" id="homeBtn" aria-label="Inicio">⌂</button>
+          ${academicPeriodSelectorHTML()}
         </header>
         <section class="subject-banner" data-em-flat-bg data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
           <div class="subject-banner-content">
@@ -1032,7 +1181,7 @@
 
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
-      document.getElementById('homeBtn').addEventListener('click', renderTeacherHome);
+      document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
       document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
       document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
       document.getElementById('activitiesTab').addEventListener('click', () => setSubjectTab('activities'));
@@ -2216,9 +2365,6 @@
       <section class="rockstar-hero em-rs-hero-host" aria-label="Rockstars de participación">
         ${emRsRockstarsHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="period-tabs rockstar-period-tabs" id="rockstarPeriodTabs">
-        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.rockstarPeriod) === period ? 'active' : ''}" data-rockstar-period="${period}">${period}°</button>`).join('')}
-      </div>
       <div id="rockstarList" class="student-list rockstar-list em-rs-list">
         ${rockstarListHTML()}
       </div>
@@ -2245,11 +2391,6 @@
     }).join('') || `<div class="empty">${query ? 'No hay rockstars con ese filtro.' : 'Aún no hay estudiantes en este curso.'}</div>`;
   }
   function bindRockstarTabEvents() {
-    document.querySelectorAll('[data-rockstar-period]').forEach((button) => {
-      button.addEventListener('click', () => setRockstarPeriod(Number(button.dataset.rockstarPeriod)));
-    });
-
-
     applyRockstarScoreTune();
     bindRockstarActionButtons();
   }
@@ -2261,19 +2402,6 @@
     root.style.setProperty('--rockstar-score-x', `${Number(tune.x) || 0}px`);
     root.style.setProperty('--rockstar-score-y', `${Number(tune.y) || 0}px`);
     root.style.setProperty('--rockstar-score-scale', `${(Number(tune.zoom) || 100) / 100}`);
-  }
-  function setRockstarPeriod(period) {
-    if (![1, 2, 3, 4].includes(Number(period))) return;
-    if (Number(state.rockstarPeriod) === Number(period)) return;
-    const previous = document.querySelector(`[data-rockstar-period="${state.rockstarPeriod}"]`);
-    const next = document.querySelector(`[data-rockstar-period="${period}"]`);
-    previous?.classList.remove('active');
-    next?.classList.add('active');
-    pulseElement(previous, 'period-shift');
-    pulseElement(next, 'period-shift');
-    state.rockstarPeriod = Number(period);
-    localStorage.setItem('encisomath:rockstarPeriod', String(state.rockstarPeriod));
-    refreshRockstarList(true);
   }
   function refreshRockstarList(animate = false) {
     const list = document.getElementById('rockstarList');
@@ -2506,9 +2634,6 @@
       <section class="quiz-hero em-qz-hero-host" data-em-quizzes-hero aria-label="Quizzes de la asignatura">
         ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="period-tabs quiz-period-tabs" id="quizPeriodTabs">
-        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.quizPeriod) === period ? 'active' : ''}" data-quiz-period="${period}">${period}°</button>`).join('')}
-      </div>
       <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz a este grupo</button>
       <div class="em-content-list is-grid" id="quizLibrary">
         ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod)}
@@ -2529,11 +2654,6 @@
         const quizId = button.dataset.editQuizId || button.closest('[data-quiz-id]')?.dataset.quizId || '';
         openQuizStudioForQuiz(quizId);
       });
-    });
-    document.querySelectorAll('[data-quiz-period]').forEach((button) => {
-      if (button.dataset.boundQuizPeriod === 'true') return;
-      button.dataset.boundQuizPeriod = 'true';
-      button.addEventListener('click', () => setQuizPeriod(Number(button.dataset.quizPeriod)));
     });
     document.querySelectorAll('[data-quiz-id]').forEach((card) => {
       if (card.dataset.boundQuizCard === 'true') return;
@@ -6871,21 +6991,6 @@
       if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document).catch?.(() => {});
     } catch (_) {}
   }
-  function setQuizPeriod(period) {
-    if (![1, 2, 3, 4].includes(Number(period))) return;
-    if (Number(state.quizPeriod) === Number(period)) return;
-    const previous = document.querySelector(`[data-quiz-period="${state.quizPeriod}"]`);
-    const next = document.querySelector(`[data-quiz-period="${period}"]`);
-    previous?.classList.remove('active');
-    next?.classList.add('active');
-    pulseElement(previous, 'period-shift');
-    pulseElement(next, 'period-shift');
-    state.quizPeriod = Number(period);
-    state.quizQuestionIndex = 0;
-    state.quizActiveId = '';
-    localStorage.setItem('encisomath:quizPeriod', String(state.quizPeriod));
-    refreshQuizLibrary(true);
-  }
   function refreshQuizLibrary(animate = false) {
     const library = document.getElementById('quizLibrary');
     if (!library) return;
@@ -9585,45 +9690,17 @@
       <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="period-tabs activity-period-tabs" id="activityPeriodTabs">
-        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.activitiesPeriod) === period ? 'active' : ''}" data-activity-period="${period}">${period}°</button>`).join('')}
-      </div>
       <div id="activitiesPeriodContent">
         ${activitiesPeriodHTML()}
       </div>
     `;
 
-    bindActivitiesTabEvents();
     emActInitActivitiesHero($content);
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
   function activitiesPeriodHTML() {
     return emPeriodEmptyStateHTML('activities', state.activitiesPeriod);
-  }
-
-  function bindActivitiesTabEvents() {
-    document.querySelectorAll('[data-activity-period]').forEach((button) => {
-      button.addEventListener('click', () => setActivitiesPeriod(Number(button.dataset.activityPeriod)));
-    });
-  }
-
-  function setActivitiesPeriod(period) {
-    if (![1, 2, 3, 4].includes(Number(period))) return;
-    if (Number(state.activitiesPeriod) === Number(period)) return;
-    const previous = document.querySelector(`[data-activity-period="${state.activitiesPeriod}"]`);
-    const next = document.querySelector(`[data-activity-period="${period}"]`);
-    previous?.classList.remove('active');
-    next?.classList.add('active');
-    pulseElement(previous, 'period-shift');
-    pulseElement(next, 'period-shift');
-    state.activitiesPeriod = Number(period);
-    localStorage.setItem('encisomath:activitiesPeriod', String(state.activitiesPeriod));
-    const content = document.getElementById('activitiesPeriodContent');
-    if (content) {
-      content.innerHTML = activitiesPeriodHTML();
-      pulseElement(content, 'class-grid-update');
-    }
   }
 
   function renderClassesTab(options = {}) {
@@ -9635,11 +9712,7 @@
       <section class="class-hero em-cl-hero-host" data-em-classes-hero aria-label="Clases de la asignatura">
         ${emClClassesHeroHTML()}
       </section>
-      <div class="period-tabs" id="periodTabs">
-        ${[1, 2, 3, 4].map((period) => `<button class="period-btn ${Number(state.period) === period ? 'active' : ''}" data-period="${period}">${period}°</button>`).join('')}
-      </div>
-      <div class="view-row">
-        <strong id="periodLabel">Periodo ${state.period}</strong>
+      <div class="view-row em-class-view-only">
         <div>
           <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn">▦ Cuadrícula</button>
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn">☰ Lista</button>
@@ -9650,7 +9723,6 @@
       </div>
     `;
 
-    bindPeriodButtons();
     bindClassViewButtons();
     bindClassCards();
     emClInitClassesHero($content);
@@ -9663,27 +9735,6 @@
   function renderClassCardsHTML() {
     const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
     return filtered.map((item, index) => classCardHTML(item, index)).join('') || emPeriodEmptyStateHTML('classes', state.period);
-  }
-  function bindPeriodButtons() {
-    document.querySelectorAll('[data-period]').forEach((button) => {
-      button.addEventListener('click', () => setPeriod(Number(button.dataset.period)));
-    });
-  }
-  function setPeriod(period) {
-    if (Number(state.period) === Number(period)) return;
-    const previous = document.querySelector(`[data-period="${state.period}"]`);
-    const next = document.querySelector(`[data-period="${period}"]`);
-    previous?.classList.remove('active');
-    next?.classList.add('active');
-    pulseElement(previous, 'period-shift');
-    pulseElement(next, 'period-shift');
-    state.period = Number(period);
-    const label = document.getElementById('periodLabel');
-    if (label) {
-      label.textContent = `Periodo ${state.period}`;
-      pulseElement(label, 'text-pop');
-    }
-    updateClassGrid(true);
   }
   function bindClassViewButtons() {
     document.getElementById('gridModeBtn')?.addEventListener('click', () => setClassViewMode('grid'));
@@ -10639,7 +10690,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.306', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.307', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

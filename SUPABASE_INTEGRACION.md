@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.306 + Supabase
+# EncisoMath LMS v0.24.307 + Supabase
 
 Esta versión conecta el LMS estático de GitHub Pages con el proyecto:
 
@@ -13,7 +13,7 @@ Esta versión conecta el LMS estático de GitHub Pages con el proyecto:
 - `supabase-adapter.js`: toda la comunicación con Auth, Database y Storage.
 - `app.js`: conecta la interfaz existente con el adaptador.
 - `index.html`: carga `supabase-js`, configuración, adaptador y aplicación.
-- `sw.js`: versión de actualización `0.24.306`.
+- `sw.js`: versión de actualización `0.24.307`.
 
 ## Privacidad del repositorio público
 
@@ -93,3 +93,8 @@ Para que un estudiante pueda iniciar sesión se debe crear además un usuario en
 ## Recuperación ante error de red
 
 Las operaciones visuales son optimistas para mantener la aplicación ágil. Si Supabase rechaza una escritura, la aplicación muestra un aviso y registra el error en consola. Para registros importantes, confirme la conexión antes de cerrar la aplicación.
+
+
+## Calendario académico v0.24.307
+
+Las fechas de inicio de los cuatro periodos se guardan dentro del JSON `preferences` de la tabla `user_preferences`. No requiere migración SQL ni tablas nuevas. El selector superior usa un único periodo global para Clases, Actividades, Rockstars y Quizzes.
