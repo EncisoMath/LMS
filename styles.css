@@ -27503,3 +27503,79 @@ body.quiz-fullscreen-active
   .em-pdf-float-btn { width: 36px; height: 36px; }
   .em-pdf-page-pill { min-height: 36px; min-width: 50px; }
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.24.318 - VISOR PDF REALMENTE A PANTALLA COMPLETA
+   Anula el padding historico de .class-screen que dejaba una franja
+   superior y desplazaba los controles inferiores fuera del viewport.
+========================================================= */
+html body #app .screen.class-screen.em-pdf-class-screen {
+  box-sizing: border-box !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  contain: none !important;
+  transform: none !important;
+  background: #07111f !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-notebook,
+html body #app .em-pdf-class-screen .em-pdf-stage,
+html body #app .em-pdf-class-screen .em-pdf-page-viewport {
+  box-sizing: border-box !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-page-viewport {
+  overflow: auto !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-back,
+html body #app .em-pdf-class-screen .em-pdf-floating-zoom,
+html body #app .em-pdf-class-screen .em-pdf-page-pill,
+html body #app .em-pdf-class-screen .em-pdf-nav {
+  position: fixed !important;
+  z-index: 2147482000 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-back {
+  top: max(8px, env(safe-area-inset-top)) !important;
+  left: max(8px, env(safe-area-inset-left)) !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-floating-zoom {
+  left: max(8px, env(safe-area-inset-left)) !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  display: inline-flex !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-page-pill {
+  left: 50% !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  transform: translateX(-50%) !important;
+  display: grid !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-prev {
+  left: max(6px, env(safe-area-inset-left)) !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-next {
+  right: max(6px, env(safe-area-inset-right)) !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-nav {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+html body #app .em-pdf-class-screen .em-pdf-nav:active:not(:disabled) {
+  transform: translateY(-50%) scale(.94) !important;
+}
