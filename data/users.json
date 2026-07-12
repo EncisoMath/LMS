@@ -1,16 +1,1 @@
-[
-  {
-    "id": "0720",
-    "username": "rubene",
-    "role": "teacher",
-    "fullName": "Ruben Enciso",
-    "photo": "./assets/default-profile.svg"
-  },
-  {
-    "id": "1001",
-    "username": "estudiante.demo",
-    "role": "student",
-    "fullName": "Estudiante Demo",
-    "photo": "./assets/default-avatar.svg"
-  }
-]
+[]

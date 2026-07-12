@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.302';
+  const APP_VERSION = '0.24.303';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -485,7 +485,14 @@
     quizStudioQuestionIndex: 0,
     quizStudioTab: 'data',
     appHistoryReady: false,
-    applyingHistoryRoute: false
+    applyingHistoryRoute: false,
+    cloud: {
+      enabled: false,
+      loading: false,
+      attendance: {},
+      sessionMode: localStorage.getItem('encisomath:cloudSessionMode') || 'persistent',
+      lastSyncError: ''
+    }
   };
 
   const PERF_DEFAULTS_111_KEY = 'encisomath:perfDefaults:v0.24.124';
@@ -516,7 +523,76 @@
     excused: { emoji: '⚠️', label: 'Excusa', className: 'excused' }
   };
 
+  const CLOUD_SESSION_MODE_KEY = 'encisomath:cloudSessionMode';
+  const CLOUD_SESSION_TAB_KEY = 'encisomath:cloudSessionTab';
+
   document.addEventListener('DOMContentLoaded', boot);
+
+  function cloudAPI() {
+    return window.EncisoSupabase || null;
+  }
+  function isCloudReady() {
+    return Boolean(state.cloud?.enabled && cloudAPI());
+  }
+  function cloudAttendanceKey(assignmentId, date) {
+    return `${assignmentId}|${date}`;
+  }
+  function reportCloudError(context, error, options = {}) {
+    const message = error?.message || String(error || 'Error desconocido');
+    state.cloud.lastSyncError = message;
+    console.error(`[Supabase] ${context}`, error);
+    if (!options.silent) toast(`${context}. Se conservará el cambio visual y podrás reintentar con conexión.`);
+  }
+  function savePreferencesToCloud() {
+    if (!isCloudReady()) return;
+    cloudAPI().savePreferences(state.prefs).catch((error) => reportCloudError('No se sincronizaron las preferencias', error, { silent: true }));
+  }
+  function authErrorMessage(error) {
+    const raw = String(error?.message || '').toLowerCase();
+    if (raw.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.';
+    if (raw.includes('email not confirmed')) return 'El correo todavía no está confirmado en Supabase.';
+    if (raw.includes('failed to fetch') || raw.includes('network')) return 'No hay conexión con Supabase. Revisa internet e inténtalo otra vez.';
+    return error?.message || 'No se pudo iniciar sesión.';
+  }
+  async function enterCloudSession(activeSession) {
+    if (!activeSession?.user?.id) return false;
+    state.cloud.loading = true;
+    mount(renderLoadingHTML('Sincronizando EncisoMath con Supabase...'), null, { instant: true });
+    try {
+      const cloudData = await cloudAPI().loadApplicationData();
+      state.cloud.enabled = true;
+      state.cloud.loading = false;
+      state.cloud.attendance = cloudData.attendance || {};
+      state.user = cloudData.user;
+      state.data = {
+        ...state.data,
+        ...cloudData.data,
+        users: cloudData.data?.users || [cloudData.user]
+      };
+      if (cloudData.preferences && typeof cloudData.preferences === 'object') {
+        state.prefs = { ...state.prefs, ...cloudData.preferences, tabTransitions: false };
+        localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+        applyPreferences();
+      }
+      localStorage.setItem('encisomath:lastUser', JSON.stringify({
+        id: cloudData.user.email || cloudData.user.id,
+        email: cloudData.user.email || '',
+        name: cloudData.user.fullName
+      }));
+      if (cloudData.user.role === 'teacher' || cloudData.user.role === 'admin') renderTeacherHome();
+      else renderStudentPlaceholder();
+      return true;
+    } catch (error) {
+      state.cloud.loading = false;
+      state.cloud.enabled = false;
+      console.error(error);
+      mount(`<main class="screen mobile-pad"><h1>No se pudo sincronizar EncisoMath</h1><p class="card-sub">${escapeHTML(error?.message || 'Supabase rechazó la consulta.')}</p><button class="primary-btn" id="retryCloudBtn">Reintentar</button><button class="ghost-btn" id="logoutCloudBtn">Cerrar sesión</button></main>`, () => {
+        document.getElementById('retryCloudBtn')?.addEventListener('click', () => enterCloudSession(activeSession));
+        document.getElementById('logoutCloudBtn')?.addEventListener('click', logout);
+      }, { instant: true });
+      return false;
+    }
+  }
 
   async function boot() {
     applyPreferences();
@@ -527,20 +603,25 @@
     mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
       state.data = await loadAllData();
-      const session = readJSON('encisomath:session');
-      if (session?.remember && session?.userId) {
-        const user = findUser(session.userId);
-        if (user) {
-          state.user = user;
-          mount(renderLoadingHTML(randomPhrase()));
-          window.setTimeout(() => renderTeacherHome(), 760);
-          return;
-        }
+      if (!cloudAPI()?.isConfigured?.()) throw new Error('Supabase no está configurado.');
+      cloudAPI().init();
+
+      let activeSession = await cloudAPI().getSession();
+      const sessionMode = localStorage.getItem(CLOUD_SESSION_MODE_KEY) || 'persistent';
+      const tabSessionAlive = sessionStorage.getItem(CLOUD_SESSION_TAB_KEY) === '1';
+      if (activeSession && sessionMode === 'session' && !tabSessionAlive) {
+        await cloudAPI().signOut();
+        activeSession = null;
+      }
+      if (activeSession) {
+        sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
+        await enterCloudSession(activeSession);
+        return;
       }
       renderLogin();
     } catch (error) {
       console.error(error);
-      mount(`<main class="screen mobile-pad"><h1>No se pudo cargar EncisoMath</h1><p class="card-sub">Revisa que los archivos JSON existan en la carpeta <strong>data</strong>.</p><button class="primary-btn" onclick="location.reload()">Reintentar</button></main>`);
+      mount(`<main class="screen mobile-pad"><h1>No se pudo cargar EncisoMath</h1><p class="card-sub">${escapeHTML(error?.message || 'Revisa la configuración de Supabase y los archivos del proyecto.')}</p><button class="primary-btn" onclick="location.reload()">Reintentar</button></main>`);
     }
   }
 
@@ -747,45 +828,53 @@
           </div>
 
           <form id="loginForm" class="login-form">
-            <label class="field-label" for="userId">Ingrese su ID de usuario</label>
-            <input class="input" id="userId" name="userId" inputmode="numeric" autocomplete="username" value="${escapeHTML(last?.id || '')}" placeholder="Ejemplo: 0720" required />
+            <label class="field-label" for="userEmail">Correo electrónico</label>
+            <input class="input" id="userEmail" name="email" type="email" inputmode="email" autocomplete="username" value="${escapeAttr(last?.email || last?.id || '')}" placeholder="enciso.math@gmail.com" required />
+            <label class="field-label" for="userPassword">Contraseña</label>
+            <input class="input" id="userPassword" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña de Supabase" required />
             <div class="remember-row">
               <label><input type="checkbox" id="remember" checked /> Mantener sesión iniciada</label>
             </div>
-            <button class="primary-btn full" type="submit">Iniciar sesión</button>
+            <button class="primary-btn full" id="loginSubmitBtn" type="submit">Iniciar sesión</button>
             <div class="last-user">
               <span>Último usuario</span>
-              <button type="button" class="mini-btn" id="lastUserBtn">${last ? `${escapeHTML(last.name)} · ${escapeHTML(last.id)}` : 'Sin registro'}</button>
+              <button type="button" class="mini-btn" id="lastUserBtn">${last ? `${escapeHTML(last.name || '')} · ${escapeHTML(last.email || last.id || '')}` : 'Sin registro'}</button>
             </div>
-            <p class="login-hint">Demo inicial: docente <strong>0720</strong>. Luego se cambian usuarios en <strong>data/users.json</strong>.</p>
+            <p class="login-hint">Acceso protegido con Supabase Auth. Los registros se guardan en la nube según el rol del usuario.</p>
           </form>
         </section>
       </main>
     `;
 
     mount(markup, () => {
+      const emailInput = document.getElementById('userEmail');
+      const passwordInput = document.getElementById('userPassword');
+      const submitButton = document.getElementById('loginSubmitBtn');
       document.getElementById('lastUserBtn').addEventListener('click', () => {
-        if (last?.id) document.getElementById('userId').value = last.id;
+        if (last?.email || last?.id) emailInput.value = last.email || last.id;
+        passwordInput.focus();
       });
 
-      document.getElementById('loginForm').addEventListener('submit', (event) => {
+      document.getElementById('loginForm').addEventListener('submit', async (event) => {
         event.preventDefault();
-        const id = normalizeID(document.getElementById('userId').value);
+        const email = emailInput.value.trim().toLowerCase();
+        const password = passwordInput.value;
         const remember = document.getElementById('remember').checked;
-        const user = findUser(id);
-        if (!user) {
-          toast('Usuario no encontrado. Prueba con 0720 o edita data/users.json.');
-          return;
+        if (!email || !password) return;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Conectando...';
+        try {
+          const activeSession = await cloudAPI().signIn(email, password);
+          localStorage.setItem(CLOUD_SESSION_MODE_KEY, remember ? 'persistent' : 'session');
+          sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
+          await enterCloudSession(activeSession);
+        } catch (error) {
+          toast(authErrorMessage(error));
+          passwordInput.select();
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Iniciar sesión';
         }
-        localStorage.setItem('encisomath:lastUser', JSON.stringify({ id: user.id, name: user.fullName }));
-        if (remember) localStorage.setItem('encisomath:session', JSON.stringify({ userId: user.id, remember: true, at: Date.now() }));
-        else localStorage.removeItem('encisomath:session');
-        state.user = user;
-        mount(renderLoadingHTML(randomPhrase()));
-        window.setTimeout(() => {
-          if (user.role === 'teacher') renderTeacherHome();
-          else renderStudentPlaceholder();
-        }, 820);
       });
     });
   }
@@ -1096,47 +1185,66 @@
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <p class="section-kicker">Nuevo estudiante</p>
         <h2>Añadir a ${escapeHTML(assignment.subject)} ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</h2>
-        <p class="card-sub">Se guardará localmente en esta asignatura, sede ${escapeHTML(assignment.sede)}.</p>
+        <p class="card-sub">Se matriculará en Supabase dentro del grupo ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}, sede ${escapeHTML(assignment.sede)}.</p>
         <form id="newStudentModalForm" class="add-student-form">
+          <label class="field-label" for="studentCode">Código / matrícula</label>
+          <input class="input" id="studentCode" inputmode="numeric" autocomplete="off" placeholder="Ejemplo: 9868" required />
           <label class="field-label" for="studentFirstName">Nombre</label>
           <input class="input" id="studentFirstName" autocomplete="off" placeholder="Ejemplo: Carlos Junior" required />
           <label class="field-label" for="studentLastName">Apellido</label>
           <input class="input" id="studentLastName" autocomplete="off" placeholder="Ejemplo: Acosta López" required />
-          <button class="primary-btn full" type="submit">Añadir estudiante</button>
+          <button class="primary-btn full" id="addStudentSubmitBtn" type="submit">Añadir estudiante</button>
         </form>
       </div>
     `, () => {
-      const first = document.getElementById('studentFirstName');
-      first.focus();
-      document.getElementById('newStudentModalForm').addEventListener('submit', (event) => {
+      const code = document.getElementById('studentCode');
+      code.focus();
+      document.getElementById('newStudentModalForm').addEventListener('submit', async (event) => {
         event.preventDefault();
+        const studentCode = code.value.trim();
         const firstName = document.getElementById('studentFirstName').value.trim();
         const lastName = document.getElementById('studentLastName').value.trim();
-        if (!firstName || !lastName) return;
-        addNewStudent(firstName, lastName);
+        const submit = document.getElementById('addStudentSubmitBtn');
+        if (!studentCode || !firstName || !lastName) return;
+        submit.disabled = true;
+        submit.textContent = 'Guardando...';
+        try {
+          await addNewStudent(studentCode, firstName, lastName);
+        } finally {
+          if (document.body.contains(submit)) {
+            submit.disabled = false;
+            submit.textContent = 'Añadir estudiante';
+          }
+        }
       });
     });
   }
-  function addNewStudent(firstName, lastName) {
+  async function addNewStudent(studentCode, firstName, lastName) {
     const assignment = state.assignment;
     const fullName = `${lastName}, ${firstName}`.replace(/\s+/g, ' ').trim();
-    const student = {
-      id: `local-${assignment.id}-${Date.now()}`,
-      fullName,
-      username: makeUsername(`${firstName} ${lastName}`),
-      photo: './assets/default-avatar.svg',
-      grade: assignment.grade,
-      course: assignment.course,
-      sede: assignment.sede
-    };
-    const key = `encisomath:addedStudents:${assignment.id}`;
-    const list = readJSON(key) || [];
-    list.push(student);
-    localStorage.setItem(key, JSON.stringify(list));
-    closeModal();
-    toast(`Añadiste un nuevo estudiante: ${fullName}.`);
-    state.studentSearch = '';
-    renderStudentsTab({ animate: false });
+    if (!isCloudReady()) {
+      toast('Necesitas una sesión de Supabase para añadir estudiantes.');
+      return;
+    }
+    if (state.data.students.some((student) => student.id === studentCode && student.groupId === assignment.groupId)) {
+      toast(`El código ${studentCode} ya está matriculado en este curso.`);
+      return;
+    }
+    try {
+      const student = await cloudAPI().createStudentAndEnroll({
+        studentCode,
+        firstName,
+        lastName,
+        groupId: assignment.groupId
+      });
+      state.data.students.push(student);
+      closeModal();
+      toast(`Añadiste a ${fullName}. Registro guardado en Supabase.`);
+      state.studentSearch = '';
+      renderStudentsTab({ animate: false });
+    } catch (error) {
+      reportCloudError('No se pudo añadir el estudiante', error);
+    }
   }
   function updateStudentCardAttendance(studentId, status) {
     const card = document.querySelector(`[data-student-card="${escapeSelector(studentId)}"]`);
@@ -1179,8 +1287,8 @@
 
           </div>
           <div class="danger-copy">
-            <h2>ELIMINARÁS ESTE ESTUDIANTE</h2>
-            <p>Esta acción es irreversible.</p>
+            <h2>RETIRARÁS ESTE ESTUDIANTE</h2>
+            <p>Se quitará del curso, pero conservará su historial académico.</p>
           </div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
@@ -1190,7 +1298,7 @@
             <span>ID ${escapeHTML(student.id)} · ${escapeHTML(assignment.sede)} · ${escapeHTML(assignment.grade)}° ${escapeHTML(assignment.course)}</span>
           </div>
           <div class="danger-actions">
-            <button class="danger-confirm" id="confirmDeleteStudent">Sí, eliminar estudiante</button>
+            <button class="danger-confirm" id="confirmDeleteStudent">Sí, retirar del curso</button>
             <button class="ghost-btn" data-close-modal>Cancelar</button>
           </div>
         </div>
@@ -1282,26 +1390,25 @@
     const tune = applyWarningTune(getWarningTune());
     restartDeleteWarningAnimations(tune);
   }
-  function deleteStudent(student) {
+  async function deleteStudent(student) {
     const assignment = state.assignment;
-    const addedKey = `encisomath:addedStudents:${assignment.id}`;
-    const added = readJSON(addedKey) || [];
-    const nextAdded = added.filter((item) => item.id !== student.id);
-    localStorage.setItem(addedKey, JSON.stringify(nextAdded));
-
-    const removedKey = `encisomath:removedStudents:${assignment.id}`;
-    const removed = new Set(readJSON(removedKey) || []);
-    removed.add(student.id);
-    localStorage.setItem(removedKey, JSON.stringify([...removed]));
-
-    const attendance = getAttendance(assignment.id, state.attendanceDate);
-    delete attendance[student.id];
-    saveAttendance(assignment.id, state.attendanceDate, attendance);
-
-    closeModal();
-    toast(`${student.fullName} fue retirado del listado local.`);
-    renderStudentsTab({ animate: false });
+    if (!isCloudReady()) {
+      toast('Necesitas una sesión de Supabase para retirar estudiantes.');
+      return;
+    }
+    try {
+      await cloudAPI().withdrawStudent({ groupId: assignment.groupId, studentCode: student.id });
+      state.data.students = state.data.students.filter((item) => !(item.id === student.id && item.groupId === assignment.groupId));
+      const key = cloudAttendanceKey(assignment.id, state.attendanceDate);
+      if (state.cloud.attendance[key]) delete state.cloud.attendance[key][student.id];
+      closeModal();
+      toast(`${student.fullName} fue retirado del curso en Supabase.`);
+      renderStudentsTab({ animate: false });
+    } catch (error) {
+      reportCloudError('No se pudo retirar el estudiante', error);
+    }
   }
+
 
 
   const EM_RS_HERO_CONFIG = {
@@ -2178,15 +2285,33 @@
     }
     const oldPoints = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
     const oldTier = emRsGetTier(oldPoints);
-    const events = getLocalRockstarEvents(assignment.id);
-    events.push({
-      id: `rs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    const event = {
+      id: `rs-pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       assignmentId: assignment.id,
       studentId,
       period: Number(state.rockstarPeriod),
       date: todayISO(),
+      occurredAt: new Date().toISOString(),
       delta: Number(delta)
-    });
+    };
+
+    if (isCloudReady()) {
+      if (!Array.isArray(state.data.rockstars)) state.data.rockstars = [];
+      state.data.rockstars.push(event);
+      updateRockstarCard(studentId, Number(delta), oldTier);
+      cloudAPI().addRockstarEvent(event).then((saved) => {
+        event.id = saved?.id || event.id;
+        event.occurredAt = saved?.occurred_at || event.occurredAt;
+      }).catch((error) => {
+        state.data.rockstars = state.data.rockstars.filter((item) => item !== event);
+        reportCloudError('No se guardó el punto Rockstar', error);
+        updateRockstarCard(studentId, -Number(delta), emRsGetTier(oldPoints + Number(delta)));
+      });
+      return true;
+    }
+
+    const events = getLocalRockstarEvents(assignment.id);
+    events.push(event);
     saveLocalRockstarEvents(assignment.id, events);
     updateRockstarCard(studentId, Number(delta), oldTier);
     return true;
@@ -2431,11 +2556,24 @@
     return safe;
   }
   function getLocalQuizzes() {
+    if (isCloudReady()) {
+      const source = Array.isArray(state.data.quizzes) ? state.data.quizzes : (Array.isArray(state.data.quizzes?.quizzes) ? state.data.quizzes.quizzes : []);
+      return source.filter((quiz) => quiz?.source === 'quiz-studio' || quiz?.legacyFormat === true).map(normalizeLocalQuizForPlayer);
+    }
     const list = readJSON('encisomath:localQuizzes');
     return Array.isArray(list) ? list.map(normalizeLocalQuizForPlayer) : [];
   }
   function saveLocalQuizzes(list = []) {
-    localStorage.setItem('encisomath:localQuizzes', JSON.stringify(Array.isArray(list) ? list : []));
+    const safeList = Array.isArray(list) ? list.map(normalizeLocalQuizForPlayer) : [];
+    if (!isCloudReady()) {
+      localStorage.setItem('encisomath:localQuizzes', JSON.stringify(safeList));
+      return Promise.resolve();
+    }
+    const current = Array.isArray(state.data.quizzes) ? state.data.quizzes : [];
+    const incomingIds = new Set(safeList.map((quiz) => String(quiz?.id || '')).filter(Boolean));
+    const preserved = current.filter((quiz) => !incomingIds.has(String(quiz?.id || '')) && quiz?.source !== 'quiz-studio' && quiz?.legacyFormat !== true);
+    state.data.quizzes = [...preserved, ...safeList];
+    return cloudAPI().saveQuizzes(safeList);
   }
   function getBaseQuizzes() {
     const source = state.data.quizzes;
@@ -3407,7 +3545,7 @@
     copy.questions = (copy.questions || []).map((question) => ({ ...quizStudioDeepClone(question), id: quizStudioId('q') }));
     return copy;
   }
-  function saveQuizStudio(status = 'draft') {
+  async function saveQuizStudio(status = 'draft') {
     if (!validateQuizStudioDraft()) return;
     const draft = getQuizStudioDraft();
     const context = state.quizStudioContext || createQuizStudioContext();
@@ -3417,11 +3555,15 @@
     const targets = getSameGradeQuizStudioTargets(context).filter((assignment) => (draft.replicateAssignmentIds || []).includes(assignment.id));
     const copies = targets.map((assignment) => cloneQuizForAssignment(baseQuiz, assignment));
     const local = getLocalQuizzes().filter((quiz) => String(quiz?.id || '') !== String(baseQuiz.id || ''));
-    saveLocalQuizzes([...local, baseQuiz, ...copies]);
-    state.quizActiveId = baseQuiz.id;
-    localStorage.setItem('encisomath:quizActiveId', baseQuiz.id);
-    toast(copies.length ? `Quiz ${status === 'published' ? 'publicado' : 'guardado'} y replicado en ${copies.length} cursos.` : `Quiz ${status === 'published' ? 'publicado' : 'guardado'}.`);
-    window.setTimeout(closeQuizStudio, 720);
+    try {
+      await saveLocalQuizzes([...local, baseQuiz, ...copies]);
+      state.quizActiveId = baseQuiz.id;
+      localStorage.setItem('encisomath:quizActiveId', baseQuiz.id);
+      toast(copies.length ? `Quiz ${status === 'published' ? 'publicado' : 'guardado'} y replicado en ${copies.length} cursos.` : `Quiz ${status === 'published' ? 'publicado' : 'guardado'}.`);
+      window.setTimeout(closeQuizStudio, 720);
+    } catch (error) {
+      reportCloudError('No se pudo guardar el quiz en Supabase', error);
+    }
   }
   function quizPlayerHTML(quiz, options = {}) {
     const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
@@ -3973,6 +4115,7 @@
         soundToggle.addEventListener('change', () => {
           state.prefs.quizSounds = Boolean(soundToggle.checked);
           localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+          savePreferencesToCloud();
           if (state.prefs.quizSounds === false) stopQuizQuestionMusic(false);
           panel.querySelectorAll('[data-quiz-sound-toggle]').forEach((input) => { input.checked = state.prefs.quizSounds !== false; });
           if (state.prefs.quizSounds !== false) {
@@ -4642,9 +4785,50 @@
       shuffleQuestions: false,
       shuffleOptions: false,
       showCorrectAfterAttempt: false,
-      timeScoringMode: normalizeQuizTimeScoringMode(state.quizTimeScoringMode)
+      timeScoringMode: normalizeQuizTimeScoringMode(state.quizTimeScoringMode),
+      cloudAttemptId: '',
+      cloudAttemptPromise: null,
+      cloudSubmitted: false
     };
     return state.quizSession;
+  }
+  function beginCloudQuizAttempt(quiz) {
+    const quizSession = getQuizSession();
+    if (!isCloudReady() || !quiz || !state.assignment?.id) return;
+    quizSession.cloudSubmitted = false;
+    quizSession.cloudAttemptPromise = cloudAPI().startQuizAttempt({
+      quiz,
+      assignmentId: state.assignment.id
+    }).then((attempt) => {
+      quizSession.cloudAttemptId = attempt?.id || '';
+      return quizSession.cloudAttemptId;
+    }).catch((error) => {
+      reportCloudError('El quiz comenzó, pero no se creó el intento en Supabase', error);
+      return '';
+    });
+  }
+  async function persistCloudQuizAttempt(quiz) {
+    const quizSession = getQuizSession();
+    if (!isCloudReady() || quizSession.cloudSubmitted || !quiz || !state.assignment?.id) return;
+    quizSession.cloudSubmitted = true;
+    try {
+      const attemptId = quizSession.cloudAttemptId || await quizSession.cloudAttemptPromise;
+      if (!attemptId) {
+        quizSession.cloudSubmitted = false;
+        return;
+      }
+      await cloudAPI().submitQuizAttempt({
+        attemptId,
+        quiz,
+        assignmentId: state.assignment.id,
+        answers: quizSession.answers || [],
+        securityEvents: quizSession.securityEvents || [],
+        terminatedReason: quizSession.securityTerminatedReason || ''
+      });
+    } catch (error) {
+      quizSession.cloudSubmitted = false;
+      reportCloudError('No se guardó el resultado del quiz en Supabase', error);
+    }
   }
   function clearQuizTimers() {
     (state.quizTimers || []).forEach((timer) => window.clearTimeout(timer));
@@ -7472,6 +7656,7 @@
     const session = getQuizSession();
     session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
     prepareQuizAttemptRuntime(quiz);
+    beginCloudQuizAttempt(quiz);
     closeModal(false);
     preloadQuizSounds();
     clearQuizTimers();
@@ -7527,6 +7712,7 @@
     state.quizFullscreenActive = false;
     unlockQuizHistory();
     renderQuizFullscreen(quiz);
+    persistCloudQuizAttempt(quiz);
   }
   function renderQuizFullscreen(quiz = getActiveQuiz()) {
     removeQuizGlobalFeedback();
@@ -9376,6 +9562,10 @@
   function renderLesson(lesson, options = {}) {
     const assignment = state.assignment;
     if (assignment?.id && lesson?.id) commitAppRoute({ screen: 'lesson', assignmentId: assignment.id, lessonId: lesson.id }, options);
+    if (isCloudReady() && assignment?.id && lesson?.id) {
+      cloudAPI().recordLessonView({ assignmentId: assignment.id, lessonId: lesson.id })
+        .catch((error) => reportCloudError('No se registró la apertura de la clase', error, { silent: true }));
+    }
     const src = `${lesson.contentUrl}?v=${Date.now()}&assignment=${encodeURIComponent(assignment.id)}`;
     const markup = `
       <main class="screen class-screen">
@@ -9400,7 +9590,8 @@
   }
   function renderStudentPlaceholder(options = {}) {
     commitAppRoute({ screen: 'student' }, options);
-    mount(`<main class="screen mobile-pad"><h1>Vista estudiante</h1><p>La primera fase está centrada en docentes. La vista estudiante se conecta después con las clases y actividades.</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`, () => {
+    const student = state.user || {};
+    mount(`<main class="screen mobile-pad"><h1>Hola, ${escapeHTML(student.fullName || 'estudiante')}</h1><p>Tu cuenta ya está autenticada con Supabase. La siguiente fase habilitará aquí clases, quizzes, asistencia y resultados de tus asignaturas.</p><p class="card-sub">Usuario: ${escapeHTML(student.email || student.username || student.id || '')}</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
     });
   }
@@ -9906,6 +10097,11 @@
     return state.data.assignments.filter((item) => item.teacherId === teacherId);
   }
   function getStudentsForAssignment(assignment) {
+    if (isCloudReady()) {
+      return state.data.students
+        .filter((student) => student.active !== false && (assignment.groupId ? student.groupId === assignment.groupId : (student.grade === assignment.grade && student.course === assignment.course && student.sede === assignment.sede)))
+        .sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
+    }
     const removed = new Set(readJSON(`encisomath:removedStudents:${assignment.id}`) || []);
     const base = state.data.students.filter((student) => {
       return student.grade === assignment.grade && student.course === assignment.course && student.sede === assignment.sede && !removed.has(student.id);
@@ -9914,10 +10110,32 @@
     return [...base, ...added].sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
   }
   function getAttendance(assignmentId, date) {
+    if (isCloudReady()) return { ...(state.cloud.attendance[cloudAttendanceKey(assignmentId, date)] || {}) };
     return readJSON(`encisomath:attendance:${assignmentId}:${date}`) || {};
   }
   function saveAttendance(assignmentId, date, attendance) {
-    localStorage.setItem(`encisomath:attendance:${assignmentId}:${date}`, JSON.stringify(attendance));
+    if (!isCloudReady()) {
+      localStorage.setItem(`encisomath:attendance:${assignmentId}:${date}`, JSON.stringify(attendance));
+      return;
+    }
+    const key = cloudAttendanceKey(assignmentId, date);
+    const previous = { ...(state.cloud.attendance[key] || {}) };
+    const next = { ...(attendance || {}) };
+    state.cloud.attendance[key] = next;
+    const changedIds = new Set([...Object.keys(previous), ...Object.keys(next)]);
+    changedIds.forEach((studentCode) => {
+      if ((previous[studentCode] || '') === (next[studentCode] || '')) return;
+      cloudAPI().saveAttendanceStatus({
+        assignmentId,
+        studentCode,
+        attendanceDate: date,
+        status: next[studentCode] || ''
+      }).catch((error) => {
+        state.cloud.attendance[key] = previous;
+        reportCloudError('No se guardó la asistencia en Supabase', error);
+        if (state.assignment?.id === assignmentId && state.attendanceDate === date) refreshStudentList();
+      });
+    });
   }
   function getBaseRockstarEvents() {
     const source = state.data.rockstars;
@@ -9944,12 +10162,15 @@
     })).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && [-1, 1].includes(entry.delta));
   }
   function getLocalRockstarEvents(assignmentId) {
+    if (isCloudReady()) return [];
     return normalizeRockstarEvents(readJSON(`encisomath:rockstars:${assignmentId}`) || []);
   }
   function saveLocalRockstarEvents(assignmentId, events) {
+    if (isCloudReady()) return;
     localStorage.setItem(`encisomath:rockstars:${assignmentId}`, JSON.stringify(normalizeRockstarEvents(events)));
   }
   function getRockstarEvents(assignmentId) {
+    if (isCloudReady()) return getBaseRockstarEvents().filter((entry) => entry.assignmentId === assignmentId);
     return [
       ...getBaseRockstarEvents().filter((entry) => entry.assignmentId === assignmentId),
       ...getLocalRockstarEvents(assignmentId)
@@ -9969,6 +10190,7 @@
       .reduce((total, entry) => total + Number(entry.delta || 0), 0);
   }
   function getAssignmentIcon(assignment) {
+    if (isCloudReady()) return assignment.icon || './assets/subject-statistics.svg';
     return localStorage.getItem(`encisomath:assignmentIcon:${assignment.id}`) || assignment.icon || './assets/subject-statistics.svg';
   }
   function isSubjectIconVisible(assignment) {
@@ -9982,6 +10204,7 @@
     renderSubjectDetail('students');
   }
   function getAssignmentCover(assignment) {
+    if (isCloudReady()) return assignment.cover || '';
     return localStorage.getItem(`encisomath:assignmentCover:${assignment.id}`) || localStorage.getItem(`encisomath:cover:${assignment.id}`) || '';
   }
   function coverBackgroundStyle(assignment) {
@@ -9989,39 +10212,57 @@
     if (!cover) return '';
     return `style="--cover-image: url('${escapeAttr(cover)}');"`;
   }
-  function saveImageOverride(event, type) {
+  async function saveImageOverride(event, type) {
     const file = event.target.files?.[0];
     if (!file || !state.assignment) return;
     if (file.size > 900000) {
       toast('La imagen pesa mucho. Prueba una imagen menor a 900 KB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const key = type === 'cover' ? `encisomath:assignmentCover:${state.assignment.id}` : `encisomath:assignmentIcon:${state.assignment.id}`;
-        localStorage.setItem(key, reader.result);
-        toast(type === 'cover' ? 'Portada guardada en este dispositivo.' : 'Icono guardado en este dispositivo.');
-        closeModal();
-        renderSubjectDetail('students');
-      } catch (error) {
-        toast('No se pudo guardar. Usa una imagen más liviana.');
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-  function resetAssignmentVisual(type) {
-    if (!state.assignment) return;
-    if (type === 'cover') {
-      localStorage.removeItem(`encisomath:assignmentCover:${state.assignment.id}`);
-      localStorage.removeItem(`encisomath:cover:${state.assignment.id}`);
-      toast('Portada restablecida.');
-    } else {
-      localStorage.removeItem(`encisomath:assignmentIcon:${state.assignment.id}`);
-      toast('Icono restablecido.');
+    if (!isCloudReady()) {
+      toast('Necesitas una sesión de Supabase para guardar imágenes.');
+      return;
     }
-    closeModal();
-    renderSubjectDetail('students');
+    try {
+      const url = await cloudAPI().uploadAssignmentImage({ assignmentId: state.assignment.id, type, file });
+      const assignment = state.data.assignments.find((item) => item.id === state.assignment.id);
+      if (type === 'cover') {
+        state.assignment.cover = url;
+        if (assignment) assignment.cover = url;
+      } else {
+        state.assignment.icon = url;
+        if (assignment) assignment.icon = url;
+      }
+      toast(type === 'cover' ? 'Portada guardada en Supabase.' : 'Icono guardado en Supabase.');
+      closeModal();
+      renderSubjectDetail('students');
+    } catch (error) {
+      reportCloudError('No se pudo guardar la imagen', error);
+    }
+  }
+  async function resetAssignmentVisual(type) {
+    if (!state.assignment) return;
+    if (!isCloudReady()) {
+      toast('Necesitas una sesión de Supabase para restablecer imágenes.');
+      return;
+    }
+    try {
+      await cloudAPI().resetAssignmentImage({ assignmentId: state.assignment.id, type });
+      const assignment = state.data.assignments.find((item) => item.id === state.assignment.id);
+      if (type === 'cover') {
+        state.assignment.cover = '';
+        if (assignment) assignment.cover = '';
+        toast('Portada restablecida en Supabase.');
+      } else {
+        state.assignment.icon = './assets/subject-statistics.svg';
+        if (assignment) assignment.icon = './assets/subject-statistics.svg';
+        toast('Icono restablecido en Supabase.');
+      }
+      closeModal();
+      renderSubjectDetail('students');
+    } catch (error) {
+      reportCloudError('No se pudo restablecer la imagen', error);
+    }
   }
   function setClassViewMode(mode) {
     if (state.classViewMode === mode) return;
@@ -10041,10 +10282,19 @@
     const normalized = normalizeID(id);
     return state.data.users.find((user) => normalizeID(user.id) === normalized || normalizeID(user.username) === normalized);
   }
-  function logout() {
+  async function logout() {
+    try {
+      if (cloudAPI()) await cloudAPI().signOut();
+    } catch (error) {
+      console.warn('No se pudo cerrar la sesión remota.', error);
+    }
     localStorage.removeItem('encisomath:session');
+    localStorage.removeItem(CLOUD_SESSION_MODE_KEY);
+    sessionStorage.removeItem(CLOUD_SESSION_TAB_KEY);
     state.user = null;
     state.assignment = null;
+    state.cloud.enabled = false;
+    state.cloud.attendance = {};
     renderLogin();
   }
 
@@ -10129,6 +10379,7 @@
     }
     state.prefs[key] = nextValue;
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+    savePreferencesToCloud();
     applyPreferences();
     toast('Apariencia actualizada.');
     return true;
@@ -10236,7 +10487,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.301', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.303', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
