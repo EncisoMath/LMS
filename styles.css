@@ -27269,3 +27269,280 @@ body.quiz-fullscreen-active
   .em-pdf-page-shell.is-arriving-next,
   .em-pdf-page-shell.is-arriving-prev { animation-duration: 1ms !important; }
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.24.311 - VISTAS COMPACTAS / VISOR PDF / BORRADO
+========================================================= */
+.em-content-toolbar {
+  min-height: 38px;
+  justify-content: flex-end !important;
+  align-items: center !important;
+}
+.em-content-toolbar-has-action { justify-content: space-between !important; }
+.em-content-toolbar-views-only .em-view-switch { margin-left: auto; }
+.em-view-switch {
+  margin-left: auto;
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.em-view-switch .mini-btn {
+  width: 34px !important;
+  min-width: 34px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 7px !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+}
+.tab-section[data-active-tab="classes"] .em-view-switch .mini-btn,
+.tab-section[data-active-tab="activities"] .em-view-switch .mini-btn,
+.tab-section[data-active-tab="quizzes"] .em-view-switch .mini-btn {
+  background: color-mix(in srgb, var(--maincolor) 16%, transparent) !important;
+  color: color-mix(in srgb, var(--maincolor) 48%, white) !important;
+  border-color: color-mix(in srgb, var(--maincolor) 32%, transparent) !important;
+}
+.tab-section[data-active-tab="classes"] .em-view-switch .mini-btn.selected,
+.tab-section[data-active-tab="activities"] .em-view-switch .mini-btn.selected,
+.tab-section[data-active-tab="quizzes"] .em-view-switch .mini-btn.selected {
+  background: var(--maincolor) !important;
+  color: #fff !important;
+  border-color: var(--maincolor) !important;
+}
+
+.em-class-card.em-notebook-card { position: relative; }
+.em-class-delete-btn {
+  position: absolute;
+  z-index: 20;
+  top: 7px;
+  right: 7px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 8px;
+  background: rgba(7,13,23,.82);
+  color: #fff;
+  font-size: .9rem;
+  cursor: pointer;
+  opacity: .86;
+  backdrop-filter: blur(8px);
+}
+.em-class-delete-btn:hover { opacity: 1; background: rgba(190,24,45,.94); }
+.em-class-delete-btn:active { transform: scale(.94); }
+.em-content-list.is-list .em-class-delete-btn {
+  position: static;
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  justify-self: end;
+  margin-right: 5px;
+}
+.em-content-list.is-list .em-class-card.em-notebook-card {
+  grid-template-columns: 70px minmax(0, 1fr) 38px;
+}
+.em-content-list.is-list .em-class-card.em-notebook-card .em-class-body { grid-column: 2; }
+.em-delete-class-modal { width: min(92vw, 560px); padding: 24px; }
+.em-delete-class-modal h2 { margin: 4px 0 8px; }
+.em-delete-class-modal > p { line-height: 1.5; }
+.em-delete-class-icon { width: 48px; height: 48px; display: grid; place-items: center; margin-bottom: 10px; border-radius: 12px; background: rgba(239,68,68,.16); font-size: 1.35rem; }
+.em-delete-class-error { min-height: 20px; color: #fecaca; font-size: .84rem; font-weight: 800; }
+.em-delete-class-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+.em-pdf-class-screen { height: 100dvh; min-height: 100vh; overflow: hidden; }
+.em-pdf-notebook {
+  height: calc(100dvh - 58px);
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 6px 8px 8px;
+  gap: 5px;
+}
+.em-pdf-stage {
+  position: relative;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  perspective: 1800px;
+}
+.em-pdf-page-viewport {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+}
+.em-pdf-page-shell {
+  --em-pdf-pinch-scale: 1;
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 1px;
+  min-height: 1px;
+  max-width: none;
+  max-height: none;
+  display: grid;
+  place-items: center;
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.em-pdf-page-shell.is-pinching { transform: scale(var(--em-pdf-pinch-scale)); }
+.em-pdf-page-canvas {
+  grid-area: 1 / 1;
+  display: block;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 4px 8px 8px 4px;
+  background: #fff;
+  box-shadow: 10px 14px 34px rgba(0,0,0,.46), 4px 5px 0 rgba(255,255,255,.2);
+  user-select: none;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+}
+.em-pdf-page-canvas[hidden] { display: none !important; }
+.em-pdf-page-canvas.is-active { z-index: 2; }
+.em-pdf-page-canvas.is-entering-next,
+.em-pdf-page-canvas.is-entering-prev { z-index: 3; }
+.em-pdf-page-canvas.is-leaving-next,
+.em-pdf-page-canvas.is-leaving-prev { z-index: 4; }
+.em-pdf-page-shell.is-page-turning-next .is-leaving-next {
+  animation: emPdfSheetOutNext 430ms cubic-bezier(.55,.05,.2,1) both;
+}
+.em-pdf-page-shell.is-page-turning-next .is-entering-next {
+  animation: emPdfSheetInNext 430ms cubic-bezier(.2,.75,.18,1) both;
+}
+.em-pdf-page-shell.is-page-turning-prev .is-leaving-prev {
+  animation: emPdfSheetOutPrev 430ms cubic-bezier(.55,.05,.2,1) both;
+}
+.em-pdf-page-shell.is-page-turning-prev .is-entering-prev {
+  animation: emPdfSheetInPrev 430ms cubic-bezier(.2,.75,.18,1) both;
+}
+.em-pdf-page-curl {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 4px 8px 8px 4px;
+}
+.em-pdf-page-shell.is-page-turning-next .em-pdf-page-curl {
+  animation: emPdfCurlNext 430ms ease both;
+  background: linear-gradient(100deg, transparent 48%, rgba(0,0,0,.17) 55%, rgba(255,255,255,.5) 63%, transparent 70%);
+}
+.em-pdf-page-shell.is-page-turning-prev .em-pdf-page-curl {
+  animation: emPdfCurlPrev 430ms ease both;
+  background: linear-gradient(80deg, transparent 30%, rgba(255,255,255,.48) 38%, rgba(0,0,0,.15) 46%, transparent 54%);
+}
+@keyframes emPdfSheetOutNext {
+  0% { opacity: 1; transform: perspective(1500px) rotateY(0) translateX(0) scale(1); filter: brightness(1); }
+  55% { opacity: .82; transform: perspective(1500px) rotateY(-9deg) translateX(-1.5%) scale(.997); filter: brightness(.88); }
+  100% { opacity: 0; transform: perspective(1500px) rotateY(-18deg) translateX(-4%) scale(.99); filter: brightness(.72); }
+}
+@keyframes emPdfSheetInNext {
+  0% { opacity: 0; transform: perspective(1500px) rotateY(12deg) translateX(3%) scale(.993); filter: brightness(.8); }
+  58% { opacity: .94; }
+  100% { opacity: 1; transform: perspective(1500px) rotateY(0) translateX(0) scale(1); filter: brightness(1); }
+}
+@keyframes emPdfSheetOutPrev {
+  0% { opacity: 1; transform: perspective(1500px) rotateY(0) translateX(0) scale(1); filter: brightness(1); }
+  55% { opacity: .82; transform: perspective(1500px) rotateY(9deg) translateX(1.5%) scale(.997); filter: brightness(.88); }
+  100% { opacity: 0; transform: perspective(1500px) rotateY(18deg) translateX(4%) scale(.99); filter: brightness(.72); }
+}
+@keyframes emPdfSheetInPrev {
+  0% { opacity: 0; transform: perspective(1500px) rotateY(-12deg) translateX(-3%) scale(.993); filter: brightness(.8); }
+  58% { opacity: .94; }
+  100% { opacity: 1; transform: perspective(1500px) rotateY(0) translateX(0) scale(1); filter: brightness(1); }
+}
+@keyframes emPdfCurlNext { 0%,100% { opacity: 0; transform: translateX(-15%); } 48% { opacity: .72; transform: translateX(8%); } }
+@keyframes emPdfCurlPrev { 0%,100% { opacity: 0; transform: translateX(15%); } 48% { opacity: .72; transform: translateX(-8%); } }
+.em-pdf-loading[hidden] { display: none !important; }
+.em-pdf-loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+.em-pdf-nav {
+  position: absolute;
+  z-index: 30;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 58px;
+  background: rgba(7,17,31,.78);
+  border: 1px solid rgba(255,255,255,.1);
+  backdrop-filter: blur(8px);
+}
+.em-pdf-nav:active:not(:disabled) { transform: translateY(-50%) scale(.94); }
+.em-pdf-prev { left: 4px; }
+.em-pdf-next { right: 4px; }
+.em-pdf-footer {
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 7px 14px;
+  padding: 3px 6px;
+}
+.em-pdf-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.075);
+}
+.em-pdf-zoom-controls button {
+  min-width: 31px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font: 900 .86rem/1 "Montserrat", Arial, sans-serif;
+  cursor: pointer;
+}
+.em-pdf-zoom-controls button:last-child { width: auto; padding: 0 9px; font-size: .68rem; }
+.em-pdf-zoom-controls button:disabled { opacity: .35; }
+.em-pdf-zoom-controls span { min-width: 47px; text-align: center; color: #fff; font-size: .7rem; font-weight: 900; }
+.em-pdf-help { color: rgba(255,255,255,.58); }
+
+@media (max-width: 520px) {
+  .em-content-toolbar,
+  .em-content-toolbar-has-action {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  .em-content-toolbar .mini-btn { width: 34px !important; }
+  .em-add-content-btn,
+  .em-add-quiz-group-btn { width: auto !important; min-height: 36px; padding: 0 11px; }
+  .em-delete-class-actions { display: grid; grid-template-columns: 1fr; }
+  .em-delete-class-actions button { width: 100%; }
+  .em-pdf-notebook { padding: 3px 0 6px; }
+  .em-pdf-page-viewport { width: 100vw; }
+  .em-pdf-prev { left: 7px; }
+  .em-pdf-next { right: 7px; }
+  .em-pdf-nav { width: 30px; height: 50px; }
+  .em-pdf-footer { min-height: 64px; gap: 4px 10px; }
+  .em-pdf-help { flex-basis: 100%; text-align: center; font-size: .67rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-pdf-page-canvas,
+  .em-pdf-page-curl { animation-duration: 1ms !important; }
+}
+
+.em-pdf-page-shell .em-pdf-spiral { left: -6px; top: 5%; bottom: 5%; }
+.em-pdf-page-shell .em-pdf-page-shine { inset: 7% 5% 7% 52%; }

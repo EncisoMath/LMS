@@ -726,6 +726,36 @@
     }
   }
 
+
+  async function deletePdfLesson({ lessonId, assignmentId, mode = 'all', storagePdfPath = '', storageThumbnailPath = '' }) {
+    const supabaseClient = getClient();
+    const safeLessonId = String(lessonId || '').trim();
+    if (!safeLessonId) throw new Error('No se encontró la clase que deseas eliminar.');
+
+    if (mode === 'course') {
+      if (!assignmentId) throw new Error('No se encontró el curso actual.');
+      const unlinkResult = await supabaseClient
+        .from('assignment_lessons')
+        .delete()
+        .eq('assignment_id', assignmentId)
+        .eq('lesson_id', safeLessonId);
+      if (unlinkResult.error) throw normalizeError(unlinkResult.error, 'No se pudo quitar la clase de este curso.');
+      return { mode: 'course' };
+    }
+
+    const linksResult = await supabaseClient.from('assignment_lessons').delete().eq('lesson_id', safeLessonId);
+    if (linksResult.error) throw normalizeError(linksResult.error, 'No se pudieron quitar las asignaciones de la clase.');
+    const lessonResult = await supabaseClient.from('lessons').delete().eq('id', safeLessonId);
+    if (lessonResult.error) throw normalizeError(lessonResult.error, 'No se pudo eliminar la clase.');
+
+    const paths = [storagePdfPath, storageThumbnailPath].map((value) => String(value || '').trim()).filter(Boolean);
+    if (paths.length) {
+      const storageResult = await supabaseClient.storage.from(config.storageBucket || 'lms-public').remove(paths);
+      if (storageResult.error) console.warn('[Supabase] La clase se eliminó, pero quedaron archivos huérfanos en Storage.', storageResult.error);
+    }
+    return { mode: 'all' };
+  }
+
   async function recordLessonView({ assignmentId, lessonId }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
@@ -764,7 +794,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.310', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.311', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -810,7 +840,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.310',
+          appVersion: '0.24.311',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -850,6 +880,7 @@
     uploadAssignmentImage,
     resetAssignmentImage,
     createPdfLesson,
+    deletePdfLesson,
     recordLessonView,
     startQuizAttempt,
     submitQuizAttempt,

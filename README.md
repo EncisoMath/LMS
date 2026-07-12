@@ -115,3 +115,12 @@ Validación:
 - La vista de cuadrícula muestra la clase como un cuaderno sin el nombre; la vista de lista añade nombre, periodo y páginas.
 - El lector abre una sola página y permite avanzar o retroceder con botones, flechas del teclado o deslizamiento, usando transición de hoja.
 - Requiere ejecutar `SUPABASE_MIGRATION_v0.24.310.sql` una vez antes de crear la primera clase.
+
+
+## v0.24.311 - Visor PDF y gestión de clases
+
+- Selector Cuadrícula/Lista compacto y alineado a la derecha en Clases, Actividades y Quizzes.
+- El cambio de vista actualiza únicamente el contenedor de contenido.
+- Visor PDF adaptativo: ancho completo en móvil y altura útil máxima en escritorio.
+- Cambio de hoja con doble canvas, zoom por botones, rueda y gesto de pellizco.
+- Eliminación de clases con confirmación y soporte para retirar de un curso o eliminar de todos.

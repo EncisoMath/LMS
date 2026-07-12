@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.310';
+  const APP_VERSION = '0.24.311';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2684,12 +2684,12 @@
       <section class="quiz-hero em-qz-hero-host" data-em-quizzes-hero aria-label="Quizzes de la asignatura">
         ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="view-row em-content-toolbar em-quiz-toolbar">
-        <div class="em-view-switch" aria-label="Vista de quizzes">
-          <button class="mini-btn ${state.quizViewMode === 'grid' ? 'selected' : ''}" id="quizGridModeBtn" type="button">▦ Cuadrícula</button>
-          <button class="mini-btn ${state.quizViewMode === 'list' ? 'selected' : ''}" id="quizListModeBtn" type="button">☰ Lista</button>
-        </div>
+      <div class="view-row em-content-toolbar em-content-toolbar-has-action em-quiz-toolbar">
         <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz</button>
+        <div class="em-view-switch" aria-label="Vista de quizzes">
+          <button class="mini-btn ${state.quizViewMode === 'grid' ? 'selected' : ''}" id="quizGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
+          <button class="mini-btn ${state.quizViewMode === 'list' ? 'selected' : ''}" id="quizListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
+        </div>
       </div>
       <div class="em-content-list is-${state.quizViewMode}" id="quizLibrary">
         ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod)}
@@ -9763,10 +9763,10 @@
       <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="view-row em-content-toolbar">
+      <div class="view-row em-content-toolbar em-content-toolbar-views-only">
         <div class="em-view-switch" aria-label="Vista de actividades">
-          <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button">▦ Cuadrícula</button>
-          <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button">☰ Lista</button>
+          <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
+          <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
         </div>
       </div>
       <div id="activitiesPeriodContent" class="em-content-list is-${state.activityViewMode}">
@@ -9798,12 +9798,12 @@
       <section class="class-hero em-cl-hero-host" data-em-classes-hero aria-label="Clases de la asignatura">
         ${emClClassesHeroHTML()}
       </section>
-      <div class="view-row em-content-toolbar em-class-view-only">
-        <div class="em-view-switch" aria-label="Vista de clases">
-          <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn" type="button">▦ Cuadrícula</button>
-          <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn" type="button">☰ Lista</button>
-        </div>
+      <div class="view-row em-content-toolbar em-content-toolbar-has-action em-class-view-only">
         <button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button>
+        <div class="em-view-switch" aria-label="Vista de clases">
+          <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
+          <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
+        </div>
       </div>
       <div id="classGrid" class="em-content-list is-${state.classViewMode}">
         ${renderClassCardsHTML()}
@@ -10020,12 +10020,26 @@
     document.getElementById('listModeBtn')?.addEventListener('click', () => setClassViewMode('list'));
   }
   function bindClassCards() {
+    document.querySelectorAll('[data-delete-class-id]').forEach((button) => {
+      if (button.dataset.boundClassDelete === 'true') return;
+      button.dataset.boundClassDelete = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const item = state.data.classes.find((lesson) => lesson.id === button.dataset.deleteClassId);
+        if (item) openDeleteClassModal(item);
+      });
+    });
     document.querySelectorAll('[data-class-id]').forEach((button) => {
-      button.addEventListener('click', () => {
+      if (button.dataset.boundClassCard === 'true') return;
+      button.dataset.boundClassCard = 'true';
+      button.addEventListener('click', (event) => {
+        if (event.target.closest('[data-delete-class-id]')) return;
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
         if (item) renderLesson(item);
       });
       button.addEventListener('keydown', (event) => {
+        if (event.target.closest('[data-delete-class-id]')) return;
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
@@ -10033,6 +10047,63 @@
       });
     });
   }
+
+  function openDeleteClassModal(lesson) {
+    const assignmentIds = [...new Set(Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds.filter(Boolean) : [])];
+    const shared = assignmentIds.length > 1;
+    openModal(`
+      <section class="modal-card em-delete-class-modal" role="dialog" aria-modal="true" aria-labelledby="deleteClassTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-delete-class-icon" aria-hidden="true">🗑</div>
+        <p class="section-kicker">Biblioteca de clases</p>
+        <h2 id="deleteClassTitle">Eliminar clase</h2>
+        <p>¿Qué deseas hacer con <strong>${escapeHTML(lesson.title || 'esta clase')}</strong>?</p>
+        ${shared ? `<p class="card-sub">Esta clase está disponible en ${assignmentIds.length} cursos. Puedes quitarla solamente de ${escapeHTML(state.assignment?.grade || '')}-${escapeHTML(state.assignment?.course || '')} o eliminarla de todos.</p>` : `<p class="card-sub">Se eliminarán la clase, el PDF y su portada. Esta acción no se puede deshacer.</p>`}
+        <p class="em-delete-class-error" id="deleteClassError" role="alert"></p>
+        <div class="em-delete-class-actions">
+          <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+          ${shared ? `<button class="ghost-btn" id="removeClassFromCourseBtn" type="button">Quitar de este curso</button>` : ''}
+          <button class="danger-btn" id="deleteClassEverywhereBtn" type="button">Eliminar ${shared ? 'de todos' : 'clase'}</button>
+        </div>
+      </section>
+    `, () => {
+      document.getElementById('removeClassFromCourseBtn')?.addEventListener('click', () => deleteClassRecord(lesson, 'course'));
+      document.getElementById('deleteClassEverywhereBtn')?.addEventListener('click', () => deleteClassRecord(lesson, 'all'));
+    });
+  }
+
+  async function deleteClassRecord(lesson, mode = 'all') {
+    const errorBox = document.getElementById('deleteClassError');
+    const buttons = document.querySelectorAll('#removeClassFromCourseBtn, #deleteClassEverywhereBtn');
+    const fail = (message) => { if (errorBox) errorBox.textContent = message; };
+    fail('');
+    if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase para eliminar la clase.');
+    buttons.forEach((button) => { button.disabled = true; });
+    try {
+      await cloudAPI().deletePdfLesson({
+        lessonId: lesson.id,
+        assignmentId: state.assignment?.id || '',
+        mode,
+        storagePdfPath: lesson.storagePdfPath || '',
+        storageThumbnailPath: lesson.storageThumbnailPath || ''
+      });
+      if (mode === 'course') {
+        lesson.assignmentIds = (lesson.assignmentIds || []).filter((id) => id !== state.assignment?.id);
+        if (lesson.assignmentId === state.assignment?.id) lesson.assignmentId = lesson.assignmentIds[0] || '';
+        if (!lesson.assignmentIds.length) state.data.classes = state.data.classes.filter((item) => item.id !== lesson.id);
+      } else {
+        state.data.classes = state.data.classes.filter((item) => item.id !== lesson.id);
+      }
+      closeModal(false);
+      updateClassGrid(true);
+      toast(mode === 'course' ? 'Clase retirada de este curso.' : 'Clase eliminada de todos los cursos.');
+    } catch (error) {
+      fail(error?.message || 'No se pudo eliminar la clase.');
+      reportCloudError('No se pudo eliminar la clase', error, { silent: true });
+      buttons.forEach((button) => { button.disabled = false; });
+    }
+  }
+
   function updateClassGrid(animate = false) {
     const grid = document.getElementById('classGrid');
     if (!grid) return;
@@ -10072,17 +10143,27 @@
           <section class="em-pdf-notebook" id="pdfNotebook" aria-label="Lector de ${escapeAttr(lesson.title || 'clase')}">
             <div class="em-pdf-stage" id="pdfStage">
               <button class="em-pdf-nav em-pdf-prev" id="pdfPrevBtn" type="button" aria-label="Página anterior">‹</button>
-              <div class="em-pdf-page-shell" id="pdfPageShell">
-                <span class="em-pdf-spiral" aria-hidden="true"></span>
-                <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
-                <canvas id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
-                <span class="em-pdf-page-shine" aria-hidden="true"></span>
+              <div class="em-pdf-page-viewport" id="pdfPageViewport">
+                <div class="em-pdf-page-shell" id="pdfPageShell">
+                  <span class="em-pdf-spiral" aria-hidden="true"></span>
+                  <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
+                  <canvas class="em-pdf-page-canvas is-active" id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
+                  <canvas class="em-pdf-page-canvas" id="pdfPageCanvasNext" aria-hidden="true" hidden></canvas>
+                  <span class="em-pdf-page-shine" aria-hidden="true"></span>
+                  <span class="em-pdf-page-curl" aria-hidden="true"></span>
+                </div>
               </div>
               <button class="em-pdf-nav em-pdf-next" id="pdfNextBtn" type="button" aria-label="Página siguiente">›</button>
             </div>
             <footer class="em-pdf-footer">
               <strong id="pdfPageIndicator">Página 1</strong>
-              <span>Desliza la hoja a izquierda o derecha</span>
+              <div class="em-pdf-zoom-controls" aria-label="Controles de zoom">
+                <button type="button" id="pdfZoomOutBtn" aria-label="Alejar">−</button>
+                <span id="pdfZoomIndicator">100%</span>
+                <button type="button" id="pdfZoomInBtn" aria-label="Acercar">＋</button>
+                <button type="button" id="pdfZoomResetBtn" aria-label="Restablecer zoom" title="Ajustar">Ajustar</button>
+              </div>
+              <span class="em-pdf-help">Desliza para cambiar de página · pellizca para ampliar</span>
             </footer>
           </section>
         ` : `<iframe class="lesson-frame" src="${escapeAttr(lesson.contentUrl || '')}" title="${escapeAttr(lesson.title || 'Clase')}"></iframe>`}
@@ -10101,6 +10182,8 @@
   function showPdfViewerError(error) {
     const loading = document.getElementById('pdfLoading');
     if (!loading) return;
+    loading.hidden = false;
+    loading.style.removeProperty('display');
     loading.classList.add('is-error');
     loading.innerHTML = `<strong>No se pudo abrir el cuaderno.</strong><span>${escapeHTML(error?.message || 'Revisa el archivo PDF.')}</span>`;
   }
@@ -10108,12 +10191,23 @@
   async function initPdfNotebookViewer(lesson) {
     const pdfjs = await loadPdfJs();
     const loading = document.getElementById('pdfLoading');
+    const viewportHost = document.getElementById('pdfPageViewport');
     const shell = document.getElementById('pdfPageShell');
-    const canvas = document.getElementById('pdfPageCanvas');
+    let activeCanvas = document.getElementById('pdfPageCanvas');
+    let standbyCanvas = document.getElementById('pdfPageCanvasNext');
     const prev = document.getElementById('pdfPrevBtn');
     const next = document.getElementById('pdfNextBtn');
     const indicator = document.getElementById('pdfPageIndicator');
-    if (!shell || !canvas || !prev || !next || !indicator) return;
+    const zoomOut = document.getElementById('pdfZoomOutBtn');
+    const zoomIn = document.getElementById('pdfZoomInBtn');
+    const zoomReset = document.getElementById('pdfZoomResetBtn');
+    const zoomIndicator = document.getElementById('pdfZoomIndicator');
+    if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !prev || !next || !indicator) return;
+
+    loading.hidden = false;
+    loading.style.removeProperty('display');
+    loading.classList.remove('is-error');
+    loading.textContent = 'Preparando cuaderno...';
 
     const response = await fetch(lesson.contentUrl, { cache: 'no-store' });
     if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
@@ -10122,62 +10216,130 @@
     const pdfDocument = await documentTask.promise;
     const viewerController = new AbortController();
     const viewerSignal = viewerController.signal;
+    let resizeTimer = 0;
+    let renderTask = null;
     activePdfViewerCleanup = () => {
       viewerController.abort();
+      clearTimeout(resizeTimer);
+      try { renderTask?.cancel?.(); } catch (_) {}
       try { pdfDocument.destroy?.(); } catch (_) {}
     };
+
     let pageNumber = 1;
     let rendering = false;
-    let pendingPage = null;
+    let pendingRender = null;
+    let zoom = 1;
+    let fitScale = 1;
     let touchStartX = 0;
     let touchStartY = 0;
+    let dragStartScrollLeft = 0;
+    let dragStartScrollTop = 0;
+    let dragged = false;
+    const activePointers = new Map();
+    let pinchStartDistance = 0;
+    let pinchStartZoom = 1;
+    let pinchPreviewZoom = 1;
 
+    const clampZoom = (value) => Math.max(.65, Math.min(4, Number(value) || 1));
     const updateControls = () => {
       prev.disabled = pageNumber <= 1;
       next.disabled = pageNumber >= pdfDocument.numPages;
       indicator.textContent = `Página ${pageNumber} de ${pdfDocument.numPages}`;
+      if (zoomIndicator) zoomIndicator.textContent = `${Math.round(zoom * 100)}%`;
+      if (zoomOut) zoomOut.disabled = zoom <= .66;
+      if (zoomIn) zoomIn.disabled = zoom >= 3.99;
     };
 
-    const renderPage = async (number, direction = 'none') => {
+    const getFitScale = (baseViewport) => {
+      const stageRect = viewportHost.getBoundingClientRect();
+      const availableWidth = Math.max(220, stageRect.width - 4);
+      const availableHeight = Math.max(260, stageRect.height - 4);
+      const isNarrow = window.matchMedia('(max-width: 720px)').matches || availableWidth < 620;
+      if (isNarrow) return availableWidth / baseViewport.width;
+      return Math.min(availableHeight / baseViewport.height, availableWidth / baseViewport.width);
+    };
+
+    const paintPage = async (number, canvas, requestedZoom = zoom) => {
+      const page = await pdfDocument.getPage(number);
+      const baseViewport = page.getViewport({ scale: 1 });
+      fitScale = getFitScale(baseViewport);
+      const cssScale = fitScale * requestedZoom;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const renderViewport = page.getViewport({ scale: cssScale * pixelRatio });
+      const cssWidth = Math.max(1, Math.round(renderViewport.width / pixelRatio));
+      const cssHeight = Math.max(1, Math.round(renderViewport.height / pixelRatio));
+      const context = canvas.getContext('2d', { alpha: false });
+      canvas.width = Math.max(1, Math.ceil(renderViewport.width));
+      canvas.height = Math.max(1, Math.ceil(renderViewport.height));
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+      shell.style.width = `${cssWidth}px`;
+      shell.style.height = `${cssHeight}px`;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      renderTask = page.render({ canvasContext: context, viewport: renderViewport });
+      await renderTask.promise;
+      renderTask = null;
+      page.cleanup?.();
+      return { cssWidth, cssHeight };
+    };
+
+    const finishCanvasSwap = (direction) => {
+      activeCanvas.classList.remove('is-active', 'is-leaving-next', 'is-leaving-prev');
+      activeCanvas.hidden = true;
+      activeCanvas.setAttribute('aria-hidden', 'true');
+      standbyCanvas.classList.remove('is-entering-next', 'is-entering-prev');
+      standbyCanvas.classList.add('is-active');
+      standbyCanvas.hidden = false;
+      standbyCanvas.removeAttribute('aria-hidden');
+      const oldCanvas = activeCanvas;
+      activeCanvas = standbyCanvas;
+      standbyCanvas = oldCanvas;
+      shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
+    };
+
+    const renderPage = async (number, direction = 'none', options = {}) => {
       if (rendering) {
-        pendingPage = { number, direction };
+        pendingRender = { number, direction, options };
         return;
       }
       rendering = true;
-      if (direction !== 'none') {
-        shell.classList.remove('is-arriving-next', 'is-arriving-prev');
-        shell.classList.add(direction === 'next' ? 'is-turning-next' : 'is-turning-prev');
-        await new Promise((resolve) => setTimeout(resolve, 190));
-      }
-      const page = await pdfDocument.getPage(number);
-      const baseViewport = page.getViewport({ scale: 1 });
-      const availableWidth = Math.max(260, Math.min(shell.clientWidth - 34, window.innerWidth - 64));
-      const availableHeight = Math.max(360, Math.min(window.innerHeight - 180, 900));
-      const cssScale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-      const viewport = page.getViewport({ scale: cssScale * pixelRatio });
-      const context = canvas.getContext('2d', { alpha: false });
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      canvas.style.width = `${Math.ceil(viewport.width / pixelRatio)}px`;
-      canvas.style.height = `${Math.ceil(viewport.height / pixelRatio)}px`;
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      await page.render({ canvasContext: context, viewport }).promise;
-      page.cleanup?.();
-      pageNumber = number;
-      loading.hidden = true;
-      shell.classList.remove('is-turning-next', 'is-turning-prev');
-      if (direction !== 'none') {
-        shell.classList.add(direction === 'next' ? 'is-arriving-next' : 'is-arriving-prev');
-        setTimeout(() => shell.classList.remove('is-arriving-next', 'is-arriving-prev'), 360);
-      }
-      updateControls();
-      rendering = false;
-      if (pendingPage) {
-        const queued = pendingPage;
-        pendingPage = null;
-        renderPage(queued.number, queued.direction);
+      const targetZoom = clampZoom(options.zoom ?? zoom);
+      try {
+        if (direction === 'none') {
+          await paintPage(number, activeCanvas, targetZoom);
+          activeCanvas.hidden = false;
+          activeCanvas.classList.add('is-active');
+          activeCanvas.removeAttribute('aria-hidden');
+        } else {
+          standbyCanvas.hidden = true;
+          standbyCanvas.className = `em-pdf-page-canvas ${direction === 'next' ? 'is-entering-next' : 'is-entering-prev'}`;
+          await paintPage(number, standbyCanvas, targetZoom);
+          standbyCanvas.hidden = false;
+          shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
+          activeCanvas.classList.remove('is-leaving-next', 'is-leaving-prev');
+          void shell.offsetWidth;
+          shell.classList.add(direction === 'next' ? 'is-page-turning-next' : 'is-page-turning-prev');
+          activeCanvas.classList.add(direction === 'next' ? 'is-leaving-next' : 'is-leaving-prev');
+          await new Promise((resolve) => setTimeout(resolve, 430));
+          finishCanvasSwap(direction);
+        }
+        pageNumber = number;
+        zoom = targetZoom;
+        loading.hidden = true;
+        loading.style.setProperty('display', 'none', 'important');
+        updateControls();
+        if (zoom <= 1.01) {
+          viewportHost.scrollLeft = 0;
+          viewportHost.scrollTop = 0;
+        }
+      } finally {
+        rendering = false;
+        if (pendingRender) {
+          const queued = pendingRender;
+          pendingRender = null;
+          renderPage(queued.number, queued.direction, queued.options).catch(showPdfViewerError);
+        }
       }
     };
 
@@ -10186,25 +10348,107 @@
       if (target === pageNumber) return;
       renderPage(target, delta > 0 ? 'next' : 'prev').catch(showPdfViewerError);
     };
+
+    const setZoom = (nextZoom) => {
+      const target = clampZoom(nextZoom);
+      if (Math.abs(target - zoom) < .01) return;
+      const centerX = viewportHost.scrollLeft + viewportHost.clientWidth / 2;
+      const centerY = viewportHost.scrollTop + viewportHost.clientHeight / 2;
+      const ratio = target / zoom;
+      renderPage(pageNumber, 'none', { zoom: target }).then(() => {
+        viewportHost.scrollLeft = Math.max(0, centerX * ratio - viewportHost.clientWidth / 2);
+        viewportHost.scrollTop = Math.max(0, centerY * ratio - viewportHost.clientHeight / 2);
+      }).catch(showPdfViewerError);
+    };
+
     prev.addEventListener('click', () => go(-1), { signal: viewerSignal });
     next.addEventListener('click', () => go(1), { signal: viewerSignal });
-    shell.addEventListener('pointerdown', (event) => {
-      touchStartX = event.clientX;
-      touchStartY = event.clientY;
-      shell.setPointerCapture?.(event.pointerId);
+    zoomOut?.addEventListener('click', () => setZoom(zoom - .25), { signal: viewerSignal });
+    zoomIn?.addEventListener('click', () => setZoom(zoom + .25), { signal: viewerSignal });
+    zoomReset?.addEventListener('click', () => setZoom(1), { signal: viewerSignal });
+
+    viewportHost.addEventListener('pointerdown', (event) => {
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      viewportHost.setPointerCapture?.(event.pointerId);
+      if (activePointers.size === 1) {
+        touchStartX = event.clientX;
+        touchStartY = event.clientY;
+        dragStartScrollLeft = viewportHost.scrollLeft;
+        dragStartScrollTop = viewportHost.scrollTop;
+        dragged = false;
+      } else if (activePointers.size === 2) {
+        const points = [...activePointers.values()];
+        pinchStartDistance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
+        pinchStartZoom = zoom;
+        pinchPreviewZoom = zoom;
+      }
     }, { signal: viewerSignal });
-    shell.addEventListener('pointerup', (event) => {
-      const dx = event.clientX - touchStartX;
-      const dy = event.clientY - touchStartY;
-      if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.25) go(dx < 0 ? 1 : -1);
+
+    viewportHost.addEventListener('pointermove', (event) => {
+      if (!activePointers.has(event.pointerId)) return;
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (activePointers.size === 2 && pinchStartDistance > 0) {
+        event.preventDefault();
+        const points = [...activePointers.values()];
+        const distance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
+        pinchPreviewZoom = clampZoom(pinchStartZoom * (distance / pinchStartDistance));
+        const ratio = pinchPreviewZoom / zoom;
+        shell.style.setProperty('--em-pdf-pinch-scale', String(ratio));
+        shell.classList.add('is-pinching');
+        if (zoomIndicator) zoomIndicator.textContent = `${Math.round(pinchPreviewZoom * 100)}%`;
+        return;
+      }
+      if (activePointers.size === 1 && zoom > 1.01) {
+        const dx = event.clientX - touchStartX;
+        const dy = event.clientY - touchStartY;
+        if (Math.abs(dx) + Math.abs(dy) > 4) dragged = true;
+        viewportHost.scrollLeft = dragStartScrollLeft - dx;
+        viewportHost.scrollTop = dragStartScrollTop - dy;
+      }
     }, { signal: viewerSignal });
+
+    const endPointer = (event) => {
+      const point = activePointers.get(event.pointerId);
+      activePointers.delete(event.pointerId);
+      if (shell.classList.contains('is-pinching') && activePointers.size < 2) {
+        shell.classList.remove('is-pinching');
+        shell.style.removeProperty('--em-pdf-pinch-scale');
+        const target = pinchPreviewZoom;
+        pinchStartDistance = 0;
+        setZoom(target);
+        return;
+      }
+      if (activePointers.size === 0 && zoom <= 1.01 && point && !dragged) {
+        const dx = point.x - touchStartX;
+        const dy = point.y - touchStartY;
+        if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.2) go(dx < 0 ? 1 : -1);
+      }
+    };
+    viewportHost.addEventListener('pointerup', endPointer, { signal: viewerSignal });
+    viewportHost.addEventListener('pointercancel', endPointer, { signal: viewerSignal });
+
+    viewportHost.addEventListener('wheel', (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom(zoom + (event.deltaY < 0 ? .15 : -.15));
+    }, { passive: false, signal: viewerSignal });
+
     window.addEventListener('keydown', (event) => {
       if (!document.getElementById('pdfNotebook')) return;
       if (event.key === 'ArrowLeft') go(-1);
       if (event.key === 'ArrowRight') go(1);
+      if (event.key === '+' || event.key === '=') setZoom(zoom + .25);
+      if (event.key === '-') setZoom(zoom - .25);
+      if (event.key === '0') setZoom(1);
     }, { signal: viewerSignal });
+
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => renderPage(pageNumber, 'none', { zoom }).catch(showPdfViewerError), 160);
+    }, { signal: viewerSignal });
+
     updateControls();
-    await renderPage(1);
+    await renderPage(1, 'none', { zoom: 1 });
   }
 
   function renderStudentPlaceholder(options = {}) {
@@ -10631,6 +10875,7 @@
     const thumb = item.thumbnailUrl || '';
     return `
       <article class="em-class-card em-notebook-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
+        <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
         <div class="em-class-cover ${thumb ? 'has-thumb' : ''}">
           <span class="em-notebook-binding" aria-hidden="true"></span>
           ${thumb ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />` : `<div class="em-class-cover-fallback">${emContentShapePairHTML('em-content-shape', index)}<span>PDF</span></div>`}
@@ -10891,12 +11136,17 @@
     }
   }
   function setClassViewMode(mode) {
-    if (state.classViewMode === mode) return;
+    if (!['grid', 'list'].includes(mode) || state.classViewMode === mode) return;
     state.classViewMode = mode;
     localStorage.setItem('encisomath:classViewMode', mode);
     document.getElementById('gridModeBtn')?.classList.toggle('selected', mode === 'grid');
     document.getElementById('listModeBtn')?.classList.toggle('selected', mode === 'list');
-    updateClassGrid(true);
+    const content = document.getElementById('classGrid');
+    if (content) {
+      content.classList.toggle('is-grid', mode === 'grid');
+      content.classList.toggle('is-list', mode === 'list');
+      pulseElement(content, 'class-grid-update');
+    }
   }
   function setActivityViewMode(mode) {
     if (!['grid', 'list'].includes(mode) || state.activityViewMode === mode) return;
@@ -10906,8 +11156,9 @@
     document.getElementById('activityListModeBtn')?.classList.toggle('selected', mode === 'list');
     const content = document.getElementById('activitiesPeriodContent');
     if (content) {
-      content.className = `em-content-list is-${mode}`;
-      emPlayTabEntrance(document.getElementById('tabContent') || content, 'activities');
+      content.classList.toggle('is-grid', mode === 'grid');
+      content.classList.toggle('is-list', mode === 'list');
+      pulseElement(content, 'class-grid-update');
     }
   }
   function setQuizViewMode(mode) {
@@ -10916,7 +11167,12 @@
     localStorage.setItem('encisomath:quizViewMode', mode);
     document.getElementById('quizGridModeBtn')?.classList.toggle('selected', mode === 'grid');
     document.getElementById('quizListModeBtn')?.classList.toggle('selected', mode === 'list');
-    refreshQuizLibrary(true);
+    const content = document.getElementById('quizLibrary');
+    if (content) {
+      content.classList.toggle('is-grid', mode === 'grid');
+      content.classList.toggle('is-list', mode === 'list');
+      pulseElement(content, 'class-grid-update');
+    }
   }
   function bindFilter(id, key, callback) {
     document.getElementById(id).addEventListener('change', (event) => {
@@ -11281,7 +11537,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.310', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.311', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
