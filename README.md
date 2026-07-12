@@ -124,3 +124,11 @@ Validación:
 - Visor PDF adaptativo: ancho completo en móvil y altura útil máxima en escritorio.
 - Cambio de hoja con doble canvas, zoom por botones, rueda y gesto de pellizco.
 - Eliminación de clases con confirmación y soporte para retirar de un curso o eliminar de todos.
+
+## v0.24.312 - Pasado de hoja realista
+
+- Reemplaza la transición simple del visor PDF por una hoja 3D de dos caras.
+- La página actual se curva y gira; la página siguiente aparece por debajo y en el reverso.
+- Añade rizo inicial de esquina, sombreado dinámico del pliegue y sombra proyectada.
+- Funciona al avanzar y retroceder, conservando zoom, pellizco, arrastre y teclado.
+- No requiere cambios en Supabase.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.311';
+  const APP_VERSION = '0.24.312';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10149,6 +10149,18 @@
                   <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
                   <canvas class="em-pdf-page-canvas is-active" id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
                   <canvas class="em-pdf-page-canvas" id="pdfPageCanvasNext" aria-hidden="true" hidden></canvas>
+                  <span class="em-pdf-turn-floor-shadow" id="pdfTurnFloorShadow" aria-hidden="true"></span>
+                  <div class="em-pdf-turn-sheet" id="pdfTurnSheet" aria-hidden="true" hidden>
+                    <div class="em-pdf-turn-face em-pdf-turn-front">
+                      <canvas class="em-pdf-turn-canvas" id="pdfTurnFrontCanvas"></canvas>
+                      <span class="em-pdf-turn-edge" aria-hidden="true"></span>
+                      <span class="em-pdf-turn-corner" aria-hidden="true"></span>
+                    </div>
+                    <div class="em-pdf-turn-face em-pdf-turn-back">
+                      <canvas class="em-pdf-turn-canvas" id="pdfTurnBackCanvas"></canvas>
+                      <span class="em-pdf-turn-backshade" aria-hidden="true"></span>
+                    </div>
+                  </div>
                   <span class="em-pdf-page-shine" aria-hidden="true"></span>
                   <span class="em-pdf-page-curl" aria-hidden="true"></span>
                 </div>
@@ -10195,6 +10207,10 @@
     const shell = document.getElementById('pdfPageShell');
     let activeCanvas = document.getElementById('pdfPageCanvas');
     let standbyCanvas = document.getElementById('pdfPageCanvasNext');
+    const turnSheet = document.getElementById('pdfTurnSheet');
+    const turnFrontCanvas = document.getElementById('pdfTurnFrontCanvas');
+    const turnBackCanvas = document.getElementById('pdfTurnBackCanvas');
+    const turnFloorShadow = document.getElementById('pdfTurnFloorShadow');
     const prev = document.getElementById('pdfPrevBtn');
     const next = document.getElementById('pdfNextBtn');
     const indicator = document.getElementById('pdfPageIndicator');
@@ -10202,7 +10218,7 @@
     const zoomIn = document.getElementById('pdfZoomInBtn');
     const zoomReset = document.getElementById('pdfZoomResetBtn');
     const zoomIndicator = document.getElementById('pdfZoomIndicator');
-    if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !prev || !next || !indicator) return;
+    if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !turnSheet || !turnFrontCanvas || !turnBackCanvas || !turnFloorShadow || !prev || !next || !indicator) return;
 
     loading.hidden = false;
     loading.style.removeProperty('display');
@@ -10284,17 +10300,56 @@
       return { cssWidth, cssHeight };
     };
 
-    const finishCanvasSwap = (direction) => {
-      activeCanvas.classList.remove('is-active', 'is-leaving-next', 'is-leaving-prev');
+    const copyCanvas = (source, target) => {
+      const sourceWidth = Math.max(1, source.width || 1);
+      const sourceHeight = Math.max(1, source.height || 1);
+      target.width = sourceWidth;
+      target.height = sourceHeight;
+      target.style.width = source.style.width || `${sourceWidth}px`;
+      target.style.height = source.style.height || `${sourceHeight}px`;
+      const context = target.getContext('2d', { alpha: false });
+      context.save();
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, sourceWidth, sourceHeight);
+      context.drawImage(source, 0, 0, sourceWidth, sourceHeight);
+      context.restore();
+    };
+
+    const waitForPageTurn = () => new Promise((resolve) => {
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        turnSheet.removeEventListener('animationend', onAnimationEnd);
+        window.clearTimeout(fallbackTimer);
+        resolve();
+      };
+      const onAnimationEnd = (event) => {
+        if (event.target !== turnSheet) return;
+        done();
+      };
+      const fallbackTimer = window.setTimeout(done, 900);
+      turnSheet.addEventListener('animationend', onAnimationEnd);
+    });
+
+    const finishCanvasSwap = () => {
       activeCanvas.hidden = true;
       activeCanvas.setAttribute('aria-hidden', 'true');
-      standbyCanvas.classList.remove('is-entering-next', 'is-entering-prev');
-      standbyCanvas.classList.add('is-active');
+      activeCanvas.classList.remove('is-active', 'is-under-page');
+      activeCanvas.style.removeProperty('visibility');
+
       standbyCanvas.hidden = false;
       standbyCanvas.removeAttribute('aria-hidden');
+      standbyCanvas.classList.remove('is-under-page');
+      standbyCanvas.classList.add('is-active');
+
       const oldCanvas = activeCanvas;
       activeCanvas = standbyCanvas;
       standbyCanvas = oldCanvas;
+
+      turnSheet.hidden = true;
+      turnSheet.className = 'em-pdf-turn-sheet';
+      turnFloorShadow.className = 'em-pdf-turn-floor-shadow';
       shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
     };
 
@@ -10313,16 +10368,28 @@
           activeCanvas.removeAttribute('aria-hidden');
         } else {
           standbyCanvas.hidden = true;
-          standbyCanvas.className = `em-pdf-page-canvas ${direction === 'next' ? 'is-entering-next' : 'is-entering-prev'}`;
+          standbyCanvas.className = 'em-pdf-page-canvas';
           await paintPage(number, standbyCanvas, targetZoom);
+
+          copyCanvas(activeCanvas, turnFrontCanvas);
+          copyCanvas(standbyCanvas, turnBackCanvas);
+
           standbyCanvas.hidden = false;
+          standbyCanvas.classList.add('is-under-page');
+          standbyCanvas.setAttribute('aria-hidden', 'true');
+          activeCanvas.style.visibility = 'hidden';
+
+          turnSheet.hidden = false;
+          turnSheet.className = `em-pdf-turn-sheet ${direction === 'next' ? 'is-turning-next' : 'is-turning-prev'}`;
+          turnFloorShadow.className = `em-pdf-turn-floor-shadow ${direction === 'next' ? 'is-shadow-next' : 'is-shadow-prev'}`;
           shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
-          activeCanvas.classList.remove('is-leaving-next', 'is-leaving-prev');
-          void shell.offsetWidth;
+          void turnSheet.offsetWidth;
           shell.classList.add(direction === 'next' ? 'is-page-turning-next' : 'is-page-turning-prev');
-          activeCanvas.classList.add(direction === 'next' ? 'is-leaving-next' : 'is-leaving-prev');
-          await new Promise((resolve) => setTimeout(resolve, 430));
-          finishCanvasSwap(direction);
+          turnSheet.classList.add('is-animating');
+          turnFloorShadow.classList.add('is-animating');
+
+          await waitForPageTurn();
+          finishCanvasSwap();
         }
         pageNumber = number;
         zoom = targetZoom;
@@ -11537,7 +11604,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.311', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.312', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
