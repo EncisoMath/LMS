@@ -27764,64 +27764,7 @@ html body #app .em-pdf-loading.is-error {
 .em-pdf-loader-error strong { font-weight: 800; }
 .em-pdf-loader-error span { color: rgba(255,255,255,.72); font-size: .84rem; font-weight: 500; }
 
-/* EncisoMath v0.24.323 - navegación vertical y actividades */
-.em-subject-workspace {
-  display: grid;
-  grid-template-columns: 168px minmax(0, 1fr);
-  align-items: start;
-  gap: 14px;
-  padding: 12px;
-}
-.subject-screen .em-subject-top-tabs,
-.em-subject-top-tabs {
-  position: sticky !important;
-  top: 62px !important;
-  z-index: 24 !important;
-  width: 168px !important;
-  min-width: 0 !important;
-  overflow: visible !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-.em-subject-top-tabs-track {
-  width: 100% !important;
-  min-width: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 7px !important;
-  padding: 8px !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-  border-radius: 14px !important;
-  background: rgba(7,13,23,.88) !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,.14) !important;
-  backdrop-filter: blur(12px) saturate(125%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(125%) !important;
-}
-.subject-screen .em-subject-tab-btn,
-.em-subject-tab-btn {
-  width: 100% !important;
-  min-width: 0 !important;
-  min-height: 40px !important;
-  display: grid !important;
-  grid-template-columns: 24px minmax(0,1fr) !important;
-  align-items: center !important;
-  justify-content: stretch !important;
-  gap: 8px !important;
-  padding: 8px 10px !important;
-  text-align: left !important;
-  border-radius: 10px !important;
-  white-space: normal !important;
-}
-.em-subject-tab-btn > span:first-child { text-align: center; }
-.em-subject-tab-btn > span:last-child { overflow: hidden; text-overflow: ellipsis; }
-.em-subject-workspace > .tab-section {
-  min-width: 0;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
+/* EncisoMath v0.24.323 - actividades */
 .em-activity-card {
   position: relative;
   overflow: hidden;
@@ -28015,13 +27958,89 @@ html body #app .em-pdf-loading.is-error {
 .em-activity-rubric-summary > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; background: rgba(7,17,31,.045); font-size: .72rem; }
 
 @media (max-width: 760px) {
-  .em-subject-workspace { grid-template-columns: 112px minmax(0,1fr); gap: 8px; padding: 8px; }
-  .subject-screen .em-subject-top-tabs, .em-subject-top-tabs { width: 112px !important; top: 56px !important; }
-  .em-subject-top-tabs-track { padding: 6px !important; gap: 5px !important; border-radius: 12px !important; }
-  .subject-screen .em-subject-tab-btn, .em-subject-tab-btn { grid-template-columns: 20px minmax(0,1fr) !important; gap: 5px !important; padding: 7px 6px !important; min-height: 38px !important; font-size: .62rem !important; }
   .em-activity-date-grid { grid-template-columns: 1fr; }
   .em-activity-type-grid { grid-template-columns: 1fr 1fr; }
   .em-activity-modal-tabs button { font-size: .67rem; }
   .em-rubric-row { grid-template-columns: minmax(0,1fr) 76px 34px; }
   .em-activity-summary-grid { grid-template-columns: 1fr; }
+}
+
+
+/* EncisoMath v0.24.324 - selector desplegable de secciones */
+.em-subject-workspace {
+  display: block !important;
+  padding: 12px !important;
+}
+.em-subject-section-picker {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 12px;
+}
+.em-subject-section-select-wrap {
+  position: relative;
+  width: min(100%, 280px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 42%, rgba(255,255,255,.14));
+  border-radius: 12px;
+  background: rgba(7,13,23,.88);
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  color: #fff;
+  backdrop-filter: blur(12px) saturate(125%);
+  -webkit-backdrop-filter: blur(12px) saturate(125%);
+  cursor: pointer;
+}
+.em-subject-section-label {
+  color: rgba(255,255,255,.58);
+  font: 650 .62rem/1 Montserrat,Arial,sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+.em-subject-section-select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 26px 0 0;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: #fff;
+  font: 750 .78rem/1 Montserrat,Arial,sans-serif;
+  cursor: pointer;
+}
+.em-subject-section-select option {
+  background: #0b1423;
+  color: #fff;
+}
+.em-subject-section-chevron {
+  color: var(--em-current-subject-color, #1368ce);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-1px);
+}
+.em-subject-section-select-wrap:focus-within {
+  border-color: var(--em-current-subject-color, #1368ce);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 22%, transparent), 0 8px 24px rgba(0,0,0,.14);
+}
+.em-subject-workspace > .tab-section {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+@media (max-width: 760px) {
+  .em-subject-workspace { padding: 8px !important; }
+  .em-subject-section-picker { justify-content: stretch; margin-bottom: 9px; }
+  .em-subject-section-select-wrap { width: 100%; min-height: 42px; border-radius: 11px; }
+  .em-subject-section-select { font-size: .74rem; }
 }

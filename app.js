@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.323';
+  const APP_VERSION = '0.24.324';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1214,14 +1214,18 @@
           </div>
         </section>
         <div class="em-subject-workspace">
-          <nav class="em-subject-top-tabs" aria-label="Pestañas de asignatura">
-            <div class="em-subject-top-tabs-track">
-              <button class="em-subject-tab-btn ${tab === 'students' ? 'is-active active' : ''}" id="studentsTab" type="button" data-tab="students"><span aria-hidden="true">👥</span><span>Estudiantes</span></button>
-              <button class="em-subject-tab-btn ${tab === 'classes' ? 'is-active active' : ''}" id="classesTab" type="button" data-tab="classes"><span aria-hidden="true">📚</span><span>Clases</span></button>
-              <button class="em-subject-tab-btn ${tab === 'activities' ? 'is-active active' : ''}" id="activitiesTab" type="button" data-tab="activities"><span aria-hidden="true">📝</span><span>Actividades</span></button>
-              <button class="em-subject-tab-btn ${tab === 'rockstars' ? 'is-active active' : ''}" id="rockstarsTab" type="button" data-tab="rockstars"><span aria-hidden="true">🚀</span><span>Rockstars</span></button>
-              <button class="em-subject-tab-btn ${tab === 'quizzes' ? 'is-active active' : ''}" id="quizzesTab" type="button" data-tab="quizzes"><span aria-hidden="true">🎮</span><span>Quizzes</span></button>
-            </div>
+          <nav class="em-subject-section-picker" aria-label="Sección de la asignatura">
+            <label class="em-subject-section-select-wrap" for="subjectSectionSelect">
+              <span class="em-subject-section-label">Sección</span>
+              <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
+                <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
+                <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
+                <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
+                <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
+                <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
+              </select>
+              <span class="em-subject-section-chevron" aria-hidden="true">⌄</span>
+            </label>
           </nav>
           <section id="tabContent" class="section tab-section"></section>
         </div>
@@ -1231,11 +1235,9 @@
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
-      document.getElementById('studentsTab').addEventListener('click', () => setSubjectTab('students'));
-      document.getElementById('classesTab').addEventListener('click', () => setSubjectTab('classes'));
-      document.getElementById('activitiesTab').addEventListener('click', () => setSubjectTab('activities'));
-      document.getElementById('rockstarsTab').addEventListener('click', () => setSubjectTab('rockstars'));
-      document.getElementById('quizzesTab').addEventListener('click', () => setSubjectTab('quizzes'));
+      document.getElementById('subjectSectionSelect')?.addEventListener('change', (event) => {
+        setSubjectTab(event.target.value);
+      });
       emInitSubjectToolbar(document);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
@@ -1270,17 +1272,8 @@
     const content = document.getElementById('tabContent');
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     setActiveSubjectTabMeta(tab);
-    const updateSubjectTopTab = (id, isActive) => {
-      const button = document.getElementById(id);
-      if (!button) return;
-      button.classList.toggle('active', isActive);
-      button.classList.toggle('is-active', isActive);
-    };
-    updateSubjectTopTab('studentsTab', tab === 'students');
-    updateSubjectTopTab('classesTab', tab === 'classes');
-    updateSubjectTopTab('activitiesTab', tab === 'activities');
-    updateSubjectTopTab('rockstarsTab', tab === 'rockstars');
-    updateSubjectTopTab('quizzesTab', tab === 'quizzes');
+    const sectionSelect = document.getElementById('subjectSectionSelect');
+    if (sectionSelect && sectionSelect.value !== tab) sectionSelect.value = tab;
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'activities') renderActivitiesTab({ animate: true });
@@ -12109,7 +12102,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.323', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.324', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
