@@ -27807,3 +27807,43 @@ body.quiz-fullscreen-active
     animation-duration: 1ms !important;
   }
 }
+
+
+/* =========================================================
+   v0.24.313 - PAGE CURL DIAGONAL TIPO CODEPEN
+   Una sola página: la esquina se pliega en diagonal y revela
+   la página siguiente debajo. El dibujo se realiza en canvas.
+========================================================= */
+.em-pdf-curl-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: 4px 8px 8px 4px;
+  pointer-events: none;
+  user-select: none;
+  image-rendering: auto;
+  will-change: contents;
+}
+.em-pdf-curl-canvas[hidden] { display: none !important; }
+.em-pdf-page-shell.is-curl-turning {
+  isolation: isolate;
+  transform-style: flat;
+}
+.em-pdf-page-shell.is-curl-turning .em-pdf-page-canvas.is-under-page {
+  z-index: 1;
+  opacity: 1;
+  filter: brightness(.965) saturate(.985);
+  box-shadow: 8px 13px 30px rgba(0,0,0,.42), 3px 4px 0 rgba(255,255,255,.14);
+}
+.em-pdf-page-shell.is-curl-turning > .em-pdf-page-shine,
+.em-pdf-page-shell.is-curl-turning > .em-pdf-page-curl {
+  opacity: 0 !important;
+}
+/* El motor 0.24.313 sustituye por completo al giro 3D anterior. */
+.em-pdf-turn-sheet,
+.em-pdf-turn-floor-shadow { display: none !important; }

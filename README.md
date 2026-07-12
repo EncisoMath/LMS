@@ -132,3 +132,8 @@ Validación:
 - Añade rizo inicial de esquina, sombreado dinámico del pliegue y sombra proyectada.
 - Funciona al avanzar y retroceder, conservando zoom, pellizco, arrastre y teclado.
 - No requiere cambios en Supabase.
+
+
+## v0.24.313 - Page curl diagonal
+
+El lector PDF usa ahora un pliegue diagonal real de una sola hoja: la esquina superior se curva, la hoja se refleja sobre la línea del pliegue y deja visible la página siguiente. Conserva zoom, pellizco, arrastre, swipe, teclado y ajuste responsivo.

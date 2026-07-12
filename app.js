@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.312';
+  const APP_VERSION = '0.24.313';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10149,18 +10149,7 @@
                   <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
                   <canvas class="em-pdf-page-canvas is-active" id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
                   <canvas class="em-pdf-page-canvas" id="pdfPageCanvasNext" aria-hidden="true" hidden></canvas>
-                  <span class="em-pdf-turn-floor-shadow" id="pdfTurnFloorShadow" aria-hidden="true"></span>
-                  <div class="em-pdf-turn-sheet" id="pdfTurnSheet" aria-hidden="true" hidden>
-                    <div class="em-pdf-turn-face em-pdf-turn-front">
-                      <canvas class="em-pdf-turn-canvas" id="pdfTurnFrontCanvas"></canvas>
-                      <span class="em-pdf-turn-edge" aria-hidden="true"></span>
-                      <span class="em-pdf-turn-corner" aria-hidden="true"></span>
-                    </div>
-                    <div class="em-pdf-turn-face em-pdf-turn-back">
-                      <canvas class="em-pdf-turn-canvas" id="pdfTurnBackCanvas"></canvas>
-                      <span class="em-pdf-turn-backshade" aria-hidden="true"></span>
-                    </div>
-                  </div>
+                  <canvas class="em-pdf-curl-canvas" id="pdfCurlCanvas" aria-hidden="true" hidden></canvas>
                   <span class="em-pdf-page-shine" aria-hidden="true"></span>
                   <span class="em-pdf-page-curl" aria-hidden="true"></span>
                 </div>
@@ -10207,10 +10196,7 @@
     const shell = document.getElementById('pdfPageShell');
     let activeCanvas = document.getElementById('pdfPageCanvas');
     let standbyCanvas = document.getElementById('pdfPageCanvasNext');
-    const turnSheet = document.getElementById('pdfTurnSheet');
-    const turnFrontCanvas = document.getElementById('pdfTurnFrontCanvas');
-    const turnBackCanvas = document.getElementById('pdfTurnBackCanvas');
-    const turnFloorShadow = document.getElementById('pdfTurnFloorShadow');
+    const curlCanvas = document.getElementById('pdfCurlCanvas');
     const prev = document.getElementById('pdfPrevBtn');
     const next = document.getElementById('pdfNextBtn');
     const indicator = document.getElementById('pdfPageIndicator');
@@ -10218,7 +10204,7 @@
     const zoomIn = document.getElementById('pdfZoomInBtn');
     const zoomReset = document.getElementById('pdfZoomResetBtn');
     const zoomIndicator = document.getElementById('pdfZoomIndicator');
-    if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !turnSheet || !turnFrontCanvas || !turnBackCanvas || !turnFloorShadow || !prev || !next || !indicator) return;
+    if (!loading || !viewportHost || !shell || !activeCanvas || !standbyCanvas || !curlCanvas || !prev || !next || !indicator) return;
 
     loading.hidden = false;
     loading.style.removeProperty('display');
@@ -10234,9 +10220,11 @@
     const viewerSignal = viewerController.signal;
     let resizeTimer = 0;
     let renderTask = null;
+    let curlFrameRequest = 0;
     activePdfViewerCleanup = () => {
       viewerController.abort();
       clearTimeout(resizeTimer);
+      if (curlFrameRequest) cancelAnimationFrame(curlFrameRequest);
       try { renderTask?.cancel?.(); } catch (_) {}
       try { pdfDocument.destroy?.(); } catch (_) {}
     };
@@ -10258,12 +10246,13 @@
 
     const clampZoom = (value) => Math.max(.65, Math.min(4, Number(value) || 1));
     const updateControls = () => {
-      prev.disabled = pageNumber <= 1;
-      next.disabled = pageNumber >= pdfDocument.numPages;
+      prev.disabled = pageNumber <= 1 || rendering;
+      next.disabled = pageNumber >= pdfDocument.numPages || rendering;
       indicator.textContent = `Página ${pageNumber} de ${pdfDocument.numPages}`;
       if (zoomIndicator) zoomIndicator.textContent = `${Math.round(zoom * 100)}%`;
-      if (zoomOut) zoomOut.disabled = zoom <= .66;
-      if (zoomIn) zoomIn.disabled = zoom >= 3.99;
+      if (zoomOut) zoomOut.disabled = zoom <= .66 || rendering;
+      if (zoomIn) zoomIn.disabled = zoom >= 3.99 || rendering;
+      if (zoomReset) zoomReset.disabled = rendering;
     };
 
     const getFitScale = (baseViewport) => {
@@ -10300,36 +10289,234 @@
       return { cssWidth, cssHeight };
     };
 
-    const copyCanvas = (source, target) => {
-      const sourceWidth = Math.max(1, source.width || 1);
-      const sourceHeight = Math.max(1, source.height || 1);
-      target.width = sourceWidth;
-      target.height = sourceHeight;
-      target.style.width = source.style.width || `${sourceWidth}px`;
-      target.style.height = source.style.height || `${sourceHeight}px`;
+    const createCanvas = (width, height) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      return canvas;
+    };
+
+    const copyCanvasScaled = (source, width, height, mirror = false) => {
+      const target = createCanvas(width, height);
       const context = target.getContext('2d', { alpha: false });
-      context.save();
       context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, sourceWidth, sourceHeight);
-      context.drawImage(source, 0, 0, sourceWidth, sourceHeight);
+      context.fillRect(0, 0, width, height);
+      context.save();
+      if (mirror) {
+        context.translate(width, 0);
+        context.scale(-1, 1);
+      }
+      context.drawImage(source, 0, 0, width, height);
+      context.restore();
+      return target;
+    };
+
+    const clipHalfPlane = (constant, keepVisibleSide) => {
+      const epsilon = 1e-7;
+      const square = [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 1, y: 1 },
+        { x: 0, y: 1 }
+      ];
+      const value = (point) => point.x - point.y - constant;
+      const inside = (point) => keepVisibleSide ? value(point) <= epsilon : value(point) >= -epsilon;
+      const output = [];
+      for (let index = 0; index < square.length; index += 1) {
+        const current = square[index];
+        const following = square[(index + 1) % square.length];
+        const currentInside = inside(current);
+        const followingInside = inside(following);
+        if (currentInside) output.push(current);
+        if (currentInside !== followingInside) {
+          const currentValue = value(current);
+          const followingValue = value(following);
+          const denominator = currentValue - followingValue;
+          const ratio = Math.abs(denominator) < epsilon ? 0 : currentValue / denominator;
+          output.push({
+            x: current.x + (following.x - current.x) * ratio,
+            y: current.y + (following.y - current.y) * ratio
+          });
+        }
+      }
+      return output;
+    };
+
+    const traceNormalizedPolygon = (context, polygon, width, height) => {
+      if (!polygon.length) return false;
+      context.beginPath();
+      context.moveTo(polygon[0].x * width, polygon[0].y * height);
+      for (let index = 1; index < polygon.length; index += 1) {
+        context.lineTo(polygon[index].x * width, polygon[index].y * height);
+      }
+      context.closePath();
+      return true;
+    };
+
+    const reflectPoint = (point, constant) => ({
+      x: point.y + constant,
+      y: point.x - constant
+    });
+
+    const foldLinePoints = (constant) => {
+      if (constant >= 0) {
+        return [
+          { x: constant, y: 0 },
+          { x: 1, y: 1 - constant }
+        ];
+      }
+      return [
+        { x: 0, y: -constant },
+        { x: 1 + constant, y: 1 }
+      ];
+    };
+
+    const smoothStep = (edge0, edge1, value) => {
+      const t = Math.max(0, Math.min(1, (value - edge0) / Math.max(.0001, edge1 - edge0)));
+      return t * t * (3 - 2 * t);
+    };
+
+    const easePageCurl = (value) => value < .5
+      ? 4 * value * value * value
+      : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+    const drawCurlFrameLocal = (context, currentSource, nextSource, progress, width, height) => {
+      context.clearRect(0, 0, width, height);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+
+      const eased = easePageCurl(progress);
+      const constant = 1 - (2 * eased);
+      const visiblePolygon = clipHalfPlane(constant, true);
+      const foldedSourcePolygon = clipHalfPlane(constant, false);
+      const foldedOutputPolygon = foldedSourcePolygon.map((point) => reflectPoint(point, constant));
+
+      if (traceNormalizedPolygon(context, visiblePolygon, width, height)) {
+        context.save();
+        context.clip();
+        context.drawImage(currentSource, 0, 0, width, height);
+        context.restore();
+      }
+
+      if (foldedOutputPolygon.length >= 3) {
+        context.save();
+        traceNormalizedPolygon(context, foldedOutputPolygon, width, height);
+        context.clip();
+
+        const backMix = smoothStep(.37, .63, eased);
+        const drawReflected = (source, alpha) => {
+          if (alpha <= .001) return;
+          context.save();
+          context.globalAlpha = alpha;
+          context.transform(0, height / width, width / height, 0, width * constant, -height * constant);
+          context.drawImage(source, 0, 0, width, height);
+          context.restore();
+        };
+        drawReflected(currentSource, 1 - backMix);
+        drawReflected(nextSource, backMix);
+
+        context.globalCompositeOperation = 'source-atop';
+        const paperShade = context.createLinearGradient(0, 0, width, height);
+        paperShade.addColorStop(0, 'rgba(255,255,255,.34)');
+        paperShade.addColorStop(.42, 'rgba(246,241,230,.18)');
+        paperShade.addColorStop(.72, 'rgba(17,24,39,.12)');
+        paperShade.addColorStop(1, 'rgba(0,0,0,.28)');
+        context.fillStyle = paperShade;
+        context.fillRect(0, 0, width, height);
+        context.globalCompositeOperation = 'source-over';
+        context.restore();
+      }
+
+      const [lineStart, lineEnd] = foldLinePoints(constant);
+      const x1 = lineStart.x * width;
+      const y1 = lineStart.y * height;
+      const x2 = lineEnd.x * width;
+      const y2 = lineEnd.y * height;
+      const middleX = (x1 + x2) / 2;
+      const middleY = (y1 + y2) / 2;
+      const normalLength = Math.hypot(1 / width, -1 / height) || 1;
+      const normalX = (1 / width) / normalLength;
+      const normalY = (-1 / height) / normalLength;
+      const foldWidth = Math.max(18, Math.min(width, height) * (.035 + .045 * Math.sin(Math.PI * eased)));
+      const gradient = context.createLinearGradient(
+        middleX - normalX * foldWidth,
+        middleY - normalY * foldWidth,
+        middleX + normalX * foldWidth,
+        middleY + normalY * foldWidth
+      );
+      gradient.addColorStop(0, 'rgba(255,255,255,0)');
+      gradient.addColorStop(.28, 'rgba(255,255,255,.22)');
+      gradient.addColorStop(.44, 'rgba(255,255,255,.62)');
+      gradient.addColorStop(.51, 'rgba(14,20,31,.34)');
+      gradient.addColorStop(.7, 'rgba(0,0,0,.16)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      context.save();
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, width, height);
+      context.restore();
+
+      context.save();
+      context.beginPath();
+      context.moveTo(x1, y1);
+      context.lineTo(x2, y2);
+      context.strokeStyle = `rgba(18,24,38,${.08 + .22 * Math.sin(Math.PI * eased)})`;
+      context.lineWidth = Math.max(1, Math.min(width, height) * .0035);
+      context.shadowColor = 'rgba(0,0,0,.38)';
+      context.shadowBlur = Math.max(4, Math.min(width, height) * .02);
+      context.stroke();
       context.restore();
     };
 
-    const waitForPageTurn = () => new Promise((resolve) => {
-      let finished = false;
-      const done = () => {
-        if (finished) return;
-        finished = true;
-        turnSheet.removeEventListener('animationend', onAnimationEnd);
-        window.clearTimeout(fallbackTimer);
+    const animatePageCurl = (direction) => new Promise((resolve) => {
+      const cssWidthValue = Math.max(1, Number.parseFloat(standbyCanvas.style.width || activeCanvas.style.width) || shell.clientWidth || 1);
+      const cssHeightValue = Math.max(1, Number.parseFloat(standbyCanvas.style.height || activeCanvas.style.height) || shell.clientHeight || 1);
+      const animationPixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
+      const width = Math.max(1, Math.round(cssWidthValue * animationPixelRatio));
+      const height = Math.max(1, Math.round(cssHeightValue * animationPixelRatio));
+      const cssWidth = `${cssWidthValue}px`;
+      const cssHeight = `${cssHeightValue}px`;
+      curlCanvas.width = width;
+      curlCanvas.height = height;
+      curlCanvas.style.width = cssWidth;
+      curlCanvas.style.height = cssHeight;
+      curlCanvas.hidden = false;
+
+      const mirror = direction === 'prev';
+      const currentSource = copyCanvasScaled(activeCanvas, width, height, mirror);
+      const nextSource = copyCanvasScaled(standbyCanvas, width, height, mirror);
+      const frameCanvas = createCanvas(width, height);
+      const frameContext = frameCanvas.getContext('2d', { alpha: true });
+      const outputContext = curlCanvas.getContext('2d', { alpha: true });
+      const duration = window.matchMedia('(max-width: 520px)').matches ? 940 : 1020;
+      const startTime = performance.now();
+
+      const drawOutput = (progress) => {
+        drawCurlFrameLocal(frameContext, currentSource, nextSource, progress, width, height);
+        outputContext.clearRect(0, 0, width, height);
+        outputContext.save();
+        if (mirror) {
+          outputContext.translate(width, 0);
+          outputContext.scale(-1, 1);
+        }
+        outputContext.drawImage(frameCanvas, 0, 0, width, height);
+        outputContext.restore();
+      };
+
+      drawOutput(0);
+      activeCanvas.style.visibility = 'hidden';
+      shell.classList.add('is-curl-turning', direction === 'next' ? 'is-curl-next' : 'is-curl-prev');
+
+      const tick = (now) => {
+        const rawProgress = Math.max(0, Math.min(1, (now - startTime) / duration));
+        drawOutput(rawProgress);
+        if (rawProgress < 1 && !viewerSignal.aborted) {
+          curlFrameRequest = requestAnimationFrame(tick);
+          return;
+        }
+        curlFrameRequest = 0;
         resolve();
       };
-      const onAnimationEnd = (event) => {
-        if (event.target !== turnSheet) return;
-        done();
-      };
-      const fallbackTimer = window.setTimeout(done, 900);
-      turnSheet.addEventListener('animationend', onAnimationEnd);
+      curlFrameRequest = requestAnimationFrame(tick);
     });
 
     const finishCanvasSwap = () => {
@@ -10347,10 +10534,9 @@
       activeCanvas = standbyCanvas;
       standbyCanvas = oldCanvas;
 
-      turnSheet.hidden = true;
-      turnSheet.className = 'em-pdf-turn-sheet';
-      turnFloorShadow.className = 'em-pdf-turn-floor-shadow';
-      shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
+      curlCanvas.hidden = true;
+      curlCanvas.getContext('2d')?.clearRect(0, 0, curlCanvas.width, curlCanvas.height);
+      shell.classList.remove('is-curl-turning', 'is-curl-next', 'is-curl-prev');
     };
 
     const renderPage = async (number, direction = 'none', options = {}) => {
@@ -10359,6 +10545,7 @@
         return;
       }
       rendering = true;
+      updateControls();
       const targetZoom = clampZoom(options.zoom ?? zoom);
       try {
         if (direction === 'none') {
@@ -10370,38 +10557,23 @@
           standbyCanvas.hidden = true;
           standbyCanvas.className = 'em-pdf-page-canvas';
           await paintPage(number, standbyCanvas, targetZoom);
-
-          copyCanvas(activeCanvas, turnFrontCanvas);
-          copyCanvas(standbyCanvas, turnBackCanvas);
-
           standbyCanvas.hidden = false;
           standbyCanvas.classList.add('is-under-page');
           standbyCanvas.setAttribute('aria-hidden', 'true');
-          activeCanvas.style.visibility = 'hidden';
-
-          turnSheet.hidden = false;
-          turnSheet.className = `em-pdf-turn-sheet ${direction === 'next' ? 'is-turning-next' : 'is-turning-prev'}`;
-          turnFloorShadow.className = `em-pdf-turn-floor-shadow ${direction === 'next' ? 'is-shadow-next' : 'is-shadow-prev'}`;
-          shell.classList.remove('is-page-turning-next', 'is-page-turning-prev');
-          void turnSheet.offsetWidth;
-          shell.classList.add(direction === 'next' ? 'is-page-turning-next' : 'is-page-turning-prev');
-          turnSheet.classList.add('is-animating');
-          turnFloorShadow.classList.add('is-animating');
-
-          await waitForPageTurn();
+          await animatePageCurl(direction);
           finishCanvasSwap();
         }
         pageNumber = number;
         zoom = targetZoom;
         loading.hidden = true;
         loading.style.setProperty('display', 'none', 'important');
-        updateControls();
         if (zoom <= 1.01) {
           viewportHost.scrollLeft = 0;
           viewportHost.scrollTop = 0;
         }
       } finally {
         rendering = false;
+        updateControls();
         if (pendingRender) {
           const queued = pendingRender;
           pendingRender = null;
@@ -10411,12 +10583,14 @@
     };
 
     const go = (delta) => {
+      if (rendering) return;
       const target = Math.max(1, Math.min(pdfDocument.numPages, pageNumber + delta));
       if (target === pageNumber) return;
       renderPage(target, delta > 0 ? 'next' : 'prev').catch(showPdfViewerError);
     };
 
     const setZoom = (nextZoom) => {
+      if (rendering) return;
       const target = clampZoom(nextZoom);
       if (Math.abs(target - zoom) < .01) return;
       const centerX = viewportHost.scrollLeft + viewportHost.clientWidth / 2;
@@ -10435,6 +10609,7 @@
     zoomReset?.addEventListener('click', () => setZoom(1), { signal: viewerSignal });
 
     viewportHost.addEventListener('pointerdown', (event) => {
+      if (rendering) return;
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       viewportHost.setPointerCapture?.(event.pointerId);
       if (activePointers.size === 1) {
@@ -10452,7 +10627,7 @@
     }, { signal: viewerSignal });
 
     viewportHost.addEventListener('pointermove', (event) => {
-      if (!activePointers.has(event.pointerId)) return;
+      if (!activePointers.has(event.pointerId) || rendering) return;
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (activePointers.size === 2 && pinchStartDistance > 0) {
         event.preventDefault();
@@ -10485,7 +10660,7 @@
         setZoom(target);
         return;
       }
-      if (activePointers.size === 0 && zoom <= 1.01 && point && !dragged) {
+      if (activePointers.size === 0 && zoom <= 1.01 && point && !dragged && !rendering) {
         const dx = point.x - touchStartX;
         const dy = point.y - touchStartY;
         if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.2) go(dx < 0 ? 1 : -1);
@@ -11604,7 +11779,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.312', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.313', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
