@@ -88,3 +88,12 @@ Validación:
 - Se añadió una tuerca junto a `Cerrar sesión` para configurar las fechas de inicio de los cuatro periodos.
 - Al iniciar sesión, EncisoMath calcula automáticamente el periodo vigente usando la fecha del dispositivo.
 - Las fechas se guardan en `user_preferences` de Supabase y también en el respaldo local del navegador.
+
+## v0.24.308
+
+- Corregida la reaparición de clases y quizzes antiguos desde Supabase.
+- La aplicación filtra los IDs demo antes de mostrarlos.
+- Se intenta retirar automáticamente el contenido demo al iniciar sesión docente.
+- Se limpian referencias antiguas del quiz demo en `localStorage`.
+- Incluye `SUPABASE_MIGRATION_v0.24.308.sql` para vaciar por completo el contenido actual de clases y quizzes sin tocar datos académicos.
+

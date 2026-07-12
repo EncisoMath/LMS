@@ -9,6 +9,60 @@
   let studentCodeToDbId = new Map();
   let studentDbIdToCode = new Map();
 
+  const LEGACY_DEMO_LESSON_IDS = [
+    'bar-charts',
+    'frequency-tables',
+    'central-tendency',
+    'probability-intro',
+    'final-project',
+    'boxplot',
+    'dispersion-measures'
+  ];
+  const LEGACY_DEMO_QUIZ_IDS = ['quiz-demo-estadistica-p1'];
+  const LEGACY_DEMO_CLEANUP_KEY = 'encisomath:legacyDemoCleanup:v0.24.308';
+
+  function nestedId(row, key) {
+    const value = row?.[key];
+    const nested = Array.isArray(value) ? value[0] : value;
+    return String(nested?.id || '');
+  }
+
+  async function purgeLegacyDemoContent(assignmentIds = []) {
+    try {
+      if (localStorage.getItem(LEGACY_DEMO_CLEANUP_KEY) === 'done') return true;
+    } catch (_) {}
+
+    const supabaseClient = getClient();
+    const errors = [];
+    const collect = (result, label) => {
+      if (result?.error) errors.push(`${label}: ${result.error.message || 'error desconocido'}`);
+    };
+
+    if (assignmentIds.length) {
+      collect(await supabaseClient
+        .from('assignment_lessons')
+        .delete()
+        .in('assignment_id', assignmentIds)
+        .in('lesson_id', LEGACY_DEMO_LESSON_IDS), 'assignment_lessons');
+
+      collect(await supabaseClient
+        .from('quiz_assignments')
+        .delete()
+        .in('assignment_id', assignmentIds)
+        .in('quiz_id', LEGACY_DEMO_QUIZ_IDS), 'quiz_assignments');
+    }
+
+    collect(await supabaseClient.from('lessons').delete().in('id', LEGACY_DEMO_LESSON_IDS), 'lessons');
+    collect(await supabaseClient.from('quizzes').delete().in('id', LEGACY_DEMO_QUIZ_IDS), 'quizzes');
+
+    if (errors.length) {
+      console.warn('No se pudo completar la limpieza automática del contenido demo:', errors);
+      return false;
+    }
+    try { localStorage.setItem(LEGACY_DEMO_CLEANUP_KEY, 'done'); } catch (_) {}
+    return true;
+  }
+
   function assertConfigured() {
     if (!config.url || !config.publishableKey) {
       throw new Error('Falta configurar Supabase en supabase-config.js.');
@@ -262,6 +316,8 @@
     const assignmentIds = assignments.map((item) => item.id);
     const groupIds = [...new Set(assignments.map((item) => item.groupId).filter(Boolean))];
 
+    await purgeLegacyDemoContent(assignmentIds);
+
     studentCodeToDbId = new Map();
     studentDbIdToCode = new Map();
 
@@ -306,8 +362,8 @@
       if (quizzesResult.error) throw normalizeError(quizzesResult.error, 'No se pudieron cargar los quizzes.');
       if (attendanceResult.error) throw normalizeError(attendanceResult.error, 'No se pudo cargar la asistencia.');
       if (rockstarResult.error) throw normalizeError(rockstarResult.error, 'No se pudieron cargar los puntos Rockstar.');
-      lessonRows = lessonsResult.data || [];
-      quizAssignmentRows = quizzesResult.data || [];
+      lessonRows = (lessonsResult.data || []).filter((row) => !LEGACY_DEMO_LESSON_IDS.includes(nestedId(row, 'lesson')));
+      quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
       attendanceRows = attendanceResult.data || [];
       rockstarRows = rockstarResult.data || [];
     }

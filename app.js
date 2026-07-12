@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.307';
+  const APP_VERSION = '0.24.308';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -11,6 +11,42 @@
     rockstars: './data/rockstars.json',
     quizzes: './data/quizzes.json'
   };
+
+  const LEGACY_DEMO_LESSON_IDS = new Set([
+    'bar-charts',
+    'frequency-tables',
+    'central-tendency',
+    'probability-intro',
+    'final-project',
+    'boxplot',
+    'dispersion-measures'
+  ]);
+  const LEGACY_DEMO_QUIZ_IDS = new Set(['quiz-demo-estadistica-p1']);
+
+  function removeLegacyDemoContent(data = {}) {
+    const safe = { ...data };
+    const classes = Array.isArray(safe.classes) ? safe.classes : [];
+    const quizzesSource = Array.isArray(safe.quizzes)
+      ? safe.quizzes
+      : (Array.isArray(safe.quizzes?.quizzes) ? safe.quizzes.quizzes : []);
+    safe.classes = classes.filter((item) => !LEGACY_DEMO_LESSON_IDS.has(String(item?.id || '')));
+    safe.quizzes = quizzesSource.filter((item) => !LEGACY_DEMO_QUIZ_IDS.has(String(item?.id || '')));
+    return safe;
+  }
+
+  function clearLegacyDemoBrowserState() {
+    try {
+      const stored = JSON.parse(localStorage.getItem('encisomath:localQuizzes') || '[]');
+      if (Array.isArray(stored)) {
+        const cleaned = stored.filter((quiz) => !LEGACY_DEMO_QUIZ_IDS.has(String(quiz?.id || '')));
+        if (cleaned.length !== stored.length) {
+          localStorage.setItem('encisomath:localQuizzes', JSON.stringify(cleaned));
+        }
+      }
+      const activeQuizId = String(localStorage.getItem('encisomath:quizActiveId') || '');
+      if (LEGACY_DEMO_QUIZ_IDS.has(activeQuizId)) localStorage.removeItem('encisomath:quizActiveId');
+    } catch (_) {}
+  }
 
   const DEFAULT_PREFS = {
     accent: '#1976D2',
@@ -728,14 +764,16 @@
     mount(renderLoadingHTML('Sincronizando EncisoMath con Supabase...'), null, { instant: true });
     try {
       const cloudData = await cloudAPI().loadApplicationData();
+      const cleanCloudData = removeLegacyDemoContent(cloudData.data || {});
+      clearLegacyDemoBrowserState();
       state.cloud.enabled = true;
       state.cloud.loading = false;
       state.cloud.attendance = cloudData.attendance || {};
       state.user = cloudData.user;
       state.data = {
         ...state.data,
-        ...cloudData.data,
-        users: cloudData.data?.users || [cloudData.user]
+        ...cleanCloudData,
+        users: cleanCloudData.users || [cloudData.user]
       };
       if (cloudData.preferences && typeof cloudData.preferences === 'object') {
         state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
