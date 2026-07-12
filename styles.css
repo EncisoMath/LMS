@@ -26252,3 +26252,70 @@ body.quiz-fullscreen-active
   margin-right: 0 !important;
   box-sizing: border-box !important;
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.24.304 - RESTAURACION HERO ANIMATIONS
+   Restaura exclusivamente el movimiento de los heroes de
+   CLASES, ROCKSTARS y QUIZZES tras la integracion Supabase.
+========================================================= */
+
+/* ROCKSTARS: estrellas, llama y pulso del titulo. */
+.em-rs-star {
+  animation: emRsStarMove var(--em-rs-star-duration) var(--em-rs-star-delay) linear infinite !important;
+  animation-play-state: running !important;
+}
+.em-rs-flame {
+  animation: emRsFlameSway 0.72s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-rs-flame::before {
+  animation: emRsFlameOuter 0.72s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-rs-flame::after {
+  animation: emRsFlameInner 0.72s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-rs-title {
+  animation: emRsWordSoftPop 4.8s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+
+/* QUIZZES: figuras flotantes, respiracion, intercambio y titulo. */
+.em-qz-shape {
+  animation: emQzShapeFloat var(--em-qz-shape-duration) var(--em-qz-shape-delay) ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-qz-answerTile {
+  transition: transform 0.58s cubic-bezier(.18, 1.42, .28, 1), border-radius 0.28s ease !important;
+}
+.em-qz-answerTileInner {
+  animation: emQzTileBreath 3.4s var(--em-qz-tile-delay) ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-qz-answerTile.is-moving .em-qz-answerTileInner {
+  animation: emQzTileSwapPop 0.58s cubic-bezier(.18, 1.42, .28, 1) both !important;
+}
+.em-qz-title {
+  animation: emQzWordSoftPop 4.8s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+
+/* CLASES: figuras flotantes, intercambio de tarjetas y titulo. */
+.em-cl-shape {
+  animation: emClShapeFloat var(--em-cl-shape-duration) var(--em-cl-shape-delay) ease-in-out infinite !important;
+  animation-play-state: running !important;
+}
+.em-cl-lessonCard {
+  transition: transform 0.64s cubic-bezier(.18, 1.42, .28, 1), border-radius 0.28s ease !important;
+}
+.em-cl-lessonCard.is-moving .em-cl-lessonLabel,
+.em-cl-lessonCard.is-moving .em-cl-lessonLines,
+.em-cl-lessonCard.is-moving .em-cl-lessonIcon {
+  animation: emClLessonPop 0.62s cubic-bezier(.18, 1.42, .28, 1) both !important;
+}
+.em-cl-title {
+  animation: emClWordSoftPop 4.8s ease-in-out infinite !important;
+  animation-play-state: running !important;
+}

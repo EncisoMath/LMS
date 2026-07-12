@@ -22,6 +22,12 @@ Versión/cache busting actualizado a 0.24.302.
 
 ---
 
+## v0.24.304 - Restauración de animaciones de héroes
+
+- Restauradas las animaciones originales de los héroes de **CLASES**, **ROCKSTARS** y **QUIZZES**.
+- Las preferencias cargadas desde Supabase ya no pueden congelar esos tres héroes.
+- No se modificó la integración de autenticación, datos, asistencia, Rockstars ni quizzes.
+
 ## v0.24.303 - Integración inicial con Supabase
 
 Base: v0.24.302.

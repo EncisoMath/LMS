@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.303';
+  const APP_VERSION = '0.24.304';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -18,7 +18,7 @@
     effectsMotion: true,
     effectsMesh: true,
     visualOptimized: true,
-    heroAnimations: false,
+    heroAnimations: true,
     tabTransitions: false,
     glassEffects: false,
     quizOptionEffects: true,
@@ -499,6 +499,17 @@
   // v0.24.124: la transición entre pestañas queda desactivada de forma fija;
   // los demás efectos respetan la configuración normal del usuario.
   state.prefs.tabTransitions = false;
+
+  // v0.24.304: restaura de forma explícita las animaciones de los heroes
+  // CLASES, ROCKSTARS y QUIZZES. La primera carga de preferencias de Supabase
+  // no debe volver a congelarlas con un valor heredado o ausente.
+  const HERO_ANIMATIONS_RESTORE_KEY = 'encisomath:heroAnimationsRestored:v0.24.304';
+  state.prefs.heroAnimations = true;
+  if (!localStorage.getItem(HERO_ANIMATIONS_RESTORE_KEY)) {
+    localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+    localStorage.setItem(HERO_ANIMATIONS_RESTORE_KEY, '1');
+  }
+
   if (!localStorage.getItem(PERF_DEFAULTS_111_KEY)) {
     localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
     localStorage.setItem(PERF_DEFAULTS_111_KEY, '1');
@@ -570,7 +581,7 @@
         users: cloudData.data?.users || [cloudData.user]
       };
       if (cloudData.preferences && typeof cloudData.preferences === 'object') {
-        state.prefs = { ...state.prefs, ...cloudData.preferences, tabTransitions: false };
+        state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
         localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
         applyPreferences();
       }
@@ -10333,7 +10344,7 @@
     root.dataset.effectsMotion = prefEnabled('effectsMotion') ? 'on' : 'off';
     root.dataset.effectsMesh = prefEnabled('effectsMesh') ? 'on' : 'off';
     root.dataset.visualOptimized = prefEnabled('visualOptimized') ? 'on' : 'off';
-    root.dataset.heroAnimations = prefEnabled('heroAnimations') ? 'on' : 'off';
+    root.dataset.heroAnimations = 'on';
     root.dataset.tabTransitions = prefEnabled('tabTransitions') ? 'on' : 'off';
     root.dataset.glassEffects = prefEnabled('glassEffects') ? 'on' : 'off';
     root.dataset.quizOptionEffects = prefEnabled('quizOptionEffects') ? 'on' : 'off';
@@ -10487,7 +10498,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.303', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.304', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
