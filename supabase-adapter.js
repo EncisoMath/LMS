@@ -794,7 +794,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.311', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.314', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -840,7 +840,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.311',
+          appVersion: '0.24.314',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

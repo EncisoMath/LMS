@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.313
+# EncisoMath LMS v0.24.314
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, asistencia, Rockstars y quizzes.
 
@@ -11,7 +11,7 @@ Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para
 - Módulos de Estudiantes, Clases, Actividades, Rockstars y Quizzes.
 - Creación de clases PDF por curso o por grado.
 - Portada personalizada o generada desde la primera página del PDF.
-- Visor PDF de una página con page curl diagonal, navegación táctil, teclado, zoom y pellizco.
+- Visor PDF de una página con transición horizontal izquierda/derecha, contenido visible durante el cambio, navegación táctil, teclado, zoom y pellizco.
 - Vistas Cuadrícula y Lista en Clases, Actividades y Quizzes.
 - PWA preparada para GitHub Pages.
 
