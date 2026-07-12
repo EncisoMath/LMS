@@ -27389,9 +27389,9 @@ body.quiz-fullscreen-active
 .em-pdf-page-pill {
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 9px;
-  background: rgba(4,11,21,.62);
+  background: rgba(4,11,21,.40);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  box-shadow: 0 5px 16px rgba(0,0,0,.12);
   backdrop-filter: blur(12px) saturate(125%);
   -webkit-backdrop-filter: blur(12px) saturate(125%);
 }
@@ -27435,7 +27435,7 @@ body.quiz-fullscreen-active
   place-items: center;
   padding: 0 12px;
   color: #fff;
-  font: 900 .76rem/1 "Montserrat", Arial, sans-serif;
+  font: 500 .76rem/1 "Montserrat", Arial, sans-serif;
   white-space: nowrap;
 }
 .em-pdf-nav {
@@ -27506,7 +27506,7 @@ body.quiz-fullscreen-active
 
 
 /* =========================================================
-   ENCISOMATH v0.24.318 - VISOR PDF REALMENTE A PANTALLA COMPLETA
+   ENCISOMATH v0.24.319 - VISOR PDF REALMENTE A PANTALLA COMPLETA
    Anula el padding historico de .class-screen que dejaba una franja
    superior y desplazaba los controles inferiores fuera del viewport.
 ========================================================= */
