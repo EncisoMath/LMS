@@ -27764,68 +27764,199 @@ html body #app .em-pdf-loading.is-error {
 .em-pdf-loader-error strong { font-weight: 800; }
 .em-pdf-loader-error span { color: rgba(255,255,255,.72); font-size: .84rem; font-weight: 500; }
 
-/* EncisoMath v0.24.323 - actividades */
+/* EncisoMath v0.24.329 - tarjetas oscuras y progreso de actividades */
 .em-activity-card {
   position: relative;
   overflow: hidden;
-  min-height: 172px;
-  padding: 18px;
-  border: 1px solid rgba(255,255,255,.13);
-  border-radius: 16px;
-  background: linear-gradient(145deg, rgba(255,255,255,.97), rgba(245,247,251,.95));
-  color: #07111f;
-  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+  min-height: 258px;
+  padding: 17px 18px 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(155deg, #151b26 0%, #0a0e15 70%, #070a0f 100%);
+  background-size: 22px 22px, 22px 22px, auto;
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(0,0,0,.24);
   cursor: pointer;
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
 }
 .em-activity-card::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 7px;
+  inset: 0 0 auto;
+  height: 4px;
   background: var(--em-current-subject-color, #e21b3c);
 }
-.em-activity-card-mark {
+.em-activity-card::after {
+  content: '';
   position: absolute;
-  right: 14px;
-  top: 12px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: #fff;
-  background: var(--em-current-subject-color, #e21b3c);
-  font-weight: 900;
-  transform: rotate(4deg);
+  width: 130px;
+  height: 130px;
+  right: -68px;
+  top: -72px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #e21b3c) 46%, transparent);
+  transform: rotate(28deg);
+  opacity: .55;
 }
-.em-activity-card-copy { padding-right: 34px; }
+.em-activity-card:hover,
+.em-activity-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #e21b3c) 58%, rgba(255,255,255,.16));
+  box-shadow: 0 18px 38px rgba(0,0,0,.32);
+  outline: none;
+}
+.em-activity-card-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
 .em-activity-card-period {
-  display: inline-block;
-  margin-bottom: 8px;
   color: var(--em-current-subject-color, #e21b3c);
-  font: 800 .66rem/1 Montserrat,Arial,sans-serif;
+  font: 800 .63rem/1 Montserrat,Arial,sans-serif;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .1em;
 }
-.em-activity-card h3 { margin: 0 0 7px; font-size: 1rem; line-height: 1.2; }
-.em-activity-card p { margin: 0 0 12px; color: #4c5768; font-size: .78rem; }
-.em-activity-card-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-.em-activity-card-meta span {
-  padding: 5px 8px;
-  border-radius: 999px;
-  background: rgba(7,17,31,.07);
-  color: #293448;
-  font-size: .65rem;
+.em-activity-card-percent {
+  min-width: 42px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #e21b3c) 62%, transparent);
+  border-radius: 6px;
+  color: #fff;
+  background: color-mix(in srgb, var(--em-current-subject-color, #e21b3c) 24%, rgba(7,10,15,.86));
+  font: 700 .7rem/1 Montserrat,Arial,sans-serif;
+  text-align: center;
+}
+.em-activity-card-copy { position: relative; z-index: 1; }
+.em-activity-card h3 {
+  margin: 0 0 5px;
+  color: #fff;
+  font-size: 1.03rem;
+  line-height: 1.22;
+  letter-spacing: -.015em;
+}
+.em-activity-card-topic {
+  margin: 0 0 15px;
+  color: rgba(255,255,255,.56);
+  font-size: .73rem;
+  font-weight: 550;
+}
+.em-activity-card-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+.em-activity-card-dates > span {
+  min-width: 0;
+  padding: 9px 10px;
+  border-left: 2px solid var(--em-current-subject-color, #e21b3c);
+  background: rgba(255,255,255,.045);
+}
+.em-activity-card-dates small,
+.em-activity-card-dates strong { display: block; }
+.em-activity-card-dates small {
+  margin-bottom: 3px;
+  color: rgba(255,255,255,.46);
+  font-size: .58rem;
   font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.em-activity-card-dates strong {
+  overflow: hidden;
+  color: rgba(255,255,255,.9);
+  font-size: .68rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-activity-card-progress { margin-bottom: 14px; }
+.em-activity-card-progress > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  color: rgba(255,255,255,.62);
+  font-size: .63rem;
+  font-weight: 600;
+}
+.em-activity-card-progress > div strong { color: #fff; font-weight: 700; }
+.em-activity-card-progress > i {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255,255,255,.11);
+}
+.em-activity-card-progress > i > b {
+  display: block;
+  width: var(--activity-progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--em-current-subject-color, #e21b3c);
+  transition: width .35s ease;
+}
+.em-activity-card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(255,255,255,.09);
+  padding-top: 12px;
+}
+.em-activity-card-stats > span {
+  min-width: 0;
+  text-align: center;
+}
+.em-activity-card-stats > span + span { border-left: 1px solid rgba(255,255,255,.09); }
+.em-activity-card-stats b,
+.em-activity-card-stats small { display: block; }
+.em-activity-card-stats b { color: #fff; font: 750 .88rem/1 Montserrat,Arial,sans-serif; }
+.em-activity-card-stats small {
+  margin-top: 4px;
+  color: rgba(255,255,255,.45);
+  font-size: .56rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .045em;
 }
 .em-content-list.is-list .em-activity-card {
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr;
-  padding: 13px 16px;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(310px, 1.8fr);
+  gap: 18px;
+  align-items: center;
+  padding: 15px 18px;
 }
-.em-content-list.is-list .em-activity-card-copy { padding-right: 42px; }
-.em-content-list.is-list .em-activity-card h3 { font-size: .9rem; }
+.em-content-list.is-list .em-activity-card-head { margin: 0; align-self: start; }
+.em-content-list.is-list .em-activity-card-copy {
+  display: grid;
+  grid-template-columns: minmax(150px, .9fr) minmax(210px, 1.15fr) minmax(160px, .95fr);
+  gap: 15px;
+  align-items: center;
+}
+.em-content-list.is-list .em-activity-card h3 { margin-bottom: 4px; font-size: .92rem; }
+.em-content-list.is-list .em-activity-card-topic { margin: 0; }
+.em-content-list.is-list .em-activity-card-dates,
+.em-content-list.is-list .em-activity-card-progress { margin: 0; }
+.em-content-list.is-list .em-activity-card-stats { padding-top: 0; border-top: 0; }
+.em-activity-field-hint {
+  margin: 6px 0 0;
+  color: rgba(255,255,255,.5);
+  font-size: .68rem;
+  line-height: 1.45;
+}
+.field-label small { color: rgba(255,255,255,.48); font-weight: 500; }
+@media (max-width: 760px) {
+  .em-content-list.is-list .em-activity-card { grid-template-columns: 1fr; gap: 10px; }
+  .em-content-list.is-list .em-activity-card-copy { grid-template-columns: 1fr; gap: 11px; }
+  .em-activity-card { min-height: 244px; }
+}
 
 .em-activity-create-modal {
   width: min(760px, calc(100vw - 24px));
@@ -28386,7 +28517,7 @@ html body .modal-layer .modal-card {
 
 /* v0.24.327 - pestañas de actividad en flujo normal, sin superposición */
 
-/* v0.24.328 - detalle, calificacion y seguimiento de actividades */
+/* v0.24.329 - actividades independientes y tarjetas de avance */
 .em-activity-detail-screen {
   min-height: 100dvh;
   background: #f5f7fb;

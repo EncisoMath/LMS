@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.328';
+  const APP_VERSION = '0.24.329';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -9789,21 +9789,59 @@
     return (state.data.classes || []).find((item) => String(item.id) === String(activity.lessonId || '')) || null;
   }
 
+  function activityProgressForCurrentAssignment(activity) {
+    const assignmentId = String(state.assignment?.id || '');
+    const stored = activity?.progressByAssignment?.[assignmentId] || {};
+    const fallbackTotal = state.assignment ? getStudentsForAssignment(state.assignment).length : 0;
+    const total = Math.max(0, Number(stored.total ?? fallbackTotal) || 0);
+    const delivered = Math.max(0, Math.min(total || Number.MAX_SAFE_INTEGER, Number(stored.delivered || 0)));
+    const graded = Math.max(0, Math.min(total || Number.MAX_SAFE_INTEGER, Number(stored.graded || 0)));
+    const percentage = total ? Math.round((graded / total) * 100) : 0;
+    return { total, delivered, graded, percentage, pending: Math.max(0, total - graded) };
+  }
+
+  function updateActivityProgressFromGradebook(activity, rows = []) {
+    if (!activity || !state.assignment) return;
+    const assignmentId = String(state.assignment.id || '');
+    const submittedStatuses = new Set(['delivered', 'late', 'incomplete', 'resubmit']);
+    const progress = (rows || []).reduce((acc, row) => {
+      const file = row?.submissionFile && typeof row.submissionFile === 'object' ? row.submissionFile : {};
+      const graded = Boolean(row?.gradedAt);
+      const delivered = graded || Boolean(file.path || file.url || file.name) || submittedStatuses.has(String(row?.latestDeliveryStatus || ''));
+      acc.total += 1;
+      if (delivered) acc.delivered += 1;
+      if (graded) acc.graded += 1;
+      return acc;
+    }, { total: 0, delivered: 0, graded: 0 });
+    activity.progressByAssignment = { ...(activity.progressByAssignment || {}), [assignmentId]: progress };
+  }
+
   function activityCardHTML(activity, index = 0) {
     const lesson = activityRelatedLesson(activity);
-    const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha máxima';
-    const rubricCount = Array.isArray(activity.rubric) ? activity.rubric.length : 0;
+    const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
+    const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
+    const progress = activityProgressForCurrentAssignment(activity);
     return `
-      <article class="em-activity-card" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index}">
-        <div class="em-activity-card-mark" aria-hidden="true">✓</div>
+      <article class="em-activity-card" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress.percentage}%">
+        <div class="em-activity-card-head">
+          <span class="em-activity-card-period">Actividad · Periodo ${Number(activity.period || 1)}</span>
+          <span class="em-activity-card-percent">${progress.percentage}%</span>
+        </div>
         <div class="em-activity-card-copy">
-          <span class="em-activity-card-period">Periodo ${Number(activity.period || 1)}</span>
           <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
-          <p>${lesson ? `Tema: ${escapeHTML(lesson.title || 'Clase')}` : 'Tema no disponible'}</p>
-          <div class="em-activity-card-meta">
-            <span>${escapeHTML(activityTypeLabel(activity.contentType))}</span>
-            <span>Entrega: ${escapeHTML(due)}</span>
-            <span>${rubricCount} criterio${rubricCount === 1 ? '' : 's'}</span>
+          <p class="em-activity-card-topic">${lesson ? escapeHTML(lesson.title || 'Clase') : 'Actividad independiente'}</p>
+          <div class="em-activity-card-dates">
+            <span><small>Asignada</small><strong>${escapeHTML(start)}</strong></span>
+            <span><small>Finaliza</small><strong>${escapeHTML(due)}</strong></span>
+          </div>
+          <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
+            <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
+            <i><b></b></i>
+          </div>
+          <div class="em-activity-card-stats">
+            <span><b>${progress.delivered}</b><small>entregas</small></span>
+            <span><b>${progress.graded}</b><small>calificadas</small></span>
+            <span><b>${progress.pending}</b><small>pendientes</small></span>
           </div>
         </div>
       </article>
@@ -10021,6 +10059,7 @@
         activityId: activity.id,
         assignmentId: state.assignment?.id || ''
       });
+      updateActivityProgressFromGradebook(activity, state.activityGradebook);
       refreshActivityGradebookList();
     } catch (error) {
       list.innerHTML = `<div class="em-activity-grade-empty">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</div>`;
@@ -10159,18 +10198,18 @@
         <form id="addActivityForm" class="em-activity-create-form">
           <section class="em-activity-tab-page" data-activity-tab-panel="assign">
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head"><span class="em-activity-step-badge">1</span><div><h3>Información principal</h3><p>Identifica la actividad y relaciónala con el tema que están trabajando.</p></div></div>
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">1</span><div><h3>Información principal</h3><p>Identifica la actividad y, si corresponde, relaciónala con una clase o tema.</p></div></div>
               <div class="em-activity-field-stack">
                 <label class="field-label" for="activityTitleInput">Nombre de la actividad</label>
                 <input class="input" id="activityTitleInput" maxlength="140" autocomplete="off" placeholder="Ejemplo: Taller de gráficos de líneas" value="${escapeAttr(activity?.title || '')}" required />
               </div>
               <div class="em-activity-field-stack">
-                <label class="field-label" for="activityLessonInput">Clase o tema relacionado</label>
-                <select class="select" id="activityLessonInput" required ${lessons.length ? '' : 'disabled'}>
-                  <option value="">Selecciona una clase</option>
+                <label class="field-label" for="activityLessonInput">Clase o tema relacionado <small>(opcional)</small></label>
+                <select class="select" id="activityLessonInput">
+                  <option value="">Sin clase relacionada</option>
                   ${lessons.map((lesson) => `<option value="${escapeAttr(lesson.id)}" ${String(activity?.lessonId || '') === String(lesson.id) ? 'selected' : ''}>${escapeHTML(lesson.title || 'Clase')} · Periodo ${Number(lesson.period || 1)}</option>`).join('')}
                 </select>
-                ${lessons.length ? '' : '<p class="em-activity-inline-warning">Primero debes crear una clase para relacionar esta actividad.</p>'}
+                <p class="em-activity-field-hint">Puedes dejarla como actividad independiente y vincularla después.</p>
               </div>
             </div>
 
@@ -10237,13 +10276,11 @@
     modal?.querySelectorAll('[data-activity-modal-tab]').forEach((button) => button.addEventListener('click', () => showTab(button.dataset.activityModalTab)));
     next?.addEventListener('click', () => {
       const title = document.getElementById('activityTitleInput')?.value.trim();
-      const lesson = document.getElementById('activityLessonInput')?.value;
       const start = document.getElementById('activityStartInput')?.value;
       const due = document.getElementById('activityDueInput')?.value;
       const errorBox = document.getElementById('activityCreateError');
       if (errorBox) errorBox.textContent = '';
       if (!title) return errorBox.textContent = 'Escribe el nombre de la actividad.';
-      if (!lesson) return errorBox.textContent = 'Relaciona la actividad con una clase o tema.';
       if (!start || !due) return errorBox.textContent = 'Completa las fechas de inicio y entrega.';
       if (due < start) return errorBox.textContent = 'La fecha de entrega no puede ser anterior a la fecha de inicio.';
       showTab('review');
@@ -10358,7 +10395,7 @@
     const content = collectActivityEditor('activityContent');
     const review = collectActivityEditor('activityReview');
     const { criteria, total } = updateRubricTotal();
-    if (!title || !lessonId) return fail('Completa el nombre y la clase relacionada.');
+    if (!title) return fail('Escribe el nombre de la actividad.');
     if (!startsAt || !dueAt || dueAt < startsAt) return fail('Revisa las fechas de inicio y entrega.');
     if (!targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
     const contentError = validateActivityEditor(content, 'Actividad', existingActivity?.contentPayload, existingActivity?.contentType);
@@ -10398,6 +10435,16 @@
       const activity = existingActivity
         ? await cloudAPI().updateActivity(payload)
         : await cloudAPI().createActivity(payload);
+      activity.progressByAssignment = { ...(existingActivity?.progressByAssignment || activity.progressByAssignment || {}) };
+      targets.forEach((target) => {
+        if (!activity.progressByAssignment[target.id]) {
+          activity.progressByAssignment[target.id] = {
+            total: getStudentsForAssignment(target).length,
+            delivered: 0,
+            graded: 0
+          };
+        }
+      });
       state.data.activities = state.data.activities || [];
       if (existingActivity) {
         const index = state.data.activities.findIndex((item) => item.id === existingActivity.id);
@@ -10571,6 +10618,7 @@
           deliveryStatus: selectedDeliveryStatus,
           deliveryNote: document.getElementById('activityDeliveryNote')?.value.trim() || ''
         });
+        updateActivityProgressFromGradebook(activity, state.activityGradebook);
         closeModal(false);
         refreshActivityGradebookList();
         toast(selectedCodes.length > 1 ? `Calificación guardada para ${selectedCodes.length} estudiantes.` : 'Calificación guardada.');
@@ -12590,7 +12638,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.328', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.329', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

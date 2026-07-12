@@ -365,11 +365,12 @@
 
     let lessonRows = [];
     let activityRows = [];
+    let activityProgressRows = [];
     let quizAssignmentRows = [];
     let attendanceRows = [];
     let rockstarRows = [];
     if (assignmentIds.length) {
-      const [lessonsResult, activitiesResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
+      const [lessonsResult, activitiesResult, activityProgressResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
         supabaseClient
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
@@ -380,6 +381,10 @@
           .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
           .in('assignment_id', assignmentIds)
           .eq('visible', true),
+        supabaseClient
+          .from('activity_student_records')
+          .select('activity_id,assignment_id,graded_at,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
+          .in('assignment_id', assignmentIds),
         supabaseClient
           .from('quiz_assignments')
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
@@ -396,11 +401,13 @@
       ]);
       if (lessonsResult.error) throw normalizeError(lessonsResult.error, 'No se pudieron cargar las clases.');
       if (activitiesResult.error) throw normalizeError(activitiesResult.error, 'No se pudieron cargar las actividades.');
+      if (activityProgressResult.error) throw normalizeError(activityProgressResult.error, 'No se pudo calcular el avance de las actividades.');
       if (quizzesResult.error) throw normalizeError(quizzesResult.error, 'No se pudieron cargar los quizzes.');
       if (attendanceResult.error) throw normalizeError(attendanceResult.error, 'No se pudo cargar la asistencia.');
       if (rockstarResult.error) throw normalizeError(rockstarResult.error, 'No se pudieron cargar los puntos Rockstar.');
       lessonRows = (lessonsResult.data || []).filter((row) => !LEGACY_DEMO_LESSON_IDS.includes(nestedId(row, 'lesson')));
       activityRows = activitiesResult.data || [];
+      activityProgressRows = activityProgressResult.data || [];
       quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
       attendanceRows = attendanceResult.data || [];
       rockstarRows = rockstarResult.data || [];
@@ -427,6 +434,28 @@
       }
       existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(activity.assignmentIds || [])])];
       existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
+    });
+
+    const progressByActivity = new Map();
+    activityProgressRows.forEach((row) => {
+      const activityId = String(row.activity_id || '');
+      const assignmentId = String(row.assignment_id || '');
+      if (!activityId || !assignmentId) return;
+      if (!progressByActivity.has(activityId)) progressByActivity.set(activityId, {});
+      const byAssignment = progressByActivity.get(activityId);
+      const progress = byAssignment[assignmentId] || { total: 0, delivered: 0, graded: 0 };
+      const file = row.submission_file && typeof row.submission_file === 'object' ? row.submission_file : {};
+      const graded = Boolean(row.graded_at);
+      const events = Array.isArray(row.delivery_events) ? row.delivery_events : [];
+      const submittedStatuses = new Set(['delivered', 'late', 'incomplete', 'resubmit']);
+      const delivered = Boolean(file.path || file.url || file.name) || events.some((event) => submittedStatuses.has(String(event?.status || '')));
+      progress.total += 1;
+      if (delivered) progress.delivered += 1;
+      if (graded) progress.graded += 1;
+      byAssignment[assignmentId] = progress;
+    });
+    uniqueActivities.forEach((activity, activityId) => {
+      activity.progressByAssignment = progressByActivity.get(activityId) || {};
     });
 
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
@@ -1216,7 +1245,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.328', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.329', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -1262,7 +1291,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.328',
+          appVersion: '0.24.329',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
