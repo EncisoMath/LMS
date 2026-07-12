@@ -26951,3 +26951,50 @@ body.quiz-fullscreen-active
   .em-period-date-field { grid-template-columns: 1fr; gap: 8px; }
   .em-period-settings-actions > button { flex: 1; }
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.309 - ENTRADA COMPLETA POR PESTANA
+   La entrada se ejecuta con Web Animations para no bloquear
+   hover, tap ni las animaciones internas de cada heroe.
+========================================================= */
+.tab-section[data-active-tab="classes"] .class-hero,
+.tab-section[data-active-tab="classes"] [data-em-classes-hero],
+.tab-section[data-active-tab="activities"] .activity-hero,
+.tab-section[data-active-tab="activities"] [data-em-activities-hero],
+.tab-section[data-active-tab="rockstars"] .rockstar-hero,
+.tab-section[data-active-tab="rockstars"] [data-em-rockstars-hero],
+.tab-section[data-active-tab="quizzes"] .quiz-hero,
+.tab-section[data-active-tab="quizzes"] [data-em-quizzes-hero] {
+  animation: none !important;
+}
+
+.em-entry-fallback {
+  animation: emEntryFallbackV309 520ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes emEntryFallbackV309 {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(.965);
+    filter: blur(7px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Garantiza que ACTIVIDADES aparezca igual que los otros heroes. */
+.tab-section[data-active-tab="activities"] .activity-hero.em-act-hero-host {
+  transform-origin: center bottom;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-entry-fallback {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}

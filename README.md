@@ -97,3 +97,11 @@ Validación:
 - Se limpian referencias antiguas del quiz demo en `localStorage`.
 - Incluye `SUPABASE_MIGRATION_v0.24.308.sql` para vaciar por completo el contenido actual de clases y quizzes sin tocar datos académicos.
 
+
+## v0.24.309
+
+- Entrada escalonada `fade + subida + zoom` en todos los bloques de CLASES, ACTIVIDADES, ROCKSTARS y QUIZZES.
+- La animación cubre héroes, botones, modos cuadrícula/lista, tarjetas, estados vacíos y acciones internas.
+- Quiz Studio anima cabecera, pestañas, campos, preguntas, opciones y botones.
+- La pantalla de una clase anima barra superior, encabezado e iframe de contenido.
+- El héroe de ACTIVIDADES recibe la misma entrada visible de CLASES, ROCKSTARS y QUIZZES.

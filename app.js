@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.308';
+  const APP_VERSION = '0.24.309';
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -2410,6 +2410,7 @@
 
     bindRockstarTabEvents();
     emRsInitRockstarsHero($content);
+    emPlayTabEntrance($content, 'rockstars');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function rockstarListHTML() {
@@ -2447,7 +2448,10 @@
     list.innerHTML = rockstarListHTML();
     applyRockstarScoreTune();
     bindRockstarActionButtons();
-    if (animate) pulseElement(list, 'class-grid-update');
+    if (animate) {
+      pulseElement(list, 'class-grid-update');
+      emPlayTabEntrance(document.getElementById('tabContent') || list, 'rockstars');
+    }
   }
   function bindRockstarActionButtons() {
     document.querySelectorAll('.em-rs-score-btn[data-rockstar-delta]').forEach((button) => {
@@ -2679,6 +2683,7 @@
     `;
     bindQuizTabEvents();
     emQzInitQuizzesHero($content);
+    emPlayTabEntrance($content, 'quizzes');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function bindQuizTabEvents() {
@@ -3315,6 +3320,7 @@
     const scrollY = preserveScroll ? scrollEl.scrollTop : 0;
     mount(quizStudioHTML(context, draft, tab), () => {
       bindQuizStudioEvents();
+      emPlayQuizStudioEntrance(document.querySelector('.em-quiz-studio-screen'));
       if (preserveScroll) {
         const restore = () => window.scrollTo(scrollX, scrollY);
         requestAnimationFrame(restore);
@@ -9734,6 +9740,7 @@
     `;
 
     emActInitActivitiesHero($content);
+    emPlayTabEntrance($content, 'activities');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
 
@@ -9764,6 +9771,7 @@
     bindClassViewButtons();
     bindClassCards();
     emClInitClassesHero($content);
+    emPlayTabEntrance($content, 'classes');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function getClassesForCurrentAssignment() {
@@ -9798,7 +9806,10 @@
     grid.className = `em-content-list is-${state.classViewMode}`;
     grid.innerHTML = renderClassCardsHTML();
     bindClassCards();
-    if (animate) pulseElement(grid, 'class-grid-update');
+    if (animate) {
+      pulseElement(grid, 'class-grid-update');
+      emPlayTabEntrance(document.getElementById('tabContent') || grid, 'classes');
+    }
   }
   function renderLesson(lesson, options = {}) {
     const assignment = state.assignment;
@@ -9827,6 +9838,7 @@
     `;
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', () => renderSubjectDetail('classes'));
+      emPlayLessonEntrance(document.querySelector('.class-screen'));
     });
   }
   function renderStudentPlaceholder(options = {}) {
@@ -10707,6 +10719,147 @@
   function escCloseModal(event) {
     if (event.key === 'Escape') closeModal();
   }
+  const EM_TAB_ENTRANCE_SELECTORS = {
+    classes: [
+      '[data-em-classes-hero]',
+      '.em-class-view-only',
+      '.em-class-view-only .mini-btn',
+      '#classGrid > *',
+      '#classGrid button',
+      '#classGrid [role="button"]',
+      '#classGrid > .em-period-empty',
+      '#classGrid > .em-period-empty > *'
+    ],
+    activities: [
+      '[data-em-activities-hero]',
+      '#activitiesPeriodContent > *',
+      '#activitiesPeriodContent article',
+      '#activitiesPeriodContent button',
+      '#activitiesPeriodContent [role="button"]',
+      '#activitiesPeriodContent > .em-period-empty > *'
+    ],
+    rockstars: [
+      '[data-em-rockstars-hero]',
+      '#rockstarList > *',
+      '#rockstarList > .empty',
+      '#rockstarList .em-rs-avatar',
+      '#rockstarList .em-rs-info',
+      '#rockstarList .em-rs-points',
+      '#rockstarList .em-rs-score-btn'
+    ],
+    quizzes: [
+      '[data-em-quizzes-hero]',
+      '#openQuizStudioBtn',
+      '#quizLibrary > *',
+      '#quizLibrary > [data-quiz-id]',
+      '#quizLibrary > .em-period-empty',
+      '#quizLibrary > .em-period-empty > *',
+      '#quizLibrary .em-quiz-edit',
+      '#quizLibrary .em-quiz-start'
+    ]
+  };
+
+  function emUniqueVisibleElements(root, selectors = []) {
+    const seen = new Set();
+    const elements = [];
+    selectors.forEach((selector) => {
+      root.querySelectorAll?.(selector).forEach((element) => {
+        if (!element || seen.has(element)) return;
+        seen.add(element);
+        const style = window.getComputedStyle?.(element);
+        if (style && (style.display === 'none' || style.visibility === 'hidden')) return;
+        elements.push(element);
+      });
+    });
+    return elements;
+  }
+
+  function emPlayEntranceSequence(root, selectors = [], options = {}) {
+    if (!root) return;
+    const elements = emUniqueVisibleElements(root, selectors);
+    const duration = Number(options.duration) || 500;
+    const stagger = Number(options.stagger) || 34;
+    const maxDelay = Number(options.maxDelay) || 420;
+    const baseDelay = Number(options.baseDelay) || 0;
+    const distance = Number(options.distance) || 18;
+    const scale = Number(options.scale) || 0.965;
+
+    elements.forEach((element, index) => {
+      element.getAnimations?.().forEach((animation) => {
+        if (String(animation.id || '').startsWith('enciso-entry-')) animation.cancel();
+      });
+      if (typeof element.animate !== 'function') {
+        element.classList.remove('em-entry-fallback');
+        void element.offsetWidth;
+        element.classList.add('em-entry-fallback');
+        return;
+      }
+      const animation = element.animate([
+        { opacity: 0, transform: `translate3d(0, ${distance}px, 0) scale(${scale})`, filter: 'blur(7px)' },
+        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+      ], {
+        duration,
+        delay: baseDelay + Math.min(index * stagger, maxDelay),
+        easing: 'cubic-bezier(.16, 1, .3, 1)',
+        fill: 'backwards'
+      });
+      try { animation.id = `enciso-entry-${Date.now()}-${index}`; } catch (_) {}
+    });
+  }
+
+  function emPlayTabEntrance(root, tab) {
+    emPlayEntranceSequence(root, EM_TAB_ENTRANCE_SELECTORS[tab] || [], {
+      duration: 520,
+      stagger: 36,
+      maxDelay: 430,
+      distance: 18,
+      scale: 0.965
+    });
+  }
+
+  function emPlayQuizStudioEntrance(root) {
+    emPlayEntranceSequence(root, [
+      '.em-quiz-studio-topbar > *',
+      '.em-quiz-studio-hero',
+      '.em-quiz-studio-hero-copy > *',
+      '.em-quiz-studio-tabs',
+      '.em-quiz-studio-tabs > *',
+      '.em-quiz-studio-card',
+      '.em-quiz-studio-card-head > *',
+      '.em-quiz-studio-card-body > *',
+      '.em-quiz-studio-field',
+      '.em-quiz-studio-field input',
+      '.em-quiz-studio-field select',
+      '.em-quiz-studio-field textarea',
+      '.em-quiz-studio-question-tab',
+      '.em-quiz-studio-option-row',
+      '.em-quiz-studio-footer > *',
+      '.em-quiz-studio-actions > *',
+      '.em-quiz-studio-empty'
+    ], {
+      duration: 470,
+      stagger: 24,
+      maxDelay: 360,
+      distance: 15,
+      scale: 0.975
+    });
+  }
+
+  function emPlayLessonEntrance(root) {
+    emPlayEntranceSequence(root, [
+      '.lesson-topbar > *',
+      '.lesson-head',
+      '.lesson-head > *',
+      '.lesson-frame'
+    ], {
+      duration: 520,
+      stagger: 52,
+      maxDelay: 260,
+      distance: 18,
+      scale: 0.975
+    });
+  }
+
   function pulseElement(element, className) {
     if (!element) return;
     if (!prefEnabled('effectsMotion')) return;
@@ -10728,7 +10881,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.307', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.309', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
