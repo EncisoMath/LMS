@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.329';
+  const APP_VERSION = '0.24.331';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10108,10 +10108,9 @@
               <span class="em-act-eyebrow">PERIODO ${Number(activity.period || 1)} • ${escapeHTML(gradeCourse)}</span>
               <h2 class="em-act-title em-activity-detail-title">${escapeHTML(activity.title || 'Actividad')}</h2>
               <p class="em-act-subtitle">${lesson ? `Clase relacionada: ${escapeHTML(lesson.title || 'Clase')}` : 'Actividad independiente'}</p>
-              <div class="em-activity-detail-meta em-activity-detail-meta-hero">
-                <span>${lesson ? `Tema: ${escapeHTML(lesson.title || 'Clase')}` : 'Sin clase relacionada'}</span>
-                <span>Inicio: ${escapeHTML(start)}</span>
-                <span>Entrega: ${escapeHTML(due)}</span>
+              <div class="em-activity-detail-dates" aria-label="Fechas de la actividad">
+                <span>📍 Inicio: ${escapeHTML(start)}</span>
+                <span>🏁 Fin: ${escapeHTML(due)}</span>
               </div>
             </div>
           </section>
@@ -10120,7 +10119,6 @@
             <div class="em-activity-overview-grid" aria-label="Resumen de la actividad">
               <article><small>Entregaron</small><strong>${progress.delivered}</strong><span>de ${progress.total}</span></article>
               <article><small>Calificados</small><strong>${progress.graded}</strong><span>de ${progress.total}</span></article>
-              <article><small>Pendientes</small><strong>${progress.pending}</strong><span>por revisar</span></article>
               <article><small>Avance</small><strong>${progress.percentage}%</strong><span>completado</span></article>
             </div>
             <section class="em-activity-content-stage" aria-label="Contenido de la actividad">
@@ -10135,7 +10133,7 @@
           <section class="em-activity-gradebook">
             <div class="em-activity-gradebook-head">
               <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
-              <label class="em-search-box em-activity-grade-search"><span>⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" /></label>
+              <label class="em-activity-grade-search"><span aria-hidden="true">⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" autocomplete="off" /></label>
             </div>
             <div class="em-activity-grade-columns" aria-hidden="true"><span>Apellido</span><span>Nombre</span><span>Calificación</span><span>Semáforo</span></div>
             <div id="activityGradebookList" class="em-activity-gradebook-list"></div>
@@ -10589,14 +10587,19 @@
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
     let selectedDeliveryStatus = '';
 
+    const gradeModal = document.querySelector('.em-activity-grade-modal');
     const setActiveTab = (tabName = 'score') => {
-      document.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
+      gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
         const active = button.dataset.gradeModalTab === tabName;
         button.classList.toggle('is-active', active);
         button.setAttribute('aria-selected', active ? 'true' : 'false');
+        button.tabIndex = active ? 0 : -1;
       });
-      document.querySelectorAll('[data-grade-modal-panel]').forEach((panel) => {
-        panel.hidden = panel.dataset.gradeModalPanel !== tabName;
+      gradeModal?.querySelectorAll('[data-grade-modal-panel]').forEach((panel) => {
+        const active = panel.dataset.gradeModalPanel === tabName;
+        panel.hidden = !active;
+        panel.classList.toggle('is-active', active);
+        panel.style.display = active ? 'grid' : 'none';
       });
     };
 
@@ -10612,7 +10615,7 @@
       }).join('')}` : '<p>Si no seleccionas compañeros, la calificación será individual.</p>';
     };
 
-    document.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
+    gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
     groupOptions?.querySelectorAll('[data-group-student]').forEach((input) => input.addEventListener('change', refreshOverrides));
     document.getElementById('activityGroupSearch')?.addEventListener('input', (event) => {
       const query = normalizeSearch(event.target.value || '');
@@ -12690,7 +12693,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.329', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.331', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

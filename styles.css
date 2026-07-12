@@ -29058,3 +29058,197 @@ html body .modal-layer .modal-card {
   .em-delivery-status-grid { grid-template-columns: 1fr; }
 }
 
+
+/* =========================================================
+   ENCISOMATH v0.24.331 - DETALLE DE ACTIVIDAD AJUSTADO
+   Hero igual al de ACTIVIDADES, métricas 3x1, búsqueda limpia
+   y pestañas reales en el modal de calificación.
+========================================================= */
+
+/* El hero de detalle conserva exactamente la geometría base del hero ACTIVIDADES. */
+.em-activity-detail-hero.activity-hero.em-act-hero-host {
+  min-height: 118px !important;
+  margin: 0 0 10px !important;
+  padding: clamp(10px, 2vw, 18px) clamp(12px, 3vw, 24px) !important;
+  grid-template-columns: clamp(58px, 16%, 88px) minmax(0, 1fr) !important;
+  gap: clamp(7px, 1.8vw, 12px) !important;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+  background: var(--em-current-subject-color, var(--em-act-main, #e21b3c)) !important;
+}
+.em-activity-detail-hero.activity-hero.em-act-hero-host::before,
+.em-activity-detail-hero.activity-hero.em-act-hero-host::after {
+  content: none !important;
+  display: none !important;
+}
+.em-activity-detail-hero .em-act-board {
+  position: relative !important;
+  inset: auto !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: 91px !important;
+  height: 91px !important;
+  margin-right: clamp(2px, .8vw, 8px) !important;
+  transform: rotate(-3deg) scale(.82) !important;
+  transform-origin: center !important;
+  opacity: 1 !important;
+}
+.em-activity-detail-hero-copy {
+  max-width: none !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+}
+.em-activity-detail-title {
+  margin: 2px 0 3px !important;
+  font-size: clamp(19px, 4vw, 30px) !important;
+  line-height: 1.02 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-activity-detail-hero .em-act-subtitle {
+  margin: 0 0 6px !important;
+  max-width: 100% !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-activity-detail-dates {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 7px;
+  min-width: 0;
+}
+.em-activity-detail-dates span {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  color: #fff;
+  font: 700 clamp(8px, 1.8vw, 10px)/1.15 "Montserrat", Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tres métricas, una sola fila en todos los tamaños. */
+.em-activity-overview-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+.em-activity-overview-grid article {
+  min-width: 0;
+  min-height: 84px;
+  padding: 13px 12px;
+}
+
+/* Buscador propio: no hereda la barra genérica ni su acento lateral. */
+.em-activity-grade-search {
+  position: relative;
+  box-sizing: border-box;
+  width: min(360px, 100%) !important;
+  min-height: 44px;
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.055) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+.em-activity-grade-search::before,
+.em-activity-grade-search::after {
+  content: none !important;
+  display: none !important;
+}
+.em-activity-grade-search > span {
+  flex: 0 0 auto;
+  color: #91a2bb !important;
+  font: 700 1rem/1 Arial, sans-serif;
+}
+.em-activity-grade-search > input {
+  box-sizing: border-box;
+  width: 100% !important;
+  min-width: 0;
+  height: 42px;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
+  font: 600 .82rem/1 "Montserrat", Arial, sans-serif;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.em-activity-grade-search > input::placeholder {
+  color: #7f8da3;
+  opacity: 1;
+}
+.em-activity-grade-search > input::-webkit-search-cancel-button {
+  filter: invert(1);
+  opacity: .6;
+}
+
+/* El atributo hidden debe ganar frente al display:grid del panel. */
+.em-activity-grade-modal [data-grade-modal-panel][hidden] {
+  display: none !important;
+}
+.em-activity-grade-modal [data-grade-modal-panel].is-active {
+  display: grid !important;
+}
+
+@media (max-width: 720px) {
+  .em-activity-detail-hero.activity-hero.em-act-hero-host {
+    min-height: 118px !important;
+    margin: 0 10px 10px !important;
+    border-radius: var(--radius) !important;
+  }
+  .em-activity-detail-hero .em-act-board {
+    position: relative !important;
+    inset: auto !important;
+    width: 91px !important;
+    height: 91px !important;
+    transform: rotate(-3deg) scale(.72) !important;
+    transform-origin: center !important;
+  }
+  .em-activity-detail-hero-copy {
+    padding: 0 !important;
+  }
+  .em-activity-detail-title {
+    font-size: clamp(18px, 6vw, 25px) !important;
+  }
+  .em-activity-detail-dates {
+    gap: 5px;
+  }
+  .em-activity-detail-dates span {
+    padding: 4px 6px;
+    font-size: 8px;
+  }
+  .em-activity-overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+  .em-activity-overview-grid article {
+    min-height: 76px;
+    padding: 10px 8px;
+  }
+  .em-activity-overview-grid small {
+    font-size: .58rem;
+    letter-spacing: .035em;
+  }
+  .em-activity-overview-grid strong {
+    font-size: 1.25rem;
+  }
+  .em-activity-overview-grid span {
+    font-size: .61rem;
+  }
+  .em-activity-grade-search {
+    width: 100% !important;
+  }
+}
