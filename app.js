@@ -1,7 +1,12 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.309';
+  const APP_VERSION = '0.24.310';
+  const PDFJS_VERSION = '6.1.200';
+  const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
+  const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
+  let pdfJsModulePromise = null;
+  let activePdfViewerCleanup = null;
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -501,7 +506,9 @@
     assignment: null,
     activePeriod: 1,
     period: 1,
-    classViewMode: localStorage.getItem('encisomath:classViewMode') || 'grid',
+    classViewMode: localStorage.getItem('encisomath:classViewMode') === 'list' ? 'list' : 'grid',
+    activityViewMode: localStorage.getItem('encisomath:activityViewMode') === 'list' ? 'list' : 'grid',
+    quizViewMode: localStorage.getItem('encisomath:quizViewMode') === 'list' ? 'list' : 'grid',
     rockstarPeriod: 1,
     activitiesPeriod: 1,
     quizPeriod: 1,
@@ -1174,6 +1181,7 @@
     });
   }
   function renderSubjectDetail(tab = 'students', options = {}) {
+    cleanupActivePdfViewer();
     tab = normalizeSubjectTab(tab);
     const assignment = state.assignment;
     if (!assignment) return renderTeacherHome(options);
@@ -2676,8 +2684,14 @@
       <section class="quiz-hero em-qz-hero-host" data-em-quizzes-hero aria-label="Quizzes de la asignatura">
         ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
-      <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz a este grupo</button>
-      <div class="em-content-list is-grid" id="quizLibrary">
+      <div class="view-row em-content-toolbar em-quiz-toolbar">
+        <div class="em-view-switch" aria-label="Vista de quizzes">
+          <button class="mini-btn ${state.quizViewMode === 'grid' ? 'selected' : ''}" id="quizGridModeBtn" type="button">▦ Cuadrícula</button>
+          <button class="mini-btn ${state.quizViewMode === 'list' ? 'selected' : ''}" id="quizListModeBtn" type="button">☰ Lista</button>
+        </div>
+        <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz</button>
+      </div>
+      <div class="em-content-list is-${state.quizViewMode}" id="quizLibrary">
         ${quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod)}
       </div>
     `;
@@ -2687,7 +2701,21 @@
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function bindQuizTabEvents() {
-    document.getElementById('openQuizStudioBtn')?.addEventListener('click', () => openQuizStudio(createQuizStudioContext()));
+    const studioButton = document.getElementById('openQuizStudioBtn');
+    if (studioButton && studioButton.dataset.boundQuizStudio !== 'true') {
+      studioButton.dataset.boundQuizStudio = 'true';
+      studioButton.addEventListener('click', () => openQuizStudio(createQuizStudioContext()));
+    }
+    const gridButton = document.getElementById('quizGridModeBtn');
+    if (gridButton && gridButton.dataset.boundQuizView !== 'true') {
+      gridButton.dataset.boundQuizView = 'true';
+      gridButton.addEventListener('click', () => setQuizViewMode('grid'));
+    }
+    const listButton = document.getElementById('quizListModeBtn');
+    if (listButton && listButton.dataset.boundQuizView !== 'true') {
+      listButton.dataset.boundQuizView = 'true';
+      listButton.addEventListener('click', () => setQuizViewMode('list'));
+    }
     document.querySelectorAll('[data-edit-quiz-id]').forEach((button) => {
       if (button.dataset.boundQuizEdit === 'true') return;
       button.dataset.boundQuizEdit = 'true';
@@ -7040,6 +7068,7 @@
     if (!library) return;
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
+    library.className = `em-content-list is-${state.quizViewMode}`;
     library.innerHTML = quizzes.map((quiz, index) => quizCardButtonHTML(quiz, activeQuiz?.id === quiz.id, index)).join('') || emPeriodEmptyStateHTML('quizzes', state.quizPeriod);
     const note = document.getElementById('quizLaunchNote');
     if (note) note.hidden = !activeQuiz;
@@ -9734,11 +9763,18 @@
       <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div id="activitiesPeriodContent">
+      <div class="view-row em-content-toolbar">
+        <div class="em-view-switch" aria-label="Vista de actividades">
+          <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button">▦ Cuadrícula</button>
+          <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button">☰ Lista</button>
+        </div>
+      </div>
+      <div id="activitiesPeriodContent" class="em-content-list is-${state.activityViewMode}">
         ${activitiesPeriodHTML()}
       </div>
     `;
 
+    bindActivityViewButtons();
     emActInitActivitiesHero($content);
     emPlayTabEntrance($content, 'activities');
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -9746,6 +9782,11 @@
 
   function activitiesPeriodHTML() {
     return emPeriodEmptyStateHTML('activities', state.activitiesPeriod);
+  }
+
+  function bindActivityViewButtons() {
+    document.getElementById('activityGridModeBtn')?.addEventListener('click', () => setActivityViewMode('grid'));
+    document.getElementById('activityListModeBtn')?.addEventListener('click', () => setActivityViewMode('list'));
   }
 
   function renderClassesTab(options = {}) {
@@ -9757,11 +9798,12 @@
       <section class="class-hero em-cl-hero-host" data-em-classes-hero aria-label="Clases de la asignatura">
         ${emClClassesHeroHTML()}
       </section>
-      <div class="view-row em-class-view-only">
-        <div>
-          <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn">▦ Cuadrícula</button>
-          <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn">☰ Lista</button>
+      <div class="view-row em-content-toolbar em-class-view-only">
+        <div class="em-view-switch" aria-label="Vista de clases">
+          <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn" type="button">▦ Cuadrícula</button>
+          <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn" type="button">☰ Lista</button>
         </div>
+        <button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button>
       </div>
       <div id="classGrid" class="em-content-list is-${state.classViewMode}">
         ${renderClassCardsHTML()}
@@ -9770,14 +9812,205 @@
 
     bindClassViewButtons();
     bindClassCards();
+    document.getElementById('openAddClassBtn')?.addEventListener('click', openAddClassModal);
     emClInitClassesHero($content);
     emPlayTabEntrance($content, 'classes');
     if (options.animate) pulseElement($content, 'tab-enter');
   }
   function getClassesForCurrentAssignment() {
     const assignment = state.assignment;
-    return state.data.classes.filter((item) => item.subject === assignment.subject || item.area === assignment.area);
+    if (!assignment) return [];
+    return state.data.classes.filter((item) => {
+      const ids = Array.isArray(item.assignmentIds) ? item.assignmentIds : [];
+      if (ids.length) return ids.includes(assignment.id);
+      return item.assignmentId === assignment.id || item.subject === assignment.subject || item.area === assignment.area;
+    });
   }
+  function getClassTargetAssignments(scope = 'course') {
+    const current = state.assignment;
+    if (!current) return [];
+    if (scope !== 'grade') return [current];
+    return (state.data.assignments || []).filter((assignment) => {
+      const sameGrade = String(assignment.grade || '') === String(current.grade || '');
+      const sameSubject = current.subjectId && assignment.subjectId
+        ? assignment.subjectId === current.subjectId
+        : assignment.subject === current.subject && assignment.area === current.area;
+      return assignment.active !== false && sameGrade && sameSubject;
+    });
+  }
+
+  async function loadPdfJs() {
+    if (!pdfJsModulePromise) {
+      pdfJsModulePromise = import(`./vendor/pdfjs/pdf.min.mjs?v=${PDFJS_VERSION}`).then((pdfjs) => {
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(`./vendor/pdfjs/pdf.worker.min.mjs?v=${PDFJS_VERSION}`, document.baseURI).href;
+        return pdfjs;
+      });
+    }
+    return pdfJsModulePromise;
+  }
+
+  function canvasToBlob(canvas, type = 'image/webp', quality = .88) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('No se pudo generar la portada del PDF.')), type, quality);
+    });
+  }
+
+  async function inspectClassPdf(file, createThumbnail = false) {
+    const pdfjs = await loadPdfJs();
+    const bytes = await file.arrayBuffer();
+    const documentTask = pdfjs.getDocument({ data: bytes, isEvalSupported: false });
+    const pdfDocument = await documentTask.promise;
+    let thumbnailFile = null;
+    try {
+      if (createThumbnail) {
+        const page = await pdfDocument.getPage(1);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(2.2, Math.max(1, 720 / Math.max(1, baseViewport.width)));
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', { alpha: false });
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: context, viewport }).promise;
+        const blob = await canvasToBlob(canvas);
+        thumbnailFile = new File([blob], 'portada-generada.webp', { type: 'image/webp' });
+        page.cleanup?.();
+      }
+      return { pageCount: pdfDocument.numPages || 1, thumbnailFile };
+    } finally {
+      await pdfDocument.destroy?.();
+    }
+  }
+
+  function openAddClassModal() {
+    const assignment = state.assignment;
+    if (!assignment) return;
+    const gradeTargets = getClassTargetAssignments('grade');
+    const gradeCourses = gradeTargets.map((item) => `${item.grade}-${item.course}`).join(', ');
+    openModal(`
+      <section class="modal-card em-class-create-modal" role="dialog" aria-modal="true" aria-labelledby="addClassTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Biblioteca de clases</p>
+        <h2 id="addClassTitle">Añadir clase</h2>
+        <p class="card-sub">Sube el material en PDF. La primera página será la portada cuando no elijas una imagen.</p>
+        <form id="addClassForm" class="em-class-create-form">
+          <label class="field-label" for="classTitleInput">Nombre del tema</label>
+          <input class="input" id="classTitleInput" maxlength="120" autocomplete="off" placeholder="Ejemplo: Gráficos de barras" required />
+
+          <label class="field-label" for="classPeriodInput">Periodo</label>
+          <select class="select" id="classPeriodInput" required>
+            ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(state.period) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
+          </select>
+
+          <label class="field-label" for="classPdfInput">Archivo PDF</label>
+          <label class="em-file-drop" for="classPdfInput" id="classPdfDrop">
+            <strong>Seleccionar PDF</strong>
+            <span id="classPdfName">Máximo 20 MB</span>
+          </label>
+          <input class="em-hidden-file" id="classPdfInput" type="file" accept="application/pdf,.pdf" required />
+
+          <label class="field-label" for="classThumbInput">Imagen de portada <span>(opcional)</span></label>
+          <label class="em-file-drop is-optional" for="classThumbInput" id="classThumbDrop">
+            <strong>Seleccionar imagen</strong>
+            <span id="classThumbName">PNG, JPG o WEBP. Si la omites se usará la primera página.</span>
+          </label>
+          <input class="em-hidden-file" id="classThumbInput" type="file" accept="image/png,image/jpeg,image/webp" />
+
+          <fieldset class="em-class-scope">
+            <legend>¿Dónde estará disponible?</legend>
+            <label>
+              <input type="radio" name="classScope" value="course" checked />
+              <span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span>
+            </label>
+            <label>
+              <input type="radio" name="classScope" value="grade" />
+              <span><strong>Todo el grado ${escapeHTML(assignment.grade)}</strong><small>${escapeHTML(gradeCourses || `${assignment.grade}-${assignment.course}`)}</small></span>
+            </label>
+          </fieldset>
+
+          <p class="em-class-create-error" id="classCreateError" role="alert"></p>
+          <button class="primary-btn full" id="createClassSubmitBtn" type="submit">Guardar clase</button>
+        </form>
+      </section>
+    `, () => {
+      const form = document.getElementById('addClassForm');
+      const pdfInput = document.getElementById('classPdfInput');
+      const thumbInput = document.getElementById('classThumbInput');
+      const pdfName = document.getElementById('classPdfName');
+      const thumbName = document.getElementById('classThumbName');
+      document.getElementById('classTitleInput')?.focus();
+      pdfInput?.addEventListener('change', () => {
+        const file = pdfInput.files?.[0];
+        pdfName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Máximo 20 MB';
+      });
+      thumbInput?.addEventListener('change', () => {
+        const file = thumbInput.files?.[0];
+        thumbName.textContent = file ? file.name : 'PNG, JPG o WEBP. Si la omites se usará la primera página.';
+      });
+      form?.addEventListener('submit', submitNewClass);
+    });
+  }
+
+  async function submitNewClass(event) {
+    event.preventDefault();
+    const assignment = state.assignment;
+    const title = document.getElementById('classTitleInput')?.value.trim() || '';
+    const period = Number(document.getElementById('classPeriodInput')?.value || state.period || 1);
+    const pdfFile = document.getElementById('classPdfInput')?.files?.[0] || null;
+    const selectedThumb = document.getElementById('classThumbInput')?.files?.[0] || null;
+    const scope = document.querySelector('input[name="classScope"]:checked')?.value || 'course';
+    const submit = document.getElementById('createClassSubmitBtn');
+    const errorBox = document.getElementById('classCreateError');
+    const fail = (message) => {
+      if (errorBox) errorBox.textContent = message;
+    };
+    fail('');
+    if (!title) return fail('Escribe el nombre del tema.');
+    if (!pdfFile) return fail('Selecciona un archivo PDF.');
+    const isPdf = pdfFile.type === 'application/pdf' || /\.pdf$/i.test(pdfFile.name || '');
+    if (!isPdf) return fail('El material debe ser un archivo PDF válido.');
+    if (pdfFile.size > MAX_CLASS_PDF_BYTES) return fail('El PDF supera el máximo de 20 MB.');
+    if (selectedThumb && !/^image\/(png|jpeg|webp)$/i.test(selectedThumb.type || '')) return fail('La portada debe ser PNG, JPG o WEBP.');
+    if (selectedThumb && selectedThumb.size > MAX_CLASS_THUMB_BYTES) return fail('La imagen de portada supera el máximo de 5 MB.');
+    if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase para guardar la clase.');
+
+    submit.disabled = true;
+    submit.textContent = 'Preparando PDF...';
+    try {
+      const pdfInfo = await inspectClassPdf(pdfFile, !selectedThumb);
+      const thumbnailFile = selectedThumb || pdfInfo.thumbnailFile;
+      const targets = getClassTargetAssignments(scope);
+      if (!targets.length) throw new Error('No se encontraron cursos compatibles para esta clase.');
+      submit.textContent = 'Subiendo archivos...';
+      const lesson = await cloudAPI().createPdfLesson({
+        currentAssignment: assignment,
+        targetAssignmentIds: targets.map((item) => item.id),
+        title,
+        period,
+        pdfFile,
+        thumbnailFile,
+        pageCount: pdfInfo.pageCount
+      });
+      state.data.classes.push(lesson);
+      closeModal(false);
+      syncAcademicPeriodState(period);
+      renderClassesTab({ animate: true });
+      toast(scope === 'grade'
+        ? `Clase guardada para ${targets.length} cursos del grado ${assignment.grade}.`
+        : `Clase guardada para ${assignment.grade}-${assignment.course}.`);
+    } catch (error) {
+      fail(error?.message || 'No se pudo guardar la clase.');
+      reportCloudError('No se pudo guardar la clase', error, { silent: true });
+    } finally {
+      if (document.body.contains(submit)) {
+        submit.disabled = false;
+        submit.textContent = 'Guardar clase';
+      }
+    }
+  }
+
   function renderClassCardsHTML() {
     const filtered = getClassesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.period));
     return filtered.map((item, index) => classCardHTML(item, index)).join('') || emPeriodEmptyStateHTML('classes', state.period);
@@ -9811,36 +10044,169 @@
       emPlayTabEntrance(document.getElementById('tabContent') || grid, 'classes');
     }
   }
+  function cleanupActivePdfViewer() {
+    if (typeof activePdfViewerCleanup !== 'function') return;
+    const cleanup = activePdfViewerCleanup;
+    activePdfViewerCleanup = null;
+    try { cleanup(); } catch (_) {}
+  }
+
   function renderLesson(lesson, options = {}) {
+    cleanupActivePdfViewer();
     const assignment = state.assignment;
     if (assignment?.id && lesson?.id) commitAppRoute({ screen: 'lesson', assignmentId: assignment.id, lessonId: lesson.id }, options);
     if (isCloudReady() && assignment?.id && lesson?.id) {
       cloudAPI().recordLessonView({ assignmentId: assignment.id, lessonId: lesson.id })
         .catch((error) => reportCloudError('No se registró la apertura de la clase', error, { silent: true }));
     }
-    const src = `${lesson.contentUrl}?v=${Date.now()}&assignment=${encodeURIComponent(assignment.id)}`;
+    const isPdf = lesson.lessonType === 'PDF' || lesson.type === 'PDF' || /\.pdf(?:$|[?#])/i.test(String(lesson.contentUrl || ''));
     const markup = `
-      <main class="screen class-screen">
+      <main class="screen class-screen em-pdf-class-screen">
         <header class="topbar fixed-lock lesson-topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
-          <h1>Clase</h1>
+          <h1>${escapeHTML(lesson.title || 'Clase')}</h1>
           <span class="spacer"></span>
+          <a class="em-pdf-open-original" href="${escapeAttr(lesson.contentUrl || '#')}" target="_blank" rel="noopener" aria-label="Abrir PDF original">↗</a>
         </header>
-        <section class="lesson-head" data-em-flat-bg>
-          <div class="class-emoji">${escapeHTML(lesson.emoji || '📘')}</div>
-          <div>
-            <h2>${escapeHTML(lesson.title)}</h2>
-            <p>${escapeHTML(assignment.subject)} · ${escapeHTML(assignment.area)} · Periodo ${lesson.period}</p>
-          </div>
-        </section>
-        <iframe class="lesson-frame" src="${escapeAttr(src)}" title="${escapeAttr(lesson.title)}"></iframe>
+        ${isPdf ? `
+          <section class="em-pdf-notebook" id="pdfNotebook" aria-label="Lector de ${escapeAttr(lesson.title || 'clase')}">
+            <div class="em-pdf-stage" id="pdfStage">
+              <button class="em-pdf-nav em-pdf-prev" id="pdfPrevBtn" type="button" aria-label="Página anterior">‹</button>
+              <div class="em-pdf-page-shell" id="pdfPageShell">
+                <span class="em-pdf-spiral" aria-hidden="true"></span>
+                <div class="em-pdf-loading" id="pdfLoading">Preparando cuaderno...</div>
+                <canvas id="pdfPageCanvas" aria-label="Página del PDF"></canvas>
+                <span class="em-pdf-page-shine" aria-hidden="true"></span>
+              </div>
+              <button class="em-pdf-nav em-pdf-next" id="pdfNextBtn" type="button" aria-label="Página siguiente">›</button>
+            </div>
+            <footer class="em-pdf-footer">
+              <strong id="pdfPageIndicator">Página 1</strong>
+              <span>Desliza la hoja a izquierda o derecha</span>
+            </footer>
+          </section>
+        ` : `<iframe class="lesson-frame" src="${escapeAttr(lesson.contentUrl || '')}" title="${escapeAttr(lesson.title || 'Clase')}"></iframe>`}
       </main>
     `;
     mount(markup, () => {
-      document.getElementById('backBtn').addEventListener('click', () => renderSubjectDetail('classes'));
+      document.getElementById('backBtn').addEventListener('click', () => {
+        cleanupActivePdfViewer();
+        renderSubjectDetail('classes');
+      });
       emPlayLessonEntrance(document.querySelector('.class-screen'));
+      if (isPdf) initPdfNotebookViewer(lesson).catch((error) => showPdfViewerError(error));
     });
   }
+
+  function showPdfViewerError(error) {
+    const loading = document.getElementById('pdfLoading');
+    if (!loading) return;
+    loading.classList.add('is-error');
+    loading.innerHTML = `<strong>No se pudo abrir el cuaderno.</strong><span>${escapeHTML(error?.message || 'Revisa el archivo PDF.')}</span>`;
+  }
+
+  async function initPdfNotebookViewer(lesson) {
+    const pdfjs = await loadPdfJs();
+    const loading = document.getElementById('pdfLoading');
+    const shell = document.getElementById('pdfPageShell');
+    const canvas = document.getElementById('pdfPageCanvas');
+    const prev = document.getElementById('pdfPrevBtn');
+    const next = document.getElementById('pdfNextBtn');
+    const indicator = document.getElementById('pdfPageIndicator');
+    if (!shell || !canvas || !prev || !next || !indicator) return;
+
+    const response = await fetch(lesson.contentUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
+    const bytes = await response.arrayBuffer();
+    const documentTask = pdfjs.getDocument({ data: bytes, isEvalSupported: false });
+    const pdfDocument = await documentTask.promise;
+    const viewerController = new AbortController();
+    const viewerSignal = viewerController.signal;
+    activePdfViewerCleanup = () => {
+      viewerController.abort();
+      try { pdfDocument.destroy?.(); } catch (_) {}
+    };
+    let pageNumber = 1;
+    let rendering = false;
+    let pendingPage = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const updateControls = () => {
+      prev.disabled = pageNumber <= 1;
+      next.disabled = pageNumber >= pdfDocument.numPages;
+      indicator.textContent = `Página ${pageNumber} de ${pdfDocument.numPages}`;
+    };
+
+    const renderPage = async (number, direction = 'none') => {
+      if (rendering) {
+        pendingPage = { number, direction };
+        return;
+      }
+      rendering = true;
+      if (direction !== 'none') {
+        shell.classList.remove('is-arriving-next', 'is-arriving-prev');
+        shell.classList.add(direction === 'next' ? 'is-turning-next' : 'is-turning-prev');
+        await new Promise((resolve) => setTimeout(resolve, 190));
+      }
+      const page = await pdfDocument.getPage(number);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const availableWidth = Math.max(260, Math.min(shell.clientWidth - 34, window.innerWidth - 64));
+      const availableHeight = Math.max(360, Math.min(window.innerHeight - 180, 900));
+      const cssScale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const viewport = page.getViewport({ scale: cssScale * pixelRatio });
+      const context = canvas.getContext('2d', { alpha: false });
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      canvas.style.width = `${Math.ceil(viewport.width / pixelRatio)}px`;
+      canvas.style.height = `${Math.ceil(viewport.height / pixelRatio)}px`;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: context, viewport }).promise;
+      page.cleanup?.();
+      pageNumber = number;
+      loading.hidden = true;
+      shell.classList.remove('is-turning-next', 'is-turning-prev');
+      if (direction !== 'none') {
+        shell.classList.add(direction === 'next' ? 'is-arriving-next' : 'is-arriving-prev');
+        setTimeout(() => shell.classList.remove('is-arriving-next', 'is-arriving-prev'), 360);
+      }
+      updateControls();
+      rendering = false;
+      if (pendingPage) {
+        const queued = pendingPage;
+        pendingPage = null;
+        renderPage(queued.number, queued.direction);
+      }
+    };
+
+    const go = (delta) => {
+      const target = Math.max(1, Math.min(pdfDocument.numPages, pageNumber + delta));
+      if (target === pageNumber) return;
+      renderPage(target, delta > 0 ? 'next' : 'prev').catch(showPdfViewerError);
+    };
+    prev.addEventListener('click', () => go(-1), { signal: viewerSignal });
+    next.addEventListener('click', () => go(1), { signal: viewerSignal });
+    shell.addEventListener('pointerdown', (event) => {
+      touchStartX = event.clientX;
+      touchStartY = event.clientY;
+      shell.setPointerCapture?.(event.pointerId);
+    }, { signal: viewerSignal });
+    shell.addEventListener('pointerup', (event) => {
+      const dx = event.clientX - touchStartX;
+      const dy = event.clientY - touchStartY;
+      if (Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.25) go(dx < 0 ? 1 : -1);
+    }, { signal: viewerSignal });
+    window.addEventListener('keydown', (event) => {
+      if (!document.getElementById('pdfNotebook')) return;
+      if (event.key === 'ArrowLeft') go(-1);
+      if (event.key === 'ArrowRight') go(1);
+    }, { signal: viewerSignal });
+    updateControls();
+    await renderPage(1);
+  }
+
   function renderStudentPlaceholder(options = {}) {
     commitAppRoute({ screen: 'student' }, options);
     const student = state.user || {};
@@ -10262,13 +10628,20 @@
     return `<button class="att-btn att-${status} ${current === status ? 'active' : ''}" data-student-id="${escapeAttr(studentId)}" data-status="${status}" title="${info.label}"><span class="att-emoji">${info.emoji}</span><span class="att-label">${info.label}</span></button>`;
   }
   function classCardHTML(item, index = 0) {
+    const thumb = item.thumbnailUrl || '';
     return `
-      <article class="em-class-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
-        <div class="em-class-cover">
-          ${emContentShapePairHTML('em-content-shape', index)}
+      <article class="em-class-card em-notebook-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
+        <div class="em-class-cover ${thumb ? 'has-thumb' : ''}">
+          <span class="em-notebook-binding" aria-hidden="true"></span>
+          ${thumb ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />` : `<div class="em-class-cover-fallback">${emContentShapePairHTML('em-content-shape', index)}<span>PDF</span></div>`}
+          <span class="em-notebook-page-edge" aria-hidden="true"></span>
         </div>
         <div class="em-class-body">
-          <h3 class="em-class-title">${escapeHTML(item.title || 'Clase sin título')}</h3>
+          <div>
+            <h3 class="em-class-title">${escapeHTML(item.title || 'Clase sin título')}</h3>
+            <p class="em-class-meta">Periodo ${Number(item.period || 1)} · ${Number(item.pageCount || 1)} pág.</p>
+          </div>
+          <span class="em-class-open-mark" aria-hidden="true">›</span>
         </div>
       </article>
     `;
@@ -10525,6 +10898,26 @@
     document.getElementById('listModeBtn')?.classList.toggle('selected', mode === 'list');
     updateClassGrid(true);
   }
+  function setActivityViewMode(mode) {
+    if (!['grid', 'list'].includes(mode) || state.activityViewMode === mode) return;
+    state.activityViewMode = mode;
+    localStorage.setItem('encisomath:activityViewMode', mode);
+    document.getElementById('activityGridModeBtn')?.classList.toggle('selected', mode === 'grid');
+    document.getElementById('activityListModeBtn')?.classList.toggle('selected', mode === 'list');
+    const content = document.getElementById('activitiesPeriodContent');
+    if (content) {
+      content.className = `em-content-list is-${mode}`;
+      emPlayTabEntrance(document.getElementById('tabContent') || content, 'activities');
+    }
+  }
+  function setQuizViewMode(mode) {
+    if (!['grid', 'list'].includes(mode) || state.quizViewMode === mode) return;
+    state.quizViewMode = mode;
+    localStorage.setItem('encisomath:quizViewMode', mode);
+    document.getElementById('quizGridModeBtn')?.classList.toggle('selected', mode === 'grid');
+    document.getElementById('quizListModeBtn')?.classList.toggle('selected', mode === 'list');
+    refreshQuizLibrary(true);
+  }
   function bindFilter(id, key, callback) {
     document.getElementById(id).addEventListener('change', (event) => {
       state.filters[key] = event.target.value;
@@ -10724,6 +11117,7 @@
       '[data-em-classes-hero]',
       '.em-class-view-only',
       '.em-class-view-only .mini-btn',
+      '#openAddClassBtn',
       '#classGrid > *',
       '#classGrid button',
       '#classGrid [role="button"]',
@@ -10732,6 +11126,9 @@
     ],
     activities: [
       '[data-em-activities-hero]',
+      '.em-content-toolbar',
+      '#activityGridModeBtn',
+      '#activityListModeBtn',
       '#activitiesPeriodContent > *',
       '#activitiesPeriodContent article',
       '#activitiesPeriodContent button',
@@ -10749,6 +11146,9 @@
     ],
     quizzes: [
       '[data-em-quizzes-hero]',
+      '.em-quiz-toolbar',
+      '#quizGridModeBtn',
+      '#quizListModeBtn',
       '#openQuizStudioBtn',
       '#quizLibrary > *',
       '#quizLibrary > [data-quiz-id]',
@@ -10881,7 +11281,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.309', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.310', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

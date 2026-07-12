@@ -98,3 +98,15 @@ Las operaciones visuales son optimistas para mantener la aplicación ágil. Si S
 ## Calendario académico v0.24.307
 
 Las fechas de inicio de los cuatro periodos se guardan dentro del JSON `preferences` de la tabla `user_preferences`. No requiere migración SQL ni tablas nuevas. El selector superior usa un único periodo global para Clases, Actividades, Rockstars y Quizzes.
+
+
+## v0.24.310 - Clases PDF
+
+Antes de publicar esta versión, ejecuta `SUPABASE_MIGRATION_v0.24.310.sql`. La migración añade metadatos de portada y PDF a `lessons`, y permite `application/pdf` en el bucket `lms-public`.
+
+Las clases nuevas se guardan así:
+
+- El PDF y la portada quedan en `lms-public/<auth.uid>/lessons/<lesson-id>/`.
+- `lessons` conserva título, periodo, URL, rutas de Storage, nombre original y cantidad de páginas.
+- `assignment_lessons` determina si la clase pertenece solo al curso actual o a todos los cursos del mismo grado y asignatura.
+- La interfaz utiliza PDF.js 6.1.200 incluido localmente en `vendor/pdfjs/`; no depende de un CDN externo.

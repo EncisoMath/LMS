@@ -215,8 +215,15 @@
       type: lesson.lesson_type || 'Clase',
       estimatedTime: lesson.estimated_time || '',
       contentUrl: lesson.content_url || '',
+      thumbnailUrl: lesson.thumbnail_url || '',
+      storagePdfPath: lesson.storage_pdf_path || '',
+      storageThumbnailPath: lesson.storage_thumbnail_path || '',
+      sourceFileName: lesson.source_file_name || '',
+      pageCount: Number(lesson.page_count || 1),
+      lessonType: lesson.lesson_type || 'Clase',
       status: lesson.status || 'published',
       assignmentId: row?.assignment_id || '',
+      assignmentIds: row?.assignment_id ? [row.assignment_id] : [],
       sortOrder: Number(row?.sort_order || 0)
     };
   }
@@ -341,7 +348,7 @@
       const [lessonsResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
         supabaseClient
           .from('assignment_lessons')
-          .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,status)')
+          .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
           .in('assignment_id', assignmentIds)
           .eq('visible', true),
         supabaseClient
@@ -370,7 +377,14 @@
 
     const uniqueLessons = new Map();
     lessonRows.map(mapLesson).filter(Boolean).forEach((lesson) => {
-      if (!uniqueLessons.has(lesson.id)) uniqueLessons.set(lesson.id, lesson);
+      const existing = uniqueLessons.get(lesson.id);
+      if (!existing) {
+        uniqueLessons.set(lesson.id, lesson);
+        return;
+      }
+      const ids = new Set([...(existing.assignmentIds || []), ...(lesson.assignmentIds || [])]);
+      existing.assignmentIds = [...ids];
+      existing.sortOrder = Math.min(existing.sortOrder || 0, lesson.sortOrder || 0);
     });
 
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
@@ -607,6 +621,111 @@
     if (error) throw normalizeError(error, 'No se pudo restablecer la imagen.');
   }
 
+  function safeStorageName(value = 'archivo') {
+    return String(value || 'archivo')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'archivo';
+  }
+
+  function newLessonId() {
+    const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `lesson-${token}`;
+  }
+
+  async function createPdfLesson({ currentAssignment, targetAssignmentIds, title, period, pdfFile, thumbnailFile, pageCount = 1 }) {
+    const supabaseClient = getClient();
+    const activeSession = session || await getSession();
+    if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
+    const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
+    if (!ids.length) throw new Error('La clase debe asignarse al menos a un curso.');
+    const lessonId = newLessonId();
+    const rootPath = `${activeSession.user.id}/lessons/${lessonId}`;
+    const pdfExtension = String(pdfFile?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
+    const pdfPath = `${rootPath}/${safeStorageName(title)}.${pdfExtension}`;
+    let thumbnailPath = '';
+    let pdfUrl = '';
+    let thumbnailUrl = '';
+    const uploadedPaths = [];
+
+    try {
+      const pdfUpload = await supabaseClient.storage
+        .from(config.storageBucket || 'lms-public')
+        .upload(pdfPath, pdfFile, { cacheControl: '3600', upsert: false, contentType: 'application/pdf' });
+      if (pdfUpload.error) throw normalizeError(pdfUpload.error, 'No se pudo subir el PDF.');
+      uploadedPaths.push(pdfPath);
+      pdfUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(pdfPath).data?.publicUrl || '';
+
+      if (thumbnailFile) {
+        const extension = String(thumbnailFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'webp';
+        thumbnailPath = `${rootPath}/portada.${extension}`;
+        const thumbUpload = await supabaseClient.storage
+          .from(config.storageBucket || 'lms-public')
+          .upload(thumbnailPath, thumbnailFile, { cacheControl: '3600', upsert: false, contentType: thumbnailFile.type || 'image/webp' });
+        if (thumbUpload.error) throw normalizeError(thumbUpload.error, 'No se pudo subir la portada.');
+        uploadedPaths.push(thumbnailPath);
+        thumbnailUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(thumbnailPath).data?.publicUrl || '';
+      }
+
+      const lessonRow = {
+        id: lessonId,
+        period: Number(period || 1),
+        area: currentAssignment?.area || '',
+        subject_name: currentAssignment?.subject || '',
+        title: String(title || '').trim(),
+        emoji: '📘',
+        lesson_type: 'PDF',
+        estimated_time: '',
+        content_url: pdfUrl,
+        thumbnail_url: thumbnailUrl || null,
+        storage_pdf_path: pdfPath,
+        storage_thumbnail_path: thumbnailPath || null,
+        source_file_name: pdfFile?.name || '',
+        page_count: Math.max(1, Number(pageCount || 1)),
+        status: 'published',
+        created_by: activeSession.user.id
+      };
+      const lessonResult = await supabaseClient.from('lessons').insert(lessonRow);
+      if (lessonResult.error) throw normalizeError(lessonResult.error, 'No se pudo crear el registro de la clase.');
+
+      const linkRows = ids.map((assignmentId, index) => ({
+        assignment_id: assignmentId,
+        lesson_id: lessonId,
+        sort_order: Math.floor(Date.now() / 1000) + index,
+        visible: true
+      }));
+      const linkResult = await supabaseClient.from('assignment_lessons').insert(linkRows);
+      if (linkResult.error) throw normalizeError(linkResult.error, 'El PDF subió, pero no se pudo asignar a los cursos.');
+
+      return {
+        id: lessonId,
+        period: Number(period || 1),
+        area: currentAssignment?.area || '',
+        subject: currentAssignment?.subject || '',
+        title: String(title || '').trim(),
+        emoji: '📘',
+        type: 'PDF',
+        lessonType: 'PDF',
+        estimatedTime: '',
+        contentUrl: pdfUrl,
+        thumbnailUrl,
+        storagePdfPath: pdfPath,
+        storageThumbnailPath: thumbnailPath,
+        sourceFileName: pdfFile?.name || '',
+        pageCount: Math.max(1, Number(pageCount || 1)),
+        status: 'published',
+        assignmentId: ids[0] || '',
+        assignmentIds: ids,
+        sortOrder: linkRows[0]?.sort_order || 0
+      };
+    } catch (error) {
+      try { await supabaseClient.from('lessons').delete().eq('id', lessonId); } catch (_) {}
+      if (uploadedPaths.length) {
+        try { await supabaseClient.storage.from(config.storageBucket || 'lms-public').remove(uploadedPaths); } catch (_) {}
+      }
+      throw error;
+    }
+  }
+
   async function recordLessonView({ assignmentId, lessonId }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
@@ -645,7 +764,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.306', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.310', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -691,7 +810,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.306',
+          appVersion: '0.24.310',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -730,6 +849,7 @@
     savePreferences,
     uploadAssignmentImage,
     resetAssignmentImage,
+    createPdfLesson,
     recordLessonView,
     startQuizAttempt,
     submitQuizAttempt,

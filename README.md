@@ -105,3 +105,13 @@ Validación:
 - Quiz Studio anima cabecera, pestañas, campos, preguntas, opciones y botones.
 - La pantalla de una clase anima barra superior, encabezado e iframe de contenido.
 - El héroe de ACTIVIDADES recibe la misma entrada visible de CLASES, ROCKSTARS y QUIZZES.
+
+
+## v0.24.310 - Biblioteca de clases PDF
+
+- ACTIVIDADES y QUIZZES incorporan selector Cuadrícula / Lista igual que CLASES.
+- CLASES incorpora `Añadir clase` con nombre, periodo, PDF, portada opcional y alcance por curso o por grado.
+- Si no se carga portada, PDF.js genera una imagen desde la primera página.
+- La vista de cuadrícula muestra la clase como un cuaderno sin el nombre; la vista de lista añade nombre, periodo y páginas.
+- El lector abre una sola página y permite avanzar o retroceder con botones, flechas del teclado o deslizamiento, usando transición de hoja.
+- Requiere ejecutar `SUPABASE_MIGRATION_v0.24.310.sql` una vez antes de crear la primera clase.
