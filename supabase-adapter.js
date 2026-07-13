@@ -1015,7 +1015,7 @@
     const supabaseClient = getClient();
     const recordsResult = await supabaseClient
       .from('activity_student_records')
-      .select('id,activity_id,assignment_id,student_id,score,observations,submission_file,grading_group_id,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
+      .select('id,activity_id,assignment_id,student_id,score,observations,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
       .eq('activity_id', activityId)
       .eq('assignment_id', assignmentId);
     if (recordsResult.error) throw normalizeError(recordsResult.error, 'No se pudo cargar la lista de calificaciones.');
@@ -1060,6 +1060,7 @@
         observations: row.observations || '',
         submissionFile: row.submission_file && typeof row.submission_file === 'object' ? row.submission_file : {},
         gradingGroupId: row.grading_group_id || '',
+        rubricScores: row.rubric_scores && typeof row.rubric_scores === 'object' ? row.rubric_scores : {},
         gradedAt: row.graded_at || '',
         updatedAt: row.updated_at || '',
         deliveryEvents,
@@ -1088,7 +1089,7 @@
     };
   }
 
-  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -1107,6 +1108,7 @@
       observations: String(observations || ''),
       submission_file: submissionPayload,
       grading_group_id: groupId,
+      rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
       graded_by: activeSession.user.id,
       graded_at: gradedAt
     }));

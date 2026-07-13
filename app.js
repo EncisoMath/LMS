@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.332';
+  const APP_VERSION = '0.24.334';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10596,6 +10596,26 @@
     return Object.fromEntries(ACTIVITY_DELIVERY_STATUSES)[status] || status || 'Sin estado';
   }
 
+  function formatActivityTrackingDateTime(value) {
+    if (!value) return 'Fecha y hora no disponibles';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const dateLabel = date.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const timeLabel = date.toLocaleTimeString('es-CO', {
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+      .replace(' a. m.', ' a.m.')
+      .replace(' p. m.', ' p.m.')
+      .replace(' a. m.', ' a.m.')
+      .replace(' p. m.', ' p.m.');
+    return `${dateLabel} · ${timeLabel}`;
+  }
+
   function openActivityGradeModal(activity, record) {
     const gradebook = state.activityGradebook || [];
     const currentGroup = record.gradingGroupId
@@ -10608,6 +10628,17 @@
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
     const trackingCount = eventHistory.length;
+    const rubricCriteria = Array.isArray(activity?.rubric)
+      ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
+      : [];
+    const storedRubric = record.rubricScores && typeof record.rubricScores === 'object' ? record.rubricScores : {};
+    const storedRubricCriteria = Array.isArray(storedRubric.criteria) ? storedRubric.criteria : [];
+    const rubricScoreAt = (criterion, index) => {
+      const saved = storedRubricCriteria[index] || storedRubricCriteria.find((item) => String(item?.name || '') === String(criterion?.name || ''));
+      const value = Number(saved?.score);
+      return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+    };
+    const initialGradingMode = storedRubric.mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
     openModal(`
       <section class="modal-card em-activity-grade-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -10621,14 +10652,38 @@
         </div>
         <form id="activityGradeForm" class="em-activity-grade-form">
           <section class="em-grade-form-section" data-grade-modal-panel="score">
-            <div class="em-grade-form-heading"><h3>Calificación</h3><p>Asigna la nota y registra el comentario asociado a esta evaluación.</p></div>
-            <label class="field-label" for="activityScoreInput">Nota</label>
-            <input class="input em-grade-main-score" id="activityScoreInput" type="number" min="0" max="100" step="1" value="${Number(record.score ?? 40)}" required />
-            <div class="em-quick-grades" aria-label="Calificaciones rápidas">
-              ${[100,95,90,85,80,75,70,65,60,55,50,45,40].map((score) => `<button type="button" data-quick-grade="${score}" ${Number(record.score) === score ? 'class="is-selected"' : ''}>${score}</button>`).join('')}
+            <div class="em-grade-form-heading"><h3>Calificación</h3><p>Escoge si deseas calificar directamente o utilizar la rúbrica definida para esta actividad.</p></div>
+            <div class="em-grade-score-mode-tabs" role="tablist" aria-label="Método de calificación">
+              <button class="${initialGradingMode === 'normal' ? 'is-active' : ''}" type="button" role="tab" aria-selected="${initialGradingMode === 'normal' ? 'true' : 'false'}" data-grade-score-mode="normal">Calificar normal</button>
+              <button class="${initialGradingMode === 'rubric' ? 'is-active' : ''}" type="button" role="tab" aria-selected="${initialGradingMode === 'rubric' ? 'true' : 'false'}" data-grade-score-mode="rubric" ${rubricCriteria.length ? '' : 'disabled'}>Calificar con rúbrica</button>
             </div>
-            <label class="field-label" for="activityObservationsInput">Comentario de la calificación</label>
-            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe el comentario correspondiente a esta nota…">${escapeHTML(record.observations || '')}</textarea>
+
+            <div class="em-grade-score-mode-panel" data-grade-score-panel="normal" ${initialGradingMode === 'normal' ? '' : 'hidden'}>
+              <label class="field-label" for="activityScoreInput">Nota</label>
+              <input class="input em-grade-main-score" id="activityScoreInput" type="number" min="0" max="100" step="1" value="${Number(record.score ?? 40)}" required />
+              <div class="em-quick-grades" aria-label="Calificaciones rápidas">
+                ${[100,95,90,85,80,75,70,65,60,55,50,45,40].map((score) => `<button type="button" data-quick-grade="${score}" ${Number(record.score) === score ? 'class="is-selected"' : ''}>${score}</button>`).join('')}
+              </div>
+            </div>
+
+            <div class="em-grade-score-mode-panel em-rubric-grade-panel" data-grade-score-panel="rubric" ${initialGradingMode === 'rubric' ? '' : 'hidden'}>
+              ${rubricCriteria.length ? `
+                <div class="em-rubric-grade-head"><span>Criterio</span><span>Peso</span><span>Nota</span><span>Aporte</span></div>
+                <div class="em-rubric-grade-list">
+                  ${rubricCriteria.map((criterion, index) => {
+                    const score = rubricScoreAt(criterion, index);
+                    const contribution = score * Number(criterion.percentage || 0) / 100;
+                    return `<label class="em-rubric-grade-row"><span><strong>${escapeHTML(criterion.name)}</strong></span><b>${Number(criterion.percentage || 0)}%</b><input class="input" type="number" min="0" max="100" step="1" value="${score}" data-rubric-grade-score="${index}" aria-label="Calificación para ${escapeAttr(criterion.name)}"/><output data-rubric-grade-contribution="${index}">${contribution.toFixed(2)}</output></label>`;
+                  }).join('')}
+                </div>
+                <div class="em-rubric-grade-total"><span>Calificación calculada</span><strong id="activityRubricCalculatedScore">0.00</strong><small>/100</small></div>
+              ` : '<div class="em-activity-panel-empty">Esta actividad no tiene una rúbrica disponible.</div>'}
+            </div>
+
+            <div class="em-grade-shared-comment">
+              <label class="field-label" for="activityObservationsInput">Comentario de la calificación</label>
+              <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe el comentario correspondiente a esta nota…">${escapeHTML(record.observations || '')}</textarea>
+            </div>
           </section>
 
           <section class="em-grade-form-section" data-grade-modal-panel="delivery" hidden>
@@ -10656,7 +10711,7 @@
             <div class="em-delivery-history em-tracking-history">
               ${eventHistory.length ? eventHistory.slice().reverse().map((event, index) => {
                 const sequence = eventHistory.length - index;
-                return `<article><b>${sequence}</b><div><strong>${escapeHTML(activityDeliveryLabel(event.status))}</strong><time>${escapeHTML(formatAcademicDate(String(event.occurredAt || '').slice(0, 10)))}</time>${event.note ? `<p>${escapeHTML(event.note)}</p>` : '<p>Sin observación adicional.</p>'}</div></article>`;
+                return `<article><b>${sequence}</b><div><strong>${escapeHTML(activityDeliveryLabel(event.status))}</strong><time datetime="${escapeAttr(event.occurredAt || '')}">${escapeHTML(formatActivityTrackingDateTime(event.occurredAt))}</time>${event.note ? `<p>${escapeHTML(event.note)}</p>` : '<p>Sin observación adicional.</p>'}</div></article>`;
               }).join('') : '<div class="em-tracking-empty">Aún no hay seguimientos registrados.</div>'}
             </div>
           </section>
@@ -10675,6 +10730,11 @@
     const gradeModal = document.querySelector('.em-activity-grade-modal');
     gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
+    const rubricCriteria = Array.isArray(activity?.rubric)
+      ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
+      : [];
+    let gradingMode = record.rubricScores?.mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
+    let calculatedRubricScore = Number(record.rubricScores?.calculatedScore || record.score || 0);
 
     const setActiveTab = (tabName = 'score') => {
       gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
@@ -10691,6 +10751,48 @@
       });
     };
 
+    const getEffectivePrimaryScore = () => gradingMode === 'rubric'
+      ? calculatedRubricScore
+      : Number(mainScore?.value || 0);
+
+    const updateRubricCalculation = () => {
+      if (!rubricCriteria.length) {
+        calculatedRubricScore = Number(mainScore?.value || 0);
+        return calculatedRubricScore;
+      }
+      let total = 0;
+      rubricCriteria.forEach((criterion, index) => {
+        const input = gradeModal?.querySelector(`[data-rubric-grade-score="${index}"]`);
+        const raw = Number(input?.value || 0);
+        const score = Math.max(0, Math.min(100, Number.isFinite(raw) ? raw : 0));
+        if (input && Number(input.value) !== score) input.value = String(score);
+        const contribution = score * Number(criterion.percentage || 0) / 100;
+        total += contribution;
+        const output = gradeModal?.querySelector(`[data-rubric-grade-contribution="${index}"]`);
+        if (output) output.textContent = contribution.toFixed(2);
+      });
+      calculatedRubricScore = Math.round(total * 100) / 100;
+      const totalBox = document.getElementById('activityRubricCalculatedScore');
+      if (totalBox) totalBox.textContent = calculatedRubricScore.toFixed(2);
+      return calculatedRubricScore;
+    };
+
+    const setScoreMode = (mode = 'normal') => {
+      gradingMode = mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
+      gradeModal?.querySelectorAll('[data-grade-score-mode]').forEach((button) => {
+        const active = button.dataset.gradeScoreMode === gradingMode;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      gradeModal?.querySelectorAll('[data-grade-score-panel]').forEach((panel) => {
+        const active = panel.dataset.gradeScorePanel === gradingMode;
+        panel.hidden = !active;
+        panel.style.display = active ? 'grid' : 'none';
+      });
+      if (gradingMode === 'rubric') updateRubricCalculation();
+      refreshOverrides();
+    };
+
     const refreshOverrides = () => {
       const host = document.getElementById('activityGroupScoreOverrides');
       if (!host) return;
@@ -10698,12 +10800,18 @@
       const extras = checkedCodes.filter((code) => code !== record.studentCode);
       host.innerHTML = extras.length ? `<p>Puedes ajustar la nota de cada integrante sin romper el grupo.</p>${extras.map((code) => {
         const member = (state.activityGradebook || []).find((item) => item.studentCode === code);
-        const value = existingScores.has(code) ? existingScores.get(code) : Number(mainScore?.value || 40);
+        const value = existingScores.has(code) ? existingScores.get(code) : Number(getEffectivePrimaryScore() || 40);
         return `<label><span>${escapeHTML(member?.fullName || code)}</span><input class="input" type="number" min="0" max="100" step="1" data-group-score="${escapeAttr(code)}" value="${value}" /></label>`;
       }).join('')}` : '<p>Si no seleccionas compañeros, la calificación será individual.</p>';
     };
 
     gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
+    gradeModal?.querySelectorAll('[data-grade-score-mode]').forEach((button) => button.addEventListener('click', () => setScoreMode(button.dataset.gradeScoreMode || 'normal')));
+    gradeModal?.querySelectorAll('[data-rubric-grade-score]').forEach((input) => input.addEventListener('input', () => {
+      updateRubricCalculation();
+      refreshOverrides();
+    }));
+    mainScore?.addEventListener('input', refreshOverrides);
     groupOptions?.querySelectorAll('[data-group-student]').forEach((input) => input.addEventListener('change', refreshOverrides));
     document.getElementById('activityGroupSearch')?.addEventListener('input', (event) => {
       const query = normalizeSearch(event.target.value || '');
@@ -10720,14 +10828,30 @@
       const label = document.getElementById('activitySubmissionFileName');
       if (label) label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF o imagen · máximo 20 MB';
     });
-    refreshOverrides();
+    updateRubricCalculation();
+    setScoreMode(gradingMode);
     setActiveTab('score');
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const errorBox = document.getElementById('activityGradeError');
       const save = document.getElementById('saveActivityGradeBtn');
-      const primaryScore = Number(mainScore?.value || 0);
+      const primaryScore = gradingMode === 'rubric' ? updateRubricCalculation() : Number(mainScore?.value || 0);
+      const rubricScores = gradingMode === 'rubric'
+        ? {
+            mode: 'rubric',
+            calculatedScore: primaryScore,
+            criteria: rubricCriteria.map((criterion, index) => {
+              const score = Math.max(0, Math.min(100, Number(gradeModal?.querySelector(`[data-rubric-grade-score="${index}"]`)?.value || 0)));
+              return {
+                name: String(criterion.name || ''),
+                percentage: Number(criterion.percentage || 0),
+                score,
+                contribution: Math.round((score * Number(criterion.percentage || 0) / 100) * 100) / 100
+              };
+            })
+          }
+        : { mode: 'normal', calculatedScore: primaryScore, criteria: [] };
       const selectedCodes = [...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
       const scores = { [record.studentCode]: primaryScore };
       gradeModal.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
@@ -10753,6 +10877,7 @@
           previousGroupStudentCodes: (currentGroup || []).map((item) => item.studentCode),
           gradingGroupId: record.gradingGroupId || '',
           scores,
+          rubricScores,
           observations: document.getElementById('activityObservationsInput')?.value.trim() || '',
           existingSubmissionFile: record.submissionFile || {},
           submissionFile: file,
@@ -12779,7 +12904,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.332', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.334', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
