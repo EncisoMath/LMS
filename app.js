@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.331';
+  const APP_VERSION = '0.24.332';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -515,6 +515,7 @@
     quizActiveId: localStorage.getItem('encisomath:quizActiveId') || '',
     activeActivityId: '',
     activityGradebook: [],
+    activityGradeSort: { key: 'lastName', direction: 'asc' },
     quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
@@ -10006,23 +10007,73 @@
     }
   }
 
+  const ACTIVITY_GROUP_COLORS = [
+    '#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7',
+    '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#6366f1'
+  ];
+
   function activitySemaphore(score) {
     const value = Number(score || 0);
-    if (value >= 90) return { emoji: '🏆', label: 'Superior', className: 'is-trophy' };
-    if (value >= 80) return { emoji: '🟢', label: 'Alto', className: 'is-green' };
-    if (value >= 70) return { emoji: '🟡', label: 'Básico', className: 'is-yellow' };
-    if (value >= 60) return { emoji: '🟠', label: 'En proceso', className: 'is-orange' };
-    return { emoji: '🔴', label: 'Bajo', className: 'is-red' };
+    if (value >= 90) return { emoji: '🏆', label: 'Superior', className: 'is-trophy', rank: 4 };
+    if (value >= 80) return { emoji: '🟢', label: 'Alto', className: 'is-green', rank: 3 };
+    if (value >= 70) return { emoji: '🟡', label: 'Básico', className: 'is-yellow', rank: 2 };
+    if (value >= 60) return { emoji: '🟠', label: 'Básico', className: 'is-orange', rank: 2 };
+    return { emoji: '🔴', label: 'Bajo', className: 'is-red', rank: 1 };
+  }
+
+  function activityGroupMetaMap(rows = []) {
+    const groups = new Map();
+    (rows || []).forEach((row) => {
+      const id = String(row?.gradingGroupId || '');
+      if (!id) return;
+      const parsed = Date.parse(row?.gradedAt || row?.updatedAt || '');
+      const time = Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+      const current = groups.get(id);
+      if (!current || time < current.time) groups.set(id, { id, time });
+    });
+    const ordered = [...groups.values()].sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+    return new Map(ordered.map((group, index) => [group.id, {
+      number: index + 1,
+      color: ACTIVITY_GROUP_COLORS[index % ACTIVITY_GROUP_COLORS.length]
+    }]));
+  }
+
+  function activityGradeSortValue(row, key, groupMap) {
+    if (key === 'group') return groupMap.get(String(row?.gradingGroupId || ''))?.number || Number.MAX_SAFE_INTEGER;
+    if (key === 'firstName') return normalizeSearch(row?.firstName || '');
+    if (key === 'score') return Number(row?.score ?? 40);
+    if (key === 'performance') return activitySemaphore(row?.score).rank;
+    return normalizeSearch(row?.lastName || row?.fullName || '');
+  }
+
+  function sortedActivityGradebookRows(rows = [], groupMap = activityGroupMetaMap(rows)) {
+    const sort = state.activityGradeSort || { key: 'lastName', direction: 'asc' };
+    const direction = sort.direction === 'desc' ? -1 : 1;
+    const sorted = [...rows].sort((a, b) => {
+      const av = activityGradeSortValue(a, sort.key, groupMap);
+      const bv = activityGradeSortValue(b, sort.key, groupMap);
+      let comparison = 0;
+      if (typeof av === 'number' && typeof bv === 'number') comparison = av - bv;
+      else comparison = String(av).localeCompare(String(bv), 'es', { sensitivity: 'base' });
+      if (!comparison) comparison = normalizeSearch(`${a.lastName} ${a.firstName}`).localeCompare(normalizeSearch(`${b.lastName} ${b.firstName}`), 'es');
+      return comparison * direction;
+    });
+    return { rows: sorted, groupMap };
   }
 
   function activityGradebookRowsHTML(rows, query = '') {
     const normalized = normalizeSearch(query);
-    const filtered = (rows || []).filter((row) => !normalized || normalizeSearch(`${row.lastName} ${row.firstName} ${row.fullName} ${row.studentCode}`).includes(normalized));
+    const sourceRows = rows || [];
+    const filtered = sourceRows.filter((row) => !normalized || normalizeSearch(`${row.lastName} ${row.firstName} ${row.fullName} ${row.studentCode}`).includes(normalized));
     if (!filtered.length) return '<div class="em-activity-grade-empty">No hay estudiantes con ese filtro.</div>';
-    return filtered.map((row) => {
+    const groupMap = activityGroupMetaMap(sourceRows);
+    const { rows: sortedRows } = sortedActivityGradebookRows(filtered, groupMap);
+    return sortedRows.map((row) => {
       const semaphore = activitySemaphore(row.score);
+      const group = groupMap.get(String(row.gradingGroupId || ''));
       return `
         <button class="em-activity-grade-row" type="button" data-activity-record-id="${escapeAttr(row.recordId)}">
+          <span class="em-grade-group-cell">${group ? `<i style="--em-grade-group-color:${group.color}">${group.number}</i>` : '<i class="is-empty">—</i>'}</span>
           <span class="em-grade-lastname">${escapeHTML(row.lastName || row.fullName || '')}</span>
           <span class="em-grade-firstname">${escapeHTML(row.firstName || '')}</span>
           <strong class="em-grade-score">${Number(row.score ?? 40)}</strong>
@@ -10032,11 +10083,37 @@
     }).join('');
   }
 
+  function updateActivityGradeSortIndicators() {
+    const sort = state.activityGradeSort || { key: 'lastName', direction: 'asc' };
+    document.querySelectorAll('[data-activity-grade-sort]').forEach((button) => {
+      const active = button.dataset.activityGradeSort === sort.key;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      const indicator = button.querySelector('.em-grade-sort-indicator');
+      if (indicator) indicator.textContent = active ? (sort.direction === 'asc' ? '↑' : '↓') : '↕';
+    });
+  }
+
+  function bindActivityGradeSortButtons() {
+    document.querySelectorAll('[data-activity-grade-sort]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.activityGradeSort || 'lastName';
+        const current = state.activityGradeSort || { key: 'lastName', direction: 'asc' };
+        state.activityGradeSort = current.key === key
+          ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+          : { key, direction: key === 'score' || key === 'performance' ? 'desc' : 'asc' };
+        refreshActivityGradebookList();
+      });
+    });
+    updateActivityGradeSortIndicators();
+  }
+
   function refreshActivityGradebookList() {
     const list = document.getElementById('activityGradebookList');
     if (!list) return;
     const query = document.getElementById('activityGradeSearch')?.value || '';
     list.innerHTML = activityGradebookRowsHTML(state.activityGradebook || [], query);
+    updateActivityGradeSortIndicators();
     bindActivityGradeRows();
   }
 
@@ -10135,7 +10212,13 @@
               <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
               <label class="em-activity-grade-search"><span aria-hidden="true">⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" autocomplete="off" /></label>
             </div>
-            <div class="em-activity-grade-columns" aria-hidden="true"><span>Apellido</span><span>Nombre</span><span>Calificación</span><span>Semáforo</span></div>
+            <div class="em-activity-grade-columns" role="row" aria-label="Ordenar estudiantes">
+              <button type="button" data-activity-grade-sort="group" aria-label="Ordenar por grupo">G <span class="em-grade-sort-indicator">↕</span></button>
+              <button type="button" data-activity-grade-sort="lastName">Apellido <span class="em-grade-sort-indicator">↑</span></button>
+              <button type="button" data-activity-grade-sort="firstName">Nombre <span class="em-grade-sort-indicator">↕</span></button>
+              <button type="button" data-activity-grade-sort="score">Cal. <span class="em-grade-sort-indicator">↕</span></button>
+              <button type="button" data-activity-grade-sort="performance">Desempeño <span class="em-grade-sort-indicator">↕</span></button>
+            </div>
             <div id="activityGradebookList" class="em-activity-gradebook-list"></div>
           </section>
         </div>
@@ -10148,6 +10231,7 @@
       document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
       document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
       document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
+      bindActivityGradeSortButtons();
       initActivityDetailContent(activity);
       loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
@@ -10518,9 +10602,12 @@
       ? gradebook.filter((item) => item.gradingGroupId === record.gradingGroupId)
       : [record];
     const currentCodes = new Set(currentGroup.map((item) => item.studentCode));
+    const eligibleGroupRows = gradebook
+      .filter((item) => currentCodes.has(item.studentCode) || !item.gradingGroupId)
+      .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
-    const notesCount = (record.observations ? 1 : 0) + eventHistory.length;
+    const trackingCount = eventHistory.length;
     openModal(`
       <section class="modal-card em-activity-grade-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -10530,46 +10617,47 @@
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
-          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="notes">Observaciones${notesCount ? `<span class="em-grade-tab-count">${notesCount}</span>` : ''}</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="tracking">Seguimiento${trackingCount ? `<span class="em-grade-tab-count">${trackingCount}</span>` : ''}</button>
         </div>
         <form id="activityGradeForm" class="em-activity-grade-form">
           <section class="em-grade-form-section" data-grade-modal-panel="score">
-            <div class="em-grade-form-heading"><h3>Calificación</h3><p>Asigna la nota manualmente o utiliza los valores rápidos.</p></div>
-            <label class="field-label" for="activityScoreInput">Calificación</label>
+            <div class="em-grade-form-heading"><h3>Calificación</h3><p>Asigna la nota y registra el comentario asociado a esta evaluación.</p></div>
+            <label class="field-label" for="activityScoreInput">Nota</label>
             <input class="input em-grade-main-score" id="activityScoreInput" type="number" min="0" max="100" step="1" value="${Number(record.score ?? 40)}" required />
             <div class="em-quick-grades" aria-label="Calificaciones rápidas">
               ${[100,95,90,85,80,75,70,65,60,55,50,45,40].map((score) => `<button type="button" data-quick-grade="${score}" ${Number(record.score) === score ? 'class="is-selected"' : ''}>${score}</button>`).join('')}
             </div>
+            <label class="field-label" for="activityObservationsInput">Comentario de la calificación</label>
+            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe el comentario correspondiente a esta nota…">${escapeHTML(record.observations || '')}</textarea>
           </section>
 
           <section class="em-grade-form-section" data-grade-modal-panel="delivery" hidden>
-            <div class="em-grade-form-heading"><h3>Entrega</h3><p>Consulta o reemplaza el archivo que entregó el estudiante.</p></div>
+            <div class="em-grade-form-heading"><h3>Entrega</h3><p>Consulta o reemplaza el archivo entregado por el estudiante.</p></div>
             ${existingFile ? `<a class="em-submission-current-file" href="${escapeAttr(existingFile.url)}" target="_blank" rel="noopener">📎 ${escapeHTML(existingFile.name || 'Abrir archivo actual')}</a>` : '<p class="em-activity-panel-empty">Este estudiante aún no tiene archivo adjunto.</p>'}
             <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>${existingFile ? 'Reemplazar archivo' : 'Adjuntar archivo'}</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
             <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
           </section>
 
           <section class="em-grade-form-section" data-grade-modal-panel="group" hidden>
-            <div class="em-grade-form-heading"><h3>Grupo</h3><p>Selecciona compañeros si realizaron la actividad juntos.</p></div>
+            <div class="em-grade-form-heading"><h3>Grupo</h3><p>Solo aparecen estudiantes sin grupo y los integrantes del grupo actual.</p></div>
             <label class="em-grade-group-search"><span>⌕</span><input id="activityGroupSearch" type="search" placeholder="Buscar estudiante" /></label>
             <div class="em-grade-group-options" id="activityGroupOptions">
-              ${gradebook.map((item) => `<label data-group-option data-search="${escapeAttr(normalizeSearch(`${item.lastName} ${item.firstName} ${item.fullName}`))}"><input type="checkbox" data-group-student="${escapeAttr(item.studentCode)}" ${item.studentCode === record.studentCode || currentCodes.has(item.studentCode) ? 'checked' : ''} ${item.studentCode === record.studentCode ? 'disabled' : ''}/><span>${escapeHTML(item.fullName)}</span></label>`).join('')}
+              ${eligibleGroupRows.map((item) => `<label data-group-option data-search="${escapeAttr(normalizeSearch(`${item.lastName} ${item.firstName} ${item.fullName}`))}"><input type="checkbox" data-group-student="${escapeAttr(item.studentCode)}" ${item.studentCode === record.studentCode || currentCodes.has(item.studentCode) ? 'checked' : ''} ${item.studentCode === record.studentCode ? 'disabled' : ''}/><span>${escapeHTML(item.fullName)}</span></label>`).join('')}
             </div>
             <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
           </section>
 
-          <section class="em-grade-form-section" data-grade-modal-panel="notes" hidden>
-            <div class="em-grade-form-heading"><h3>Observaciones</h3><p>Registra comentarios, seguimientos e intentos de entrega.</p></div>
-            <label class="field-label" for="activityObservationsInput">Observaciones</label>
-            <textarea class="input" id="activityObservationsInput" rows="5" placeholder="Escribe observaciones para el estudiante o el grupo…">${escapeHTML(record.observations || '')}</textarea>
-            <hr class="em-grade-divider" />
-            <div class="em-grade-form-heading em-grade-form-heading-inline"><h3>Intentos de entrega y solicitudes</h3><p>Elige un estado y añade una nota breve si lo necesitas.</p></div>
-            <div class="em-delivery-status-grid">
-              ${ACTIVITY_DELIVERY_STATUSES.map(([value, label]) => `<button type="button" data-delivery-status="${value}">${label}</button>`).join('')}
+          <section class="em-grade-form-section em-tracking-panel" data-grade-modal-panel="tracking" hidden>
+            <div class="em-grade-form-heading"><h3>Seguimiento</h3><p>Registra cada solicitud, novedad o intento de entrega de manera cronológica.</p></div>
+            <div class="em-tracking-compose">
+              <label><span>Tipo de seguimiento</span><select class="select" id="activityDeliveryStatus"><option value="">Selecciona un estado</option>${ACTIVITY_DELIVERY_STATUSES.map(([value, label]) => `<option value="${value}">${escapeHTML(label)}</option>`).join('')}</select></label>
+              <label><span>Observación del seguimiento</span><textarea class="input" id="activityDeliveryNote" rows="3" maxlength="240" placeholder="Ejemplo: Se solicitó nuevamente la actividad y se acordó una nueva fecha."></textarea></label>
             </div>
-            <input class="input" id="activityDeliveryNote" maxlength="240" placeholder="Nota opcional para este seguimiento" />
-            <div class="em-delivery-history">
-              ${eventHistory.length ? eventHistory.slice().reverse().map((event) => `<div><span>${escapeHTML(activityDeliveryLabel(event.status))}</span><small>${escapeHTML(formatAcademicDate(String(event.occurredAt || '').slice(0, 10)))}${event.note ? ` · ${escapeHTML(event.note)}` : ''}</small></div>`).join('') : '<p>Aún no hay seguimientos registrados.</p>'}
+            <div class="em-delivery-history em-tracking-history">
+              ${eventHistory.length ? eventHistory.slice().reverse().map((event, index) => {
+                const sequence = eventHistory.length - index;
+                return `<article><b>${sequence}</b><div><strong>${escapeHTML(activityDeliveryLabel(event.status))}</strong><time>${escapeHTML(formatAcademicDate(String(event.occurredAt || '').slice(0, 10)))}</time>${event.note ? `<p>${escapeHTML(event.note)}</p>` : '<p>Sin observación adicional.</p>'}</div></article>`;
+              }).join('') : '<div class="em-tracking-empty">Aún no hay seguimientos registrados.</div>'}
             </div>
           </section>
 
@@ -10584,10 +10672,10 @@
     const form = document.getElementById('activityGradeForm');
     const groupOptions = document.getElementById('activityGroupOptions');
     const mainScore = document.getElementById('activityScoreInput');
-    const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
-    let selectedDeliveryStatus = '';
-
     const gradeModal = document.querySelector('.em-activity-grade-modal');
+    gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
+    const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
+
     const setActiveTab = (tabName = 'score') => {
       gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
         const active = button.dataset.gradeModalTab === tabName;
@@ -10606,9 +10694,9 @@
     const refreshOverrides = () => {
       const host = document.getElementById('activityGroupScoreOverrides');
       if (!host) return;
-      const checkedCodes = [...document.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
+      const checkedCodes = [...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
       const extras = checkedCodes.filter((code) => code !== record.studentCode);
-      host.innerHTML = extras.length ? `<p>Si un integrante obtuvo otra nota, ajústala aquí.</p>${extras.map((code) => {
+      host.innerHTML = extras.length ? `<p>Puedes ajustar la nota de cada integrante sin romper el grupo.</p>${extras.map((code) => {
         const member = (state.activityGradebook || []).find((item) => item.studentCode === code);
         const value = existingScores.has(code) ? existingScores.get(code) : Number(mainScore?.value || 40);
         return `<label><span>${escapeHTML(member?.fullName || code)}</span><input class="input" type="number" min="0" max="100" step="1" data-group-score="${escapeAttr(code)}" value="${value}" /></label>`;
@@ -10621,15 +10709,11 @@
       const query = normalizeSearch(event.target.value || '');
       groupOptions?.querySelectorAll('[data-group-option]').forEach((label) => { label.hidden = Boolean(query) && !String(label.dataset.search || '').includes(query); });
     });
-    document.querySelectorAll('[data-quick-grade]').forEach((button) => button.addEventListener('click', () => {
+    gradeModal?.querySelectorAll('[data-quick-grade]').forEach((button) => button.addEventListener('click', () => {
       const value = Number(button.dataset.quickGrade || 40);
       if (mainScore) mainScore.value = String(value);
-      document.querySelectorAll('[data-group-score]').forEach((input) => { input.value = String(value); });
-      document.querySelectorAll('[data-quick-grade]').forEach((item) => item.classList.toggle('is-selected', item === button));
-    }));
-    document.querySelectorAll('[data-delivery-status]').forEach((button) => button.addEventListener('click', () => {
-      selectedDeliveryStatus = button.dataset.deliveryStatus || '';
-      document.querySelectorAll('[data-delivery-status]').forEach((item) => item.classList.toggle('is-selected', item === button));
+      gradeModal.querySelectorAll('[data-group-score]').forEach((input) => { input.value = String(value); });
+      gradeModal.querySelectorAll('[data-quick-grade]').forEach((item) => item.classList.toggle('is-selected', item === button));
     }));
     document.getElementById('activitySubmissionFile')?.addEventListener('change', (event) => {
       const file = event.target.files?.[0];
@@ -10644,9 +10728,9 @@
       const errorBox = document.getElementById('activityGradeError');
       const save = document.getElementById('saveActivityGradeBtn');
       const primaryScore = Number(mainScore?.value || 0);
-      const selectedCodes = [...document.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
+      const selectedCodes = [...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
       const scores = { [record.studentCode]: primaryScore };
-      document.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
+      gradeModal.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
       if (Object.values(scores).some((score) => !Number.isFinite(score) || score < 0 || score > 100)) {
         if (errorBox) errorBox.textContent = 'Todas las calificaciones deben estar entre 0 y 100.';
         return;
@@ -10656,6 +10740,7 @@
         if (errorBox) errorBox.textContent = 'El archivo de entrega supera 20 MB.';
         return;
       }
+      const deliveryStatus = document.getElementById('activityDeliveryStatus')?.value || '';
       save.disabled = true;
       save.textContent = 'Guardando…';
       if (errorBox) errorBox.textContent = '';
@@ -10666,11 +10751,12 @@
           primaryStudentCode: record.studentCode,
           selectedStudentCodes: selectedCodes,
           previousGroupStudentCodes: (currentGroup || []).map((item) => item.studentCode),
+          gradingGroupId: record.gradingGroupId || '',
           scores,
           observations: document.getElementById('activityObservationsInput')?.value.trim() || '',
           existingSubmissionFile: record.submissionFile || {},
           submissionFile: file,
-          deliveryStatus: selectedDeliveryStatus,
+          deliveryStatus,
           deliveryNote: document.getElementById('activityDeliveryNote')?.value.trim() || ''
         });
         updateActivityProgressFromGradebook(activity, state.activityGradebook);
@@ -12693,7 +12779,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.331', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.332', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

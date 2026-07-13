@@ -1088,14 +1088,14 @@
     };
   }
 
-  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], scores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const codes = [...new Set([primaryStudentCode, ...(selectedStudentCodes || [])].filter(Boolean))];
     const dbRows = codes.map((code) => ({ code, studentId: resolveStudentDbId(code) }));
     if (dbRows.some((row) => !row.studentId)) throw new Error('No se encontró uno de los estudiantes seleccionados.');
-    const groupId = codes.length > 1 ? (globalThis.crypto?.randomUUID?.() || null) : null;
+    const groupId = codes.length > 1 ? (String(gradingGroupId || '').trim() || globalThis.crypto?.randomUUID?.() || null) : null;
     const newSubmission = await uploadActivitySubmission({ activityId, assignmentId, studentCode: primaryStudentCode, file: submissionFile });
     const submissionPayload = newSubmission || (existingSubmissionFile && typeof existingSubmissionFile === 'object' ? existingSubmissionFile : {});
     const gradedAt = new Date().toISOString();

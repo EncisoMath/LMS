@@ -29252,3 +29252,353 @@ html body .modal-layer .modal-card {
     width: 100% !important;
   }
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.332 - ACTIVIDADES / TABLA Y CALIFICACION
+========================================================= */
+
+/* El contenido y la tabla respetan exactamente el ancho visual del hero. */
+.em-activity-detail-main,
+.em-activity-gradebook {
+  box-sizing: border-box;
+  width: 100%;
+  border-radius: 4px !important;
+}
+.em-activity-overview-grid article,
+.em-activity-grade-search,
+.em-activity-html-frame,
+.em-activity-image-sequence figure,
+.em-activity-pdf-page {
+  border-radius: 4px !important;
+}
+
+/* Tabla ordenable con grupo, nombres, nota y desempeño. */
+.em-activity-grade-columns,
+.em-activity-grade-row {
+  grid-template-columns: 38px minmax(88px, 1.2fr) minmax(78px, 1fr) 58px minmax(92px, .95fr) !important;
+  gap: 6px !important;
+}
+.em-activity-grade-columns {
+  padding: 8px 14px !important;
+}
+.em-activity-grade-columns button {
+  min-width: 0;
+  padding: 5px 2px;
+  border: 0;
+  border-radius: 4px !important;
+  background: transparent;
+  color: #91a0b8;
+  font: 600 .61rem/1.1 "Montserrat", Arial, sans-serif;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.em-activity-grade-columns button:first-child,
+.em-activity-grade-columns button:nth-child(4) {
+  text-align: center;
+}
+.em-activity-grade-columns button.is-active {
+  color: #fff;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 18%, transparent);
+}
+.em-grade-sort-indicator {
+  margin-left: 2px;
+  font-size: .62rem;
+  opacity: .78;
+}
+.em-activity-grade-row {
+  padding: 10px 14px !important;
+}
+.em-grade-group-cell {
+  display: grid;
+  place-items: center;
+}
+.em-grade-group-cell i {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--em-grade-group-color, #475569);
+  color: #fff;
+  font: 800 .68rem/1 "Montserrat", Arial, sans-serif;
+  font-style: normal;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 4px 10px color-mix(in srgb, var(--em-grade-group-color, #475569) 28%, transparent);
+}
+.em-grade-group-cell i.is-empty {
+  background: rgba(255,255,255,.04);
+  color: #64748b;
+  box-shadow: none;
+}
+.em-grade-lastname,
+.em-grade-firstname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .72rem !important;
+  font-weight: 500 !important;
+}
+.em-grade-score {
+  text-align: center;
+  font-size: .78rem !important;
+  font-weight: 600;
+}
+.em-grade-light {
+  min-width: 0;
+  gap: 5px !important;
+  font-weight: 500;
+}
+.em-grade-light b { font-size: .82rem !important; }
+.em-grade-light small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .66rem;
+  font-weight: 500;
+}
+
+/* Modal centrado verticalmente, sin comportamiento de bottom-sheet. */
+html body .modal-layer.em-grade-modal-layer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px !important;
+}
+.em-activity-grade-modal {
+  width: min(720px, calc(100vw - 24px)) !important;
+  max-height: calc(100dvh - 24px) !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  padding: 18px !important;
+}
+.em-activity-grade-modal .modal-close,
+.em-activity-grade-modal button,
+.em-activity-grade-modal .input,
+.em-activity-grade-modal .select,
+.em-activity-grade-modal textarea,
+.em-activity-grade-modal .em-file-drop,
+.em-activity-grade-modal .em-grade-form-section,
+.em-activity-grade-modal .em-grade-group-search,
+.em-activity-grade-modal .em-grade-group-options label,
+.em-activity-grade-modal .em-submission-current-file,
+.em-activity-grade-modal .em-tracking-history article,
+.em-activity-grade-modal .em-tracking-empty {
+  border-radius: 4px !important;
+}
+
+/* Las cuatro pestañas siempre caben horizontalmente. */
+.em-activity-grade-tabbar {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  overflow: visible !important;
+  margin-bottom: 14px !important;
+}
+.em-activity-grade-tabbar button {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 4px !important;
+  border-radius: 4px !important;
+  font-size: clamp(.50rem, 1.7vw, .66rem) !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+}
+.em-grade-tab-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 4px !important;
+  font-size: .52rem;
+}
+.em-activity-grade-modal [data-grade-modal-panel][hidden] {
+  display: none !important;
+}
+.em-activity-grade-modal [data-grade-modal-panel].is-active {
+  display: grid !important;
+}
+.em-grade-form-section {
+  border-radius: 4px !important;
+  padding: 15px !important;
+}
+.em-quick-grades {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+.em-quick-grades button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 3px !important;
+  border-radius: 4px !important;
+  font-size: .68rem !important;
+}
+.em-group-score-overrides label {
+  grid-template-columns: minmax(0, 1fr) 82px !important;
+}
+
+/* Seguimiento limpio y detallado. */
+.em-tracking-panel {
+  gap: 16px !important;
+}
+.em-tracking-compose {
+  display: grid;
+  grid-template-columns: minmax(170px, .8fr) minmax(0, 1.45fr);
+  gap: 12px;
+}
+.em-tracking-compose label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #dbe5f5;
+  font-size: .72rem;
+  font-weight: 650;
+}
+.em-tracking-compose textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+.em-tracking-history {
+  display: grid;
+  gap: 8px;
+}
+.em-tracking-history article {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px;
+  background: rgba(3,7,18,.64);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.em-tracking-history article > b {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--em-current-subject-color, #1368ce);
+  color: #fff;
+  font-size: .68rem;
+}
+.em-tracking-history article > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+}
+.em-tracking-history strong {
+  color: #fff;
+  font-size: .78rem;
+}
+.em-tracking-history time {
+  color: #91a0b8;
+  font-size: .66rem;
+  white-space: nowrap;
+}
+.em-tracking-history p {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: #b5c0d1;
+  font-size: .70rem;
+  line-height: 1.45;
+}
+.em-tracking-empty {
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.12);
+  color: #91a0b8;
+  text-align: center;
+  font-size: .74rem;
+}
+
+/* Botones y paneles de esta experiencia: máximo 4px de radio. */
+.em-activity-detail-main,
+.em-activity-gradebook,
+.em-activity-overview-grid article,
+.em-activity-detail-actions button,
+.em-activity-grade-search,
+.em-activity-grade-columns button,
+.em-activity-grade-modal,
+.em-activity-grade-modal button,
+.em-activity-grade-modal .input,
+.em-activity-grade-modal .select,
+.em-activity-grade-modal textarea,
+.em-activity-grade-modal .em-file-drop,
+.em-activity-grade-modal .em-grade-form-section {
+  border-radius: 4px !important;
+}
+
+@media (max-width: 720px) {
+  .em-activity-detail-wrap {
+    width: 100% !important;
+    padding: 62px 0 24px !important;
+  }
+  .em-activity-detail-main,
+  .em-activity-gradebook {
+    width: calc(100% - 20px) !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+    border-left: 1px solid rgba(255,255,255,.09) !important;
+    border-right: 1px solid rgba(255,255,255,.09) !important;
+    border-radius: 4px !important;
+  }
+  .em-activity-gradebook-head { padding: 14px !important; }
+  .em-activity-grade-columns,
+  .em-activity-grade-row {
+    grid-template-columns: 30px minmax(72px, 1.16fr) minmax(62px, 1fr) 42px minmax(76px, .9fr) !important;
+    gap: 4px !important;
+  }
+  .em-activity-grade-columns { padding: 7px 8px !important; }
+  .em-activity-grade-columns button { font-size: .48rem !important; }
+  .em-activity-grade-row { padding: 9px 8px !important; }
+  .em-grade-group-cell i { width: 22px; height: 22px; font-size: .62rem; }
+  .em-grade-lastname,
+  .em-grade-firstname { font-size: .61rem !important; }
+  .em-grade-score { font-size: .68rem !important; }
+  .em-grade-light small { display: inline !important; font-size: .56rem; }
+  .em-grade-light b { font-size: .68rem !important; }
+  .em-activity-grade-modal {
+    width: calc(100vw - 20px) !important;
+    max-width: 720px !important;
+    max-height: calc(100dvh - 20px) !important;
+    margin: 0 !important;
+    padding: 14px !important;
+    border-radius: 4px !important;
+  }
+  .em-activity-grade-tabbar {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+  }
+  .em-activity-grade-tabbar button {
+    font-size: clamp(.46rem, 2.25vw, .58rem) !important;
+    padding: 0 2px !important;
+  }
+  .em-quick-grades {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+  .em-tracking-compose {
+    grid-template-columns: 1fr;
+  }
+  .em-activity-grade-actions > * {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .em-activity-grade-columns,
+  .em-activity-grade-row {
+    grid-template-columns: 28px minmax(67px, 1.12fr) minmax(56px, .92fr) 38px minmax(69px, .88fr) !important;
+  }
+  .em-activity-grade-tabbar button {
+    font-size: .44rem !important;
+  }
+  .em-grade-light { gap: 3px !important; }
+}
