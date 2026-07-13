@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-offline-v0.25.000';
+const SW_VERSION = 'encisomath-offline-v0.25.001';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -14,8 +14,10 @@ const PRECACHE_URLS = [
   './manifest.webmanifest',
   './assets/default-avatar.svg',
   './assets/default-profile.svg',
-  './assets/icon-192.png',
-  './assets/icon-512.png',
+  './assets/app-icon-192.png',
+  './assets/app-icon-512.png',
+  './assets/apple-touch-icon-180.png',
+  './assets/notification-icon-96.png',
   './assets/subject-statistics.svg',
   './assets/warn-exp1.png',
   './assets/warn-exp2.png',
@@ -220,8 +222,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'EncisoMath', {
       body: data.body || 'Tienes una notificación.',
-      icon: './assets/icon-192.png',
-      badge: './assets/icon-192.png',
+      icon: './assets/app-icon-192.png',
+      badge: './assets/notification-icon-96.png',
       tag: data.tag || 'encisomath'
     })
   );

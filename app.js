@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.000';
+  const APP_VERSION = '0.25.001';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -3293,7 +3293,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.000', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.001', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -13774,8 +13774,8 @@
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification('EncisoMath', {
         body: 'Notificación local de prueba. Para push real se necesita backend o servicio externo.',
-        icon: './assets/icon-192.png',
-        badge: './assets/icon-192.png',
+        icon: './assets/app-icon-192.png',
+        badge: './assets/notification-icon-96.png',
         tag: 'encisomath-test'
       });
       toast('Notificación enviada. En Android funciona mejor si la PWA está instalada.');
@@ -14117,7 +14117,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.000', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.001', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

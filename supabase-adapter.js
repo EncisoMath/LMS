@@ -1316,7 +1316,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.000', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.001', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     const attemptQuery = clientMutationId
@@ -1365,7 +1365,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.000',
+          appVersion: '0.25.001',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
