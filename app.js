@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.347';
+  const APP_VERSION = '0.24.348';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -3102,15 +3102,89 @@
     }
   }
 
+  function createEducaCityFallbackSheet(workbook) {
+    const sheet = workbook.addWorksheet('Calificaciones', {
+      views: [{ state: 'frozen', xSplit: 4, ySplit: 2 }]
+    });
+    sheet.columns = [
+      { width: 15 },
+      { width: 24 },
+      { width: 24 },
+      { width: 14 },
+      { width: 14 }
+    ];
+    sheet.getRow(1).height = 48;
+    sheet.getRow(2).height = 24;
+    sheet.getRow(3).height = 24;
+
+    const thinBorder = {
+      top: { style: 'thin', color: { argb: 'FFD7DDE3' } },
+      left: { style: 'thin', color: { argb: 'FFD7DDE3' } },
+      bottom: { style: 'thin', color: { argb: 'FFD7DDE3' } },
+      right: { style: 'thin', color: { argb: 'FFD7DDE3' } }
+    };
+    const fixedTitles = ['Grado - Grupo', 'Apellidos', 'Nombres', 'Matrícula Id'];
+    fixedTitles.forEach((title, index) => {
+      const cell = sheet.getCell(1, index + 1);
+      cell.value = title;
+      cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
+      cell.alignment = { vertical: 'bottom', horizontal: 'left', wrapText: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+      cell.border = thinBorder;
+    });
+    const itemTitle = sheet.getCell(1, 5);
+    itemTitle.value = 'Actividad 1';
+    itemTitle.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
+    itemTitle.alignment = { vertical: 'bottom', horizontal: 'left', wrapText: true };
+    itemTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF35B8AE' } };
+    itemTitle.border = thinBorder;
+
+    for (let column = 1; column <= 5; column += 1) {
+      const codeCell = sheet.getCell(2, column);
+      codeCell.value = column === 5 ? 1 : null;
+      codeCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+      codeCell.alignment = { vertical: 'middle', horizontal: column >= 4 ? 'right' : 'left' };
+      codeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B7D94' } };
+      codeCell.border = thinBorder;
+    }
+
+    for (let column = 1; column <= 5; column += 1) {
+      const dataCell = sheet.getCell(3, column);
+      dataCell.value = null;
+      dataCell.font = {
+        name: 'Arial',
+        size: 11,
+        bold: column <= 4,
+        color: { argb: column <= 4 ? 'FFFFFFFF' : 'FFD9D9D9' }
+      };
+      dataCell.alignment = { vertical: 'middle', horizontal: column >= 4 ? 'right' : 'left' };
+      dataCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: column <= 4 ? 'FF0B7D94' : 'FF8D8D8D' }
+      };
+      dataCell.border = thinBorder;
+      if (column === 5) dataCell.numFmt = '0.0';
+    }
+    return sheet;
+  }
+
   async function createEducaCityWorkbook(columns, students, context) {
     const ExcelJS = await ensureExcelJs();
-    const templateResponse = await fetch('./assets/templates/educacity-planilla-base.xlsx?v=0.24.347', { cache: 'no-store' });
-    if (!templateResponse.ok) throw new Error('No se pudo abrir la plantilla de EducaCity.');
-
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(await templateResponse.arrayBuffer());
-    const sheet = workbook.getWorksheet('Calificaciones') || workbook.worksheets[0];
-    if (!sheet) throw new Error('La plantilla de EducaCity no contiene la hoja Calificaciones.');
+    let workbook = new ExcelJS.Workbook();
+    let sheet = null;
+    try {
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.24.348', document.baseURI).href;
+      const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
+      if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
+      await workbook.xlsx.load(await templateResponse.arrayBuffer());
+      sheet = workbook.getWorksheet('Calificaciones') || workbook.worksheets[0] || null;
+      if (!sheet) throw new Error('La plantilla no contiene una hoja utilizable.');
+    } catch (error) {
+      console.warn('Se usará la plantilla interna de respaldo para EducaCity:', error);
+      workbook = new ExcelJS.Workbook();
+      sheet = createEducaCityFallbackSheet(workbook);
+    }
 
     const fixedHeaderStyles = [1, 2, 3, 4].map((column) => cloneExcelStyle(sheet.getCell(1, column).style));
     const blankCodeStyles = [1, 2, 3, 4].map((column) => cloneExcelStyle(sheet.getCell(2, column).style));
@@ -13932,7 +14006,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.347', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.348', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

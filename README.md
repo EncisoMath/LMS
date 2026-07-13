@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.347
+# EncisoMath LMS v0.24.348
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -127,7 +127,7 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Se amplió ligeramente la columna DESEMPEÑO para mantener la etiqueta completa sin afectar la tabla.
 
 
-## Cambios v0.24.347
+## Cambios v0.24.348
 - Se añadió en `em-notes-toolbar` el botón **Descargar Excel listo para EducaCity**.
 - La exportación usa como plantilla base la estructura exacta del archivo EducaCity analizado, con la hoja `Calificaciones`.
 - La fila 1 contiene `Grado - Grupo`, `Apellidos`, `Nombres`, `Matrícula Id` y el nombre de cada componente de NOTAS.
@@ -139,3 +139,9 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Se añadió `assets/templates/educacity-planilla-base.xlsx`, derivada de la plantilla entregada por el usuario y sanitizada: no contiene nombres, códigos ni calificaciones reales.
 - ExcelJS se carga únicamente al solicitar la exportación, con respaldo entre jsDelivr y UNPKG.
 - No requiere cambios de esquema ni SQL en Supabase.
+
+## Corrección v0.24.348
+
+- Se incluyó realmente `assets/templates/educacity-planilla-base.xlsx` dentro del paquete de archivos modificados. En v0.24.347 el código intentaba abrirla, pero el archivo no fue empaquetado y por eso aparecía “No se pudo abrir la plantilla de EducaCity”.
+- La plantilla incluida está sanitizada: mantiene estructura, formatos y estilos, pero no contiene nombres, códigos ni calificaciones reales.
+- Se añadió una plantilla interna de respaldo en JavaScript. Si por alguna razón el archivo XLSX no pudiera cargarse desde GitHub Pages, la aplicación genera de todos modos una planilla compatible con la misma estructura de filas y columnas.
