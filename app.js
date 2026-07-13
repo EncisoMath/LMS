@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.345';
+  const APP_VERSION = '0.24.346';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10737,7 +10737,7 @@
             <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
             <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
           </th>
-          <td class="em-activity-grade-score-cell"><strong>${Number(row.score ?? 40)}</strong></td>
+          <td class="em-activity-grade-score-cell"><strong class="${notesScoreClass(row.score)}">${Number(row.score ?? 40)}</strong></td>
           <td class="em-activity-grade-performance-cell"><span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span></td>
         </tr>
       `;
@@ -13719,7 +13719,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.345', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.346', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

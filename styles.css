@@ -31275,3 +31275,40 @@ html body #app .em-pdf-loading {
     font-size: .6rem;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.24.346 - COLOR DE NOTA Y DESEMPEÑO EN ACTIVIDADES
+   ================================================================ */
+.em-activity-grade-score-cell strong.is-superior { color: #f6c453 !important; }
+.em-activity-grade-score-cell strong.is-high { color: #64da8b !important; }
+.em-activity-grade-score-cell strong.is-basic-yellow { color: #f5d94e !important; }
+.em-activity-grade-score-cell strong.is-basic-orange { color: #ff9b50 !important; }
+.em-activity-grade-score-cell strong.is-low { color: #ff6b6b !important; }
+
+.em-activity-grade-performance-header,
+.em-activity-grade-performance-cell {
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+}
+.em-activity-grade-performance-cell .em-grade-light small {
+  color: #e5ebf5;
+  font-size: .84rem;
+  font-weight: 560;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .em-activity-grade-performance-header,
+  .em-activity-grade-performance-cell {
+    width: 118px;
+    min-width: 118px;
+    max-width: 118px;
+  }
+  .em-activity-grade-performance-cell .em-grade-light small {
+    display: inline !important;
+    font-size: .76rem;
+    font-weight: 540;
+  }
+}
