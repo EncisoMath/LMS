@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.341';
+  const APP_VERSION = '0.24.342';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -65,7 +65,8 @@
     quizOptionEffects: true,
     quizFeedbackEffects: true,
     quizSounds: true,
-    academicPeriodStarts: { 1: '', 2: '', 3: '', 4: '' }
+    academicPeriodStarts: { 1: '', 2: '', 3: '', 4: '' },
+    gradebookConfigs: {}
   };
 
 
@@ -501,7 +502,7 @@
   const $toast = document.getElementById('toast');
 
   const state = {
-    data: { users: [], assignments: [], students: [], classes: [], activities: [], rockstars: [], quizzes: [] },
+    data: { users: [], assignments: [], students: [], classes: [], activities: [], activityGrades: [], rockstars: [], quizzes: [] },
     user: null,
     assignment: null,
     activePeriod: 1,
@@ -516,6 +517,7 @@
     activeActivityId: '',
     activityGradebook: [],
     activityGradeSort: { key: 'lastName', direction: 'asc' },
+    notesStudentSort: { key: 'name', direction: 'asc' },
     quizTimeScoringMode: localStorage.getItem(QUIZ_TIME_SCORING_MODE_KEY) || QUIZ_TIME_SCORING_MODE_DEFAULT,
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
@@ -663,7 +665,8 @@
         bindActivityCards();
         if (animate) pulseElement(content, 'class-grid-update');
       }
-    } else if (tab === 'rockstars') refreshRockstarList(animate);
+    } else if (tab === 'notes') renderNotesTab({ animate });
+    else if (tab === 'rockstars') refreshRockstarList(animate);
     else if (tab === 'quizzes') {
       state.quizQuestionIndex = 0;
       state.quizActiveId = '';
@@ -909,13 +912,14 @@
   }
   function normalizeSubjectTab(tab) {
     const value = String(tab || 'students');
-    return ['students', 'classes', 'activities', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
+    return ['students', 'classes', 'activities', 'notes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
   function subjectTabDisplayLabel(tab) {
     return {
       students: '👥 Estudiantes',
       classes: '📚 Clases',
       activities: '📝 Actividades',
+      notes: '📊 Notas',
       rockstars: '🚀 Rockstars',
       quizzes: '🎮 Quizzes'
     }[normalizeSubjectTab(tab)] || '👥 Estudiantes';
@@ -1254,6 +1258,7 @@
                 <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
                 <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
                 <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
+                <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Notas</option>
                 <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
                 <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
               </select>
@@ -1280,6 +1285,7 @@
       setActiveSubjectTabMeta(tab);
       if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'activities') renderActivitiesTab({ animate: true });
+      else if (tab === 'notes') renderNotesTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
       else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
       else renderClassesTab({ animate: true });
@@ -1316,6 +1322,7 @@
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'activities') renderActivitiesTab({ animate: true });
+    else if (tab === 'notes') renderNotesTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else renderClassesTab({ animate: true });
@@ -2708,6 +2715,467 @@
     const limit = getQuizAttemptLimitRaw(quiz);
     return `${made} / ${limit || '∞'}`;
   }
+  const NOTES_COLUMN_COLORS = [
+    '#e21b3c', '#1368ce', '#24b49a', '#EBB513', '#ff7a00',
+    '#a855f7', '#06b6d4', '#ec4899', '#54c600', '#6366f1'
+  ];
+
+  function notesConfigKey(assignmentId = state.assignment?.id || '', period = state.activePeriod) {
+    return `${String(assignmentId || '')}|period-${Number(period || 1)}`;
+  }
+
+  function getNotesConfigStore() {
+    if (!state.prefs.gradebookConfigs || typeof state.prefs.gradebookConfigs !== 'object' || Array.isArray(state.prefs.gradebookConfigs)) {
+      state.prefs.gradebookConfigs = {};
+    }
+    return state.prefs.gradebookConfigs;
+  }
+
+  function notesDefaultWeights(count) {
+    const total = Math.max(1, Number(count || 0));
+    const base = Math.floor(100 / total);
+    const remainder = 100 - base * total;
+    return Array.from({ length: total }, (_, index) => base + (index < remainder ? 1 : 0));
+  }
+
+  function getNotesActivities() {
+    return getActivitiesForCurrentAssignment()
+      .filter((activity) => Number(activity.period || 1) === Number(state.activePeriod || 1))
+      .sort((a, b) => {
+        const aOrder = Number(a.sortOrder || 0);
+        const bOrder = Number(b.sortOrder || 0);
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        const aDate = String(a.startsAt || a.createdAt || '');
+        const bDate = String(b.startsAt || b.createdAt || '');
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+        return String(a.title || '').localeCompare(String(b.title || ''), 'es');
+      });
+  }
+
+  function notesColumnDefinitions() {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const activities = getNotesActivities();
+    const baseColumns = [
+      ...activities.map((activity, index) => ({
+        key: `activity:${activity.id}`,
+        type: 'activity',
+        activityId: activity.id,
+        title: activity.title || `Actividad ${index + 1}`,
+        defaultCode: `A${index + 1}`,
+        defaultColor: NOTES_COLUMN_COLORS[index % NOTES_COLUMN_COLORS.length]
+      })),
+      {
+        key: 'attendance',
+        type: 'attendance',
+        title: 'Asistencia',
+        defaultCode: 'ASI',
+        defaultColor: '#24b49a'
+      },
+      {
+        key: 'rockstars',
+        type: 'rockstars',
+        title: 'Rockstars',
+        defaultCode: 'RKS',
+        defaultColor: '#EBB513'
+      }
+    ];
+    const defaults = notesDefaultWeights(baseColumns.length);
+    const root = getNotesConfigStore()[notesConfigKey(assignmentId, period)] || {};
+    const savedColumns = root.columns && typeof root.columns === 'object' ? root.columns : {};
+    const hasSavedColumns = Object.keys(savedColumns).length > 0;
+    return baseColumns.map((column, index) => {
+      const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
+      const hasSavedWeight = Object.prototype.hasOwnProperty.call(saved, 'weight');
+      const savedWeight = Number(saved.weight);
+      return {
+        ...column,
+        code: String(saved.code || column.defaultCode).trim().toUpperCase().slice(0, 8),
+        color: /^#[0-9a-f]{6}$/i.test(String(saved.color || '')) ? saved.color : column.defaultColor,
+        weight: hasSavedWeight && Number.isFinite(savedWeight) ? Math.max(0, Math.min(100, savedWeight)) : (hasSavedColumns ? 0 : defaults[index]),
+        target: column.type === 'rockstars' ? Math.max(1, Number(saved.target || 15)) : null
+      };
+    });
+  }
+
+  function saveNotesColumnConfig(columnKey, values) {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const key = notesConfigKey(assignmentId, period);
+    const store = getNotesConfigStore();
+    const current = store[key] && typeof store[key] === 'object' ? store[key] : {};
+    const definitions = notesColumnDefinitions();
+    const columns = Object.fromEntries(definitions.map((column) => [column.key, {
+      code: column.code,
+      color: column.color,
+      weight: Number(column.weight || 0),
+      ...(column.type === 'rockstars' ? { target: Number(column.target || 15) } : {})
+    }]));
+    columns[columnKey] = { ...(columns[columnKey] || {}), ...values };
+    store[key] = { ...current, columns, updatedAt: new Date().toISOString() };
+    localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+    savePreferencesToCloud();
+  }
+
+  function notesStudentDisplayName(student) {
+    const compactPart = (value) => {
+      const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '';
+      return `${parts[0]}${parts[1] ? ` ${parts[1].charAt(0).toUpperCase()}.` : ''}`;
+    };
+    const last = compactPart(student.lastName || '');
+    const first = compactPart(student.firstName || '');
+    if (last && first) return `${last}, ${first}`;
+    const fallback = String(student.fullName || student.id || '').trim();
+    if (fallback.includes(',')) {
+      const [fallbackLast, fallbackFirst] = fallback.split(',');
+      return `${compactPart(fallbackLast)}, ${compactPart(fallbackFirst)}`.replace(/,\s*$/, '');
+    }
+    return fallback;
+  }
+
+  function notesAttendanceSessions(assignmentId, period) {
+    const sessions = [];
+    const safeAssignmentId = String(assignmentId || '');
+    const safePeriod = Number(period || 1);
+    if (isCloudReady()) {
+      Object.entries(state.cloud.attendance || {}).forEach(([key, attendance]) => {
+        const separator = key.indexOf('|');
+        if (separator < 0 || key.slice(0, separator) !== safeAssignmentId) return;
+        const date = key.slice(separator + 1);
+        if (getAutomaticAcademicPeriod(date) !== safePeriod) return;
+        const values = attendance && typeof attendance === 'object' ? Object.values(attendance) : [];
+        if (!values.some(Boolean)) return;
+        sessions.push({ date, attendance: { ...(attendance || {}) } });
+      });
+    } else {
+      const prefix = `encisomath:attendance:${safeAssignmentId}:`;
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index) || '';
+        if (!key.startsWith(prefix)) continue;
+        const date = key.slice(prefix.length);
+        if (getAutomaticAcademicPeriod(date) !== safePeriod) continue;
+        const attendance = readJSON(key) || {};
+        if (!Object.values(attendance).some(Boolean)) continue;
+        sessions.push({ date, attendance });
+      }
+    }
+    return sessions.sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  function notesAttendanceSummary(studentCode, sessions = []) {
+    const summary = { total: sessions.length, present: 0, absent: 0, excused: 0, score: null };
+    sessions.forEach((session) => {
+      const status = String(session.attendance?.[studentCode] || 'absent');
+      if (status === 'present') summary.present += 1;
+      else if (status === 'excused') summary.excused += 1;
+      else summary.absent += 1;
+    });
+    if (!summary.total) return summary;
+    let score = 0;
+    if (summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
+      score = Math.max(60, Math.round((summary.present / summary.total) * 100));
+    } else {
+      const accountable = summary.present + summary.absent;
+      score = accountable ? Math.round((summary.present / accountable) * 100) : 60;
+    }
+    summary.score = Math.max(0, Math.min(100, score));
+    return summary;
+  }
+
+  function notesActivityGradeMap(assignmentId) {
+    const map = new Map();
+    (state.data.activityGrades || []).forEach((row) => {
+      if (String(row.assignmentId || '') !== String(assignmentId || '')) return;
+      map.set(`${String(row.activityId || '')}|${String(row.studentCode || '')}`, row);
+    });
+    return map;
+  }
+
+  function syncActivityGradesFromGradebook(activityId, assignmentId, rows = []) {
+    if (!Array.isArray(state.data.activityGrades)) state.data.activityGrades = [];
+    state.data.activityGrades = state.data.activityGrades.filter((row) => !(
+      String(row.activityId || '') === String(activityId || '') &&
+      String(row.assignmentId || '') === String(assignmentId || '')
+    ));
+    rows.forEach((row) => {
+      state.data.activityGrades.push({
+        activityId: String(activityId || row.activityId || ''),
+        assignmentId: String(assignmentId || row.assignmentId || ''),
+        studentCode: String(row.studentCode || ''),
+        score: Number(row.score ?? 40),
+        gradedAt: row.gradedAt || '',
+        gradingGroupId: row.gradingGroupId || ''
+      });
+    });
+  }
+
+  function notesRockstarGrade(studentCode, column, attendanceSummary) {
+    const target = Math.max(1, Number(column.target || 15));
+    const points = getRockstarPoints(state.assignment?.id || '', studentCode, state.activePeriod);
+    const proportional = Math.max(0, Math.min(100, Math.round((points / target) * 100)));
+    const score = attendanceSummary.present > 0 ? Math.max(60, proportional) : proportional;
+    return { score, points, target };
+  }
+
+  function notesCellScore(column, student, context) {
+    if (column.type === 'activity') {
+      const record = context.activityGrades.get(`${column.activityId}|${student.id}`);
+      return {
+        score: Number(record?.score ?? 40),
+        pending: !record?.gradedAt,
+        title: record?.gradedAt ? 'Calificación registrada' : 'Pendiente de calificar'
+      };
+    }
+    if (column.type === 'attendance') {
+      const attendance = context.attendanceByStudent.get(student.id);
+      return {
+        score: attendance.score,
+        pending: attendance.score === null,
+        title: `${attendance.present} asistencias · ${attendance.excused} excusas · ${attendance.absent} inasistencias`
+      };
+    }
+    const rockstar = notesRockstarGrade(student.id, column, context.attendanceByStudent.get(student.id));
+    return {
+      score: rockstar.score,
+      pending: false,
+      title: `${rockstar.points}/${rockstar.target} puntos Rockstar`
+    };
+  }
+
+  function notesScoreClass(score) {
+    const value = Number(score || 0);
+    if (value >= 90) return 'is-superior';
+    if (value >= 80) return 'is-high';
+    if (value >= 70) return 'is-basic-yellow';
+    if (value >= 60) return 'is-basic-orange';
+    return 'is-low';
+  }
+
+  function notesHeroHTML(assignment) {
+    return `
+      <section class="em-notes-hero" aria-label="Notas del periodo">
+        <div class="em-notes-hero-grid" aria-hidden="true"></div>
+        <div class="em-notes-hero-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="em-notes-hero-copy">
+          <span>${escapeHTML(assignment.subject || 'Asignatura')} · ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}</span>
+          <h1>NOTAS</h1>
+          <p>Calificaciones, asistencia y Rockstars en una sola hoja.</p>
+        </div>
+        <div class="em-notes-hero-sheet" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </section>
+    `;
+  }
+
+  function notesColumnHeaderHTML(column) {
+    return `
+      <th class="em-notes-grade-header" style="--em-notes-column-color:${escapeAttr(column.color)}">
+        <button type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}">
+          <span class="em-notes-column-code">${escapeHTML(column.code)}</span>
+          <span class="em-notes-column-title">${escapeHTML(column.title)}</span>
+          <span class="em-notes-column-weight">${Number(column.weight)}%</span>
+        </button>
+      </th>
+    `;
+  }
+
+  function notesStudentRowHTML(student, columns, context) {
+    let weighted = 0;
+    const cells = columns.map((column) => {
+      const cell = notesCellScore(column, student, context);
+      const score = cell.score === null ? null : Math.max(0, Math.min(100, Number(cell.score || 0)));
+      if (score !== null) weighted += score * (Number(column.weight || 0) / 100);
+      return `<td class="em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''}" title="${escapeAttr(cell.title || '')}">${score === null ? '—' : Math.round(score)}</td>`;
+    }).join('');
+    const finalScore = Math.max(0, Math.min(100, Math.round(weighted * 10) / 10));
+    return `
+      <tr>
+        <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
+          <strong>${escapeHTML(notesStudentDisplayName(student))}</strong>
+          <small>${escapeHTML(student.id || '')}</small>
+        </th>
+        ${cells}
+        <td class="em-notes-final-cell ${notesScoreClass(finalScore)}"><strong>${Number.isInteger(finalScore) ? finalScore : finalScore.toFixed(1)}</strong></td>
+      </tr>
+    `;
+  }
+
+  function renderNotesTab(options = {}) {
+    const assignment = state.assignment;
+    const content = document.getElementById('tabContent');
+    if (!assignment || !content) return;
+    setActiveSubjectTabMeta('notes');
+    const columns = notesColumnDefinitions();
+    const students = getStudentsForAssignment(assignment);
+    const sessions = notesAttendanceSessions(assignment.id, state.activePeriod);
+    const attendanceByStudent = new Map(students.map((student) => [student.id, notesAttendanceSummary(student.id, sessions)]));
+    const context = {
+      activityGrades: notesActivityGradeMap(assignment.id),
+      attendanceByStudent
+    };
+    const totalWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
+    const weightStatus = Math.abs(totalWeight - 100) < .001 ? 'is-complete' : 'is-incomplete';
+    content.innerHTML = `
+      ${notesHeroHTML(assignment)}
+      <section class="em-notes-toolbar">
+        <div>
+          <p class="section-kicker">Periodo ${Number(state.activePeriod || 1)}</p>
+          <h2>Hoja de calificaciones</h2>
+          <span>${students.length} estudiantes · ${columns.length} componentes · ${sessions.length} registros de clase</span>
+        </div>
+        <div class="em-notes-weight-summary ${weightStatus}">
+          <span>Peso configurado</span>
+          <strong>${Math.round(totalWeight * 10) / 10}%</strong>
+          <i><b style="width:${Math.max(0, Math.min(100, totalWeight))}%"></b></i>
+          <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Toca los encabezados para ajustar la ponderación a 100%.'}</small>
+        </div>
+      </section>
+      <section class="em-notes-sheet-shell">
+        <div class="em-notes-sheet-scroll">
+          <table class="em-notes-sheet">
+            <thead>
+              <tr>
+                <th class="em-notes-student-header" scope="col"><span>Estudiante</span><small>Apellido, nombre · código</small></th>
+                ${columns.map(notesColumnHeaderHTML).join('')}
+                <th class="em-notes-final-header" scope="col"><span>Definitiva</span><small>Periodo</small></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${students.length ? students.map((student) => notesStudentRowHTML(student, columns, context)).join('') : '<tr><td class="em-notes-empty" colspan="99">Aún no hay estudiantes en este curso.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+        <p class="em-notes-sheet-help">Toca el encabezado de una actividad, Asistencia o Rockstars para configurar su código, color y peso.</p>
+      </section>
+    `;
+    content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
+      button.addEventListener('click', () => openNotesColumnModal(button.dataset.notesColumnKey || ''));
+    });
+    emPlayTabEntrance(content, 'notes');
+    if (options.animate) pulseElement(content, 'tab-enter');
+  }
+
+  function openNotesColumnModal(columnKey) {
+    const columns = notesColumnDefinitions();
+    const column = columns.find((item) => item.key === columnKey);
+    if (!column) return;
+    const currentTotal = columns.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    openModal(`
+      <section class="modal-card em-activity-create-modal em-notes-column-modal" role="dialog" aria-modal="true" aria-labelledby="notesColumnModalTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Configurar nota</p>
+        <h2 id="notesColumnModalTitle">${escapeHTML(column.title)}</h2>
+        <div class="em-activity-modal-tabs em-notes-modal-tabs" aria-hidden="true"><button class="is-active" type="button">Columna de calificación</button></div>
+        <form id="notesColumnForm" class="em-activity-create-form">
+          <section class="em-activity-form-block">
+            <div class="em-activity-block-head"><span class="em-activity-step-badge">1</span><div><h3>Identificación</h3><p>El código y el color permiten reconocer rápidamente este componente en la hoja.</p></div></div>
+            <div class="em-notes-column-preview" id="notesColumnPreview" style="--em-notes-column-color:${escapeAttr(column.color)}"><span>${escapeHTML(column.code)}</span><strong>${escapeHTML(column.title)}</strong><small>${Number(column.weight)}%</small></div>
+            <div class="em-notes-config-grid">
+              <label><span>Código</span><input class="input" id="notesColumnCode" maxlength="8" value="${escapeAttr(column.code)}" required /></label>
+              <label><span>Peso sobre 100%</span><input class="input" id="notesColumnWeight" type="number" min="0" max="100" step="0.5" value="${Number(column.weight)}" required /></label>
+            </div>
+          </section>
+          <section class="em-activity-form-block">
+            <div class="em-activity-block-head"><span class="em-activity-step-badge">2</span><div><h3>Color</h3><p>Escoge un color para la cabecera y la identificación visual de la columna.</p></div></div>
+            <div class="em-notes-color-grid">
+              ${NOTES_COLUMN_COLORS.map((color) => `<button type="button" data-notes-color="${color}" style="--em-notes-preset-color:${color}" aria-label="Usar color ${color}" class="${color.toLowerCase() === String(column.color).toLowerCase() ? 'is-selected' : ''}"></button>`).join('')}
+            </div>
+            <label class="em-notes-custom-color"><span>Color personalizado</span><input id="notesColumnColor" type="color" value="${escapeAttr(column.color)}" /></label>
+          </section>
+          ${column.type === 'rockstars' ? `
+            <section class="em-activity-form-block">
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">3</span><div><h3>Meta Rockstar</h3><p>La nota compara los puntos obtenidos por el estudiante con esta meta del periodo.</p></div></div>
+              <label><span>Meta de puntos Rockstar</span><input class="input" id="notesRockstarTarget" type="number" min="1" max="999" step="1" value="${Number(column.target || 15)}" required /></label>
+            </section>
+          ` : ''}
+          <div class="em-notes-weight-preview ${Math.abs(currentTotal - 100) < .001 ? 'is-complete' : ''}" id="notesWeightPreview"><span>Total de la ponderación</span><strong>${Math.round(currentTotal * 10) / 10}%</strong><small>El total ideal es 100%.</small></div>
+          <p class="em-class-create-error" id="notesColumnError" role="alert"></p>
+          <div class="em-activity-modal-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" type="submit">Guardar configuración</button></div>
+        </form>
+      </section>
+    `, () => initNotesColumnModal(column, columns));
+  }
+
+  function initNotesColumnModal(column, columns) {
+    const form = document.getElementById('notesColumnForm');
+    const codeInput = document.getElementById('notesColumnCode');
+    const weightInput = document.getElementById('notesColumnWeight');
+    const colorInput = document.getElementById('notesColumnColor');
+    const preview = document.getElementById('notesColumnPreview');
+    const weightPreview = document.getElementById('notesWeightPreview');
+    const originalWeight = Number(column.weight || 0);
+    const currentTotal = columns.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+
+    const refresh = () => {
+      const code = String(codeInput?.value || column.code).trim().toUpperCase().slice(0, 8);
+      const weight = Math.max(0, Math.min(100, Number(weightInput?.value || 0)));
+      const color = String(colorInput?.value || column.color);
+      if (preview) {
+        preview.style.setProperty('--em-notes-column-color', color);
+        const codeNode = preview.querySelector('span');
+        const weightNode = preview.querySelector('small');
+        if (codeNode) codeNode.textContent = code || column.defaultCode;
+        if (weightNode) weightNode.textContent = `${weight}%`;
+      }
+      const nextTotal = currentTotal - originalWeight + weight;
+      if (weightPreview) {
+        const strong = weightPreview.querySelector('strong');
+        if (strong) strong.textContent = `${Math.round(nextTotal * 10) / 10}%`;
+        weightPreview.classList.toggle('is-complete', Math.abs(nextTotal - 100) < .001);
+      }
+      document.querySelectorAll('[data-notes-color]').forEach((button) => button.classList.toggle('is-selected', String(button.dataset.notesColor || '').toLowerCase() === color.toLowerCase()));
+    };
+
+    codeInput?.addEventListener('input', () => {
+      codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 8);
+      refresh();
+    });
+    weightInput?.addEventListener('input', refresh);
+    colorInput?.addEventListener('input', refresh);
+    document.querySelectorAll('[data-notes-color]').forEach((button) => button.addEventListener('click', () => {
+      if (colorInput) colorInput.value = button.dataset.notesColor || column.color;
+      refresh();
+    }));
+    refresh();
+
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const errorBox = document.getElementById('notesColumnError');
+      const code = String(codeInput?.value || '').trim().toUpperCase();
+      const weight = Number(weightInput?.value);
+      const color = String(colorInput?.value || '');
+      const target = Number(document.getElementById('notesRockstarTarget')?.value || column.target || 15);
+      if (!code) {
+        if (errorBox) errorBox.textContent = 'Escribe un código para la columna.';
+        return;
+      }
+      if (!Number.isFinite(weight) || weight < 0 || weight > 100) {
+        if (errorBox) errorBox.textContent = 'El peso debe estar entre 0 y 100.';
+        return;
+      }
+      if (!/^#[0-9a-f]{6}$/i.test(color)) {
+        if (errorBox) errorBox.textContent = 'Selecciona un color válido.';
+        return;
+      }
+      if (column.type === 'rockstars' && (!Number.isFinite(target) || target < 1)) {
+        if (errorBox) errorBox.textContent = 'La meta Rockstar debe ser mayor que cero.';
+        return;
+      }
+      saveNotesColumnConfig(column.key, {
+        code,
+        color,
+        weight: Math.round(weight * 10) / 10,
+        ...(column.type === 'rockstars' ? { target: Math.round(target) } : {})
+      });
+      closeModal(false);
+      renderNotesTab({ animate: true });
+      toast('Configuración de la columna guardada.');
+    });
+  }
+
+
   function renderQuizzesTab(options = {}) {
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
@@ -10228,6 +10696,7 @@
         activityId: activity.id,
         assignmentId: state.assignment?.id || ''
       });
+      syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
       updateActivityProgressFromGradebook(activity, state.activityGradebook);
       refreshActivityGradebookList();
     } catch (error) {
@@ -11106,6 +11575,7 @@
           deliveryStatus,
           deliveryNote: document.getElementById('activityDeliveryNote')?.value.trim() || ''
         });
+        syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
         updateActivityProgressFromGradebook(activity, state.activityGradebook);
         closeModal(false);
         refreshActivityGradebookList();
@@ -12980,6 +13450,15 @@
       '#activitiesPeriodContent [role="button"]',
       '#activitiesPeriodContent > .em-period-empty > *'
     ],
+    notes: [
+      '.em-notes-hero',
+      '.em-notes-hero-copy > *',
+      '.em-notes-toolbar > *',
+      '.em-notes-weight-summary > *',
+      '.em-notes-sheet-shell',
+      '.em-notes-sheet thead th',
+      '.em-notes-sheet tbody tr'
+    ],
     rockstars: [
       '[data-em-rockstars-hero]',
       '#rockstarList > *',
@@ -13126,7 +13605,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.341', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.342', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -383,7 +383,7 @@
           .eq('visible', true),
         supabaseClient
           .from('activity_student_records')
-          .select('activity_id,assignment_id,graded_at,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
+          .select('activity_id,assignment_id,student_id,score,graded_at,grading_group_id,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
           .in('assignment_id', assignmentIds),
         supabaseClient
           .from('quiz_assignments')
@@ -458,6 +458,15 @@
       activity.progressByAssignment = progressByActivity.get(activityId) || {};
     });
 
+    const activityGrades = activityProgressRows.map((row) => ({
+      activityId: String(row.activity_id || ''),
+      assignmentId: String(row.assignment_id || ''),
+      studentCode: String(studentDbIdToCode.get(row.student_id) || row.student_id || ''),
+      score: Number(row.score ?? 40),
+      gradedAt: row.graded_at || '',
+      gradingGroupId: row.grading_group_id || ''
+    })).filter((row) => row.activityId && row.assignmentId && row.studentCode);
+
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
       .from('user_preferences')
       .select('preferences')
@@ -473,6 +482,7 @@
         students,
         classes: [...uniqueLessons.values()],
         activities: [...uniqueActivities.values()],
+        activityGrades,
         rockstars: mapRockstarEvents(rockstarRows),
         quizzes: mapQuizAssignments(quizAssignmentRows)
       },
@@ -1247,7 +1257,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.329', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.342', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -1293,7 +1303,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.329',
+          appVersion: '0.24.342',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

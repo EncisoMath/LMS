@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.341
+# EncisoMath LMS v0.24.342
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -8,7 +8,7 @@ Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para
 - Cargas académicas y estudiantes obtenidos desde Supabase.
 - Asistencia y puntos Rockstar almacenados en la nube.
 - Selector global y automático de periodo.
-- Selector desplegable para Estudiantes, Clases, Actividades, Rockstars y Quizzes.
+- Selector desplegable para Estudiantes, Clases, Actividades, Notas, Rockstars y Quizzes.
 - Creación de clases PDF por curso o por grado.
 - Creación de actividades por curso o por grado.
 - Las actividades pueden vincularse opcionalmente con una clase o funcionar de forma independiente.
@@ -83,3 +83,21 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Las tarjetas ahora usan la misma cuadrícula de `danger-head .danger-red-mesh`: cuadros de 24 × 24 px, inclinación de -7 grados y desplazamiento diagonal continuo de 14 segundos.
 - La cuadrícula utiliza tonos apenas más claros que el fondo oscuro de la tarjeta, sin tomar el rojo del modal de peligro ni el color de la asignatura.
 - No requiere cambios de esquema ni SQL en Supabase.
+
+## Cambios v0.24.342
+- Se añadió la nueva sección **NOTAS** al selector de la asignatura, junto a Estudiantes, Clases, Actividades, Rockstars y Quizzes.
+- La sección muestra una hoja de calificaciones horizontal tipo hoja de cálculo, con la primera columna fija para el estudiante y su código.
+- Los nombres se presentan de forma compacta: primer apellido, inicial del segundo apellido, primer nombre e inicial del segundo nombre.
+- Las actividades del periodo aparecen en orden de asignación y con sus encabezados escritos verticalmente.
+- Después de las actividades se añaden automáticamente las columnas **Asistencia** y **Rockstars**, además de una columna final **Definitiva**.
+- La nota de Asistencia se calcula con las sesiones en las que exista registro de asistencia durante el periodo:
+  - asistencia completa: 100;
+  - las inasistencias sin excusa reducen la nota;
+  - las excusas no cuentan como inasistencia injustificada;
+  - cuando todas las ausencias están justificadas, se aplica un mínimo de 60 sin convertir automáticamente la nota en 100.
+- La nota Rockstar compara los puntos obtenidos con una meta configurable. Cuando el estudiante tiene al menos una asistencia registrada en el periodo, la nota Rockstar tiene un mínimo de 60.
+- Al tocar el encabezado de una actividad, Asistencia o Rockstars se abre un modal para configurar código, color y peso porcentual.
+- La columna Rockstar permite además establecer la meta de puntos del periodo; el valor inicial es 15.
+- La ponderación inicial se distribuye de forma equitativa entre las columnas existentes y suma 100%. Las configuraciones posteriores se guardan por asignatura y periodo.
+- La configuración de columnas se guarda dentro de `user_preferences.preferences`, por lo que no requiere una tabla nueva ni una migración SQL.
+- `supabase-adapter.js` ahora incluye las calificaciones de actividades en la carga inicial para construir la hoja de notas sin abrir cada actividad.
