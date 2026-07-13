@@ -29802,3 +29802,194 @@ html body .modal-layer.em-grade-modal-layer {
     font-size: .54rem !important;
   }
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.336 - FONDOS, RESUMEN, TARJETAS Y SELECTOR MOVIL
+========================================================= */
+
+/* 1. El visor de clases PDF usa negro AMOLED puro durante la carga y la lectura. */
+html body #app .screen.class-screen.em-pdf-class-screen,
+html body #app .em-pdf-class-screen .em-pdf-notebook,
+html body #app .em-pdf-class-screen .em-pdf-stage,
+html body #app .em-pdf-class-screen .em-pdf-page-viewport,
+html body #app .em-pdf-loading {
+  background: #000 !important;
+  background-image: none !important;
+}
+
+/* 2. Resumen de actividad: tres columnas centradas y formato X/y. */
+.em-activity-overview-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.em-activity-overview-grid article {
+  align-content: center !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+.em-activity-overview-grid small {
+  width: 100%;
+  text-align: center;
+}
+.em-activity-overview-grid strong {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  text-align: center;
+  font-style: normal;
+}
+.em-activity-overview-grid strong b {
+  color: #fff;
+  font: inherit;
+  font-style: normal;
+}
+.em-activity-overview-grid strong em {
+  color: rgba(255,255,255,.66);
+  font: 600 .55em/1 "Montserrat", Arial, sans-serif;
+  font-style: normal;
+}
+
+/* 3. Crear / editar actividad: radio máximo de 4px. */
+.em-activity-create-modal {
+  border-radius: 4px !important;
+}
+
+/* 4. Acentos del modal de calificación según el color del curso. */
+.em-activity-grade-modal {
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 52%, rgba(255,255,255,.12)) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 26%, transparent),
+    0 22px 70px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 18%, rgba(0,0,0,.74)) !important;
+}
+.em-activity-grade-modal > .section-kicker {
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 76%, #fff 24%) !important;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 42%, transparent);
+}
+.em-activity-grade-modal .em-file-drop {
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 56%, rgba(255,255,255,.12)) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 10%, rgba(255,255,255,.035)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 12%, transparent);
+}
+.em-activity-grade-modal .em-file-drop strong {
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 70%, #fff 30%) !important;
+}
+
+/* 5 y 6. Tarjetas de actividades más limpias y con malla en movimiento. */
+@keyframes emActivityCardMeshDrift336 {
+  from { background-position: 0 0, 0 0; transform: translate3d(0,0,0) scale(1.08); }
+  to { background-position: 64px 32px, -64px 32px; transform: translate3d(14px,-7px,0) scale(1.08); }
+}
+.em-activity-card {
+  min-height: 0 !important;
+  padding: 18px !important;
+}
+.em-activity-card::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -28% !important;
+  width: auto !important;
+  height: auto !important;
+  right: auto !important;
+  top: auto !important;
+  border: 0 !important;
+  background:
+    linear-gradient(30deg, transparent 47%, color-mix(in srgb, var(--em-current-subject-color, #e21b3c) 18%, transparent) 48% 50%, transparent 51%) 0 0 / 32px 32px,
+    linear-gradient(-30deg, transparent 47%, rgba(255,255,255,.045) 48% 50%, transparent 51%) 0 0 / 32px 32px !important;
+  opacity: .52 !important;
+  pointer-events: none !important;
+  animation: emActivityCardMeshDrift336 7s linear infinite !important;
+}
+.em-activity-card-title-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.em-activity-card-title-row h3,
+.em-activity-card h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 !important;
+  color: #fff;
+  font-size: 1.03rem;
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+}
+.em-activity-card-percent {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 auto;
+}
+.em-activity-card-copy {
+  position: relative;
+  z-index: 2;
+}
+.em-activity-card-topic {
+  margin: 0 0 13px !important;
+}
+.em-activity-card-dates strong {
+  font-size: .72rem !important;
+  letter-spacing: .025em;
+}
+.em-content-list.is-list .em-activity-card {
+  grid-template-columns: minmax(180px, .9fr) minmax(280px, 1.55fr) !important;
+}
+.em-content-list.is-list .em-activity-card-title-row {
+  margin: 0;
+  align-self: center;
+}
+.em-content-list.is-list .em-activity-card-copy {
+  grid-template-columns: minmax(130px, .75fr) minmax(190px, 1fr) minmax(145px, .8fr) !important;
+}
+
+/* 7. Selector de sección: el select nativo cubre toda el área táctil. */
+.em-subject-section-select-wrap {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.em-subject-section-current {
+  min-width: 0;
+  overflow: hidden;
+  color: #fff;
+  font: 750 .78rem/1 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.em-subject-section-select {
+  position: absolute !important;
+  z-index: 5 !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: .001 !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  font-size: 16px !important;
+}
+.em-subject-section-label,
+.em-subject-section-current,
+.em-subject-section-chevron {
+  position: relative;
+  z-index: 2;
+  pointer-events: none !important;
+}
+
+@media (max-width: 760px) {
+  .em-content-list.is-list .em-activity-card {
+    grid-template-columns: 1fr !important;
+  }
+  .em-content-list.is-list .em-activity-card-copy {
+    grid-template-columns: 1fr !important;
+  }
+  .em-subject-section-current {
+    font-size: .74rem;
+  }
+}

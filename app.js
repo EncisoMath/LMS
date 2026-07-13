@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.335';
+  const APP_VERSION = '0.24.336';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -911,6 +911,15 @@
     const value = String(tab || 'students');
     return ['students', 'classes', 'activities', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
+  function subjectTabDisplayLabel(tab) {
+    return {
+      students: '👥 Estudiantes',
+      classes: '📚 Clases',
+      activities: '📝 Actividades',
+      rockstars: '🚀 Rockstars',
+      quizzes: '🎮 Quizzes'
+    }[normalizeSubjectTab(tab)] || '👥 Estudiantes';
+  }
   function appRouteKey(route) {
     const normalized = normalizeAppRoute(route);
     if (!normalized) return '';
@@ -1240,6 +1249,7 @@
           <nav class="em-subject-section-picker" aria-label="Sección de la asignatura">
             <label class="em-subject-section-select-wrap" for="subjectSectionSelect">
               <span class="em-subject-section-label">Sección</span>
+              <span class="em-subject-section-current" id="subjectSectionCurrent">${escapeHTML(subjectTabDisplayLabel(tab))}</span>
               <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
                 <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
                 <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
@@ -1258,8 +1268,12 @@
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
-      document.getElementById('subjectSectionSelect')?.addEventListener('change', (event) => {
-        setSubjectTab(event.target.value);
+      const subjectSectionSelect = document.getElementById('subjectSectionSelect');
+      subjectSectionSelect?.addEventListener('change', (event) => {
+        const nextTab = normalizeSubjectTab(event.target.value);
+        const currentLabel = document.getElementById('subjectSectionCurrent');
+        if (currentLabel) currentLabel.textContent = subjectTabDisplayLabel(nextTab);
+        setSubjectTab(nextTab);
       });
       emInitSubjectToolbar(document);
       applySubjectInfoTune();
@@ -1297,6 +1311,8 @@
     setActiveSubjectTabMeta(tab);
     const sectionSelect = document.getElementById('subjectSectionSelect');
     if (sectionSelect && sectionSelect.value !== tab) sectionSelect.value = tab;
+    const sectionCurrent = document.getElementById('subjectSectionCurrent');
+    if (sectionCurrent) sectionCurrent.textContent = subjectTabDisplayLabel(tab);
     commitAppRoute({ screen: 'subject', assignmentId: state.assignment?.id || '', tab }, options);
     if (tab === 'students') renderStudentsTab({ animate: true });
     else if (tab === 'activities') renderActivitiesTab({ animate: true });
@@ -9817,19 +9833,28 @@
     activity.progressByAssignment = { ...(activity.progressByAssignment || {}), [assignmentId]: progress };
   }
 
+  function formatActivityCardDate(value) {
+    const raw = String(value || '').slice(0, 10);
+    if (!raw) return 'SIN FECHA';
+    const parts = raw.split('-').map(Number);
+    if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) return 'SIN FECHA';
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    const month = new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(date).toUpperCase();
+    return `${month} ${date.getDate()}`;
+  }
+
   function activityCardHTML(activity, index = 0) {
     const lesson = activityRelatedLesson(activity);
-    const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
-    const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
+    const start = activity.startsAt ? formatActivityCardDate(activity.startsAt) : 'SIN FECHA';
+    const due = activity.dueAt ? formatActivityCardDate(activity.dueAt) : 'SIN FECHA';
     const progress = activityProgressForCurrentAssignment(activity);
     return `
       <article class="em-activity-card" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress.percentage}%">
-        <div class="em-activity-card-head">
-          <span class="em-activity-card-period">Actividad · Periodo ${Number(activity.period || 1)}</span>
+        <div class="em-activity-card-title-row">
+          <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
           <span class="em-activity-card-percent">${progress.percentage}%</span>
         </div>
         <div class="em-activity-card-copy">
-          <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
           <p class="em-activity-card-topic">${lesson ? escapeHTML(lesson.title || 'Clase') : 'Actividad independiente'}</p>
           <div class="em-activity-card-dates">
             <span><small>Asignada</small><strong>${escapeHTML(start)}</strong></span>
@@ -9838,11 +9863,6 @@
           <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
             <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
             <i><b></b></i>
-          </div>
-          <div class="em-activity-card-stats">
-            <span><b>${progress.delivered}</b><small>entregas</small></span>
-            <span><b>${progress.graded}</b><small>calificadas</small></span>
-            <span><b>${progress.pending}</b><small>pendientes</small></span>
           </div>
         </div>
       </article>
@@ -10182,21 +10202,20 @@
               <span class="em-act-pencil">✎</span>
             </div>
             <div class="em-act-content em-activity-detail-hero-copy">
-              <span class="em-act-eyebrow">PERIODO ${Number(activity.period || 1)} • ${escapeHTML(gradeCourse)}</span>
               <h2 class="em-act-title em-activity-detail-title">${escapeHTML(activity.title || 'Actividad')}</h2>
               <p class="em-act-subtitle">${lesson ? `Clase relacionada: ${escapeHTML(lesson.title || 'Clase')}` : 'Actividad independiente'}</p>
               <div class="em-activity-detail-dates" aria-label="Fechas de la actividad">
-                <span>📍 Inicio: ${escapeHTML(start)}</span>
-                <span>🏁 Fin: ${escapeHTML(due)}</span>
+                <span>📍 ${escapeHTML(start)}</span>
+                <span>🏁 ${escapeHTML(due)}</span>
               </div>
             </div>
           </section>
 
           <section class="em-activity-detail-main">
             <div class="em-activity-overview-grid" aria-label="Resumen de la actividad">
-              <article><small>Entregaron</small><strong>${progress.delivered}</strong><span>de ${progress.total}</span></article>
-              <article><small>Calificados</small><strong>${progress.graded}</strong><span>de ${progress.total}</span></article>
-              <article><small>Avance</small><strong>${progress.percentage}%</strong><span>completado</span></article>
+              <article><small>Entregaron</small><strong><b>${progress.delivered}</b><em>/${progress.total}</em></strong></article>
+              <article><small>Calificados</small><strong><b>${progress.graded}</b><em>/${progress.total}</em></strong></article>
+              <article><small>Avance</small><strong><b>${progress.percentage}</b><em>%</em></strong></article>
             </div>
             <section class="em-activity-content-stage" aria-label="Contenido de la actividad">
               ${activityContentShellHTML(activity)}
@@ -12904,7 +12923,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.335', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.336', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
