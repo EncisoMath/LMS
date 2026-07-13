@@ -652,7 +652,34 @@
       created_by: session?.user?.id || (await getSession())?.user?.id,
       client_mutation_id: event.clientMutationId || event.mutationId || null
     };
+
+    // v0.25.004: la escritura Rockstar usa una RPC idempotente para evitar
+    // depender de la inferencia ON CONFLICT de PostgREST. La RPC compara el
+    // client_mutation_id y devuelve el evento existente si se trata de un
+    // reintento de la cola offline.
     if (row.client_mutation_id) {
+      const rpcResult = await supabaseClient.rpc('encisomath_add_rockstar_event', {
+        p_assignment_id: row.assignment_id,
+        p_student_id: row.student_id,
+        p_period: row.period,
+        p_points: row.points,
+        p_category: row.category,
+        p_reason: row.reason,
+        p_occurred_at: row.occurred_at,
+        p_client_mutation_id: row.client_mutation_id
+      });
+      if (!rpcResult.error) {
+        const rpcRow = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+        if (rpcRow) return rpcRow;
+      }
+
+      const rpcMessage = String(rpcResult.error?.message || '').toLowerCase();
+      const missingRpc = rpcMessage.includes('could not find the function')
+        || rpcMessage.includes('schema cache')
+        || rpcMessage.includes('function public.encisomath_add_rockstar_event');
+      if (!missingRpc) throw normalizeError(rpcResult.error, 'No se pudo guardar el punto Rockstar.');
+
+      // Compatibilidad mientras se ejecuta la migracion v0.25.004.
       return insertIdempotentByMutationId(
         'rockstar_events',
         row,
@@ -660,6 +687,7 @@
         'No se pudo guardar el punto Rockstar.'
       );
     }
+
     const { data, error } = await supabaseClient
       .from('rockstar_events')
       .insert(row)
@@ -1408,7 +1436,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.003', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.004', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -1466,7 +1494,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.003',
+          appVersion: '0.25.004',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.003';
+  const OFFLINE_VERSION = '0.25.004';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -1601,7 +1601,11 @@
         await markMutationEntitiesSynced(type, preparedPayload).catch(() => {});
         return result;
       } catch (error) {
-        if (!isNetworkError(error)) throw error;
+        // Algunas escrituras de tipo evento deben conservarse en la cola aun
+        // cuando el navegador diga que hay conexion pero Supabase rechace o
+        // interrumpa temporalmente la solicitud. Esto evita que el punto se
+        // revierta visualmente y permite reintentarlo desde el centro de sync.
+        if (!isNetworkError(error) && !options.queueOnAnyError) throw error;
       }
     }
     const optimisticResult = typeof optimisticAction === 'function'
@@ -1702,7 +1706,8 @@
     },
     addRockstarEvent(event) {
       return executeMutation('addRockstarEvent', { event }, ({ event: safeEvent, clientMutationId }) => cloud.addRockstarEvent({ ...safeEvent, clientMutationId }), ({ event: safeEvent }, mutationId) => optimisticRockstar(safeEvent, mutationId), {
-        fallbackResult: { id: `offline-${uuid()}`, occurred_at: event.occurredAt || nowIso() }
+        fallbackResult: { id: `offline-${uuid()}`, occurred_at: event.occurredAt || nowIso() },
+        queueOnAnyError: true
       });
     },
     createStudentAndEnroll(payload) {
