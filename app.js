@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.337';
+  const APP_VERSION = '0.24.339';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -9814,7 +9814,53 @@
     const delivered = Math.max(0, Math.min(total || Number.MAX_SAFE_INTEGER, Number(stored.delivered || 0)));
     const graded = Math.max(0, Math.min(total || Number.MAX_SAFE_INTEGER, Number(stored.graded || 0)));
     const percentage = total ? Math.round((graded / total) * 100) : 0;
-    return { total, delivered, graded, percentage, pending: Math.max(0, total - graded) };
+    const rawAverage = stored.average;
+    const average = rawAverage === null || rawAverage === undefined || rawAverage === ''
+      ? null
+      : Math.max(0, Math.min(100, Number(rawAverage)));
+    return {
+      total,
+      delivered,
+      graded,
+      percentage,
+      average: Number.isFinite(average) ? average : null,
+      pending: Math.max(0, total - graded)
+    };
+  }
+
+  function activityAverageBand(average) {
+    if (!Number.isFinite(average)) return 'is-empty';
+    if (average >= 90) return 'is-gold';
+    if (average >= 80) return 'is-green';
+    if (average >= 70) return 'is-yellow';
+    if (average >= 60) return 'is-orange';
+    return 'is-red';
+  }
+
+  function formatActivityAverage(average) {
+    if (!Number.isFinite(average)) return '—';
+    return Number.isInteger(average) ? String(average) : average.toFixed(1);
+  }
+
+  function activityOverviewHTML(progress) {
+    const average = Number.isFinite(progress?.average) ? progress.average : null;
+    const averageWidth = average === null ? 0 : Math.max(0, Math.min(100, average));
+    return `
+      <article><small>Entregaron</small><strong><b>${progress.delivered}</b><em>/${progress.total}</em></strong></article>
+      <article><small>Calificados</small><strong><b>${progress.graded}</b><em>/${progress.total}</em></strong></article>
+      <article><small>Avance</small><strong><b>${progress.percentage}</b><em>%</em></strong></article>
+      <article class="em-activity-average-card ${activityAverageBand(average)}">
+        <small>Promedio</small>
+        <strong><b>${formatActivityAverage(average)}</b></strong>
+        <span class="em-activity-average-track" aria-label="Promedio ${average === null ? 'sin calificaciones' : `${formatActivityAverage(average)} de 100`}"><i style="width:${averageWidth}%"></i></span>
+      </article>
+    `;
+  }
+
+  function refreshActivityOverview(activity) {
+    const host = document.getElementById('activityOverviewGrid');
+    if (!host || !activity) return;
+    host.innerHTML = activityOverviewHTML(activityProgressForCurrentAssignment(activity));
   }
 
   function updateActivityProgressFromGradebook(activity, rows = []) {
@@ -9825,12 +9871,25 @@
       const file = row?.submissionFile && typeof row.submissionFile === 'object' ? row.submissionFile : {};
       const graded = Boolean(row?.gradedAt);
       const delivered = graded || Boolean(file.path || file.url || file.name) || submittedStatuses.has(String(row?.latestDeliveryStatus || ''));
+      const score = Number(row?.score);
       acc.total += 1;
       if (delivered) acc.delivered += 1;
-      if (graded) acc.graded += 1;
+      if (graded) {
+        acc.graded += 1;
+        if (Number.isFinite(score)) {
+          acc.scoreTotal += score;
+          acc.scoreCount += 1;
+        }
+      }
       return acc;
-    }, { total: 0, delivered: 0, graded: 0 });
+    }, { total: 0, delivered: 0, graded: 0, scoreTotal: 0, scoreCount: 0 });
+    progress.average = progress.scoreCount
+      ? Math.round((progress.scoreTotal / progress.scoreCount) * 10) / 10
+      : null;
+    delete progress.scoreTotal;
+    delete progress.scoreCount;
     activity.progressByAssignment = { ...(activity.progressByAssignment || {}), [assignmentId]: progress };
+    refreshActivityOverview(activity);
   }
 
   function formatActivityCardDate(value) {
@@ -10225,10 +10284,8 @@
           </section>
 
           <section class="em-activity-detail-main">
-            <div class="em-activity-overview-grid" aria-label="Resumen de la actividad">
-              <article><small>Entregaron</small><strong><b>${progress.delivered}</b><em>/${progress.total}</em></strong></article>
-              <article><small>Calificados</small><strong><b>${progress.graded}</b><em>/${progress.total}</em></strong></article>
-              <article><small>Avance</small><strong><b>${progress.percentage}</b><em>%</em></strong></article>
+            <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
+              ${activityOverviewHTML(progress)}
             </div>
             <div class="em-activity-detail-content-tabs" role="tablist" aria-label="Contenido de la actividad">
               <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
@@ -12957,7 +13014,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.337', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.339', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
