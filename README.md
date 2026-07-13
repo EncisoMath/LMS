@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.342
+# EncisoMath LMS v0.24.343
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -101,3 +101,13 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - La ponderación inicial se distribuye de forma equitativa entre las columnas existentes y suma 100%. Las configuraciones posteriores se guardan por asignatura y periodo.
 - La configuración de columnas se guarda dentro de `user_preferences.preferences`, por lo que no requiere una tabla nueva ni una migración SQL.
 - `supabase-adapter.js` ahora incluye las calificaciones de actividades en la carga inicial para construir la hoja de notas sin abrir cada actividad.
+
+
+## Cambios v0.24.343
+- La cuadrícula de `em-activity-card` conserva exactamente el patrón de 24 × 24 px y el desplazamiento diagonal del encabezado de peligro, con líneas más claras para que sea visible sobre el fondo oscuro.
+- El héroe de **NOTAS** usa la misma estructura, altura, márgenes, tipografía, figuras de fondo y entrada animada de los demás héroes. Su ilustración propia muestra tarjetas animadas con notas 100, 80, 50 y 40.
+- La cabecera **Definitiva** ahora está escrita verticalmente y las notas definitivas se muestran en texto grande y negrita, sin bullets.
+- Se añadieron los quizzes del periodo como columnas de la hoja de NOTAS. Para cada estudiante se usa el mejor intento enviado, convertido a escala de 0 a 100.
+- Los fondos de las cabeceras de actividades, quizzes, Asistencia y Rockstars son colores sólidos oscurecidos, sin degradados. Este cambio corresponde al punto reversible indicado por el usuario.
+- La columna de estudiante ahora muestra, en líneas separadas: código, apellidos y nombres. Se eliminó la leyenda “Apellido, nombre · código”.
+- No requiere cambios de esquema ni una migración SQL nueva; se consultan los intentos ya existentes en `quiz_attempts`.

@@ -30753,3 +30753,266 @@ html body #app .em-pdf-loading {
   .em-notes-color-grid { grid-template-columns: repeat(5, 1fr); }
   .em-notes-column-modal { width: 100vw !important; max-width: none !important; margin-top: auto; border-radius: 4px 4px 0 0 !important; }
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.343 - NOTAS COMPLETAS + HERO ESTANDAR
+   ========================================================= */
+
+/* 1. Cuadrícula de ACTIVIDADES: misma geometría que danger-head,
+   con un tono apenas más claro que el fondo y visibilidad real. */
+.em-activity-card {
+  isolation: isolate;
+}
+.em-activity-card::before {
+  z-index: 2 !important;
+}
+.em-activity-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -26px !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  background-image:
+    linear-gradient(rgba(122, 137, 160, .34) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(101, 116, 139, .28) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 0 !important;
+  background-repeat: repeat !important;
+  opacity: .72 !important;
+  transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
+  transform-origin: center !important;
+  mix-blend-mode: screen;
+  will-change: background-position !important;
+  animation: warningLessonGridDrift246 14s linear infinite !important;
+  animation-play-state: running !important;
+}
+.em-activity-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 2. HERO NOTAS: misma caja, dimensiones, espaciado y animaciones
+   estructurales que ACTIVIDADES/CLASES/QUIZZES/ROCKSTARS. */
+.activity-hero.em-act-hero-host.em-notes-hero-host {
+  --em-act-main: var(--em-current-subject-color, #1368ce);
+  background: var(--em-current-subject-color, #1368ce) !important;
+}
+.tab-section[data-active-tab="notes"] [data-em-notes-hero] {
+  animation: none !important;
+  transform-origin: center bottom;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
+}
+.em-notes-hero-content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  align-content: center;
+  justify-items: start;
+  padding-left: clamp(6px, 1.2vw, 12px);
+  text-align: left;
+}
+.em-notes-grade-stack {
+  position: relative;
+  z-index: 2;
+  justify-self: center;
+  align-self: center;
+  width: 91px;
+  height: 91px;
+  margin-right: clamp(2px, .8vw, 8px);
+  transform: scale(.82);
+  transform-origin: center;
+}
+.em-notes-grade-card {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 49px;
+  height: 31px;
+  border: 2px solid rgba(0,0,0,.16);
+  border-radius: 4px;
+  background: #ffffff;
+  color: #0b1220;
+  font: 900 14px/1 "Montserrat", Arial, sans-serif;
+  box-shadow: 0 5px 0 rgba(0,0,0,.18);
+  transform-origin: center;
+}
+.em-notes-grade-card-100 {
+  left: 4px;
+  top: 6px;
+  border-bottom-color: #f6c453;
+  transform: rotate(-8deg);
+}
+.em-notes-grade-card-80 {
+  right: 0;
+  top: 19px;
+  border-bottom-color: #54c600;
+  transform: rotate(7deg);
+}
+.em-notes-grade-card-50 {
+  left: 2px;
+  bottom: 18px;
+  border-bottom-color: #ff7a00;
+  transform: rotate(5deg);
+}
+.em-notes-grade-card-40 {
+  right: 2px;
+  bottom: 3px;
+  border-bottom-color: #e21b3c;
+  transform: rotate(-6deg);
+}
+:root .em-notes-hero-host.is-live .em-notes-grade-card-100 {
+  animation: emNotesGradeCard100 3.3s ease-in-out infinite !important;
+}
+:root .em-notes-hero-host.is-live .em-notes-grade-card-80 {
+  animation: emNotesGradeCard80 3.3s .18s ease-in-out infinite !important;
+}
+:root .em-notes-hero-host.is-live .em-notes-grade-card-50 {
+  animation: emNotesGradeCard50 3.3s .36s ease-in-out infinite !important;
+}
+:root .em-notes-hero-host.is-live .em-notes-grade-card-40 {
+  animation: emNotesGradeCard40 3.3s .54s ease-in-out infinite !important;
+}
+@keyframes emNotesGradeCard100 {
+  0%, 100% { transform: translate3d(0,0,0) rotate(-8deg) scale(1); }
+  34% { transform: translate3d(-2px,-7px,0) rotate(-3deg) scale(1.08); }
+  58% { transform: translate3d(1px,1px,0) rotate(-10deg) scale(.98); }
+}
+@keyframes emNotesGradeCard80 {
+  0%, 100% { transform: translate3d(0,0,0) rotate(7deg) scale(1); }
+  34% { transform: translate3d(3px,-6px,0) rotate(2deg) scale(1.07); }
+  58% { transform: translate3d(-1px,1px,0) rotate(9deg) scale(.98); }
+}
+@keyframes emNotesGradeCard50 {
+  0%, 100% { transform: translate3d(0,0,0) rotate(5deg) scale(1); }
+  34% { transform: translate3d(-3px,-5px,0) rotate(10deg) scale(1.06); }
+  58% { transform: translate3d(1px,1px,0) rotate(3deg) scale(.98); }
+}
+@keyframes emNotesGradeCard40 {
+  0%, 100% { transform: translate3d(0,0,0) rotate(-6deg) scale(1); }
+  34% { transform: translate3d(3px,-6px,0) rotate(-11deg) scale(1.07); }
+  58% { transform: translate3d(-1px,1px,0) rotate(-4deg) scale(.98); }
+}
+
+/* 3 y 5. Cabeceras compactas: títulos verticales y fondos sólidos. */
+.em-notes-grade-header button {
+  background: color-mix(in srgb, var(--em-notes-column-color) 32%, #09111d 68%) !important;
+}
+.em-notes-grade-header button:hover,
+.em-notes-grade-header button:focus-visible {
+  background: color-mix(in srgb, var(--em-notes-column-color) 44%, #09111d 56%) !important;
+}
+.em-notes-final-header {
+  height: 194px !important;
+  padding: 0 !important;
+  vertical-align: bottom !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 34%, #09111d 66%) !important;
+}
+.em-notes-final-header-copy {
+  width: 100%;
+  height: 194px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 6px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.em-notes-final-header-copy span {
+  color: #fff;
+  font-size: .74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.em-notes-final-header-copy small {
+  color: rgba(255,255,255,.68);
+  font-size: .58rem;
+  font-weight: 600;
+}
+.em-notes-final-cell strong {
+  display: block !important;
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: .96rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+/* 6. Primera columna: código, apellidos y nombres en tres líneas. */
+.em-notes-student-header {
+  vertical-align: middle !important;
+}
+.em-notes-student-header span {
+  margin: 0;
+}
+.em-notes-student-cell {
+  height: 62px !important;
+  padding: 7px 14px !important;
+  vertical-align: middle;
+}
+.em-notes-student-code,
+.em-notes-student-lastname,
+.em-notes-student-firstname {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-notes-student-code {
+  margin: 0 0 2px !important;
+  color: #788ba7 !important;
+  font-size: 8px !important;
+  line-height: 1.05;
+  font-weight: 600 !important;
+  letter-spacing: .035em;
+}
+.em-notes-student-lastname {
+  color: #f8fafc !important;
+  font-size: 12px !important;
+  line-height: 1.12;
+  font-weight: 700 !important;
+}
+.em-notes-student-firstname {
+  margin-top: 2px;
+  color: #b8c5d8;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .em-notes-grade-stack {
+    transform: scale(.68);
+  }
+  .em-notes-hero-content {
+    padding-left: 6px;
+  }
+  .em-notes-student-header,
+  .em-notes-student-cell {
+    width: 202px !important;
+    min-width: 202px !important;
+    max-width: 202px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .em-notes-grade-stack {
+    transform: scale(.60);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-notes-grade-card {
+    animation: none !important;
+  }
+}

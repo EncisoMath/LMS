@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.342';
+  const APP_VERSION = '0.24.343';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -502,7 +502,7 @@
   const $toast = document.getElementById('toast');
 
   const state = {
-    data: { users: [], assignments: [], students: [], classes: [], activities: [], activityGrades: [], rockstars: [], quizzes: [] },
+    data: { users: [], assignments: [], students: [], classes: [], activities: [], activityGrades: [], quizGrades: [], rockstars: [], quizzes: [] },
     user: null,
     assignment: null,
     activePeriod: 1,
@@ -2752,10 +2752,31 @@
       });
   }
 
+  function getNotesQuizzes() {
+    const assignment = state.assignment;
+    if (!assignment) return [];
+    return getBaseQuizzes()
+      .filter((quiz) => {
+        if (Number(quiz.period || 1) !== Number(state.activePeriod || 1)) return false;
+        const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds : [];
+        if (ids.length) return ids.includes('*') || ids.includes(assignment.id);
+        if (quiz.subject && quiz.subject === assignment.subject) return true;
+        if (quiz.area && quiz.area === assignment.area) return true;
+        return !ids.length && !quiz.subject && !quiz.area;
+      })
+      .sort((a, b) => {
+        const aDate = String(a.availableFrom || a.createdAt || a.openAt || '');
+        const bDate = String(b.availableFrom || b.createdAt || b.openAt || '');
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+        return String(a.title || '').localeCompare(String(b.title || ''), 'es');
+      });
+  }
+
   function notesColumnDefinitions() {
     const assignmentId = String(state.assignment?.id || '');
     const period = Number(state.activePeriod || 1);
     const activities = getNotesActivities();
+    const quizzes = getNotesQuizzes();
     const baseColumns = [
       ...activities.map((activity, index) => ({
         key: `activity:${activity.id}`,
@@ -2764,6 +2785,14 @@
         title: activity.title || `Actividad ${index + 1}`,
         defaultCode: `A${index + 1}`,
         defaultColor: NOTES_COLUMN_COLORS[index % NOTES_COLUMN_COLORS.length]
+      })),
+      ...quizzes.map((quiz, index) => ({
+        key: `quiz:${quiz.id}`,
+        type: 'quiz',
+        quizId: quiz.id,
+        title: quiz.title || `Quiz ${index + 1}`,
+        defaultCode: `Q${index + 1}`,
+        defaultColor: NOTES_COLUMN_COLORS[(activities.length + index) % NOTES_COLUMN_COLORS.length]
       })),
       {
         key: 'attendance',
@@ -2817,21 +2846,27 @@
     savePreferencesToCloud();
   }
 
-  function notesStudentDisplayName(student) {
-    const compactPart = (value) => {
-      const parts = String(value || '').trim().split(/\s+/).filter(Boolean);
-      if (!parts.length) return '';
-      return `${parts[0]}${parts[1] ? ` ${parts[1].charAt(0).toUpperCase()}.` : ''}`;
-    };
-    const last = compactPart(student.lastName || '');
-    const first = compactPart(student.firstName || '');
-    if (last && first) return `${last}, ${first}`;
-    const fallback = String(student.fullName || student.id || '').trim();
-    if (fallback.includes(',')) {
-      const [fallbackLast, fallbackFirst] = fallback.split(',');
-      return `${compactPart(fallbackLast)}, ${compactPart(fallbackFirst)}`.replace(/,\s*$/, '');
+  function notesStudentNameParts(student) {
+    const code = String(student?.id || student?.studentCode || '').trim();
+    let lastName = String(student?.lastName || '').trim();
+    let firstName = String(student?.firstName || '').trim();
+    const fullName = String(student?.fullName || '').trim();
+    if ((!lastName || !firstName) && fullName) {
+      if (fullName.includes(',')) {
+        const [last, ...first] = fullName.split(',');
+        lastName = lastName || String(last || '').trim();
+        firstName = firstName || first.join(',').trim();
+      } else {
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        if (!firstName && parts.length) firstName = parts.slice(0, Math.max(1, Math.ceil(parts.length / 2))).join(' ');
+        if (!lastName && parts.length > 1) lastName = parts.slice(Math.max(1, Math.ceil(parts.length / 2))).join(' ');
+      }
     }
-    return fallback;
+    return {
+      code,
+      lastName: lastName || fullName || code,
+      firstName: firstName || ''
+    };
   }
 
   function notesAttendanceSessions(assignmentId, period) {
@@ -2892,6 +2927,16 @@
     return map;
   }
 
+
+  function notesQuizGradeMap(assignmentId) {
+    const map = new Map();
+    (state.data.quizGrades || []).forEach((row) => {
+      if (String(row.assignmentId || '') !== String(assignmentId || '')) return;
+      map.set(`${String(row.quizId || '')}|${String(row.studentCode || '')}`, row);
+    });
+    return map;
+  }
+
   function syncActivityGradesFromGradebook(activityId, assignmentId, rows = []) {
     if (!Array.isArray(state.data.activityGrades)) state.data.activityGrades = [];
     state.data.activityGrades = state.data.activityGrades.filter((row) => !(
@@ -2927,6 +2972,14 @@
         title: record?.gradedAt ? 'Calificación registrada' : 'Pendiente de calificar'
       };
     }
+    if (column.type === 'quiz') {
+      const record = context.quizGrades.get(`${column.quizId}|${student.id}`);
+      return {
+        score: record ? Number(record.score ?? 0) : null,
+        pending: !record,
+        title: record ? `Mejor intento: ${Number(record.score ?? 0).toFixed(1)}/100` : 'Quiz pendiente o sin intento enviado'
+      };
+    }
     if (column.type === 'attendance') {
       const attendance = context.attendanceByStudent.get(student.id);
       return {
@@ -2954,19 +3007,38 @@
 
   function notesHeroHTML(assignment) {
     return `
-      <section class="em-notes-hero" aria-label="Notas del periodo">
-        <div class="em-notes-hero-grid" aria-hidden="true"></div>
-        <div class="em-notes-hero-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-        <div class="em-notes-hero-copy">
-          <span>${escapeHTML(assignment.subject || 'Asignatura')} · ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}</span>
-          <h1>NOTAS</h1>
-          <p>Calificaciones, asistencia y Rockstars en una sola hoja.</p>
+      <section class="activity-hero em-act-hero-host em-notes-hero-host" data-em-notes-hero aria-label="Notas del periodo">
+        <div class="em-act-shapes" aria-hidden="true">
+          <span class="em-act-shape em-act-shape-circle"></span>
+          <span class="em-act-shape em-act-shape-square"></span>
+          <span class="em-act-shape em-act-shape-triangle"></span>
+          <span class="em-act-shape em-act-shape-x"></span>
         </div>
-        <div class="em-notes-hero-sheet" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span>
+        <div class="em-notes-grade-stack" aria-hidden="true">
+          <span class="em-notes-grade-card em-notes-grade-card-100">100</span>
+          <span class="em-notes-grade-card em-notes-grade-card-80">80</span>
+          <span class="em-notes-grade-card em-notes-grade-card-50">50</span>
+          <span class="em-notes-grade-card em-notes-grade-card-40">40</span>
+        </div>
+        <div class="em-act-content em-notes-hero-content">
+          <span class="em-act-eyebrow">${escapeHTML(assignment.subject || 'Asignatura')} • ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}</span>
+          <h1 class="em-act-title">NOTAS</h1>
+          <p class="em-act-subtitle">Actividades, quizzes, asistencia y Rockstars.</p>
         </div>
       </section>
     `;
+  }
+
+  function emNotesInitHero(root = document) {
+    const hero = root.querySelector?.('[data-em-notes-hero]');
+    if (!hero) return;
+    hero.classList.remove('is-live');
+    void hero.offsetWidth;
+    hero.classList.add('is-live');
+    hero.querySelectorAll('.em-act-shape').forEach((shape, index) => {
+      shape.style.setProperty('--em-act-shape-delay', `${-1.25 * (index + 1)}s`);
+      shape.style.setProperty('--em-act-shape-duration', `${7.4 + index * 1.05}s`);
+    });
   }
 
   function notesColumnHeaderHTML(column) {
@@ -2990,11 +3062,13 @@
       return `<td class="em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''}" title="${escapeAttr(cell.title || '')}">${score === null ? '—' : Math.round(score)}</td>`;
     }).join('');
     const finalScore = Math.max(0, Math.min(100, Math.round(weighted * 10) / 10));
+    const name = notesStudentNameParts(student);
     return `
       <tr>
         <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
-          <strong>${escapeHTML(notesStudentDisplayName(student))}</strong>
-          <small>${escapeHTML(student.id || '')}</small>
+          <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
+          <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
+          <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
         </th>
         ${cells}
         <td class="em-notes-final-cell ${notesScoreClass(finalScore)}"><strong>${Number.isInteger(finalScore) ? finalScore : finalScore.toFixed(1)}</strong></td>
@@ -3013,6 +3087,7 @@
     const attendanceByStudent = new Map(students.map((student) => [student.id, notesAttendanceSummary(student.id, sessions)]));
     const context = {
       activityGrades: notesActivityGradeMap(assignment.id),
+      quizGrades: notesQuizGradeMap(assignment.id),
       attendanceByStudent
     };
     const totalWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
@@ -3037,9 +3112,9 @@
           <table class="em-notes-sheet">
             <thead>
               <tr>
-                <th class="em-notes-student-header" scope="col"><span>Estudiante</span><small>Apellido, nombre · código</small></th>
+                <th class="em-notes-student-header" scope="col"><span>Estudiante</span></th>
                 ${columns.map(notesColumnHeaderHTML).join('')}
-                <th class="em-notes-final-header" scope="col"><span>Definitiva</span><small>Periodo</small></th>
+                <th class="em-notes-final-header" scope="col"><div class="em-notes-final-header-copy"><span>Definitiva</span><small>Periodo</small></div></th>
               </tr>
             </thead>
             <tbody>
@@ -3047,12 +3122,13 @@
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">Toca el encabezado de una actividad, Asistencia o Rockstars para configurar su código, color y peso.</p>
+        <p class="em-notes-sheet-help">Toca el encabezado de una actividad, quiz, Asistencia o Rockstars para configurar su código, color y peso.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
       button.addEventListener('click', () => openNotesColumnModal(button.dataset.notesColumnKey || ''));
     });
+    emNotesInitHero(content);
     emPlayTabEntrance(content, 'notes');
     if (options.animate) pulseElement(content, 'tab-enter');
   }
@@ -13451,8 +13527,9 @@
       '#activitiesPeriodContent > .em-period-empty > *'
     ],
     notes: [
-      '.em-notes-hero',
-      '.em-notes-hero-copy > *',
+      '[data-em-notes-hero]',
+      '.em-notes-grade-card',
+      '.em-notes-hero-content > *',
       '.em-notes-toolbar > *',
       '.em-notes-weight-summary > *',
       '.em-notes-sheet-shell',
@@ -13605,7 +13682,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.342', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.343', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

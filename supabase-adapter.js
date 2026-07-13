@@ -367,6 +367,7 @@
     let activityRows = [];
     let activityProgressRows = [];
     let quizAssignmentRows = [];
+    let quizAttemptRows = [];
     let attendanceRows = [];
     let rockstarRows = [];
     if (assignmentIds.length) {
@@ -411,6 +412,19 @@
       quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
       attendanceRows = attendanceResult.data || [];
       rockstarRows = rockstarResult.data || [];
+
+      const quizAssignmentIds = quizAssignmentRows.map((row) => row.id).filter(Boolean);
+      if (quizAssignmentIds.length) {
+        const quizAttemptsResult = await supabaseClient
+          .from('quiz_attempts')
+          .select('id,quiz_assignment_id,student_id,status,score,max_score,submitted_at,started_at')
+          .in('quiz_assignment_id', quizAssignmentIds);
+        if (quizAttemptsResult.error) {
+          console.warn('No se pudieron cargar las notas de quizzes para la planilla.', quizAttemptsResult.error);
+        } else {
+          quizAttemptRows = quizAttemptsResult.data || [];
+        }
+      }
     }
 
     const uniqueLessons = new Map();
@@ -467,6 +481,34 @@
       gradingGroupId: row.grading_group_id || ''
     })).filter((row) => row.activityId && row.assignmentId && row.studentCode);
 
+
+    const quizAssignmentMeta = new Map(quizAssignmentRows.map((row) => [String(row.id || ''), {
+      quizId: String(row.quiz_id || nestedId(row, 'quiz') || ''),
+      assignmentId: String(row.assignment_id || '')
+    }]));
+    const bestQuizGrades = new Map();
+    quizAttemptRows.forEach((row) => {
+      if (!['submitted', 'graded'].includes(String(row.status || ''))) return;
+      const meta = quizAssignmentMeta.get(String(row.quiz_assignment_id || ''));
+      const studentCode = String(studentDbIdToCode.get(row.student_id) || row.student_id || '');
+      const maxScore = Number(row.max_score || 0);
+      if (!meta?.quizId || !meta.assignmentId || !studentCode || maxScore <= 0) return;
+      const score = Math.max(0, Math.min(100, (Number(row.score || 0) / maxScore) * 100));
+      const key = `${meta.quizId}|${meta.assignmentId}|${studentCode}`;
+      const candidate = {
+        quizId: meta.quizId,
+        assignmentId: meta.assignmentId,
+        studentCode,
+        score: Math.round(score * 10) / 10,
+        submittedAt: row.submitted_at || row.started_at || ''
+      };
+      const current = bestQuizGrades.get(key);
+      if (!current || candidate.score > current.score || (candidate.score === current.score && String(candidate.submittedAt) > String(current.submittedAt))) {
+        bestQuizGrades.set(key, candidate);
+      }
+    });
+    const quizGrades = [...bestQuizGrades.values()];
+
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
       .from('user_preferences')
       .select('preferences')
@@ -483,6 +525,7 @@
         classes: [...uniqueLessons.values()],
         activities: [...uniqueActivities.values()],
         activityGrades,
+        quizGrades,
         rockstars: mapRockstarEvents(rockstarRows),
         quizzes: mapQuizAssignments(quizAssignmentRows)
       },
@@ -1257,7 +1300,7 @@
         user_id: activeSession.user.id,
         student_id: profile?.student_id || null,
         status: 'in_progress',
-        result: { appVersion: '0.24.342', assignmentId, quizId: quiz.id }
+        result: { appVersion: '0.24.343', assignmentId, quizId: quiz.id }
       })
       .select('id,started_at')
       .single();
@@ -1303,7 +1346,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.342',
+          appVersion: '0.24.343',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
