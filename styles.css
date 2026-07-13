@@ -27772,11 +27772,8 @@ html body #app .em-pdf-loading.is-error {
   padding: 17px 18px 18px;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 8px;
-  background:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(155deg, #151b26 0%, #0a0e15 70%, #070a0f 100%);
-  background-size: 22px 22px, 22px 22px, auto;
+  background: linear-gradient(155deg, #151b26 0%, #0a0e15 70%, #070a0f 100%);
+  background-size: auto;
   color: #fff;
   box-shadow: 0 14px 30px rgba(0,0,0,.24);
   cursor: pointer;
@@ -30355,4 +30352,47 @@ html body #app .em-pdf-loading {
   .em-activity-grade-modal .em-enciso-flow-out {
     animation-duration: 1ms !important;
   }
+}
+
+
+/* =========================================================
+   ENCISOMATH v0.24.341 - CUADRICULA WARNING EN ACTIVIDADES
+   Sustituye las dos mallas anteriores de em-activity-card por
+   la misma cuadricula de danger-head .danger-red-mesh.
+   ========================================================= */
+.em-activity-card {
+  background: linear-gradient(155deg, #151b26 0%, #0a0e15 70%, #070a0f 100%) !important;
+  background-size: auto !important;
+}
+
+.em-activity-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: -18px !important;
+  width: auto !important;
+  height: auto !important;
+  right: auto !important;
+  top: auto !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  opacity: .56 !important;
+  background-image:
+    linear-gradient(rgba(78, 91, 112, .26) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(60, 72, 91, .22) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 0 !important;
+  background-repeat: repeat !important;
+  transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
+  transform-origin: center !important;
+  filter: none !important;
+  will-change: background-position !important;
+  animation: warningLessonGridDrift246 14s linear infinite !important;
+  animation-play-state: running !important;
+}
+
+.em-activity-card > * {
+  position: relative;
+  z-index: 1;
 }
