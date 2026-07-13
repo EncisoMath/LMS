@@ -31035,3 +31035,243 @@ html body #app .em-pdf-loading {
   opacity: .34 !important;
   animation: warningLessonGridDrift246 14s linear infinite !important;
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.345 - TABLA DE ESTUDIANTES EN ACTIVIDAD
+   Replica visual de la hoja NOTAS: codigo, apellido y nombre.
+   ========================================================= */
+.em-activity-grade-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-color: rgba(255,255,255,.18) transparent;
+}
+.em-activity-grade-table {
+  width: 100%;
+  min-width: calc(48px + var(--em-activity-student-width, 148px) + 62px + 116px);
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: #050b13;
+  color: #fff;
+}
+.em-activity-grade-table th,
+.em-activity-grade-table td {
+  border-right: 1px solid rgba(255,255,255,.075);
+  border-bottom: 1px solid rgba(255,255,255,.075);
+}
+.em-activity-grade-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 54px;
+  padding: 0;
+  background: #0a101b;
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--em-current-subject-color, #1368ce) 76%, transparent);
+}
+.em-activity-grade-table thead button {
+  width: 100%;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 0 !important;
+  background: transparent;
+  color: #f8fafc;
+  font: 760 .66rem/1 "Montserrat", Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+  cursor: pointer;
+}
+.em-activity-grade-table thead button:hover,
+.em-activity-grade-table thead button:focus-visible,
+.em-activity-grade-table thead button.is-active {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 13%, #0a101b 87%);
+  outline: 0;
+}
+.em-activity-grade-table .em-grade-sort-indicator {
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 70%, white 30%);
+  font-size: .64rem;
+  font-weight: 900;
+}
+.em-activity-grade-group-header,
+.em-activity-grade-group-cell {
+  position: sticky;
+  left: 0;
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  text-align: center;
+}
+.em-activity-grade-group-header { z-index: 8 !important; }
+.em-activity-grade-student-header,
+.em-activity-grade-student-cell {
+  position: sticky;
+  left: 48px;
+  width: var(--em-activity-student-width, 148px);
+  min-width: var(--em-activity-student-width, 148px);
+  max-width: var(--em-activity-student-width, 148px);
+  text-align: left;
+  box-shadow: 8px 0 18px rgba(0,0,0,.18);
+}
+.em-activity-grade-student-header { z-index: 7 !important; }
+.em-activity-grade-student-header button {
+  justify-content: flex-start !important;
+  padding-left: 14px !important;
+}
+.em-activity-grade-score-header,
+.em-activity-grade-score-cell {
+  width: 62px;
+  min-width: 62px;
+  max-width: 62px;
+  text-align: center;
+}
+.em-activity-grade-performance-header,
+.em-activity-grade-performance-cell {
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
+  text-align: center;
+}
+.em-activity-grade-row {
+  display: table-row !important;
+  width: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #edf2ff;
+  cursor: pointer;
+  transform: none !important;
+  transition: none !important;
+}
+.em-activity-grade-row > td,
+.em-activity-grade-row > th {
+  height: 62px;
+  padding: 7px 10px;
+  vertical-align: middle;
+  background: #050b13;
+  transition: background-color .16s ease;
+}
+.em-activity-grade-row:nth-child(even) > td,
+.em-activity-grade-row:nth-child(even) > th {
+  background: #0a111d;
+}
+.em-activity-grade-row:hover > td,
+.em-activity-grade-row:hover > th,
+.em-activity-grade-row:focus-visible > td,
+.em-activity-grade-row:focus-visible > th {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 10%, #07101a 90%) !important;
+}
+.em-activity-grade-row:focus-visible {
+  outline: 2px solid var(--em-current-subject-color, #1368ce);
+  outline-offset: -2px;
+}
+.em-activity-grade-group-cell {
+  z-index: 4;
+  padding: 6px !important;
+}
+.em-activity-grade-student-cell {
+  z-index: 3;
+  padding: 7px 14px !important;
+  font-weight: inherit;
+}
+.em-activity-grade-group-cell i {
+  width: 25px;
+  height: 25px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--em-grade-group-color, #475569);
+  color: #fff;
+  font: 900 .68rem/1 "Montserrat", Arial, sans-serif;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.em-activity-grade-group-cell i.is-empty {
+  background: rgba(255,255,255,.045);
+  color: #59677a;
+  box-shadow: none;
+}
+.em-activity-grade-score-cell strong {
+  display: block;
+  color: #fff;
+  font: 900 .84rem/1 "Montserrat", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.em-activity-grade-performance-cell .em-grade-light {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #d8e1f0;
+}
+.em-activity-grade-performance-cell .em-grade-light b {
+  flex: 0 0 auto;
+  font-size: .9rem;
+}
+.em-activity-grade-performance-cell .em-grade-light small {
+  overflow: hidden;
+  color: #c4cede;
+  font-size: .66rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-activity-grade-table .em-activity-grade-empty {
+  height: 88px;
+  padding: 24px;
+  background: #050b13;
+  color: #8fa0b7;
+  text-align: center;
+}
+.em-activity-grade-table .em-activity-grade-loading {
+  min-height: 130px;
+}
+
+@media (max-width: 560px) {
+  .em-activity-grade-table {
+    min-width: calc(44px + var(--em-activity-student-width, 148px) + 58px + 104px);
+  }
+  .em-activity-grade-group-header,
+  .em-activity-grade-group-cell {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+  }
+  .em-activity-grade-student-header,
+  .em-activity-grade-student-cell {
+    left: 44px;
+  }
+  .em-activity-grade-score-header,
+  .em-activity-grade-score-cell {
+    width: 58px;
+    min-width: 58px;
+    max-width: 58px;
+  }
+  .em-activity-grade-performance-header,
+  .em-activity-grade-performance-cell {
+    width: 104px;
+    min-width: 104px;
+    max-width: 104px;
+  }
+  .em-activity-grade-table thead button {
+    padding: 0 4px;
+    font-size: .58rem;
+  }
+  .em-activity-grade-student-header button {
+    padding-left: 10px !important;
+  }
+  .em-activity-grade-student-cell {
+    padding: 7px 10px !important;
+  }
+  .em-activity-grade-performance-cell .em-grade-light {
+    gap: 4px;
+  }
+  .em-activity-grade-performance-cell .em-grade-light small {
+    font-size: .6rem;
+  }
+}

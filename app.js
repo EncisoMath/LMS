@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.344';
+  const APP_VERSION = '0.24.345';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10722,20 +10722,24 @@
     const normalized = normalizeSearch(query);
     const sourceRows = rows || [];
     const filtered = sourceRows.filter((row) => !normalized || normalizeSearch(`${row.lastName} ${row.firstName} ${row.fullName} ${row.studentCode}`).includes(normalized));
-    if (!filtered.length) return '<div class="em-activity-grade-empty">No hay estudiantes con ese filtro.</div>';
+    if (!filtered.length) return '<tr><td class="em-activity-grade-empty" colspan="4">No hay estudiantes con ese filtro.</td></tr>';
     const groupMap = activityGroupMetaMap(sourceRows);
     const { rows: sortedRows } = sortedActivityGradebookRows(filtered, groupMap);
     return sortedRows.map((row) => {
       const semaphore = activitySemaphore(row.score);
       const group = groupMap.get(String(row.gradingGroupId || ''));
+      const name = notesStudentNameParts(row);
       return `
-        <button class="em-activity-grade-row" type="button" data-activity-record-id="${escapeAttr(row.recordId)}">
-          <span class="em-grade-group-cell">${group ? `<i style="--em-grade-group-color:${group.color}">${group.number}</i>` : '<i class="is-empty">—</i>'}</span>
-          <span class="em-grade-lastname">${escapeHTML(row.lastName || row.fullName || '')}</span>
-          <span class="em-grade-firstname">${escapeHTML(row.firstName || '')}</span>
-          <strong class="em-grade-score">${Number(row.score ?? 40)}</strong>
-          <span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span>
-        </button>
+        <tr class="em-activity-grade-row" data-activity-record-id="${escapeAttr(row.recordId)}" tabindex="0" role="button" aria-label="Calificar a ${escapeAttr(row.fullName || `${name.lastName} ${name.firstName}`)}">
+          <td class="em-activity-grade-group-cell">${group ? `<i style="--em-grade-group-color:${group.color}">${group.number}</i>` : '<i class="is-empty">—</i>'}</td>
+          <th class="em-activity-grade-student-cell" scope="row" title="${escapeAttr(row.fullName || '')}">
+            <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
+            <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
+            <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
+          </th>
+          <td class="em-activity-grade-score-cell"><strong>${Number(row.score ?? 40)}</strong></td>
+          <td class="em-activity-grade-performance-cell"><span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span></td>
+        </tr>
       `;
     }).join('');
   }
@@ -10775,11 +10779,17 @@
   }
 
   function bindActivityGradeRows() {
-    document.querySelectorAll('[data-activity-record-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const record = (state.activityGradebook || []).find((item) => item.recordId === button.dataset.activityRecordId);
-        const activity = (state.data.activities || []).find((item) => item.id === state.activeActivityId);
-        if (activity && record) openActivityGradeModal(activity, record);
+    const openRecord = (row) => {
+      const record = (state.activityGradebook || []).find((item) => item.recordId === row.dataset.activityRecordId);
+      const activity = (state.data.activities || []).find((item) => item.id === state.activeActivityId);
+      if (activity && record) openActivityGradeModal(activity, record);
+    };
+    document.querySelectorAll('[data-activity-record-id]').forEach((row) => {
+      row.addEventListener('click', () => openRecord(row));
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openRecord(row);
       });
     });
   }
@@ -10787,7 +10797,7 @@
   async function loadActivityGradebook(activity) {
     const list = document.getElementById('activityGradebookList');
     if (!list) return;
-    list.innerHTML = '<div class="em-activity-grade-loading"><span></span><p>Preparando lista de estudiantes…</p></div>';
+    list.innerHTML = '<tr><td colspan="4"><div class="em-activity-grade-loading"><span></span><p>Preparando lista de estudiantes…</p></div></td></tr>';
     try {
       state.activityGradebook = await cloudAPI().getActivityGradebook({
         activityId: activity.id,
@@ -10797,7 +10807,7 @@
       updateActivityProgressFromGradebook(activity, state.activityGradebook);
       refreshActivityGradebookList();
     } catch (error) {
-      list.innerHTML = `<div class="em-activity-grade-empty">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</div>`;
+      list.innerHTML = `<tr><td class="em-activity-grade-empty" colspan="4">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</td></tr>`;
       reportCloudError('No se pudo cargar la actividad', error, { silent: true });
     }
   }
@@ -10812,6 +10822,7 @@
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
     const progress = activityProgressForCurrentAssignment(activity);
     const gradeCourse = emRsGetAssignmentGradeCourse(state.assignment);
+    const activityStudentColumnWidth = notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
     mount(`
       <main class="screen em-activity-detail-screen">
         <header class="topbar fixed-lock em-activity-detail-topbar">
@@ -10869,19 +10880,24 @@
             </div>
           </section>
 
-          <section class="em-activity-gradebook">
+          <section class="em-activity-gradebook" style="--em-activity-student-width:${activityStudentColumnWidth}px">
             <div class="em-activity-gradebook-head">
               <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
               <label class="em-activity-grade-search"><span aria-hidden="true">⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" autocomplete="off" /></label>
             </div>
-            <div class="em-activity-grade-columns" role="row" aria-label="Ordenar estudiantes">
-              <button type="button" data-activity-grade-sort="group" aria-label="Ordenar por grupo">G <span class="em-grade-sort-indicator">↕</span></button>
-              <button type="button" data-activity-grade-sort="lastName">Apellido <span class="em-grade-sort-indicator">↑</span></button>
-              <button type="button" data-activity-grade-sort="firstName">Nombre <span class="em-grade-sort-indicator">↕</span></button>
-              <button type="button" data-activity-grade-sort="score">Cal. <span class="em-grade-sort-indicator">↕</span></button>
-              <button type="button" data-activity-grade-sort="performance">Desempeño <span class="em-grade-sort-indicator">↕</span></button>
+            <div class="em-activity-grade-table-scroll">
+              <table class="em-activity-grade-table">
+                <thead>
+                  <tr>
+                    <th class="em-activity-grade-group-header" scope="col"><button type="button" data-activity-grade-sort="group" aria-label="Ordenar por grupo">G <span class="em-grade-sort-indicator">↕</span></button></th>
+                    <th class="em-activity-grade-student-header" scope="col"><button type="button" data-activity-grade-sort="lastName">Estudiante <span class="em-grade-sort-indicator">↑</span></button></th>
+                    <th class="em-activity-grade-score-header" scope="col"><button type="button" data-activity-grade-sort="score">Cal. <span class="em-grade-sort-indicator">↕</span></button></th>
+                    <th class="em-activity-grade-performance-header" scope="col"><button type="button" data-activity-grade-sort="performance">Desempeño <span class="em-grade-sort-indicator">↕</span></button></th>
+                  </tr>
+                </thead>
+                <tbody id="activityGradebookList" class="em-activity-gradebook-list"></tbody>
+              </table>
             </div>
-            <div id="activityGradebookList" class="em-activity-gradebook-list"></div>
           </section>
         </div>
       </main>
@@ -13703,7 +13719,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.344', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.345', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

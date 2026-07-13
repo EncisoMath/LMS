@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.344
+# EncisoMath LMS v0.24.345
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -113,7 +113,18 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - No requiere cambios de esquema ni una migración SQL nueva; se consultan los intentos ya existentes en `quiz_attempts`.
 
 
+## Cambios v0.24.345
+
+- La lista de estudiantes dentro de una actividad replica el diseño visual de la hoja NOTAS.
+- La tabla conserva cuatro columnas compactas: **G**, **Estudiante**, **Cal.** y **Desempeño**.
+- **Estudiante** muestra código, apellidos y nombres con la misma tipografía y jerarquía de NOTAS: 8 px, 12 px y 10 px.
+- Las filas alternan entre dos fondos oscuros, igual que la hoja de calificaciones.
+- Se mantienen el ordenamiento al tocar encabezados, los grupos con color/número y la apertura del modal al tocar una fila.
+- La zona G + Estudiante queda fija al desplazarse horizontalmente en pantallas estrechas.
+- No requiere cambios de esquema ni SQL en Supabase.
+
 ## Cambios v0.24.344
+
 - La columna **Estudiante** de NOTAS calcula su ancho según el apellido, nombre o código más largo del curso. Se limita entre 118 px y 184 px para reducir espacio sin desbordar la tabla.
 - La nota **Definitiva** siempre se muestra como entero truncado hacia abajo: por ejemplo, 32.2 y 32.9 se muestran como 32.
 - La cuadrícula de `em-activity-card` conserva el patrón y desplazamiento del warning, pero ahora es mucho más tenue. Se eliminó el `!important` de `background-position` que impedía que los keyframes movieran la malla.
