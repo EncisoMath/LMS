@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.339';
+  const APP_VERSION = '0.24.340';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10846,19 +10846,84 @@
     let gradingMode = record.rubricScores?.mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
     let calculatedRubricScore = Number(record.rubricScores?.calculatedScore || record.score || 0);
 
-    const setActiveTab = (tabName = 'score') => {
-      gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => {
-        const active = button.dataset.gradeModalTab === tabName;
-        button.classList.toggle('is-active', active);
-        button.setAttribute('aria-selected', active ? 'true' : 'false');
-        button.tabIndex = active ? 0 : -1;
-      });
-      gradeModal?.querySelectorAll('[data-grade-modal-panel]').forEach((panel) => {
-        const active = panel.dataset.gradeModalPanel === tabName;
-        panel.hidden = !active;
-        panel.classList.toggle('is-active', active);
-        panel.style.display = active ? 'grid' : 'none';
-      });
+    const GRADE_FLOW_OUT_MS = 170;
+    const GRADE_FLOW_IN_MS = 260;
+    let gradeTabAnimating = false;
+    let scoreModeAnimating = false;
+
+    const resetGradeFlow = (element) => {
+      if (!element) return;
+      element.classList.remove('em-enciso-flow-in', 'em-enciso-flow-out');
+    };
+
+    const playGradeFlow = (element, direction = 'in') => {
+      if (!element) return;
+      resetGradeFlow(element);
+      void element.offsetWidth;
+      element.classList.add(direction === 'out' ? 'em-enciso-flow-out' : 'em-enciso-flow-in');
+    };
+
+    const setActiveTab = (tabName = 'score', animate = true) => {
+      const buttons = [...(gradeModal?.querySelectorAll('[data-grade-modal-tab]') || [])];
+      const panels = [...(gradeModal?.querySelectorAll('[data-grade-modal-panel]') || [])];
+      const incomingButton = buttons.find((button) => button.dataset.gradeModalTab === tabName);
+      const incomingPanel = panels.find((panel) => panel.dataset.gradeModalPanel === tabName);
+      const outgoingButton = buttons.find((button) => button.classList.contains('is-active'));
+      const outgoingPanel = panels.find((panel) => !panel.hidden && panel.classList.contains('is-active'))
+        || panels.find((panel) => !panel.hidden);
+
+      if (!incomingButton || !incomingPanel || gradeTabAnimating) return;
+
+      const activateImmediately = () => {
+        buttons.forEach((button) => {
+          const active = button === incomingButton;
+          resetGradeFlow(button);
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+          button.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const active = panel === incomingPanel;
+          resetGradeFlow(panel);
+          panel.hidden = !active;
+          panel.classList.toggle('is-active', active);
+          panel.style.display = active ? 'grid' : 'none';
+        });
+      };
+
+      if (outgoingPanel === incomingPanel || !animate || !outgoingPanel || !outgoingButton) {
+        activateImmediately();
+        return;
+      }
+
+      gradeTabAnimating = true;
+      playGradeFlow(outgoingPanel, 'out');
+      playGradeFlow(outgoingButton, 'out');
+
+      window.setTimeout(() => {
+        buttons.forEach((button) => {
+          const active = button === incomingButton;
+          resetGradeFlow(button);
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+          button.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const active = panel === incomingPanel;
+          resetGradeFlow(panel);
+          panel.hidden = !active;
+          panel.classList.toggle('is-active', active);
+          panel.style.display = active ? 'grid' : 'none';
+        });
+        playGradeFlow(incomingPanel, 'in');
+        playGradeFlow(incomingButton, 'in');
+
+        window.setTimeout(() => {
+          resetGradeFlow(incomingPanel);
+          resetGradeFlow(incomingButton);
+          gradeTabAnimating = false;
+        }, GRADE_FLOW_IN_MS + 40);
+      }, GRADE_FLOW_OUT_MS);
     };
 
     const getEffectivePrimaryScore = () => gradingMode === 'rubric'
@@ -10887,20 +10952,67 @@
       return calculatedRubricScore;
     };
 
-    const setScoreMode = (mode = 'normal') => {
-      gradingMode = mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
-      gradeModal?.querySelectorAll('[data-grade-score-mode]').forEach((button) => {
-        const active = button.dataset.gradeScoreMode === gradingMode;
-        button.classList.toggle('is-active', active);
-        button.setAttribute('aria-selected', active ? 'true' : 'false');
-      });
-      gradeModal?.querySelectorAll('[data-grade-score-panel]').forEach((panel) => {
-        const active = panel.dataset.gradeScorePanel === gradingMode;
-        panel.hidden = !active;
-        panel.style.display = active ? 'grid' : 'none';
-      });
+    const setScoreMode = (mode = 'normal', animate = true) => {
+      const requestedMode = mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
+      const buttons = [...(gradeModal?.querySelectorAll('[data-grade-score-mode]') || [])];
+      const panels = [...(gradeModal?.querySelectorAll('[data-grade-score-panel]') || [])];
+      const incomingButton = buttons.find((button) => button.dataset.gradeScoreMode === requestedMode);
+      const incomingPanel = panels.find((panel) => panel.dataset.gradeScorePanel === requestedMode);
+      const outgoingButton = buttons.find((button) => button.classList.contains('is-active'));
+      const outgoingPanel = panels.find((panel) => !panel.hidden);
+
+      if (!incomingButton || !incomingPanel || scoreModeAnimating) return;
+
+      gradingMode = requestedMode;
       if (gradingMode === 'rubric') updateRubricCalculation();
       refreshOverrides();
+
+      const activateImmediately = () => {
+        buttons.forEach((button) => {
+          const active = button === incomingButton;
+          resetGradeFlow(button);
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach((panel) => {
+          const active = panel === incomingPanel;
+          resetGradeFlow(panel);
+          panel.hidden = !active;
+          panel.style.display = active ? 'grid' : 'none';
+        });
+      };
+
+      if (outgoingPanel === incomingPanel || !animate || !outgoingPanel || !outgoingButton) {
+        activateImmediately();
+        return;
+      }
+
+      scoreModeAnimating = true;
+      playGradeFlow(outgoingPanel, 'out');
+      playGradeFlow(outgoingButton, 'out');
+
+      window.setTimeout(() => {
+        buttons.forEach((button) => {
+          const active = button === incomingButton;
+          resetGradeFlow(button);
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panels.forEach((panel) => {
+          const active = panel === incomingPanel;
+          resetGradeFlow(panel);
+          panel.hidden = !active;
+          panel.style.display = active ? 'grid' : 'none';
+        });
+        playGradeFlow(incomingPanel, 'in');
+        playGradeFlow(incomingButton, 'in');
+
+        window.setTimeout(() => {
+          resetGradeFlow(incomingPanel);
+          resetGradeFlow(incomingButton);
+          scoreModeAnimating = false;
+        }, GRADE_FLOW_IN_MS + 40);
+      }, GRADE_FLOW_OUT_MS);
     };
 
     const refreshOverrides = () => {
@@ -10939,8 +11051,8 @@
       if (label) label.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF o imagen · máximo 20 MB';
     });
     updateRubricCalculation();
-    setScoreMode(gradingMode);
-    setActiveTab('score');
+    setScoreMode(gradingMode, false);
+    setActiveTab('score', false);
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -13014,7 +13126,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.339', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.340', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

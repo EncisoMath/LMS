@@ -30312,3 +30312,47 @@ html body #app .em-pdf-loading {
   will-change: transform, background-position;
   animation: emActivityCardMeshFlow339 6s linear infinite !important;
 }
+
+/* =========================================================
+   ENCISOMATH v0.24.340 - FLUJO ENTRE PESTAÑAS DE CALIFICACION
+   Usa exactamente encisoFlowIn y encisoFlowOut.
+========================================================= */
+.em-activity-grade-modal [data-grade-modal-panel].em-enciso-flow-in,
+.em-activity-grade-modal [data-grade-score-panel].em-enciso-flow-in {
+  --enciso-flow-distance: 12px;
+  --enciso-flow-duration: 260ms;
+  animation: encisoFlowIn var(--enciso-flow-duration) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) both !important;
+  will-change: transform, opacity;
+}
+.em-activity-grade-modal [data-grade-modal-panel].em-enciso-flow-out,
+.em-activity-grade-modal [data-grade-score-panel].em-enciso-flow-out {
+  --enciso-flow-distance: 12px;
+  --enciso-flow-duration: 170ms;
+  animation: encisoFlowOut var(--enciso-flow-duration) cubic-bezier(.4, 0, 1, 1) both !important;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.em-activity-grade-tabbar button.em-enciso-flow-in,
+.em-grade-score-mode-tabs button.em-enciso-flow-in {
+  --enciso-flow-distance: 5px;
+  --enciso-flow-duration: 240ms;
+  animation: encisoFlowIn var(--enciso-flow-duration) var(--enciso-flow-ease, cubic-bezier(.16, 1, .3, 1)) both !important;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+.em-activity-grade-tabbar button.em-enciso-flow-out,
+.em-grade-score-mode-tabs button.em-enciso-flow-out {
+  --enciso-flow-distance: 5px;
+  --enciso-flow-duration: 170ms;
+  animation: encisoFlowOut var(--enciso-flow-duration) cubic-bezier(.4, 0, 1, 1) both !important;
+  transform-origin: center;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-activity-grade-modal .em-enciso-flow-in,
+  .em-activity-grade-modal .em-enciso-flow-out {
+    animation-duration: 1ms !important;
+  }
+}

@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.339
+# EncisoMath LMS v0.24.340
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -65,13 +65,13 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Botonera de calificación unificada visualmente con las pestañas de crear/editar actividad.
 - No requiere cambios de esquema ni SQL en Supabase.
 
-## Cambios v0.24.339
+## Cambios v0.24.340
 - Se añadió la tarjeta **Promedio** al resumen de cada actividad.
 - El promedio se calcula únicamente con estudiantes que ya tienen una calificación registrada.
 - La barra cambia de color según el promedio: dorado (90–100), verde (80–89.9), amarillo (70–79.9), naranja (60–69.9) y rojo (menos de 60).
 - No requiere cambios de esquema ni SQL en Supabase.
 
-## Cambios v0.24.339
+## Cambios v0.24.340
 - Las subpestañas **Calificar normal** y **Calificar con rúbrica** adoptan el mismo estilo visual de las pestañas principales de Crear/Editar actividad.
 - El modal de calificación fuerza `--maincolor` y todo su resplandor exterior al color de la asignatura, eliminando el azul global residual.
 - La malla de las tarjetas de actividades ahora se desplaza de forma continua y claramente visible en cuadrícula y lista.
