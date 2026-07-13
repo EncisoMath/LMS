@@ -29760,3 +29760,45 @@ html body .modal-layer.em-grade-modal-layer {
     font-size: .68rem !important;
   }
 }
+
+
+/* v0.24.335 - pestañas centradas y badge circular de seguimiento */
+.em-activity-grade-tabbar button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1.1 !important;
+}
+.em-activity-grade-tabbar button[data-grade-modal-tab="tracking"] {
+  overflow: visible !important;
+}
+.em-activity-grade-tabbar .em-grade-tab-count {
+  position: absolute !important;
+  top: -7px !important;
+  right: -6px !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #e21b3c !important;
+  color: #ffffff !important;
+  border: 2px solid #050b14 !important;
+  box-shadow: 0 3px 10px rgba(226,27,60,.38) !important;
+  font: 800 .58rem/1 "Montserrat", Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+  z-index: 3 !important;
+}
+@media (max-width: 390px) {
+  .em-activity-grade-tabbar .em-grade-tab-count {
+    top: -6px !important;
+    right: -5px !important;
+    width: 19px !important;
+    min-width: 19px !important;
+    height: 19px !important;
+    font-size: .54rem !important;
+  }
+}
