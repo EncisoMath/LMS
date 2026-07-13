@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.336';
+  const APP_VERSION = '0.24.337';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -9928,23 +9928,28 @@
     return Array.isArray(payload?.files) ? payload.files.filter((file) => file?.url) : [];
   }
 
-  function activityContentShellHTML(activity) {
-    const files = activityPayloadFiles(activity.contentPayload);
-    if (activity.contentType === 'pdf') {
+  function activityContentShellHTML(activity, source = 'content') {
+    const isReview = source === 'review';
+    const type = (isReview ? activity.reviewType : activity.contentType) || 'rich_text';
+    const payload = isReview ? activity.reviewPayload : activity.contentPayload;
+    const files = activityPayloadFiles(payload);
+    const prefix = isReview ? 'activityReview' : 'activity';
+    const label = isReview ? 'resultado' : 'actividad';
+    if (type === 'pdf') {
       const file = files[0];
       return file
-        ? `<div class="em-activity-pdf-viewer" id="activityPdfViewer" data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando actividad…</p></div></div>`
-        : '<div class="em-activity-content-empty">El PDF de esta actividad no está disponible.</div>';
+        ? `<div class="em-activity-pdf-viewer" id="${prefix}PdfViewer" data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando ${label}…</p></div></div>`
+        : `<div class="em-activity-content-empty">El PDF de ${label} no está disponible.</div>`;
     }
-    if (activity.contentType === 'image') {
+    if (type === 'image') {
       return files.length
-        ? `<div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de la actividad" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>`
-        : '<div class="em-activity-content-empty">No hay imágenes disponibles.</div>';
+        ? `<div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de ${label}" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>`
+        : `<div class="em-activity-content-empty">No hay imágenes disponibles en ${label}.</div>`;
     }
-    if (activity.contentType === 'html_css') {
-      return '<iframe class="em-activity-html-frame" id="activityHtmlFrame" sandbox="allow-same-origin" title="Contenido interactivo de la actividad"></iframe>';
+    if (type === 'html_css') {
+      return `<iframe class="em-activity-html-frame" id="${prefix}HtmlFrame" sandbox="allow-same-origin" title="${isReview ? 'Resultado o guía de revisión' : 'Contenido interactivo de la actividad'}"></iframe>`;
     }
-    return '<article class="em-activity-rich-view" id="activityRichView"></article>';
+    return `<article class="em-activity-rich-view" id="${prefix}RichView"></article>`;
   }
 
   function sanitizeActivityRichHtml(html) {
@@ -9961,10 +9966,12 @@
     return template.innerHTML;
   }
 
-  async function renderActivityPdfContent(activity) {
-    const host = document.getElementById('activityPdfViewer');
+  async function renderActivityPdfContent(activity, source = 'content') {
+    const isReview = source === 'review';
+    const host = document.getElementById(isReview ? 'activityReviewPdfViewer' : 'activityPdfViewer');
     const url = host?.dataset.pdfUrl;
-    if (!host || !url) return;
+    if (!host || !url || host.dataset.rendered === 'true') return;
+    host.dataset.rendered = 'true';
     try {
       const pdfjs = await loadPdfJs();
       const response = await fetch(url, { cache: 'no-store' });
@@ -9998,25 +10005,31 @@
       }
       await pdfDocument.destroy?.();
     } catch (error) {
+      host.dataset.rendered = 'false';
       host.innerHTML = `<div class="em-activity-content-empty">${escapeHTML(error?.message || 'No se pudo cargar el PDF.')}</div>`;
     }
   }
 
-  function initActivityDetailContent(activity) {
-    if (activity.contentType === 'pdf') {
-      renderActivityPdfContent(activity);
+  function initActivityDetailContent(activity, source = 'content') {
+    const isReview = source === 'review';
+    const type = (isReview ? activity.reviewType : activity.contentType) || 'rich_text';
+    const payload = isReview ? activity.reviewPayload : activity.contentPayload;
+    const prefix = isReview ? 'activityReview' : 'activity';
+    if (type === 'pdf') {
+      renderActivityPdfContent(activity, source);
       return;
     }
-    if (activity.contentType === 'rich_text') {
-      const host = document.getElementById('activityRichView');
-      if (host) host.innerHTML = sanitizeActivityRichHtml(activity.contentPayload?.text || '<p>Sin contenido.</p>');
+    if (type === 'rich_text') {
+      const host = document.getElementById(`${prefix}RichView`);
+      if (host) host.innerHTML = sanitizeActivityRichHtml(payload?.text || '<p>Sin contenido.</p>');
       return;
     }
-    if (activity.contentType === 'html_css') {
-      const frame = document.getElementById('activityHtmlFrame');
-      if (!frame) return;
-      const html = String(activity.contentPayload?.html || '<p>Sin contenido.</p>');
-      const css = String(activity.contentPayload?.css || '');
+    if (type === 'html_css') {
+      const frame = document.getElementById(`${prefix}HtmlFrame`);
+      if (!frame || frame.dataset.rendered === 'true') return;
+      frame.dataset.rendered = 'true';
+      const html = String(payload?.html || '<p>Sin contenido.</p>');
+      const css = String(payload?.css || '');
       frame.srcdoc = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}body{padding:18px;box-sizing:border-box}${css}</style></head><body>${html}</body></html>`;
       frame.addEventListener('load', () => {
         try {
@@ -10217,8 +10230,15 @@
               <article><small>Calificados</small><strong><b>${progress.graded}</b><em>/${progress.total}</em></strong></article>
               <article><small>Avance</small><strong><b>${progress.percentage}</b><em>%</em></strong></article>
             </div>
-            <section class="em-activity-content-stage" aria-label="Contenido de la actividad">
-              ${activityContentShellHTML(activity)}
+            <div class="em-activity-detail-content-tabs" role="tablist" aria-label="Contenido de la actividad">
+              <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
+              <button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review">Resultado</button>
+            </div>
+            <section class="em-activity-content-stage" data-activity-detail-panel="content" aria-label="Contenido de la actividad">
+              ${activityContentShellHTML(activity, 'content')}
+            </section>
+            <section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
+              ${activityContentShellHTML(activity, 'review')}
             </section>
             <div class="em-activity-detail-actions">
               <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
@@ -10251,7 +10271,21 @@
       document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
       document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
       bindActivityGradeSortButtons();
-      initActivityDetailContent(activity);
+      const setActivityDetailTab = (tabName = 'content') => {
+        document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
+          const active = button.dataset.activityDetailTab === tabName;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        document.querySelectorAll('[data-activity-detail-panel]').forEach((panel) => {
+          panel.hidden = panel.dataset.activityDetailPanel !== tabName;
+        });
+        initActivityDetailContent(activity, tabName);
+      };
+      document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
+        button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content'));
+      });
+      setActivityDetailTab('content');
       loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
       emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook'], { duration: 480, stagger: 35, distance: 14, scale: .985 });
@@ -12923,7 +12957,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.336', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.337', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

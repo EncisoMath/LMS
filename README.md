@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.336
+# EncisoMath LMS v0.24.337
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -55,3 +55,12 @@ La base de datos y sus políticas deben estar configuradas en el proyecto Supaba
 - hojas de cálculo de estudiantes
 
 La seguridad de acceso depende de Supabase Auth y de las políticas RLS configuradas en la base de datos.
+
+## Cambios v0.24.337
+- Tarjetas Entregaron, Calificados y Avance más compactas.
+- Nuevas pestañas Actividad y Resultado en el detalle de la actividad.
+- Resultado muestra la respuesta o guía de revisión configurada al crear o editar la actividad.
+- Paso 5 de la rúbrica corregido para alinear el número con el título.
+- Acentos de CALIFICACIONES y resplandor del modal según el color del curso.
+- Botonera de calificación unificada visualmente con las pestañas de crear/editar actividad.
+- No requiere cambios de esquema ni SQL en Supabase.
