@@ -103,6 +103,76 @@
     return new Error(error.message || error.error_description || fallback);
   }
 
+  function isUniqueViolation(error) {
+    const code = String(error?.code || '').trim();
+    const message = String(error?.message || error?.details || '').toLowerCase();
+    return code === '23505' || message.includes('duplicate key value') || message.includes('unique constraint');
+  }
+
+  function selectWithMutationId(columns = '*') {
+    const value = String(columns || '*').trim();
+    if (!value || value === '*') return '*';
+    const parts = value.split(',').map((part) => part.trim()).filter(Boolean);
+    if (!parts.includes('client_mutation_id')) parts.push('client_mutation_id');
+    return parts.join(',');
+  }
+
+  async function insertIdempotentByMutationId(table, rows, columns = '*', fallback = 'No se pudo guardar el cambio.') {
+    const inputWasArray = Array.isArray(rows);
+    const list = (inputWasArray ? rows : [rows]).filter(Boolean);
+    if (!list.length) return inputWasArray ? [] : null;
+
+    const mutationIds = [...new Set(list.map((row) => String(row?.client_mutation_id || '').trim()).filter(Boolean))];
+    const selectedColumns = selectWithMutationId(columns);
+    let existingRows = [];
+
+    if (mutationIds.length) {
+      const lookup = await getClient()
+        .from(table)
+        .select(selectedColumns)
+        .in('client_mutation_id', mutationIds);
+      if (lookup.error) throw normalizeError(lookup.error, fallback);
+      existingRows = lookup.data || [];
+    }
+
+    const existingIds = new Set(existingRows.map((row) => String(row?.client_mutation_id || '')).filter(Boolean));
+    const missingRows = list.filter((row) => {
+      const mutationId = String(row?.client_mutation_id || '').trim();
+      return !mutationId || !existingIds.has(mutationId);
+    });
+    let insertedRows = [];
+
+    if (missingRows.length) {
+      let insertQuery = getClient().from(table).insert(inputWasArray ? missingRows : missingRows[0]);
+      if (selectedColumns) insertQuery = insertQuery.select(selectedColumns);
+      const inserted = await insertQuery;
+      if (inserted.error) {
+        if (!isUniqueViolation(inserted.error) || missingRows.some((row) => !String(row?.client_mutation_id || '').trim())) {
+          throw normalizeError(inserted.error, fallback);
+        }
+        const retryIds = [...new Set(missingRows.map((row) => String(row.client_mutation_id)).filter(Boolean))];
+        const retryLookup = await getClient()
+          .from(table)
+          .select(selectedColumns)
+          .in('client_mutation_id', retryIds);
+        if (retryLookup.error) throw normalizeError(retryLookup.error, fallback);
+        const foundIds = new Set((retryLookup.data || []).map((row) => String(row?.client_mutation_id || '')).filter(Boolean));
+        if (retryIds.some((id) => !foundIds.has(id))) throw normalizeError(inserted.error, fallback);
+        insertedRows = retryLookup.data || [];
+      } else {
+        insertedRows = inserted.data || [];
+      }
+    }
+
+    const merged = [...existingRows, ...insertedRows];
+    if (inputWasArray) return merged;
+    const targetId = String(list[0]?.client_mutation_id || '').trim();
+    return (targetId ? merged.find((row) => String(row?.client_mutation_id || '') === targetId) : null)
+      || insertedRows[0]
+      || existingRows[0]
+      || null;
+  }
+
   async function getSession() {
     const supabaseClient = getClient();
     const { data, error } = await supabaseClient.auth.getSession();
@@ -582,10 +652,19 @@
       created_by: session?.user?.id || (await getSession())?.user?.id,
       client_mutation_id: event.clientMutationId || event.mutationId || null
     };
-    const query = row.client_mutation_id
-      ? supabaseClient.from('rockstar_events').upsert(row, { onConflict: 'client_mutation_id' })
-      : supabaseClient.from('rockstar_events').insert(row);
-    const { data, error } = await query.select('id,occurred_at').single();
+    if (row.client_mutation_id) {
+      return insertIdempotentByMutationId(
+        'rockstar_events',
+        row,
+        'id,occurred_at',
+        'No se pudo guardar el punto Rockstar.'
+      );
+    }
+    const { data, error } = await supabaseClient
+      .from('rockstar_events')
+      .insert(row)
+      .select('id,occurred_at')
+      .single();
     if (error) throw normalizeError(error, 'No se pudo guardar el punto Rockstar.');
     return data;
   }
@@ -1205,10 +1284,17 @@
         created_by: activeSession.user.id,
         client_mutation_id: stableMutationId ? `${stableMutationId}:${row.id}` : null
       }));
-      const eventResult = stableMutationId
-        ? await supabaseClient.from('activity_delivery_events').upsert(eventRows, { onConflict: 'client_mutation_id' })
-        : await supabaseClient.from('activity_delivery_events').insert(eventRows);
-      if (eventResult.error) throw normalizeError(eventResult.error, 'La nota se guardó, pero no se pudo registrar el seguimiento de entrega.');
+      if (stableMutationId) {
+        await insertIdempotentByMutationId(
+          'activity_delivery_events',
+          eventRows,
+          'id',
+          'La nota se guardó, pero no se pudo registrar el seguimiento de entrega.'
+        );
+      } else {
+        const eventResult = await supabaseClient.from('activity_delivery_events').insert(eventRows);
+        if (eventResult.error) throw normalizeError(eventResult.error, 'La nota se guardó, pero no se pudo registrar el seguimiento de entrega.');
+      }
     }
 
     if (newSubmission?.path && existingSubmissionFile?.path && existingSubmissionFile.path !== newSubmission.path) {
@@ -1285,10 +1371,16 @@
       user_id: activeSession.user.id,
       client_mutation_id: mutationId || clientMutationId || null
     };
-    const result = row.client_mutation_id
-      ? await supabaseClient.from('lesson_views').upsert(row, { onConflict: 'client_mutation_id' })
-      : await supabaseClient.from('lesson_views').insert(row);
-    const { error } = result;
+    if (row.client_mutation_id) {
+      await insertIdempotentByMutationId(
+        'lesson_views',
+        row,
+        'id',
+        'No se pudo registrar la apertura de la clase.'
+      );
+      return;
+    }
+    const { error } = await supabaseClient.from('lesson_views').insert(row);
     if (error) throw normalizeError(error, 'No se pudo registrar la apertura de la clase.');
   }
 
@@ -1316,13 +1408,22 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.002', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.003', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
-    const attemptQuery = clientMutationId
-      ? supabaseClient.from('quiz_attempts').upsert(attemptRow, { onConflict: 'client_mutation_id' })
-      : supabaseClient.from('quiz_attempts').insert(attemptRow);
-    const { data, error } = await attemptQuery.select('id,started_at').single();
+    if (clientMutationId) {
+      return insertIdempotentByMutationId(
+        'quiz_attempts',
+        attemptRow,
+        'id,started_at',
+        'No se pudo iniciar el intento en Supabase.'
+      );
+    }
+    const { data, error } = await supabaseClient
+      .from('quiz_attempts')
+      .insert(attemptRow)
+      .select('id,started_at')
+      .single();
     if (error) throw normalizeError(error, 'No se pudo iniciar el intento en Supabase.');
     return data;
   }
@@ -1365,7 +1466,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.002',
+          appVersion: '0.25.003',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1383,10 +1484,17 @@
       client_mutation_id: clientMutationId ? `${clientMutationId}:${index}` : null
     }));
     if (eventRows.length) {
-      const securityResult = clientMutationId
-        ? await supabaseClient.from('quiz_security_events').upsert(eventRows, { onConflict: 'client_mutation_id' })
-        : await supabaseClient.from('quiz_security_events').insert(eventRows);
-      if (securityResult.error) throw normalizeError(securityResult.error, 'No se pudieron guardar los eventos de seguridad.');
+      if (clientMutationId) {
+        await insertIdempotentByMutationId(
+          'quiz_security_events',
+          eventRows,
+          'id',
+          'No se pudieron guardar los eventos de seguridad.'
+        );
+      } else {
+        const securityResult = await supabaseClient.from('quiz_security_events').insert(eventRows);
+        if (securityResult.error) throw normalizeError(securityResult.error, 'No se pudieron guardar los eventos de seguridad.');
+      }
     }
   }
 
