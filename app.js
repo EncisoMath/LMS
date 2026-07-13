@@ -1,12 +1,13 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.346';
+  const APP_VERSION = '0.24.347';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
   let pdfJsModulePromise = null;
   let activePdfViewerCleanup = null;
+  let excelJsLoaderPromise = null;
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -3025,6 +3026,212 @@
     return 'is-low';
   }
 
+  function loadExcelJsScript(source) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = source;
+      script.async = true;
+      script.dataset.encisoExcelJs = source;
+      script.addEventListener('load', () => resolve(window.ExcelJS), { once: true });
+      script.addEventListener('error', () => {
+        script.remove();
+        reject(new Error('No se pudo cargar el generador de Excel.'));
+      }, { once: true });
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureExcelJs() {
+    if (window.ExcelJS?.Workbook) return window.ExcelJS;
+    if (!excelJsLoaderPromise) {
+      excelJsLoaderPromise = (async () => {
+        const sources = [
+          'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js',
+          'https://unpkg.com/exceljs@4.4.0/dist/exceljs.min.js'
+        ];
+        let lastError = null;
+        for (const source of sources) {
+          try {
+            await loadExcelJsScript(source);
+            if (window.ExcelJS?.Workbook) return window.ExcelJS;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error('No se pudo iniciar el generador de Excel.');
+      })().catch((error) => {
+        excelJsLoaderPromise = null;
+        throw error;
+      });
+    }
+    return excelJsLoaderPromise;
+  }
+
+  function notesEducaCitySafeFilenamePart(value, fallback = 'DATO') {
+    const cleaned = String(value || fallback)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/[^A-Za-z0-9_-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[-_]+|[-_]+$/g, '');
+    return (cleaned || fallback).toUpperCase();
+  }
+
+  function notesEducaCityFilename(assignment, period) {
+    const grade = notesEducaCitySafeFilenamePart(assignment?.grade || '', 'GRADO');
+    const course = notesEducaCitySafeFilenamePart(assignment?.course || '', 'CURSO');
+    const subject = notesEducaCitySafeFilenamePart(assignment?.subject || assignment?.area || '', 'ASIGNATURA');
+    return `${grade}-${course}_${subject}_PERIODO-${Number(period || 1)}.xlsx`;
+  }
+
+  function notesEducaCityNumericCode(value) {
+    const text = String(value ?? '').trim();
+    if (/^\d+$/.test(text)) {
+      const numeric = Number(text);
+      if (Number.isSafeInteger(numeric)) return numeric;
+    }
+    return text;
+  }
+
+  function cloneExcelStyle(style) {
+    try {
+      return JSON.parse(JSON.stringify(style || {}));
+    } catch (_) {
+      return { ...(style || {}) };
+    }
+  }
+
+  async function createEducaCityWorkbook(columns, students, context) {
+    const ExcelJS = await ensureExcelJs();
+    const templateResponse = await fetch('./assets/templates/educacity-planilla-base.xlsx?v=0.24.347', { cache: 'no-store' });
+    if (!templateResponse.ok) throw new Error('No se pudo abrir la plantilla de EducaCity.');
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await templateResponse.arrayBuffer());
+    const sheet = workbook.getWorksheet('Calificaciones') || workbook.worksheets[0];
+    if (!sheet) throw new Error('La plantilla de EducaCity no contiene la hoja Calificaciones.');
+
+    const fixedHeaderStyles = [1, 2, 3, 4].map((column) => cloneExcelStyle(sheet.getCell(1, column).style));
+    const blankCodeStyles = [1, 2, 3, 4].map((column) => cloneExcelStyle(sheet.getCell(2, column).style));
+    const itemHeaderStyle = cloneExcelStyle(sheet.getCell(1, 5).style);
+    const itemCodeStyle = cloneExcelStyle(sheet.getCell(2, 5).style);
+    const fixedDataStyles = [1, 2, 3, 4].map((column) => cloneExcelStyle(sheet.getCell(3, column).style));
+    const scoreStyle = cloneExcelStyle(sheet.getCell(3, 5).style);
+    const fixedWidths = [1, 2, 3, 4].map((column) => sheet.getColumn(column).width);
+    const itemWidth = sheet.getColumn(5).width || 14;
+    const titleHeight = sheet.getRow(1).height;
+    const codeHeight = sheet.getRow(2).height;
+    const studentHeight = sheet.getRow(3).height;
+    const templateViews = Array.isArray(sheet.views) ? sheet.views.map((view) => ({ ...view })) : [];
+
+    if (sheet.rowCount > 2) sheet.spliceRows(3, sheet.rowCount - 2);
+    const desiredColumnCount = 4 + columns.length;
+    if (sheet.columnCount > desiredColumnCount) {
+      sheet.spliceColumns(desiredColumnCount + 1, sheet.columnCount - desiredColumnCount);
+    }
+
+    const fixedTitles = ['Grado - Grupo', 'Apellidos', 'Nombres', 'Matrícula Id'];
+    fixedTitles.forEach((title, index) => {
+      const column = index + 1;
+      const headerCell = sheet.getCell(1, column);
+      const codeCell = sheet.getCell(2, column);
+      headerCell.value = title;
+      headerCell.style = cloneExcelStyle(fixedHeaderStyles[index]);
+      codeCell.value = null;
+      codeCell.style = cloneExcelStyle(blankCodeStyles[index]);
+      sheet.getColumn(column).width = fixedWidths[index];
+    });
+
+    columns.forEach((column, index) => {
+      const columnNumber = index + 5;
+      const titleCell = sheet.getCell(1, columnNumber);
+      const codeCell = sheet.getCell(2, columnNumber);
+      titleCell.value = column.title;
+      titleCell.style = cloneExcelStyle(itemHeaderStyle);
+      codeCell.value = notesEducaCityNumericCode(column.code);
+      codeCell.style = cloneExcelStyle(itemCodeStyle);
+      sheet.getColumn(columnNumber).width = itemWidth;
+    });
+
+    if (titleHeight) sheet.getRow(1).height = titleHeight;
+    if (codeHeight) sheet.getRow(2).height = codeHeight;
+    sheet.views = templateViews;
+
+    const gradeCourse = emRsGetAssignmentGradeCourse(state.assignment);
+    students.forEach((student) => {
+      const name = notesStudentNameParts(student);
+      const scores = columns.map((column) => {
+        const cell = notesCellScore(column, student, context);
+        if (cell.score === null || cell.score === undefined || !Number.isFinite(Number(cell.score))) return null;
+        return Math.round(Math.max(0, Math.min(100, Number(cell.score))) * 10) / 10;
+      });
+      const row = sheet.addRow([
+        gradeCourse,
+        name.lastName,
+        name.firstName,
+        notesEducaCityNumericCode(name.code),
+        ...scores
+      ]);
+      if (studentHeight) row.height = studentHeight;
+      [1, 2, 3, 4].forEach((columnNumber, index) => {
+        row.getCell(columnNumber).style = cloneExcelStyle(fixedDataStyles[index]);
+      });
+      columns.forEach((_, index) => {
+        const cell = row.getCell(index + 5);
+        cell.style = cloneExcelStyle(scoreStyle);
+        cell.numFmt = '0.0';
+      });
+    });
+
+    workbook.creator = 'EncisoMath';
+    workbook.lastModifiedBy = state.user?.fullName || state.user?.name || 'EncisoMath';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    return workbook;
+  }
+
+  async function downloadNotesForEducaCity(button) {
+    const assignment = state.assignment;
+    if (!assignment) return;
+    const columns = notesColumnDefinitions();
+    const students = getStudentsForAssignment(assignment);
+    const sessions = notesAttendanceSessions(assignment.id, state.activePeriod);
+    const attendanceByStudent = new Map(students.map((student) => [student.id, notesAttendanceSummary(student.id, sessions)]));
+    const context = {
+      activityGrades: notesActivityGradeMap(assignment.id),
+      quizGrades: notesQuizGradeMap(assignment.id),
+      attendanceByStudent
+    };
+    const originalText = button?.textContent || 'Descargar Excel listo para EducaCity';
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Preparando Excel…';
+    }
+    try {
+      const workbook = await createEducaCityWorkbook(columns, students, context);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = notesEducaCityFilename(assignment, state.activePeriod);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast(`Excel de ${students.length} estudiantes listo para EducaCity.`);
+    } catch (error) {
+      console.error('No se pudo exportar la planilla EducaCity:', error);
+      toast(error?.message || 'No se pudo generar el Excel para EducaCity.');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  }
+
   function notesHeroHTML(assignment) {
     return `
       <section class="activity-hero em-act-hero-host em-notes-hero-host" data-em-notes-hero aria-label="Notas del periodo">
@@ -3121,11 +3328,14 @@
           <h2>Hoja de calificaciones</h2>
           <span>${students.length} estudiantes · ${columns.length} componentes · ${sessions.length} registros de clase</span>
         </div>
-        <div class="em-notes-weight-summary ${weightStatus}">
-          <span>Peso configurado</span>
-          <strong>${Math.round(totalWeight * 10) / 10}%</strong>
-          <i><b style="width:${Math.max(0, Math.min(100, totalWeight))}%"></b></i>
-          <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Toca los encabezados para ajustar la ponderación a 100%.'}</small>
+        <div class="em-notes-toolbar-actions">
+          <button class="em-notes-excel-btn" id="downloadEducaCityExcelBtn" type="button">Descargar Excel listo para EducaCity</button>
+          <div class="em-notes-weight-summary ${weightStatus}">
+            <span>Peso configurado</span>
+            <strong>${Math.round(totalWeight * 10) / 10}%</strong>
+            <i><b style="width:${Math.max(0, Math.min(100, totalWeight))}%"></b></i>
+            <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Toca los encabezados para ajustar la ponderación a 100%.'}</small>
+          </div>
         </div>
       </section>
       <section class="em-notes-sheet-shell" style="--em-notes-student-width:${studentColumnWidth}px">
@@ -3148,6 +3358,9 @@
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
       button.addEventListener('click', () => openNotesColumnModal(button.dataset.notesColumnKey || ''));
+    });
+    document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
+      downloadNotesForEducaCity(event.currentTarget);
     });
     emNotesInitHero(content);
     emPlayTabEntrance(content, 'notes');
@@ -13719,7 +13932,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.346', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.347', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

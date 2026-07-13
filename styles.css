@@ -30522,6 +30522,28 @@ html body #app .em-pdf-loading {
 .em-notes-toolbar h2 { margin: 3px 0 5px; color: #fff; font-size: clamp(1.12rem, 2.4vw, 1.5rem); }
 .em-notes-toolbar > div:first-child > span { color: #99a8bd; font-size: .76rem; }
 .em-notes-toolbar .section-kicker { color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, white); }
+.em-notes-toolbar-actions {
+  width: min(390px, 100%);
+  display: grid;
+  gap: 11px;
+}
+.em-notes-excel-btn {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, #fff 28%);
+  border-radius: 4px;
+  background: var(--em-current-subject-color, #1368ce);
+  color: #fff;
+  font: 800 .76rem/1.2 Montserrat, Arial, sans-serif;
+  letter-spacing: .01em;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, transparent);
+  transition: transform .18s ease, filter .18s ease, opacity .18s ease;
+}
+.em-notes-excel-btn:hover { filter: brightness(1.08); }
+.em-notes-excel-btn:active { transform: translateY(1px) scale(.995); }
+.em-notes-excel-btn:disabled { cursor: wait; opacity: .58; }
 .em-notes-weight-summary {
   width: min(330px, 100%);
   display: grid;
@@ -30735,6 +30757,7 @@ html body #app .em-pdf-loading {
   .em-notes-hero-sheet span:nth-child(5),
   .em-notes-hero-sheet span:nth-child(6) { display: none; }
   .em-notes-toolbar { align-items: stretch; flex-direction: column; }
+  .em-notes-toolbar-actions,
   .em-notes-weight-summary { width: 100%; }
 }
 
@@ -31278,7 +31301,7 @@ html body #app .em-pdf-loading {
 
 
 /* ================================================================
-   ENCISOMATH v0.24.346 - COLOR DE NOTA Y DESEMPEÑO EN ACTIVIDADES
+   ENCISOMATH v0.24.347 - COLOR DE NOTA Y DESEMPEÑO EN ACTIVIDADES
    ================================================================ */
 .em-activity-grade-score-cell strong.is-superior { color: #f6c453 !important; }
 .em-activity-grade-score-cell strong.is-high { color: #64da8b !important; }

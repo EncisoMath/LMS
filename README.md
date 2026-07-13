@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.346
+# EncisoMath LMS v0.24.347
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -113,7 +113,7 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - No requiere cambios de esquema ni una migración SQL nueva; se consultan los intentos ya existentes en `quiz_attempts`.
 
 
-## Cambios v0.24.346
+## Cambios v0.24.344
 - La columna **Estudiante** de NOTAS calcula su ancho según el apellido, nombre o código más largo del curso. Se limita entre 118 px y 184 px para reducir espacio sin desbordar la tabla.
 - La nota **Definitiva** siempre se muestra como entero truncado hacia abajo: por ejemplo, 32.2 y 32.9 se muestran como 32.
 - La cuadrícula de `em-activity-card` conserva el patrón y desplazamiento del warning, pero ahora es mucho más tenue. Se eliminó el `!important` de `background-position` que impedía que los keyframes movieran la malla.
@@ -125,3 +125,17 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Las calificaciones de la tabla de estudiantes dentro de una actividad usan los mismos colores por rango que la sección NOTAS.
 - El texto de DESEMPEÑO aumentó al tamaño visual de la calificación, con peso regular/medium.
 - Se amplió ligeramente la columna DESEMPEÑO para mantener la etiqueta completa sin afectar la tabla.
+
+
+## Cambios v0.24.347
+- Se añadió en `em-notes-toolbar` el botón **Descargar Excel listo para EducaCity**.
+- La exportación usa como plantilla base la estructura exacta del archivo EducaCity analizado, con la hoja `Calificaciones`.
+- La fila 1 contiene `Grado - Grupo`, `Apellidos`, `Nombres`, `Matrícula Id` y el nombre de cada componente de NOTAS.
+- La fila 2 deja vacías las cuatro primeras columnas y coloca los códigos configurados para actividades, quizzes, Asistencia y Rockstars.
+- Desde la fila 3 se exportan grado-grupo, apellidos, nombres, código de matrícula y notas en escala de 0 a 100.
+- Las actividades y quizzes respetan su orden actual en NOTAS; después se exportan Asistencia y Rockstars. La Definitiva no se incluye porque EducaCity importa componentes identificados mediante código.
+- Los ítems sin nota disponible se exportan vacíos en lugar de inventar una calificación.
+- El archivo se descarga como `GRADO-CURSO_ASIGNATURA_PERIODO-N.xlsx`.
+- Se añadió `assets/templates/educacity-planilla-base.xlsx`, derivada de la plantilla entregada por el usuario y sanitizada: no contiene nombres, códigos ni calificaciones reales.
+- ExcelJS se carga únicamente al solicitar la exportación, con respaldo entre jsDelivr y UNPKG.
+- No requiere cambios de esquema ni SQL en Supabase.
