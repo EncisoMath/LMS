@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.343';
+  const APP_VERSION = '0.24.344';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2869,6 +2869,26 @@
     };
   }
 
+  function notesStudentColumnWidth(students = []) {
+    let measured = 0;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    (students || []).forEach((student) => {
+      const name = notesStudentNameParts(student);
+      if (context) {
+        context.font = '700 12px Montserrat, Arial, sans-serif';
+        measured = Math.max(measured, context.measureText(name.lastName || '').width);
+        context.font = '500 10px Montserrat, Arial, sans-serif';
+        measured = Math.max(measured, context.measureText(name.firstName || '').width);
+        context.font = '600 8px Montserrat, Arial, sans-serif';
+        measured = Math.max(measured, context.measureText(name.code || '').width);
+      } else {
+        measured = Math.max(measured, String(name.lastName || '').length * 7, String(name.firstName || '').length * 5.8);
+      }
+    });
+    return Math.round(Math.max(118, Math.min(184, measured + 28)));
+  }
+
   function notesAttendanceSessions(assignmentId, period) {
     const sessions = [];
     const safeAssignmentId = String(assignmentId || '');
@@ -3061,7 +3081,7 @@
       if (score !== null) weighted += score * (Number(column.weight || 0) / 100);
       return `<td class="em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''}" title="${escapeAttr(cell.title || '')}">${score === null ? '—' : Math.round(score)}</td>`;
     }).join('');
-    const finalScore = Math.max(0, Math.min(100, Math.round(weighted * 10) / 10));
+    const finalScore = Math.max(0, Math.min(100, Math.floor(weighted + 1e-9)));
     const name = notesStudentNameParts(student);
     return `
       <tr>
@@ -3071,7 +3091,7 @@
           <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
         </th>
         ${cells}
-        <td class="em-notes-final-cell ${notesScoreClass(finalScore)}"><strong>${Number.isInteger(finalScore) ? finalScore : finalScore.toFixed(1)}</strong></td>
+        <td class="em-notes-final-cell ${notesScoreClass(finalScore)}"><strong>${finalScore}</strong></td>
       </tr>
     `;
   }
@@ -3092,6 +3112,7 @@
     };
     const totalWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
     const weightStatus = Math.abs(totalWeight - 100) < .001 ? 'is-complete' : 'is-incomplete';
+    const studentColumnWidth = notesStudentColumnWidth(students);
     content.innerHTML = `
       ${notesHeroHTML(assignment)}
       <section class="em-notes-toolbar">
@@ -3107,7 +3128,7 @@
           <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Toca los encabezados para ajustar la ponderación a 100%.'}</small>
         </div>
       </section>
-      <section class="em-notes-sheet-shell">
+      <section class="em-notes-sheet-shell" style="--em-notes-student-width:${studentColumnWidth}px">
         <div class="em-notes-sheet-scroll">
           <table class="em-notes-sheet">
             <thead>
@@ -13682,7 +13703,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.343', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.344', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.24.343
+# EncisoMath LMS v0.24.344
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -111,3 +111,10 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Los fondos de las cabeceras de actividades, quizzes, Asistencia y Rockstars son colores sólidos oscurecidos, sin degradados. Este cambio corresponde al punto reversible indicado por el usuario.
 - La columna de estudiante ahora muestra, en líneas separadas: código, apellidos y nombres. Se eliminó la leyenda “Apellido, nombre · código”.
 - No requiere cambios de esquema ni una migración SQL nueva; se consultan los intentos ya existentes en `quiz_attempts`.
+
+
+## Cambios v0.24.344
+- La columna **Estudiante** de NOTAS calcula su ancho según el apellido, nombre o código más largo del curso. Se limita entre 118 px y 184 px para reducir espacio sin desbordar la tabla.
+- La nota **Definitiva** siempre se muestra como entero truncado hacia abajo: por ejemplo, 32.2 y 32.9 se muestran como 32.
+- La cuadrícula de `em-activity-card` conserva el patrón y desplazamiento del warning, pero ahora es mucho más tenue. Se eliminó el `!important` de `background-position` que impedía que los keyframes movieran la malla.
+- No requiere cambios de esquema ni SQL en Supabase.

@@ -1271,7 +1271,7 @@ body {
     radial-gradient(circle at 28% 82%, rgba(88, 204, 2, .18), transparent 17%);
   filter: blur(18px) saturate(1.18);
   opacity: .95;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
   animation: loginGlowDance 12s ease-in-out infinite alternate;
 }
 .math-bg { z-index: 1; }
@@ -30382,7 +30382,7 @@ html body #app .em-pdf-loading {
     linear-gradient(rgba(78, 91, 112, .26) 1px, transparent 1px),
     linear-gradient(90deg, rgba(60, 72, 91, .22) 1px, transparent 1px) !important;
   background-size: 24px 24px !important;
-  background-position: 0 0, 0 0 !important;
+  background-position: 0 0, 0 0;
   background-repeat: repeat !important;
   transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
   transform-origin: center !important;
@@ -30775,15 +30775,15 @@ html body #app .em-pdf-loading {
   pointer-events: none !important;
   border: 0 !important;
   background-image:
-    linear-gradient(rgba(122, 137, 160, .34) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(101, 116, 139, .28) 1px, transparent 1px) !important;
+    linear-gradient(rgba(122, 137, 160, .18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(101, 116, 139, .14) 1px, transparent 1px) !important;
   background-size: 24px 24px !important;
-  background-position: 0 0, 0 0 !important;
+  background-position: 0 0, 0 0;
   background-repeat: repeat !important;
-  opacity: .72 !important;
+  opacity: .34 !important;
   transform: rotate(-7deg) scale(1.18) translate3d(0,0,0) !important;
   transform-origin: center !important;
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
   will-change: background-position !important;
   animation: warningLessonGridDrift246 14s linear infinite !important;
   animation-play-state: running !important;
@@ -31015,4 +31015,23 @@ html body #app .em-pdf-loading {
   .em-notes-grade-card {
     animation: none !important;
   }
+}
+
+
+/* =========================================================
+   ENCISOMATH v0.24.344 - AJUSTES FINOS DE NOTAS Y MALLA
+   ========================================================= */
+.em-notes-student-header,
+.em-notes-student-cell {
+  width: var(--em-notes-student-width, 148px) !important;
+  min-width: var(--em-notes-student-width, 148px) !important;
+  max-width: var(--em-notes-student-width, 148px) !important;
+}
+
+/* La animación usa exactamente el recorrido del warning. La posición inicial
+   no lleva !important para que los keyframes puedan modificarla. */
+.em-activity-card::after {
+  background-position: 0 0, 0 0;
+  opacity: .34 !important;
+  animation: warningLessonGridDrift246 14s linear infinite !important;
 }
