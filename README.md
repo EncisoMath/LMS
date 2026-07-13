@@ -1,157 +1,114 @@
-# EncisoMath LMS v0.24.349
+# EncisoMath LMS v0.25.000 — Offline First
 
+Esta versión convierte EncisoMath en una PWA con lectura y escritura offline. El LMS trabaja sobre una copia local en IndexedDB y sincroniza con Supabase cuando vuelve la conexión.
 
-## v0.24.349 — logo animado y nueva carga
+## Instalación obligatoria
 
-- La pantalla de sincronización usa el logo animado EncisoMaths suministrado por el usuario.
-- Se eliminó el antiguo orbitador de símbolos y se incorporó la barra multicolor con destello blanco del visor PDF.
-- El bloque `logo-wrap` del login reutiliza el mismo logo animado.
-- El fondo del login conserva sus movimientos, pero solo usa círculo, cuadrado, X y triángulo sólidos, sin resplandor exterior.
-- No requiere SQL ni cambios de esquema en Supabase.
+1. Ejecuta una sola vez en Supabase SQL Editor el archivo externo:
+   `SUPABASE_MIGRATION_v0.25.000_OFFLINE_FIRST.sql`
+2. Después publica los archivos modificados de la v0.25.000, incluido el nuevo `offline-engine.js`.
+3. Abre la aplicación con internet e inicia sesión al menos una vez.
+4. Toca el indicador de conexión y usa **Descargar todo para trabajar offline**.
+5. Espera la confirmación de preparación antes de probar el modo avión.
 
+La migración SQL se entrega separada y no debe acumularse dentro del repositorio público.
 
-Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
+## Qué funciona sin internet
 
-## Estado actual
+Después de la primera preparación online se puede:
 
-- Inicio de sesión mediante Supabase Auth.
-- Cargas académicas y estudiantes obtenidos desde Supabase.
-- Asistencia y puntos Rockstar almacenados en la nube.
-- Selector global y automático de periodo.
-- Selector desplegable para Estudiantes, Clases, Actividades, Notas, Rockstars y Quizzes.
-- Creación de clases PDF por curso o por grado.
-- Creación de actividades por curso o por grado.
-- Las actividades pueden vincularse opcionalmente con una clase o funcionar de forma independiente.
-- Contenido de actividades en PDF, imágenes, texto enriquecido o HTML + CSS.
-- Rúbricas, calificaciones, grupos de trabajo, entregas y seguimientos por estudiante.
-- Tarjetas oscuras de actividades con fecha de asignación, cierre, entregas, calificaciones y porcentaje de avance.
-- Vistas Cuadrícula y Lista en Clases, Actividades y Quizzes.
-- Visor PDF de una página con controles flotantes, navegación táctil, teclado, zoom y pellizco.
-- PWA preparada para GitHub Pages.
-- El service worker no intercepta recursos externos de Supabase ni otros CDN.
+- abrir la PWA y entrar con la última sesión conocida;
+- consultar estudiantes, asignaturas, clases, actividades, quizzes, asistencia, Rockstars y NOTAS;
+- registrar o quitar asistencia;
+- dar puntos Rockstar;
+- crear y retirar estudiantes;
+- crear, editar y eliminar actividades;
+- calificar normal o con rúbrica;
+- crear grupos de calificación;
+- registrar seguimientos, comentarios y entregables;
+- crear clases PDF con portada;
+- crear y editar quizzes;
+- resolver y enviar intentos de quiz;
+- modificar preferencias y configuración de NOTAS;
+- cambiar imágenes de asignaturas;
+- consultar PDFs, imágenes, respuestas, guías y archivos previamente descargados.
 
-## Archivos principales
+Los cambios se reflejan inmediatamente en la interfaz y quedan en una cola persistente aunque se cierre la app o se reinicie el celular.
 
-- `index.html`: entrada de la aplicación.
-- `app.js`: interfaz, navegación y lógica principal.
-- `styles.css`: estilos y animaciones.
-- `supabase-config.js`: URL y Publishable Key del proyecto.
-- `supabase-adapter.js`: acceso a Auth, Database y Storage.
-- `sw.js`: service worker.
-- `manifest.webmanifest`: configuración PWA.
-- `data/`: datos locales vacíos o de respaldo; los registros reales se obtienen desde Supabase.
-- `vendor/pdfjs/`: motor local para visualizar PDFs.
-- `assets/`: fuentes, imágenes, música y sonidos usados por la aplicación.
+## Sincronización
 
-## Publicación
+La sincronización ocurre:
 
-La aplicación está configurada para:
+- al recuperar internet;
+- al abrir la aplicación;
+- al volver desde segundo plano;
+- periódicamente mientras la app esté abierta;
+- al pulsar **Sincronizar ahora**.
 
-`https://encisomath.github.io/LMS/`
+Cada operación tiene un identificador único. Supabase registra recibos de sincronización para que un reintento no duplique puntos, seguimientos, intentos de quiz ni otros eventos.
 
-Para publicar una actualización, reemplaza los archivos modificados, realiza el commit y haz push.
+## Regla de conflictos
 
-## Supabase
+- Si el registro de Supabase no cambió desde la última sincronización, se aplica el cambio local.
+- Si Supabase tiene una versión más reciente, gana Supabase.
+- Cambios consecutivos hechos offline sobre el mismo registro se aplican en su orden; el último cambio local termina ganando cuando no existe una edición remota posterior.
+- Eventos independientes, como puntos Rockstar y seguimientos, se agregan sin duplicarse.
+- Los conflictos descartados quedan visibles en el Centro de sincronización.
 
-La base de datos y sus políticas deben estar configuradas en el proyecto Supabase asociado. Este repositorio no contiene instaladores ni migraciones SQL.
+La comparación usa la hora del servidor y los campos `updated_at`; no depende únicamente de la hora configurada en el celular.
 
-`supabase-config.js` contiene únicamente la URL pública del proyecto y la Publishable Key requerida por el navegador. Nunca deben subirse aquí:
+## Archivos offline
 
-- `service_role`
-- claves `sb_secret_...`
-- contraseña de la base de datos
-- contraseñas de usuarios
-- exportaciones con datos personales
-- hojas de cálculo de estudiantes
+La preparación offline descarga en segundo plano:
 
-La seguridad de acceso depende de Supabase Auth y de las políticas RLS configuradas en la base de datos.
+- PDFs de clases;
+- portadas e imágenes;
+- archivos de actividades y respuestas;
+- entregables de estudiantes;
+- recursos incrustados detectables;
+- archivos estáticos de la PWA;
+- PDF.js, música, sonidos, iconos y plantilla EducaCity;
+- librerías externas necesarias, después de haberlas cargado online al menos una vez.
 
-## Cambios v0.24.337
-- Tarjetas Entregaron, Calificados y Avance más compactas.
-- Nuevas pestañas Actividad y Resultado en el detalle de la actividad.
-- Resultado muestra la respuesta o guía de revisión configurada al crear o editar la actividad.
-- Paso 5 de la rúbrica corregido para alinear el número con el título.
-- Acentos de CALIFICACIONES y resplandor del modal según el color del curso.
-- Botonera de calificación unificada visualmente con las pestañas de crear/editar actividad.
-- No requiere cambios de esquema ni SQL en Supabase.
+Los archivos creados sin conexión se conservan como blobs locales y se suben a Supabase Storage al recuperar internet. La aplicación solicita almacenamiento persistente al navegador.
 
-## Cambios v0.24.340
-- Se añadió la tarjeta **Promedio** al resumen de cada actividad.
-- El promedio se calcula únicamente con estudiantes que ya tienen una calificación registrada.
-- La barra cambia de color según el promedio: dorado (90–100), verde (80–89.9), amarillo (70–79.9), naranja (60–69.9) y rojo (menos de 60).
-- No requiere cambios de esquema ni SQL en Supabase.
+## Límites reales del dispositivo
 
-## Cambios v0.24.340
-- Las subpestañas **Calificar normal** y **Calificar con rúbrica** adoptan el mismo estilo visual de las pestañas principales de Crear/Editar actividad.
-- El modal de calificación fuerza `--maincolor` y todo su resplandor exterior al color de la asignatura, eliminando el azul global residual.
-- La malla de las tarjetas de actividades ahora se desplaza de forma continua y claramente visible en cuadrícula y lista.
-- No requiere cambios de esquema ni SQL en Supabase.
+- La primera instalación, el primer inicio de sesión y la primera descarga completa requieren internet.
+- Borrar los datos de la PWA o desinstalarla elimina la copia local y la cola pendiente.
+- El espacio disponible depende del almacenamiento que Android/Chrome conceda al sitio.
+- Supabase sigue siendo la copia oficial una vez finaliza la sincronización.
+- No se debe borrar manualmente el almacenamiento de la app cuando existan cambios pendientes.
 
+## Centro de sincronización
 
-## Cambios v0.24.341
-- Se eliminaron las dos mallas/cuadrículas anteriores de `em-activity-card`.
-- Las tarjetas ahora usan la misma cuadrícula de `danger-head .danger-red-mesh`: cuadros de 24 × 24 px, inclinación de -7 grados y desplazamiento diagonal continuo de 14 segundos.
-- La cuadrícula utiliza tonos apenas más claros que el fondo oscuro de la tarjeta, sin tomar el rojo del modal de peligro ni el color de la asignatura.
-- No requiere cambios de esquema ni SQL en Supabase.
+El indicador flotante muestra:
 
-## Cambios v0.24.342
-- Se añadió la nueva sección **NOTAS** al selector de la asignatura, junto a Estudiantes, Clases, Actividades, Rockstars y Quizzes.
-- La sección muestra una hoja de calificaciones horizontal tipo hoja de cálculo, con la primera columna fija para el estudiante y su código.
-- Los nombres se presentan de forma compacta: primer apellido, inicial del segundo apellido, primer nombre e inicial del segundo nombre.
-- Las actividades del periodo aparecen en orden de asignación y con sus encabezados escritos verticalmente.
-- Después de las actividades se añaden automáticamente las columnas **Asistencia** y **Rockstars**, además de una columna final **Definitiva**.
-- La nota de Asistencia se calcula con las sesiones en las que exista registro de asistencia durante el periodo:
-  - asistencia completa: 100;
-  - las inasistencias sin excusa reducen la nota;
-  - las excusas no cuentan como inasistencia injustificada;
-  - cuando todas las ausencias están justificadas, se aplica un mínimo de 60 sin convertir automáticamente la nota en 100.
-- La nota Rockstar compara los puntos obtenidos con una meta configurable. Cuando el estudiante tiene al menos una asistencia registrada en el periodo, la nota Rockstar tiene un mínimo de 60.
-- Al tocar el encabezado de una actividad, Asistencia o Rockstars se abre un modal para configurar código, color y peso porcentual.
-- La columna Rockstar permite además establecer la meta de puntos del periodo; el valor inicial es 15.
-- La ponderación inicial se distribuye de forma equitativa entre las columnas existentes y suma 100%. Las configuraciones posteriores se guardan por asignatura y periodo.
-- La configuración de columnas se guarda dentro de `user_preferences.preferences`, por lo que no requiere una tabla nueva ni una migración SQL.
-- `supabase-adapter.js` ahora incluye las calificaciones de actividades en la carga inicial para construir la hoja de notas sin abrir cada actividad.
+- En línea / Sin conexión / Sincronizando;
+- cantidad de cambios pendientes;
+- conflictos;
+- última sincronización;
+- botón para descargar todo;
+- botón para sincronizar ahora.
 
+## Archivos principales de esta versión
 
-## Cambios v0.24.343
-- La cuadrícula de `em-activity-card` conserva exactamente el patrón de 24 × 24 px y el desplazamiento diagonal del encabezado de peligro, con líneas más claras para que sea visible sobre el fondo oscuro.
-- El héroe de **NOTAS** usa la misma estructura, altura, márgenes, tipografía, figuras de fondo y entrada animada de los demás héroes. Su ilustración propia muestra tarjetas animadas con notas 100, 80, 50 y 40.
-- La cabecera **Definitiva** ahora está escrita verticalmente y las notas definitivas se muestran en texto grande y negrita, sin bullets.
-- Se añadieron los quizzes del periodo como columnas de la hoja de NOTAS. Para cada estudiante se usa el mejor intento enviado, convertido a escala de 0 a 100.
-- Los fondos de las cabeceras de actividades, quizzes, Asistencia y Rockstars son colores sólidos oscurecidos, sin degradados. Este cambio corresponde al punto reversible indicado por el usuario.
-- La columna de estudiante ahora muestra, en líneas separadas: código, apellidos y nombres. Se eliminó la leyenda “Apellido, nombre · código”.
-- No requiere cambios de esquema ni una migración SQL nueva; se consultan los intentos ya existentes en `quiz_attempts`.
+- `offline-engine.js`: IndexedDB, cola, sincronización, conflictos y archivos locales.
+- `sw.js`: shell offline, caché de recursos y solicitud de sincronización.
+- `supabase-adapter.js`: operaciones idempotentes y rutas estables para reintentos.
+- `app.js`: integración de snapshots y actualización de la interfaz al sincronizar.
+- `styles.css`: indicador y Centro de sincronización.
+- `index.html`: carga del motor offline y versionado v0.25.000.
 
+## Validación requerida antes de publicar
 
-## Cambios v0.24.344
-- La columna **Estudiante** de NOTAS calcula su ancho según el apellido, nombre o código más largo del curso. Se limita entre 118 px y 184 px para reducir espacio sin desbordar la tabla.
-- La nota **Definitiva** siempre se muestra como entero truncado hacia abajo: por ejemplo, 32.2 y 32.9 se muestran como 32.
-- La cuadrícula de `em-activity-card` conserva el patrón y desplazamiento del warning, pero ahora es mucho más tenue. Se eliminó el `!important` de `background-position` que impedía que los keyframes movieran la malla.
-- No requiere cambios de esquema ni SQL en Supabase.
+- `node --check app.js`
+- `node --check supabase-adapter.js`
+- `node --check offline-engine.js`
+- `node --check sw.js`
+- validación de JSON/manifest;
+- `unzip -t` sobre el paquete final.
 
+## Base visual y funcional conservada
 
-## Cambios v0.24.346
-
-- Las calificaciones de la tabla de estudiantes dentro de una actividad usan los mismos colores por rango que la sección NOTAS.
-- El texto de DESEMPEÑO aumentó al tamaño visual de la calificación, con peso regular/medium.
-- Se amplió ligeramente la columna DESEMPEÑO para mantener la etiqueta completa sin afectar la tabla.
-
-
-## Cambios v0.24.349
-- Se añadió en `em-notes-toolbar` el botón **Descargar Excel listo para EducaCity**.
-- La exportación usa como plantilla base la estructura exacta del archivo EducaCity analizado, con la hoja `Calificaciones`.
-- La fila 1 contiene `Grado - Grupo`, `Apellidos`, `Nombres`, `Matrícula Id` y el nombre de cada componente de NOTAS.
-- La fila 2 deja vacías las cuatro primeras columnas y coloca los códigos configurados para actividades, quizzes, Asistencia y Rockstars.
-- Desde la fila 3 se exportan grado-grupo, apellidos, nombres, código de matrícula y notas en escala de 0 a 100.
-- Las actividades y quizzes respetan su orden actual en NOTAS; después se exportan Asistencia y Rockstars. La Definitiva no se incluye porque EducaCity importa componentes identificados mediante código.
-- Los ítems sin nota disponible se exportan vacíos en lugar de inventar una calificación.
-- El archivo se descarga como `GRADO-CURSO_ASIGNATURA_PERIODO-N.xlsx`.
-- Se añadió `assets/templates/educacity-planilla-base.xlsx`, derivada de la plantilla entregada por el usuario y sanitizada: no contiene nombres, códigos ni calificaciones reales.
-- ExcelJS se carga únicamente al solicitar la exportación, con respaldo entre jsDelivr y UNPKG.
-- No requiere cambios de esquema ni SQL en Supabase.
-
-## Corrección v0.24.349
-
-- Se incluyó realmente `assets/templates/educacity-planilla-base.xlsx` dentro del paquete de archivos modificados. En v0.24.347 el código intentaba abrirla, pero el archivo no fue empaquetado y por eso aparecía “No se pudo abrir la plantilla de EducaCity”.
-- La plantilla incluida está sanitizada: mantiene estructura, formatos y estilos, pero no contiene nombres, códigos ni calificaciones reales.
-- Se añadió una plantilla interna de respaldo en JavaScript. Si por alguna razón el archivo XLSX no pudiera cargarse desde GitHub Pages, la aplicación genera de todos modos una planilla compatible con la misma estructura de filas y columnas.
+Se conservan todos los cambios aprobados hasta v0.24.349: logo animado EncisoMaths, carga personalizada, clases PDF, actividades, rúbricas, grupos, seguimientos, NOTAS, exportación EducaCity, héroes, tabla de estudiantes y estilos actuales.

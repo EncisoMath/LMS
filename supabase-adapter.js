@@ -571,20 +571,21 @@
     const supabaseClient = getClient();
     const studentId = resolveStudentDbId(event?.studentId);
     if (!studentId) throw new Error(`No se encontro el estudiante ${event?.studentId || ''} en Supabase.`);
-    const { data, error } = await supabaseClient
-      .from('rockstar_events')
-      .insert({
-        assignment_id: event.assignmentId,
-        student_id: studentId,
-        period: Number(event.period || 1),
-        points: Number(event.delta || 0),
-        category: event.category || null,
-        reason: event.reason || null,
-        occurred_at: event.occurredAt || new Date().toISOString(),
-        created_by: session?.user?.id || (await getSession())?.user?.id
-      })
-      .select('id,occurred_at')
-      .single();
+    const row = {
+      assignment_id: event.assignmentId,
+      student_id: studentId,
+      period: Number(event.period || 1),
+      points: Number(event.delta || 0),
+      category: event.category || null,
+      reason: event.reason || null,
+      occurred_at: event.occurredAt || new Date().toISOString(),
+      created_by: session?.user?.id || (await getSession())?.user?.id,
+      client_mutation_id: event.clientMutationId || event.mutationId || null
+    };
+    const query = row.client_mutation_id
+      ? supabaseClient.from('rockstar_events').upsert(row, { onConflict: 'client_mutation_id' })
+      : supabaseClient.from('rockstar_events').insert(row);
+    const { data, error } = await query.select('id,occurred_at').single();
     if (error) throw normalizeError(error, 'No se pudo guardar el punto Rockstar.');
     return data;
   }
@@ -659,7 +660,7 @@
     if (error) throw normalizeError(error, 'No se pudo retirar el estudiante del grupo.');
   }
 
-  async function saveQuizzes(quizzes = []) {
+  async function saveQuizzes(quizzes = [], options = {}) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa.');
@@ -676,7 +677,8 @@
         subject_name: quiz.subject || '',
         area: quiz.area || '',
         status,
-        payload: cleanQuizPayload(quiz)
+        payload: cleanQuizPayload(quiz),
+        client_mutation_id: options.clientMutationId ? `${options.clientMutationId}:${quiz.id}` : null
       };
       const quizResult = await supabaseClient
         .from('quizzes')
@@ -694,6 +696,7 @@
             status,
             due_at: quiz.availableUntil || null,
             max_attempts: Number(quiz.attempts || 1),
+            client_mutation_id: options.clientMutationId ? `${options.clientMutationId}:${quiz.id}:${assignmentId}` : null,
             settings: {
               shuffleQuestions: Boolean(quiz.shuffleQuestions),
               shuffleOptions: Boolean(quiz.shuffleOptions),
@@ -705,22 +708,23 @@
     }
   }
 
-  async function savePreferences(preferences) {
+  async function savePreferences(preferences, options = {}) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) return;
     const { error } = await supabaseClient
       .from('user_preferences')
-      .upsert({ user_id: activeSession.user.id, preferences: preferences || {} }, { onConflict: 'user_id' });
+      .upsert({ user_id: activeSession.user.id, preferences: preferences || {}, client_mutation_id: options.clientMutationId || null }, { onConflict: 'user_id' });
     if (error) throw normalizeError(error, 'No se pudieron guardar las preferencias.');
   }
 
-  async function uploadAssignmentImage({ assignmentId, type, file }) {
+  async function uploadAssignmentImage({ assignmentId, type, file, mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa.');
     const extension = String(file?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-    const path = `${activeSession.user.id}/assignments/${assignmentId}/${type}-${Date.now()}.${extension}`;
+    const stableMutation = mutationId || clientMutationId || '';
+    const path = `${activeSession.user.id}/assignments/${assignmentId}/${type}-${stableMutation || Date.now()}.${extension}`;
     const uploadResult = await supabaseClient.storage
       .from(config.storageBucket || 'lms-public')
       .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type || undefined });
@@ -757,13 +761,13 @@
     return `lesson-${token}`;
   }
 
-  async function createPdfLesson({ currentAssignment, targetAssignmentIds, title, period, pdfFile, thumbnailFile, pageCount = 1 }) {
+  async function createPdfLesson({ currentAssignment, targetAssignmentIds, title, period, pdfFile, thumbnailFile, pageCount = 1, lessonId: requestedLessonId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
     if (!ids.length) throw new Error('La clase debe asignarse al menos a un curso.');
-    const lessonId = newLessonId();
+    const lessonId = String(requestedLessonId || '').trim() || newLessonId();
     const rootPath = `${activeSession.user.id}/lessons/${lessonId}`;
     const pdfExtension = String(pdfFile?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
     const pdfPath = `${rootPath}/${safeStorageName(title)}.${pdfExtension}`;
@@ -775,7 +779,7 @@
     try {
       const pdfUpload = await supabaseClient.storage
         .from(config.storageBucket || 'lms-public')
-        .upload(pdfPath, pdfFile, { cacheControl: '3600', upsert: false, contentType: 'application/pdf' });
+        .upload(pdfPath, pdfFile, { cacheControl: '3600', upsert: Boolean(mutationId || clientMutationId), contentType: 'application/pdf' });
       if (pdfUpload.error) throw normalizeError(pdfUpload.error, 'No se pudo subir el PDF.');
       uploadedPaths.push(pdfPath);
       pdfUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(pdfPath).data?.publicUrl || '';
@@ -785,7 +789,7 @@
         thumbnailPath = `${rootPath}/portada.${extension}`;
         const thumbUpload = await supabaseClient.storage
           .from(config.storageBucket || 'lms-public')
-          .upload(thumbnailPath, thumbnailFile, { cacheControl: '3600', upsert: false, contentType: thumbnailFile.type || 'image/webp' });
+          .upload(thumbnailPath, thumbnailFile, { cacheControl: '3600', upsert: Boolean(mutationId || clientMutationId), contentType: thumbnailFile.type || 'image/webp' });
         if (thumbUpload.error) throw normalizeError(thumbUpload.error, 'No se pudo subir la portada.');
         uploadedPaths.push(thumbnailPath);
         thumbnailUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(thumbnailPath).data?.publicUrl || '';
@@ -807,9 +811,10 @@
         source_file_name: pdfFile?.name || '',
         page_count: Math.max(1, Number(pageCount || 1)),
         status: 'published',
-        created_by: activeSession.user.id
+        created_by: activeSession.user.id,
+        client_mutation_id: mutationId || clientMutationId || null
       };
-      const lessonResult = await supabaseClient.from('lessons').insert(lessonRow);
+      const lessonResult = await supabaseClient.from('lessons').upsert(lessonRow, { onConflict: 'id' });
       if (lessonResult.error) throw normalizeError(lessonResult.error, 'No se pudo crear el registro de la clase.');
 
       const linkRows = ids.map((assignmentId, index) => ({
@@ -818,7 +823,7 @@
         sort_order: Math.floor(Date.now() / 1000) + index,
         visible: true
       }));
-      const linkResult = await supabaseClient.from('assignment_lessons').insert(linkRows);
+      const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
       if (linkResult.error) throw normalizeError(linkResult.error, 'El PDF subió, pero no se pudo asignar a los cursos.');
 
       return {
@@ -857,7 +862,7 @@
     return `activity-${token}`;
   }
 
-  async function uploadActivityFiles({ activityId, section, files = [] }) {
+  async function uploadActivityFiles({ activityId, section, files = [], mutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     const bucket = config.storageBucket || 'lms-public';
@@ -865,10 +870,11 @@
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index];
       const extension = String(file?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
-      const path = `${activeSession.user.id}/activities/${activityId}/${section}/${String(index + 1).padStart(2, '0')}-${safeStorageName(file?.name || `archivo.${extension}`)}`;
+      const stableSection = mutationId ? `${section}-${mutationId}` : section;
+      const path = `${activeSession.user.id}/activities/${activityId}/${stableSection}/${String(index + 1).padStart(2, '0')}-${safeStorageName(file?.name || `archivo.${extension}`)}`;
       const result = await supabaseClient.storage.from(bucket).upload(path, file, {
         cacheControl: '3600',
-        upsert: false,
+        upsert: Boolean(mutationId),
         contentType: file?.type || undefined
       });
       if (result.error) throw normalizeError(result.error, `No se pudo subir ${file?.name || 'el archivo'}.`);
@@ -883,7 +889,7 @@
     return uploaded;
   }
 
-  async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], rubric = [] }) {
+  async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], rubric = [], activityId: requestedActivityId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -891,11 +897,11 @@
     if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
     const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
     if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
-    const activityId = newActivityId();
+    const activityId = String(requestedActivityId || '').trim() || newActivityId();
     const uploadedPaths = [];
     try {
-      const assignmentUploads = await uploadActivityFiles({ activityId, section: 'assignment', files: contentFiles });
-      const reviewUploads = await uploadActivityFiles({ activityId, section: 'review', files: reviewFiles });
+      const assignmentUploads = await uploadActivityFiles({ activityId, section: 'assignment', files: contentFiles, mutationId: mutationId || clientMutationId });
+      const reviewUploads = await uploadActivityFiles({ activityId, section: 'review', files: reviewFiles, mutationId: mutationId || clientMutationId });
       uploadedPaths.push(...assignmentUploads.map((item) => item.path), ...reviewUploads.map((item) => item.path));
       const contentPayload = { text: contentText, html: contentHtml, css: contentCss, files: assignmentUploads };
       const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads };
@@ -912,9 +918,10 @@
         review_type: reviewType,
         review_payload: reviewPayload,
         rubric,
-        status: 'published'
+        status: 'published',
+        client_mutation_id: mutationId || clientMutationId || null
       };
-      const activityResult = await supabaseClient.from('activities').insert(row);
+      const activityResult = await supabaseClient.from('activities').upsert(row, { onConflict: 'id' });
       if (activityResult.error) throw normalizeError(activityResult.error, 'No se pudo crear la actividad.');
       const linkRows = ids.map((assignmentId, index) => ({
         activity_id: activityId,
@@ -922,7 +929,7 @@
         sort_order: Math.floor(Date.now() / 1000) + index,
         visible: true
       }));
-      const linksResult = await supabaseClient.from('activity_assignments').insert(linkRows);
+      const linksResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
       if (linksResult.error) throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
       return {
         id: activityId,
@@ -964,7 +971,7 @@
     if (result.error) console.warn('No se pudieron retirar algunos archivos de Storage.', result.error);
   }
 
-  async function updateActivity({ activityId, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [] }) {
+  async function updateActivity({ activityId, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [], mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -978,10 +985,10 @@
     const uploadedPaths = [];
     try {
       const contentUploads = contentFiles.length
-        ? await uploadActivityFiles({ activityId: safeActivityId, section: `assignment-${Date.now()}`, files: contentFiles })
+        ? await uploadActivityFiles({ activityId: safeActivityId, section: 'assignment-update', files: contentFiles, mutationId: mutationId || clientMutationId || String(Date.now()) })
         : [];
       const reviewUploads = reviewFiles.length
-        ? await uploadActivityFiles({ activityId: safeActivityId, section: `review-${Date.now()}`, files: reviewFiles })
+        ? await uploadActivityFiles({ activityId: safeActivityId, section: 'review-update', files: reviewFiles, mutationId: mutationId || clientMutationId || String(Date.now()) })
         : [];
       uploadedPaths.push(...contentUploads.map((item) => item.path), ...reviewUploads.map((item) => item.path));
 
@@ -1007,7 +1014,8 @@
           review_type: reviewType,
           review_payload: reviewPayload,
           rubric,
-          status: 'published'
+          status: 'published',
+          client_mutation_id: mutationId || clientMutationId || null
         })
         .eq('id', safeActivityId)
         .eq('owner_id', activeSession.user.id);
@@ -1122,14 +1130,14 @@
     }).sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
   }
 
-  async function uploadActivitySubmission({ activityId, assignmentId, studentCode, file }) {
+  async function uploadActivitySubmission({ activityId, assignmentId, studentCode, file, mutationId = '' }) {
     if (!file) return null;
     const activeSession = session || await getSession();
     const bucket = config.storageBucket || 'lms-public';
-    const path = `${activeSession.user.id}/activities/${activityId}/submissions/${assignmentId}/${safeStorageName(studentCode)}-${Date.now()}-${safeStorageName(file.name || 'entrega')}`;
+    const path = `${activeSession.user.id}/activities/${activityId}/submissions/${assignmentId}/${safeStorageName(studentCode)}-${mutationId || Date.now()}-${safeStorageName(file.name || 'entrega')}`;
     const result = await getClient().storage.from(bucket).upload(path, file, {
       cacheControl: '3600',
-      upsert: false,
+      upsert: Boolean(mutationId),
       contentType: file.type || undefined
     });
     if (result.error) throw normalizeError(result.error, 'No se pudo subir el archivo de entrega.');
@@ -1142,7 +1150,7 @@
     };
   }
 
-  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '' }) {
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -1150,7 +1158,8 @@
     const dbRows = codes.map((code) => ({ code, studentId: resolveStudentDbId(code) }));
     if (dbRows.some((row) => !row.studentId)) throw new Error('No se encontró uno de los estudiantes seleccionados.');
     const groupId = codes.length > 1 ? (String(gradingGroupId || '').trim() || globalThis.crypto?.randomUUID?.() || null) : null;
-    const newSubmission = await uploadActivitySubmission({ activityId, assignmentId, studentCode: primaryStudentCode, file: submissionFile });
+    const stableMutationId = mutationId || clientMutationId || '';
+    const newSubmission = await uploadActivitySubmission({ activityId, assignmentId, studentCode: primaryStudentCode, file: submissionFile, mutationId: stableMutationId });
     const submissionPayload = newSubmission || (existingSubmissionFile && typeof existingSubmissionFile === 'object' ? existingSubmissionFile : {});
     const gradedAt = new Date().toISOString();
     const rows = dbRows.map(({ code, studentId }) => ({
@@ -1163,7 +1172,8 @@
       grading_group_id: groupId,
       rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
       graded_by: activeSession.user.id,
-      graded_at: gradedAt
+      graded_at: gradedAt,
+      client_mutation_id: stableMutationId ? `${stableMutationId}:${studentId}` : null
     }));
     const upsertResult = await supabaseClient
       .from('activity_student_records')
@@ -1192,9 +1202,12 @@
         status: deliveryStatus,
         note: String(deliveryNote || ''),
         occurred_at: gradedAt,
-        created_by: activeSession.user.id
+        created_by: activeSession.user.id,
+        client_mutation_id: stableMutationId ? `${stableMutationId}:${row.id}` : null
       }));
-      const eventResult = await supabaseClient.from('activity_delivery_events').insert(eventRows);
+      const eventResult = stableMutationId
+        ? await supabaseClient.from('activity_delivery_events').upsert(eventRows, { onConflict: 'client_mutation_id' })
+        : await supabaseClient.from('activity_delivery_events').insert(eventRows);
       if (eventResult.error) throw normalizeError(eventResult.error, 'La nota se guardó, pero no se pudo registrar el seguimiento de entrega.');
     }
 
@@ -1262,19 +1275,24 @@
     return { mode: 'all' };
   }
 
-  async function recordLessonView({ assignmentId, lessonId }) {
+  async function recordLessonView({ assignmentId, lessonId, mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     if (!activeSession?.user?.id) return;
-    const { error } = await supabaseClient.from('lesson_views').insert({
+    const row = {
       assignment_id: assignmentId,
       lesson_id: lessonId,
-      user_id: activeSession.user.id
-    });
+      user_id: activeSession.user.id,
+      client_mutation_id: mutationId || clientMutationId || null
+    };
+    const result = row.client_mutation_id
+      ? await supabaseClient.from('lesson_views').upsert(row, { onConflict: 'client_mutation_id' })
+      : await supabaseClient.from('lesson_views').insert(row);
+    const { error } = result;
     if (error) throw normalizeError(error, 'No se pudo registrar la apertura de la clase.');
   }
 
-  async function startQuizAttempt({ quiz, assignmentId }) {
+  async function startQuizAttempt({ quiz, assignmentId, clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = session || await getSession();
     let quizAssignmentId = quiz?._quizAssignmentIds?.[assignmentId] || quiz?._quizAssignmentId;
@@ -1293,17 +1311,18 @@
       }
     }
     if (!quizAssignmentId || !activeSession?.user?.id) return null;
-    const { data, error } = await supabaseClient
-      .from('quiz_attempts')
-      .insert({
-        quiz_assignment_id: quizAssignmentId,
-        user_id: activeSession.user.id,
-        student_id: profile?.student_id || null,
-        status: 'in_progress',
-        result: { appVersion: '0.24.349', assignmentId, quizId: quiz.id }
-      })
-      .select('id,started_at')
-      .single();
+    const attemptRow = {
+      quiz_assignment_id: quizAssignmentId,
+      user_id: activeSession.user.id,
+      student_id: profile?.student_id || null,
+      status: 'in_progress',
+      result: { appVersion: '0.25.000', assignmentId, quizId: quiz.id },
+      client_mutation_id: clientMutationId || null
+    };
+    const attemptQuery = clientMutationId
+      ? supabaseClient.from('quiz_attempts').upsert(attemptRow, { onConflict: 'client_mutation_id' })
+      : supabaseClient.from('quiz_attempts').insert(attemptRow);
+    const { data, error } = await attemptQuery.select('id,started_at').single();
     if (error) throw normalizeError(error, 'No se pudo iniciar el intento en Supabase.');
     return data;
   }
@@ -1317,7 +1336,7 @@
       + (Number(answer?.score?.maxTime ?? answer?.points?.maxTime ?? 0) || 0);
   }
 
-  async function submitQuizAttempt({ attemptId, quiz, assignmentId, answers, securityEvents, terminatedReason }) {
+  async function submitQuizAttempt({ attemptId, quiz, assignmentId, answers, securityEvents, terminatedReason, clientMutationId = '' }) {
     if (!attemptId) return;
     const supabaseClient = getClient();
     const safeAnswers = Array.isArray(answers) ? answers : [];
@@ -1346,7 +1365,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.24.349',
+          appVersion: '0.25.000',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1357,13 +1376,16 @@
       .eq('id', attemptId);
     if (attemptResult.error) throw normalizeError(attemptResult.error, 'No se pudo finalizar el intento.');
 
-    const eventRows = (Array.isArray(securityEvents) ? securityEvents : []).map((event) => ({
+    const eventRows = (Array.isArray(securityEvents) ? securityEvents : []).map((event, index) => ({
       attempt_id: attemptId,
       event_type: event.reason || 'suspicious_action',
-      details: event
+      details: event,
+      client_mutation_id: clientMutationId ? `${clientMutationId}:${index}` : null
     }));
     if (eventRows.length) {
-      const securityResult = await supabaseClient.from('quiz_security_events').insert(eventRows);
+      const securityResult = clientMutationId
+        ? await supabaseClient.from('quiz_security_events').upsert(eventRows, { onConflict: 'client_mutation_id' })
+        : await supabaseClient.from('quiz_security_events').insert(eventRows);
       if (securityResult.error) throw normalizeError(securityResult.error, 'No se pudieron guardar los eventos de seguridad.');
     }
   }

@@ -31336,7 +31336,7 @@ html body #app .em-pdf-loading {
   }
 }
 
-/* v0.24.349 - Logo EncisoMaths animado en carga/login y geometría sólida en login */
+/* v0.25.000 - Logo EncisoMaths animado en carga/login y geometría sólida en login */
 .em-enciso-logo-scene {
   position: relative;
   width: min(96vw, 1200px);
@@ -31592,4 +31592,218 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   .em-enciso-logo-scene-login .em-enciso-logo-tagline {
     font-size: 9px;
   }
+}
+
+/* v0.25.000 - Centro offline-first y estado de sincronizacion */
+.em-offline-status {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 9997;
+  display: grid;
+  grid-template-columns: 8px auto;
+  grid-template-areas: "dot title" "dot meta";
+  align-items: center;
+  column-gap: 7px;
+  min-width: 126px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 4px;
+  background: rgba(3,7,18,.92);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,.34);
+  backdrop-filter: blur(10px);
+  text-align: left;
+  font-family: "Montserrat", Arial, sans-serif;
+}
+.em-offline-status .em-offline-dot {
+  grid-area: dot;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #54c600;
+  box-shadow: 0 0 0 3px rgba(84,198,0,.12);
+}
+.em-offline-status strong {
+  grid-area: title;
+  font-size: .67rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.em-offline-status small {
+  grid-area: meta;
+  color: #9eabc0;
+  font-size: .56rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.em-offline-status.is-offline .em-offline-dot {
+  background: #ff7a00;
+  box-shadow: 0 0 0 3px rgba(255,122,0,.14);
+}
+.em-offline-status.has-conflict .em-offline-dot {
+  background: #e21b3c;
+  box-shadow: 0 0 0 3px rgba(226,27,60,.14);
+}
+.em-offline-status.has-pending:not(.is-offline) .em-offline-dot {
+  animation: emOfflinePulse 1.25s ease-in-out infinite;
+}
+@keyframes emOfflinePulse {
+  0%, 100% { transform: scale(.82); opacity: .65; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+.em-sync-center-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0,0,0,.78);
+}
+.em-sync-center {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(88dvh, 760px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 74%, #fff 26%);
+  border-radius: 4px;
+  background: #050a12;
+  color: #fff;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, transparent),
+              0 20px 70px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, rgba(0,0,0,.78));
+  font-family: "Montserrat", Arial, sans-serif;
+}
+.em-sync-center > p:first-of-type {
+  margin: 0 0 5px;
+  color: var(--em-current-subject-color, #1368ce);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.em-sync-center h2 {
+  margin: 0 36px 18px 0;
+  font-size: clamp(1.2rem, 4vw, 1.75rem);
+}
+.em-sync-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px;
+  background: rgba(255,255,255,.04);
+  color: #fff;
+  font-size: 1.1rem;
+}
+.em-sync-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.em-sync-summary article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 4px;
+  background: rgba(255,255,255,.035);
+}
+.em-sync-summary small {
+  color: #93a4bc;
+  font-size: .58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.em-sync-summary strong {
+  font-size: .88rem;
+}
+.em-sync-last {
+  margin: 14px 0;
+  color: #aab6ca;
+  font-size: .72rem;
+  line-height: 1.5;
+}
+.em-sync-progress {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+.em-sync-progress i {
+  position: relative;
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e21b3c, #ff7a00, #ebb513, #54c600, #1368ce, #7b1fa2);
+}
+.em-sync-progress i::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -35%;
+  width: 32%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent);
+  animation: emOfflineShimmer 1.35s linear infinite;
+}
+@keyframes emOfflineShimmer { to { transform: translateX(430%); } }
+.em-sync-progress span {
+  color: #c5cede;
+  font-size: .68rem;
+}
+.em-sync-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.em-sync-actions button {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 58%, rgba(255,255,255,.14));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 22%, #07101d 78%);
+  color: #fff;
+  font: 800 .7rem/1.25 "Montserrat", Arial, sans-serif;
+}
+.em-sync-actions button:disabled { opacity: .42; }
+.em-sync-center details {
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid rgba(226,27,60,.24);
+  border-radius: 4px;
+  background: rgba(226,27,60,.05);
+}
+.em-sync-center summary {
+  color: #ff7b91;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.em-sync-conflicts {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+.em-sync-conflicts p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 4px;
+  background: rgba(0,0,0,.22);
+}
+.em-sync-conflicts strong { font-size: .68rem; }
+.em-sync-conflicts span { color: #aab6ca; font-size: .62rem; line-height: 1.4; }
+@media (max-width: 520px) {
+  .em-offline-status {
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    min-width: 112px;
+  }
+  .em-sync-center { padding: 18px 14px; }
+  .em-sync-summary { grid-template-columns: 1fr 1fr 1fr; }
+  .em-sync-actions { grid-template-columns: 1fr; }
 }

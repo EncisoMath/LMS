@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.349';
+  const APP_VERSION = '0.25.000';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -621,6 +621,52 @@
     if (!isCloudReady()) return;
     cloudAPI().savePreferences(state.prefs).catch((error) => reportCloudError('No se sincronizaron las preferencias', error, { silent: true }));
   }
+
+  function applyCloudSnapshotToState(cloudData, options = {}) {
+    if (!cloudData?.user || !cloudData?.data) return false;
+    const cleanCloudData = removeLegacyDemoContent(cloudData.data || {});
+    clearLegacyDemoBrowserState();
+    state.cloud.enabled = true;
+    state.cloud.loading = false;
+    state.cloud.attendance = cloudData.attendance || {};
+    state.user = cloudData.user;
+    state.data = {
+      ...state.data,
+      ...cleanCloudData,
+      users: cleanCloudData.users || [cloudData.user]
+    };
+    if (cloudData.preferences && typeof cloudData.preferences === 'object') {
+      state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
+      state.prefs.academicPeriodStarts = normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
+      localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+      applyPreferences();
+    }
+    if (options.initializePeriod !== false) initializeAcademicPeriodState();
+    return true;
+  }
+
+  function bindOfflineSyncEvents() {
+    if (bindOfflineSyncEvents.bound) return;
+    bindOfflineSyncEvents.bound = true;
+    window.addEventListener('encisomath:sync-complete', (event) => {
+      const snapshot = event.detail?.snapshot;
+      const summary = event.detail?.summary || {};
+      if (!applyCloudSnapshotToState(snapshot, { initializePeriod: false })) return;
+      if (state.appRoute?.screen === 'activity') {
+        const activity = (state.data.activities || []).find((item) => String(item.id) === String(state.activeActivityId || state.appRoute.activityId || ''));
+        if (activity) loadActivityGradebook(activity).catch?.(() => {});
+      } else if (state.appRoute?.screen === 'subject') {
+        refreshActivePeriodContent(false);
+      }
+      if (summary.conflicts) toast(`${summary.conflicts} cambio(s) no se aplicaron porque Supabase tenía una versión más reciente.`);
+      else if (summary.applied) toast(`${summary.applied} cambio(s) sincronizado(s).`);
+    });
+    window.addEventListener('offline', () => toast('Sin conexión. Puedes seguir trabajando; los cambios quedarán pendientes.'));
+    window.addEventListener('online', () => toast('Conexión recuperada. Sincronizando cambios…'));
+    navigator.serviceWorker?.addEventListener?.('message', (event) => {
+      if (event.data?.type === 'ENCISOMATH_SYNC_REQUEST') cloudAPI()?.syncNow?.({ automatic: true }).catch(() => {});
+    });
+  }
   function normalizeAcademicPeriodStarts(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
@@ -779,24 +825,7 @@
     mount(renderLoadingHTML('Sincronizando EncisoMath con Supabase...'), null, { instant: true });
     try {
       const cloudData = await cloudAPI().loadApplicationData();
-      const cleanCloudData = removeLegacyDemoContent(cloudData.data || {});
-      clearLegacyDemoBrowserState();
-      state.cloud.enabled = true;
-      state.cloud.loading = false;
-      state.cloud.attendance = cloudData.attendance || {};
-      state.user = cloudData.user;
-      state.data = {
-        ...state.data,
-        ...cleanCloudData,
-        users: cleanCloudData.users || [cloudData.user]
-      };
-      if (cloudData.preferences && typeof cloudData.preferences === 'object') {
-        state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
-        state.prefs.academicPeriodStarts = normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
-        localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
-        applyPreferences();
-      }
-      initializeAcademicPeriodState();
+      applyCloudSnapshotToState(cloudData, { initializePeriod: true });
       localStorage.setItem('encisomath:lastUser', JSON.stringify({
         id: cloudData.user.email || cloudData.user.id,
         email: cloudData.user.email || '',
@@ -823,6 +852,7 @@
     registerServiceWorker();
     bindQuizSecurityGuards();
     bindAppBackNavigation();
+    bindOfflineSyncEvents();
     mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
     try {
       state.data = await loadAllData();
@@ -832,7 +862,7 @@
       let activeSession = await cloudAPI().getSession();
       const sessionMode = localStorage.getItem(CLOUD_SESSION_MODE_KEY) || 'persistent';
       const tabSessionAlive = sessionStorage.getItem(CLOUD_SESSION_TAB_KEY) === '1';
-      if (activeSession && sessionMode === 'session' && !tabSessionAlive) {
+      if (activeSession && sessionMode === 'session' && !tabSessionAlive && navigator.onLine !== false) {
         await cloudAPI().signOut();
         activeSession = null;
       }
@@ -849,9 +879,8 @@
   }
 
   async function loadAllData() {
-    const bust = Date.now();
     const entries = await Promise.all(Object.entries(DATA_FILES).map(async ([key, url]) => {
-      const response = await fetch(`${url}?v=${bust}`, { cache: 'no-store' });
+      const response = await fetch(url, { cache: navigator.onLine === false ? 'force-cache' : 'default' });
       if (!response.ok) throw new Error(`No se pudo cargar ${url}`);
       return [key, await response.json()];
     }));
@@ -3264,7 +3293,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.24.349', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.000', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -14088,7 +14117,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.349', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.000', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
