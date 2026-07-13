@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.24.348';
+  const APP_VERSION = '0.24.349';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -861,6 +861,7 @@
     const optimizedRoute = prefEnabled('visualOptimized') || !prefEnabled('effectsMotion') || !prefEnabled('tabTransitions');
     const paint = () => {
       $app.innerHTML = markup;
+      initEncisoAnimatedLogos($app);
       $app.classList.remove('is-leaving');
       if (!optimizedRoute) $app.classList.add('is-entering');
       if (typeof afterRender === 'function') afterRender();
@@ -1065,6 +1066,97 @@
       renderActivityDetail(activity, { noHistory: true });
     }
   }
+  function encisoAnimatedLogoHTML(variant = 'default') {
+    const safeVariant = String(variant || 'default').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'default';
+    return `
+      <div class="em-enciso-logo-scene em-enciso-logo-scene-${escapeAttr(safeVariant)}" data-em-animated-logo aria-label="Logo animado de EncisoMaths">
+        <div class="em-enciso-logo-hex-cluster" aria-hidden="true">
+          <span class="em-enciso-logo-hex is-red"></span>
+          <span class="em-enciso-logo-hex is-blue"></span>
+          <span class="em-enciso-logo-hex is-green"></span>
+          <span class="em-enciso-logo-hex is-yellow"></span>
+        </div>
+        <div class="em-enciso-logo-brand">
+          <div class="em-enciso-logo-brand-name">EncisoMaths</div>
+          <div class="em-enciso-logo-tagline">Matematicas para dummies</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initEncisoAnimatedLogos(root = document) {
+    root.querySelectorAll?.('[data-em-animated-logo]:not([data-em-logo-ready])').forEach((logoScene) => {
+      logoScene.dataset.emLogoReady = 'true';
+      const hexagons = [...logoScene.querySelectorAll('.em-enciso-logo-hex')];
+      const brandName = logoScene.querySelector('.em-enciso-logo-brand-name');
+      if (hexagons.length !== 4 || !brandName) return;
+
+      const slots = [
+        { left: 'var(--em-logo-dx)', top: '0px' },
+        { left: '0px', top: 'var(--em-logo-dy)' },
+        { left: 'var(--em-logo-dx)', top: 'var(--em-logo-stack)' },
+        { left: '0px', top: 'calc(var(--em-logo-dy) + var(--em-logo-stack))' }
+      ];
+      const currentSlots = [0, 1, 2, 3];
+      const timers = [];
+
+      const setHexToSlot = (hexagon, slotIndex) => {
+        hexagon.style.setProperty('--em-logo-left', slots[slotIndex].left);
+        hexagon.style.setProperty('--em-logo-top', slots[slotIndex].top);
+      };
+      const positionAll = () => hexagons.forEach((hexagon, index) => setHexToSlot(hexagon, currentSlots[index]));
+      const isDetached = () => !logoScene.isConnected;
+      const pickTwoDifferentHexagons = () => {
+        const first = Math.floor(Math.random() * hexagons.length);
+        let second = first;
+        while (second === first) second = Math.floor(Math.random() * hexagons.length);
+        return [first, second];
+      };
+      const swapOnlyTwoHexagons = () => {
+        if (isDetached()) return;
+        const [first, second] = pickTwoDifferentHexagons();
+        [currentSlots[first], currentSlots[second]] = [currentSlots[second], currentSlots[first]];
+        setHexToSlot(hexagons[first], currentSlots[first]);
+        setHexToSlot(hexagons[second], currentSlots[second]);
+        [first, second].forEach((index) => {
+          const hexagon = hexagons[index];
+          hexagon.classList.remove('is-swapping');
+          void hexagon.offsetWidth;
+          hexagon.classList.add('is-swapping');
+        });
+      };
+      const playJellyFromE = () => {
+        if (isDetached()) return;
+        brandName.classList.remove('is-jelly');
+        void brandName.offsetWidth;
+        brandName.classList.add('is-jelly');
+      };
+      const addGuardedInterval = (callback, delay) => {
+        const timer = window.setInterval(() => {
+          if (isDetached()) {
+            window.clearInterval(timer);
+            return;
+          }
+          callback();
+        }, delay);
+        timers.push(timer);
+      };
+
+      brandName.addEventListener('animationend', () => brandName.classList.remove('is-jelly'));
+      hexagons.forEach((hexagon) => hexagon.addEventListener('animationend', () => hexagon.classList.remove('is-swapping')));
+      logoScene.addEventListener('click', () => {
+        swapOnlyTwoHexagons();
+        playJellyFromE();
+      });
+
+      positionAll();
+      timers.push(window.setTimeout(() => { if (!isDetached()) swapOnlyTwoHexagons(); }, 900));
+      timers.push(window.setTimeout(() => { if (!isDetached()) playJellyFromE(); }, 550));
+      addGuardedInterval(swapOnlyTwoHexagons, 2800);
+      addGuardedInterval(playJellyFromE, 5000);
+    });
+  }
+
   function renderLogin(options = {}) {
     commitAppRoute({ screen: 'login' }, options);
     const last = readJSON('encisomath:lastUser');
@@ -1072,12 +1164,8 @@
       <main class="login-screen">
         ${animatedShapes('login')}
         <section class="login-card">
-          <div class="logo-wrap" aria-label="EncisoMath">
-            <div class="logo-mark">
-              <div class="logo-top">Enciso</div>
-              <div class="logo-math"><span class="x">√</span>Math<span class="plus">+</span></div>
-            </div>
-            <div class="logo-sub">AVA MATEMÁTICO</div>
+          <div class="logo-wrap em-login-logo-wrap" aria-label="EncisoMaths">
+            ${encisoAnimatedLogoHTML('login')}
           </div>
 
           <form id="loginForm" class="login-form">
@@ -1133,10 +1221,12 @@
   }
   function renderLoadingHTML(text = randomPhrase()) {
     return `
-      <main class="loading-screen">
-        ${animatedShapes('loading')}
-        <section class="loader-card">
-          <div class="loader-orbit"><span>π</span><span>Σ</span><span>√</span></div>
+      <main class="loading-screen em-brand-loading-screen">
+        <section class="loader-card em-brand-loading-card">
+          ${encisoAnimatedLogoHTML('loading')}
+          <div class="em-app-loader-progress em-pdf-loader-track" aria-hidden="true">
+            <span class="em-pdf-loader-bar"></span>
+          </div>
           <div class="loading-phrase">${escapeHTML(text)}</div>
           <div class="loading-small">Versión ${APP_VERSION}</div>
         </section>
@@ -3174,7 +3264,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.24.348', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.24.349', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -13361,37 +13451,29 @@
   };
 
   function animatedShapes(mode = 'loading') {
-    const loginShapes = [
-      ['circle', '--w:52px;--h:52px;left:6%;top:9%;--c:#1976D2;--o:.92;--dx:34px;--dy:42px;--r1:120deg;--dur:7.6s;--delay:-1.2s'],
-      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.90;--dx:-28px;--dy:54px;--r1:-150deg;--dur:8.1s;--delay:-2.1s'],
-      ['square outline', '--w:40px;--h:40px;left:87%;top:17%;--c:#C2185B;--o:.86;--dx:-36px;--dy:28px;--r1:210deg;--dur:8.4s;--delay:-3.3s'],
-      ['circle', '--w:28px;--h:28px;left:77%;top:21%;--c:#689F38;--o:.82;--dx:22px;--dy:-38px;--r1:-70deg;--dur:7.2s;--delay:-5.7s'],
-      ['rect', '--w:74px;--h:22px;left:14%;top:19%;--c:#512DA8;--o:.84;--dx:-48px;--dy:-38px;--r1:38deg;--dur:9.6s;--delay:-6.2s'],
-      ['circle outline', '--w:30px;--h:30px;left:7%;top:79%;--c:#0288D1;--o:.86;--dx:50px;--dy:-46px;--r1:120deg;--dur:8.7s;--delay:-4.4s'],
-      ['triangle', '--w:42px;--h:40px;left:20%;top:90%;--c:#E64A19;--o:.90;--dx:42px;--dy:-56px;--r1:240deg;--dur:8.8s;--delay:-6s'],
-      ['square', '--w:28px;--h:28px;left:83%;top:88%;--c:#D32F2F;--o:.90;--dx:-58px;--dy:-54px;--r1:190deg;--dur:7.3s;--delay:-2.8s'],
-      ['rect outline', '--w:78px;--h:26px;left:64%;top:78%;--c:#0288D1;--o:.82;--dx:-38px;--dy:60px;--r1:-130deg;--dur:10.2s;--delay:-6.8s'],
-      ['circle', '--w:20px;--h:20px;left:14%;top:70%;--c:#FFA000;--o:.88;--dx:30px;--dy:52px;--r1:90deg;--dur:6.4s;--delay:-1.8s'],
-      ['square', '--w:24px;--h:24px;left:88%;top:72%;--c:#F57C00;--o:.86;--dx:-46px;--dy:62px;--r1:190deg;--dur:7.6s;--delay:-3.7s'],
-      ['triangle outline', '--w:46px;--h:46px;left:72%;top:95%;--c:#7B1FA2;--o:.82;--dx:-72px;--dy:-68px;--r1:-210deg;--dur:10.8s;--delay:-5.1s']
+    const palette = ['#e21b3c', '#1368ce', '#54c600', '#EBB513', '#ff7a00', '#24b49a'];
+    const colorFor = (index) => palette[(index + Math.floor(Math.random() * palette.length)) % palette.length];
+    const loginShapeBlueprints = [
+      ['circle', '--w:52px;--h:52px;left:6%;top:9%;--o:.92;--dx:34px;--dy:42px;--r1:120deg;--dur:7.6s;--delay:-1.2s'],
+      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--o:.90;--dx:-28px;--dy:54px;--r1:-150deg;--dur:8.1s;--delay:-2.1s'],
+      ['square', '--w:40px;--h:40px;left:87%;top:17%;--o:.86;--dx:-36px;--dy:28px;--r1:210deg;--dur:8.4s;--delay:-3.3s'],
+      ['x', '--w:34px;--h:34px;left:77%;top:24%;--o:.84;--dx:22px;--dy:-38px;--r1:-70deg;--dur:7.2s;--delay:-5.7s'],
+      ['square', '--w:56px;--h:56px;left:11%;top:23%;--o:.82;--dx:-42px;--dy:-36px;--r1:38deg;--dur:9.6s;--delay:-6.2s'],
+      ['circle', '--w:30px;--h:30px;left:7%;top:79%;--o:.86;--dx:50px;--dy:-46px;--r1:120deg;--dur:8.7s;--delay:-4.4s'],
+      ['triangle', '--w:42px;--h:40px;left:20%;top:90%;--o:.90;--dx:42px;--dy:-56px;--r1:240deg;--dur:8.8s;--delay:-6s'],
+      ['square', '--w:28px;--h:28px;left:83%;top:88%;--o:.90;--dx:-58px;--dy:-54px;--r1:190deg;--dur:7.3s;--delay:-2.8s'],
+      ['x', '--w:46px;--h:46px;left:66%;top:80%;--o:.82;--dx:-38px;--dy:60px;--r1:-130deg;--dur:10.2s;--delay:-6.8s'],
+      ['circle', '--w:20px;--h:20px;left:14%;top:70%;--o:.88;--dx:30px;--dy:52px;--r1:90deg;--dur:6.4s;--delay:-1.8s'],
+      ['triangle', '--w:34px;--h:32px;left:88%;top:70%;--o:.86;--dx:-46px;--dy:62px;--r1:190deg;--dur:7.6s;--delay:-3.7s'],
+      ['x', '--w:40px;--h:40px;left:72%;top:94%;--o:.82;--dx:-72px;--dy:-68px;--r1:-210deg;--dur:10.8s;--delay:-5.1s']
     ];
     const loadingShapes = [
       ['circle', '--w:54px;--h:54px;left:5%;top:7%;--c:#1976D2;--o:.78;--dx:42px;--dy:98px;--r1:120deg;--dur:7.4s;--delay:-1.2s'],
-      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.82;--dx:-34px;--dy:110px;--r1:-150deg;--dur:8.2s;--delay:-2.2s'],
-      ['square outline', '--w:42px;--h:42px;left:88%;top:24%;--c:#C2185B;--o:.76;--dx:-42px;--dy:80px;--r1:210deg;--dur:8s;--delay:-3.1s'],
-      ['rect', '--w:34px;--h:86px;left:4%;top:56%;--c:#388E3C;--o:.72;--dx:44px;--dy:-110px;--r1:80deg;--dur:9.2s;--delay:-4.3s'],
-      ['circle outline', '--w:34px;--h:34px;left:86%;top:62%;--c:#0097A7;--o:.78;--dx:-48px;--dy:-90px;--r1:170deg;--dur:7.6s;--delay:-5.3s'],
-      ['triangle', '--w:42px;--h:40px;left:7%;top:82%;--c:#E64A19;--o:.80;--dx:52px;--dy:-84px;--r1:240deg;--dur:8.8s;--delay:-6s'],
-      ['square', '--w:24px;--h:24px;left:91%;top:82%;--c:#D32F2F;--o:.80;--dx:-72px;--dy:-88px;--r1:190deg;--dur:7.2s;--delay:-2.8s'],
-      ['rect outline', '--w:82px;--h:28px;left:74%;top:76%;--c:#0288D1;--o:.70;--dx:-58px;--dy:-92px;--r1:-130deg;--dur:10.2s;--delay:-6.8s'],
-      ['circle', '--w:18px;--h:18px;left:12%;top:30%;--c:#FFA000;--o:.88;--dx:34px;--dy:56px;--r1:90deg;--dur:6.4s;--delay:-1.8s'],
-      ['square', '--w:22px;--h:22px;left:92%;top:43%;--c:#F57C00;--o:.82;--dx:-48px;--dy:72px;--r1:190deg;--dur:7.6s;--delay:-3.7s'],
-      ['circle outline', '--w:28px;--h:28px;left:3%;top:42%;--c:#0288D1;--o:.76;--dx:42px;--dy:62px;--r1:120deg;--dur:8.7s;--delay:-4.4s'],
-      ['triangle outline', '--w:46px;--h:46px;left:82%;top:88%;--c:#7B1FA2;--o:.74;--dx:-74px;--dy:-108px;--r1:-210deg;--dur:10.8s;--delay:-5.1s'],
-      ['rect', '--w:92px;--h:26px;left:2%;top:18%;--c:#512DA8;--o:.68;--dx:48px;--dy:96px;--r1:38deg;--dur:9.6s;--delay:-7.2s'],
-      ['circle', '--w:40px;--h:40px;left:89%;top:8%;--c:#689F38;--o:.70;--dx:-62px;--dy:112px;--r1:-70deg;--dur:8.9s;--delay:-6.1s']
+      ['triangle', '--w:58px;--h:54px;left:78%;top:5%;--c:#FBC02D;--o:.82;--dx:-34px;--dy:110px;--r1:-150deg;--dur:8.2s;--delay:-2.2s']
     ];
-    const shapes = mode === 'login' ? loginShapes : loadingShapes;
+    const shapes = mode === 'login'
+      ? loginShapeBlueprints.map(([className, style], index) => [className, `${style};--c:${colorFor(index)}`])
+      : loadingShapes;
     return `
       <div class="math-bg math-bg-${escapeAttr(mode)}" aria-hidden="true">
         ${shapes.map(([className, style]) => `<span class="shape ${className}" style="${style}"></span>`).join('')}
@@ -14006,7 +14088,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.348', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.24.349', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

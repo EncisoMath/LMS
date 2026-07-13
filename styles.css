@@ -31335,3 +31335,261 @@ html body #app .em-pdf-loading {
     font-weight: 540;
   }
 }
+
+/* v0.24.349 - Logo EncisoMaths animado en carga/login y geometría sólida en login */
+.em-enciso-logo-scene {
+  position: relative;
+  width: min(96vw, 1200px);
+  aspect-ratio: 1200 / 500;
+  margin-inline: auto;
+  user-select: none;
+  cursor: pointer;
+  font-family: "Montserrat", Arial, Helvetica, sans-serif;
+  --em-logo-red: #e21b3c;
+  --em-logo-blue: #1368ce;
+  --em-logo-green: #54c600;
+  --em-logo-yellow: #ebb513;
+  --em-logo-hex-w: clamp(68px, 9.2vw, 116px);
+  --em-logo-hex-h: calc(var(--em-logo-hex-w) * .8660254);
+  --em-logo-gap: 9px;
+  --em-logo-dx: calc(var(--em-logo-hex-w) * .75 + var(--em-logo-gap));
+  --em-logo-dy: calc(var(--em-logo-hex-h) * .5 + (var(--em-logo-gap) * .5));
+  --em-logo-stack: calc(var(--em-logo-hex-h) + var(--em-logo-gap));
+  --em-logo-cluster-w: calc(var(--em-logo-hex-w) + var(--em-logo-dx));
+  --em-logo-cluster-h: calc(var(--em-logo-hex-h) + var(--em-logo-dy) + var(--em-logo-stack));
+}
+.em-enciso-logo-hex-cluster {
+  position: absolute;
+  left: 5.5%;
+  top: 50%;
+  width: var(--em-logo-cluster-w);
+  height: var(--em-logo-cluster-h);
+  transform: translateY(-50%);
+}
+.em-enciso-logo-hex {
+  position: absolute;
+  width: var(--em-logo-hex-w);
+  height: var(--em-logo-hex-h);
+  left: var(--em-logo-left);
+  top: var(--em-logo-top);
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  transition:
+    left 1.05s cubic-bezier(.20, .88, .24, 1.12),
+    top 1.05s cubic-bezier(.20, .88, .24, 1.12);
+  will-change: left, top, transform;
+}
+.em-enciso-logo-hex::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 54% 42%, rgba(255,255,255,.14), transparent 58%),
+    linear-gradient(150deg, rgba(255,255,255,.08), transparent 45%, rgba(0,0,0,.10));
+  pointer-events: none;
+}
+.em-enciso-logo-hex.is-red { background: var(--em-logo-red); }
+.em-enciso-logo-hex.is-blue { background: var(--em-logo-blue); }
+.em-enciso-logo-hex.is-green { background: var(--em-logo-green); }
+.em-enciso-logo-hex.is-yellow { background: var(--em-logo-yellow); }
+.em-enciso-logo-hex.is-swapping {
+  animation: emEncisoLogoHexSwap 1.05s cubic-bezier(.20, .88, .24, 1.12);
+}
+@keyframes emEncisoLogoHexSwap {
+  0% { transform: scale(1) rotate(0deg); }
+  32% { transform: scale(.88, 1.10) rotate(-3deg); }
+  66% { transform: scale(1.06, .94) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.em-enciso-logo-brand {
+  position: absolute;
+  left: calc(5.5% + var(--em-logo-cluster-w) + 28px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  line-height: 1;
+  z-index: 10;
+  text-align: left;
+}
+.em-enciso-logo-brand-name {
+  display: inline-block;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(38px, 7.1vw, 96px);
+  font-weight: 900;
+  letter-spacing: -.065em;
+  white-space: nowrap;
+  transform-origin: 0% 55%;
+  will-change: transform;
+}
+.em-enciso-logo-brand-name.is-jelly {
+  animation: emEncisoLogoJellyFromE .95s both;
+}
+@keyframes emEncisoLogoJellyFromE {
+  0% { transform: scale3d(1, 1, 1) skewX(0deg); }
+  16% { transform: scale3d(1.14, .84, 1) skewX(-2deg); }
+  32% { transform: scale3d(.91, 1.12, 1) skewX(2deg); }
+  48% { transform: scale3d(1.08, .93, 1) skewX(-1.5deg); }
+  64% { transform: scale3d(.97, 1.04, 1) skewX(1deg); }
+  80% { transform: scale3d(1.025, .98, 1) skewX(-.5deg); }
+  100% { transform: scale3d(1, 1, 1) skewX(0deg); }
+}
+.em-enciso-logo-tagline {
+  margin-top: clamp(8px, 1.1vw, 16px);
+  color: #fff;
+  font-size: clamp(15px, 2.8vw, 39px);
+  font-weight: 500;
+  letter-spacing: -.035em;
+  white-space: nowrap;
+}
+
+/* La carga queda únicamente con el nuevo logo y la misma barra multicolor del visor PDF. */
+.loading-screen.em-brand-loading-screen,
+html[data-bg-mode="black"] .loading-screen.em-brand-loading-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: #000 !important;
+  color: #fff;
+}
+.em-brand-loading-card {
+  width: min(94vw, 900px) !important;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+.em-enciso-logo-scene-loading {
+  width: min(94vw, 900px);
+}
+.em-app-loader-progress.em-pdf-loader-track {
+  width: min(72vw, 330px);
+  height: 7px;
+  margin-top: clamp(4px, 1.6vh, 14px);
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+}
+.em-app-loader-progress .em-pdf-loader-bar {
+  --em-pdf-load-progress: 18%;
+  animation: emAppLoadingBarProgress 2.65s cubic-bezier(.45,0,.25,1) infinite;
+}
+.em-app-loader-progress .em-pdf-loader-bar::after {
+  animation: emPdfLoaderShimmer 1.1s linear infinite;
+}
+@keyframes emAppLoadingBarProgress {
+  0% { width: 12%; }
+  48% { width: 72%; }
+  78% { width: 94%; }
+  100% { width: 100%; }
+}
+.em-brand-loading-card .loading-phrase {
+  margin-top: 8px;
+  color: rgba(255,255,255,.94);
+  font-size: clamp(.82rem, 3.2vw, 1rem);
+  font-weight: 560;
+  line-height: 1.35;
+}
+.em-brand-loading-card .loading-small {
+  margin-top: 0;
+  color: rgba(255,255,255,.62);
+  font-size: .76rem;
+}
+
+/* El logo del acceso reutiliza la misma estructura y animación, ajustada al ancho del card. */
+.logo-wrap.em-login-logo-wrap {
+  width: 100%;
+  margin: 0 auto 24px;
+  text-align: initial;
+}
+.em-enciso-logo-scene-login {
+  width: 100%;
+  --em-logo-hex-w: clamp(42px, 12vw, 62px);
+}
+.em-enciso-logo-scene-login .em-enciso-logo-brand {
+  left: calc(5.5% + var(--em-logo-cluster-w) + 12px);
+}
+.em-enciso-logo-scene-login .em-enciso-logo-brand-name {
+  font-size: clamp(26px, 7vw, 42px);
+}
+.em-enciso-logo-scene-login .em-enciso-logo-tagline {
+  margin-top: clamp(6px, 1vw, 10px);
+  font-size: clamp(10px, 2.7vw, 16px);
+}
+
+/* Login: solo círculo, cuadrado, X y triángulo; todos sólidos y sin resplandor. */
+.login-screen .math-bg-login .shape,
+html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
+  filter: none !important;
+  box-shadow: none !important;
+  background: var(--c, var(--maincolor)) !important;
+  border: 0 !important;
+  animation:
+    shapeTravel var(--dur, 7s) cubic-bezier(.2, .72, .2, 1) infinite,
+    shapePulse calc(var(--dur, 7s) * .54) ease-in-out infinite !important;
+  animation-delay: var(--delay, 0s) !important;
+}
+.login-screen .math-bg-login .shape.circle { border-radius: 50% !important; }
+.login-screen .math-bg-login .shape.square { border-radius: 4px !important; }
+.login-screen .math-bg-login .shape.triangle {
+  border-radius: 0 !important;
+  clip-path: polygon(50% 0%, 0 100%, 100% 100%) !important;
+}
+.login-screen .math-bg-login .shape.x {
+  background: transparent !important;
+  clip-path: none !important;
+}
+.login-screen .math-bg-login .shape.x::before,
+.login-screen .math-bg-login .shape.x::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(50% - 4px);
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--c, var(--maincolor));
+  box-shadow: none;
+}
+.login-screen .math-bg-login .shape.x::before { transform: rotate(45deg); }
+.login-screen .math-bg-login .shape.x::after { transform: rotate(-45deg); }
+
+@media (max-width: 780px) {
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) {
+    --em-logo-hex-w: clamp(60px, 14vw, 92px);
+  }
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) .em-enciso-logo-brand {
+    left: calc(5.5% + var(--em-logo-cluster-w) + 18px);
+  }
+}
+@media (max-width: 560px) {
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) {
+    width: 98vw;
+    --em-logo-hex-w: clamp(54px, 15vw, 76px);
+  }
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) .em-enciso-logo-brand {
+    left: calc(5.5% + var(--em-logo-cluster-w) + 12px);
+  }
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) .em-enciso-logo-brand-name {
+    font-size: clamp(26px, 7vw, 42px);
+  }
+  .em-enciso-logo-scene:not(.em-enciso-logo-scene-login) .em-enciso-logo-tagline {
+    font-size: clamp(11px, 2.75vw, 18px);
+  }
+  .em-brand-loading-card {
+    gap: 8px;
+  }
+}
+@media (max-width: 360px) {
+  .em-enciso-logo-scene-login {
+    --em-logo-hex-w: 40px;
+  }
+  .em-enciso-logo-scene-login .em-enciso-logo-brand-name {
+    font-size: 24px;
+  }
+  .em-enciso-logo-scene-login .em-enciso-logo-tagline {
+    font-size: 9px;
+  }
+}

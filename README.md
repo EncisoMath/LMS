@@ -1,4 +1,14 @@
-# EncisoMath LMS v0.24.348
+# EncisoMath LMS v0.24.349
+
+
+## v0.24.349 — logo animado y nueva carga
+
+- La pantalla de sincronización usa el logo animado EncisoMaths suministrado por el usuario.
+- Se eliminó el antiguo orbitador de símbolos y se incorporó la barra multicolor con destello blanco del visor PDF.
+- El bloque `logo-wrap` del login reutiliza el mismo logo animado.
+- El fondo del login conserva sus movimientos, pero solo usa círculo, cuadrado, X y triángulo sólidos, sin resplandor exterior.
+- No requiere SQL ni cambios de esquema en Supabase.
+
 
 Aplicación PWA educativa desplegada en GitHub Pages y conectada a Supabase para autenticación, datos académicos, clases PDF, actividades, asistencia, Rockstars y quizzes.
 
@@ -127,7 +137,7 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - Se amplió ligeramente la columna DESEMPEÑO para mantener la etiqueta completa sin afectar la tabla.
 
 
-## Cambios v0.24.348
+## Cambios v0.24.349
 - Se añadió en `em-notes-toolbar` el botón **Descargar Excel listo para EducaCity**.
 - La exportación usa como plantilla base la estructura exacta del archivo EducaCity analizado, con la hoja `Calificaciones`.
 - La fila 1 contiene `Grado - Grupo`, `Apellidos`, `Nombres`, `Matrícula Id` y el nombre de cada componente de NOTAS.
@@ -140,7 +150,7 @@ La seguridad de acceso depende de Supabase Auth y de las políticas RLS configur
 - ExcelJS se carga únicamente al solicitar la exportación, con respaldo entre jsDelivr y UNPKG.
 - No requiere cambios de esquema ni SQL en Supabase.
 
-## Corrección v0.24.348
+## Corrección v0.24.349
 
 - Se incluyó realmente `assets/templates/educacity-planilla-base.xlsx` dentro del paquete de archivos modificados. En v0.24.347 el código intentaba abrirla, pero el archivo no fue empaquetado y por eso aparecía “No se pudo abrir la plantilla de EducaCity”.
 - La plantilla incluida está sanitizada: mantiene estructura, formatos y estilos, pero no contiene nombres, códigos ni calificaciones reales.
