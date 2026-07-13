@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.001';
+  const OFFLINE_VERSION = '0.25.002';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -140,6 +140,204 @@
       || message.includes('offline')
       || message.includes('timeout')
       || message.includes('connection');
+  }
+
+
+  function escapeMarkup(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function offlineData() {
+    return activeSnapshot?.data || {};
+  }
+
+  function offlineStudentByCode(code) {
+    const safeCode = String(code || '');
+    return (offlineData().students || []).find((student) => String(student.id || student.studentCode || student.code || '') === safeCode) || null;
+  }
+
+  function offlineStudentName(code) {
+    const student = offlineStudentByCode(code);
+    if (!student) return safeMutationText(code, 'Estudiante');
+    const firstName = String(student.firstName || student.name || '').trim();
+    const lastName = String(student.lastName || student.surname || '').trim();
+    return [lastName, firstName].filter(Boolean).join(', ') || safeMutationText(code, 'Estudiante');
+  }
+
+  function safeMutationText(value, fallback = '') {
+    const text = String(value || '').trim();
+    return text && !text.startsWith('offline-') ? text : fallback;
+  }
+
+  function offlineActivityTitle(activityId, payload = {}) {
+    const id = String(activityId || payload.activityId || payload.requestedActivityId || '');
+    const activity = (offlineData().activities || []).find((item) => String(item.id || '') === id);
+    return safeMutationText(payload.title || activity?.title, 'Actividad');
+  }
+
+  function offlineLessonTitle(lessonId, payload = {}) {
+    const id = String(lessonId || payload.lessonId || payload.requestedLessonId || '');
+    const lesson = (offlineData().classes || []).find((item) => String(item.id || '') === id);
+    return safeMutationText(payload.title || lesson?.title, 'Clase');
+  }
+
+  function offlineQuizTitle(payload = {}) {
+    const quiz = payload.quiz || (payload.quizzes || [])[0] || {};
+    const id = String(quiz.id || payload.quizId || '');
+    const stored = (offlineData().quizzes || []).find((item) => String(item.id || '') === id);
+    return safeMutationText(quiz.title || stored?.title, 'Quiz');
+  }
+
+  function attendanceStatusLabel(status) {
+    return ({ present: 'Asistió', absent: 'No asistió', excused: 'Excusa', excuse: 'Excusa', late: 'Llegó tarde', '': 'Sin estado' })[String(status || '')] || String(status || 'Sin estado');
+  }
+
+  function formatPendingTime(value) {
+    const date = new Date(value || '');
+    if (Number.isNaN(date.getTime())) return 'Hora no disponible';
+    return date.toLocaleString('es-CO', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+
+  function mutationStatusLabel(status) {
+    return ({ pending: 'Pendiente', retry: 'Reintento pendiente', syncing: 'Sincronizando', conflict: 'Descartado' })[String(status || '')] || 'Pendiente';
+  }
+
+  function mutationPresentation(mutation) {
+    const payload = mutation?.payload || {};
+    const event = payload.event || {};
+    let title = 'Cambio pendiente';
+    let detail = 'Esperando sincronización con Supabase.';
+    let icon = '↻';
+
+    switch (mutation?.type) {
+      case 'saveAttendanceStatus':
+        title = 'Asistencia';
+        detail = `${offlineStudentName(payload.studentCode)} · ${attendanceStatusLabel(payload.status)} · ${safeMutationText(payload.attendanceDate, 'Fecha pendiente')}`;
+        icon = '✓';
+        break;
+      case 'addRockstarEvent': {
+        const delta = Number(event.delta ?? payload.delta ?? 0);
+        title = 'Puntos Rockstar';
+        detail = `${offlineStudentName(event.studentId || payload.studentId)} · ${delta >= 0 ? '+' : ''}${delta} punto${Math.abs(delta) === 1 ? '' : 's'}`;
+        icon = '★';
+        break;
+      }
+      case 'createStudentAndEnroll':
+        title = 'Nuevo estudiante';
+        detail = `${[payload.lastName, payload.firstName].filter(Boolean).join(', ') || 'Estudiante'} · Código ${safeMutationText(payload.studentCode, 'sin código')}`;
+        icon = '+';
+        break;
+      case 'withdrawStudent':
+        title = 'Retiro de estudiante';
+        detail = `${offlineStudentName(payload.studentCode)} · Código ${safeMutationText(payload.studentCode, 'sin código')}`;
+        icon = '−';
+        break;
+      case 'saveQuizzes':
+        title = 'Quizzes';
+        detail = `${(payload.quizzes || []).length || 1} quiz${(payload.quizzes || []).length === 1 ? '' : 'zes'} por guardar`;
+        icon = '?';
+        break;
+      case 'savePreferences':
+        title = 'Configuración de la app';
+        detail = 'Preferencias, periodos o configuración de NOTAS.';
+        icon = '⚙';
+        break;
+      case 'uploadAssignmentImage':
+        title = 'Imagen de asignatura';
+        detail = `Archivo pendiente para ${safeMutationText(payload.type, 'la asignatura')}.`;
+        icon = '▧';
+        break;
+      case 'resetAssignmentImage':
+        title = 'Restablecer imagen';
+        detail = 'Cambio de imagen de asignatura pendiente.';
+        icon = '↺';
+        break;
+      case 'createPdfLesson':
+        title = 'Nueva clase';
+        detail = offlineLessonTitle(payload.lessonId, payload);
+        icon = '▤';
+        break;
+      case 'deletePdfLesson':
+        title = 'Eliminar clase';
+        detail = offlineLessonTitle(payload.lessonId, payload);
+        icon = '×';
+        break;
+      case 'createActivity':
+        title = 'Nueva actividad';
+        detail = offlineActivityTitle(payload.activityId, payload);
+        icon = '＋';
+        break;
+      case 'updateActivity':
+        title = 'Editar actividad';
+        detail = offlineActivityTitle(payload.activityId, payload);
+        icon = '✎';
+        break;
+      case 'deleteActivity':
+        title = 'Eliminar actividad';
+        detail = offlineActivityTitle(payload.activityId, payload);
+        icon = '×';
+        break;
+      case 'saveActivityGrades': {
+        const codes = [...new Set([payload.primaryStudentCode, ...(payload.selectedStudentCodes || [])].filter(Boolean))];
+        const names = codes.slice(0, 3).map(offlineStudentName).join(' · ');
+        title = 'Calificación de actividad';
+        detail = `${offlineActivityTitle(payload.activityId, payload)} · ${names || `${codes.length || 1} estudiante(s)`}${codes.length > 3 ? ` · +${codes.length - 3} más` : ''}`;
+        icon = '#';
+        break;
+      }
+      case 'recordLessonView':
+        title = 'Visualización de clase';
+        detail = offlineLessonTitle(payload.lessonId, payload);
+        icon = '◉';
+        break;
+      case 'submitQuizAttemptBundle':
+        title = 'Intento de quiz';
+        detail = offlineQuizTitle(payload);
+        icon = '?';
+        break;
+      default:
+        title = String(mutation?.type || 'Cambio pendiente');
+        detail = 'Operación local todavía no enviada a Supabase.';
+    }
+
+    return {
+      title,
+      detail,
+      icon,
+      time: formatPendingTime(mutation?.createdAt),
+      status: mutationStatusLabel(mutation?.status),
+      statusClass: `is-${String(mutation?.status || 'pending').replace(/[^a-z0-9_-]/gi, '')}`,
+      attempts: Number(mutation?.attempts || 0),
+      error: String(mutation?.lastError || '').trim(),
+      technicalType: String(mutation?.type || '')
+    };
+  }
+
+  function pendingMutationListHTML(rows = []) {
+    if (!rows.length) return '<p class="em-sync-empty">No hay cambios pendientes.</p>';
+    return rows.map((mutation) => {
+      const item = mutationPresentation(mutation);
+      return `
+        <article class="em-sync-pending-item ${escapeMarkup(item.statusClass)}">
+          <span class="em-sync-pending-icon" aria-hidden="true">${escapeMarkup(item.icon)}</span>
+          <div class="em-sync-pending-copy">
+            <div class="em-sync-pending-title"><strong>${escapeMarkup(item.title)}</strong><span>${escapeMarkup(item.status)}</span></div>
+            <p>${escapeMarkup(item.detail)}</p>
+            <small>${escapeMarkup(item.time)}${item.attempts ? ` · ${item.attempts} intento${item.attempts === 1 ? '' : 's'}` : ''}</small>
+            ${item.error ? `<em>${escapeMarkup(item.error)}</em>` : ''}
+            <code>${escapeMarkup(item.technicalType)}</code>
+          </div>
+        </article>
+      `;
+    }).join('');
   }
 
   function hashString(input) {
@@ -521,15 +719,24 @@
     const chip = ensureStatusChip();
     if (!chip) return;
     const mutations = await allMutations().catch(() => []);
-    const pending = mutations.filter((item) => ['pending', 'retry', 'syncing'].includes(item.status)).length;
+    const pendingRows = mutations.filter((item) => ['pending', 'retry', 'syncing'].includes(item.status));
+    const pending = pendingRows.length;
     const conflicts = mutations.filter((item) => item.status === 'conflict').length;
     const offline = !isOnline();
+    const firstPending = pendingRows[0] ? mutationPresentation(pendingRows[0]) : null;
     chip.classList.toggle('is-offline', offline);
     chip.classList.toggle('has-pending', pending > 0);
     chip.classList.toggle('has-conflict', conflicts > 0);
     chip.dataset.pending = String(pending);
-    chip.innerHTML = `<span class="em-offline-dot" aria-hidden="true"></span><strong>${offline ? 'Sin conexión' : (syncPromise ? 'Sincronizando' : 'En línea')}</strong>${pending ? `<small>${pending} pendiente${pending === 1 ? '' : 's'}</small>` : '<small>Todo guardado</small>'}`;
-    chip.title = conflicts ? `${conflicts} cambio(s) no aplicado(s) porque Supabase tenía una versión más reciente.` : 'Estado de sincronización de EncisoMath';
+    const pendingLabel = pending
+      ? `${pending} pendiente${pending === 1 ? '' : 's'}${firstPending ? ` · ${firstPending.title}` : ''}`
+      : 'Todo guardado';
+    chip.innerHTML = `<span class="em-offline-dot" aria-hidden="true"></span><strong>${offline ? 'Sin conexión' : (syncPromise ? 'Sincronizando' : 'En línea')}</strong><small>${escapeMarkup(pendingLabel)}</small>`;
+    const titleParts = [];
+    if (firstPending) titleParts.push(`${firstPending.title}: ${firstPending.detail}`);
+    if (conflicts) titleParts.push(`${conflicts} cambio(s) no aplicado(s) porque Supabase tenía una versión más reciente.`);
+    titleParts.push('Toca para ver el centro de sincronización.');
+    chip.title = titleParts.join(' ');
   }
 
   function ensureStatusChip() {
@@ -563,12 +770,19 @@
           <article><small>Conflictos</small><strong>${conflicts.length}</strong></article>
         </div>
         <p class="em-sync-last">Última sincronización: ${meta.serverSyncedAt ? new Date(meta.serverSyncedAt).toLocaleString('es-CO') : 'todavía no registrada'}.</p>
+        <section class="em-sync-pending-section" aria-labelledby="emSyncPendingTitle">
+          <div class="em-sync-section-head">
+            <div><small>COLA LOCAL</small><h3 id="emSyncPendingTitle">Qué falta por sincronizar</h3></div>
+            <span>${pending.length}</span>
+          </div>
+          <div class="em-sync-pending-list">${pendingMutationListHTML(pending)}</div>
+        </section>
         <div class="em-sync-progress" id="emSyncProgress" hidden><i></i><span>Sincronizando…</span></div>
         <div class="em-sync-actions">
           <button type="button" id="emPrepareOffline">Descargar todo para trabajar offline</button>
           <button type="button" id="emSyncNow" ${isOnline() ? '' : 'disabled'}>Sincronizar ahora</button>
         </div>
-        ${conflicts.length ? `<details><summary>${conflicts.length} cambio(s) descartado(s)</summary><div class="em-sync-conflicts">${conflicts.slice(-20).map((item) => `<p><strong>${item.type}</strong><span>${item.lastError || 'Supabase tenía una versión más reciente.'}</span></p>`).join('')}</div></details>` : ''}
+        ${conflicts.length ? `<details><summary>${conflicts.length} cambio(s) descartado(s)</summary><div class="em-sync-conflicts">${conflicts.slice(-20).map((mutation) => { const item = mutationPresentation(mutation); return `<p><strong>${escapeMarkup(item.title)}</strong><span>${escapeMarkup(item.detail)}</span><span>${escapeMarkup(item.error || 'Supabase tenía una versión más reciente.')}</span></p>`; }).join('')}</div></details>` : ''}
       </section>
     `;
     const progressHandler = (event) => {
@@ -589,9 +803,14 @@
     overlay.querySelector('.em-sync-close')?.addEventListener('click', close);
     overlay.querySelector('#emSyncNow')?.addEventListener('click', async () => {
       const progress = overlay.querySelector('#emSyncProgress');
+      const label = progress?.querySelector('span');
       if (progress) progress.hidden = false;
+      if (label) label.textContent = 'Sincronizando cambios pendientes…';
       await syncNow({ manual: true }).catch(() => {});
+      const remaining = await pendingMutations().catch(() => []);
+      const discarded = (await allMutations().catch(() => [])).filter((item) => item.status === 'conflict');
       close();
+      if (remaining.length || discarded.length) window.setTimeout(openSyncCenter, 40);
     });
     overlay.querySelector('#emPrepareOffline')?.addEventListener('click', async () => {
       const progress = overlay.querySelector('#emSyncProgress');

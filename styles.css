@@ -31807,3 +31807,167 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   .em-sync-summary { grid-template-columns: 1fr 1fr 1fr; }
   .em-sync-actions { grid-template-columns: 1fr; }
 }
+
+/* v0.25.002 - detalle visible de cambios pendientes */
+.em-offline-status small {
+  min-width: 0;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-sync-pending-section {
+  margin: 14px 0;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 4px;
+  background: rgba(255,255,255,.025);
+  overflow: hidden;
+}
+.em-sync-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 10%, #050a12 90%);
+}
+.em-sync-section-head > div {
+  min-width: 0;
+}
+.em-sync-section-head small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--em-current-subject-color, #1368ce);
+  font-size: .55rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.em-sync-section-head h3 {
+  margin: 0;
+  color: #fff;
+  font-size: .84rem;
+  line-height: 1.2;
+}
+.em-sync-section-head > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--em-current-subject-color, #1368ce);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 900;
+}
+.em-sync-pending-list {
+  display: grid;
+}
+.em-sync-pending-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.065);
+  background: rgba(0,0,0,.12);
+}
+.em-sync-pending-item:nth-child(even) {
+  background: rgba(255,255,255,.018);
+}
+.em-sync-pending-item:last-child {
+  border-bottom: 0;
+}
+.em-sync-pending-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 58%, rgba(255,255,255,.12));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 18%, #07101d 82%);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 900;
+}
+.em-sync-pending-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.em-sync-pending-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.em-sync-pending-title strong {
+  min-width: 0;
+  color: #fff;
+  font-size: .72rem;
+  line-height: 1.25;
+}
+.em-sync-pending-title span {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  border: 1px solid rgba(235,181,19,.30);
+  border-radius: 4px;
+  background: rgba(235,181,19,.08);
+  color: #f6cf52;
+  font-size: .52rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.em-sync-pending-item.is-syncing .em-sync-pending-title span {
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, transparent);
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 12%, transparent);
+  color: #dbeafe;
+}
+.em-sync-pending-item.is-retry .em-sync-pending-title span {
+  border-color: rgba(255,122,0,.38);
+  background: rgba(255,122,0,.09);
+  color: #ffad61;
+}
+.em-sync-pending-copy p {
+  margin: 0;
+  color: #d7dfed;
+  font-size: .66rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.em-sync-pending-copy small {
+  color: #8f9db3;
+  font-size: .57rem;
+  line-height: 1.35;
+}
+.em-sync-pending-copy em {
+  display: block;
+  padding: 6px 7px;
+  border-left: 2px solid #ff7a00;
+  background: rgba(255,122,0,.06);
+  color: #ffc28a;
+  font-size: .58rem;
+  font-style: normal;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.em-sync-pending-copy code {
+  width: fit-content;
+  max-width: 100%;
+  color: #65738a;
+  font: 500 .5rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+.em-sync-empty {
+  margin: 0;
+  padding: 16px 12px;
+  color: #9eabc0;
+  font-size: .68rem;
+  text-align: center;
+}
+@media (max-width: 520px) {
+  .em-offline-status small { max-width: 145px; }
+  .em-sync-pending-title { align-items: flex-start; }
+  .em-sync-pending-title span { margin-top: -1px; }
+}

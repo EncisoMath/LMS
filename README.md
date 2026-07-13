@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.001 — Offline First
+# EncisoMath LMS v0.25.002 — Offline First
 
 Esta versión convierte EncisoMath en una PWA con lectura y escritura offline. El LMS trabaja sobre una copia local en IndexedDB y sincroniza con Supabase cuando vuelve la conexión.
 
@@ -6,7 +6,7 @@ Esta versión convierte EncisoMath en una PWA con lectura y escritura offline. E
 
 1. Ejecuta una sola vez en Supabase SQL Editor el archivo externo:
    `SUPABASE_MIGRATION_v0.25.000_OFFLINE_FIRST.sql`
-2. Después publica los archivos modificados de la v0.25.001. Esta versión reutiliza el motor offline y no requiere una migración SQL nueva.
+2. Después publica los archivos modificados de la v0.25.002. Esta versión reutiliza el motor offline y no requiere una migración SQL nueva.
 3. Abre la aplicación con internet e inicia sesión al menos una vez.
 4. Toca el indicador de conexión y usa **Descargar todo para trabajar offline**.
 5. Espera la confirmación de preparación antes de probar el modo avión.
@@ -98,7 +98,7 @@ El indicador flotante muestra:
 - `supabase-adapter.js`: operaciones idempotentes y rutas estables para reintentos.
 - `app.js`: integración de snapshots y actualización de la interfaz al sincronizar.
 - `styles.css`: indicador y Centro de sincronización.
-- `index.html`: carga del motor offline y versionado v0.25.001.
+- `index.html`: carga del motor offline y versionado v0.25.002.
 
 ## Validación requerida antes de publicar
 
@@ -114,9 +114,23 @@ El indicador flotante muestra:
 Se conservan todos los cambios aprobados hasta v0.24.349: logo animado EncisoMaths, carga personalizada, clases PDF, actividades, rúbricas, grupos, seguimientos, NOTAS, exportación EducaCity, héroes, tabla de estudiantes y estilos actuales.
 
 
-## Identidad visual de instalación y notificaciones — v0.25.001
+## Identidad visual de instalación y notificaciones — v0.25.002
 
 - `assets/app-icon-192.png` y `assets/app-icon-512.png`: icono instalable de la PWA generado desde `APP.png`; se usan rutas nuevas para evitar que Android conserve el icono anterior en caché.
 - `assets/apple-touch-icon-180.png`: icono para accesos directos en dispositivos Apple.
 - `assets/notification-icon-96.png`: silueta monocromática transparente generada desde `NOTIFICATION.png`, usada como `badge` de Android en la barra superior.
 - Las notificaciones ampliadas conservan el icono a color de EncisoMath; el icono pequeño del sistema utiliza la silueta blanca.
+
+## v0.25.002 — Diagnóstico visible de pendientes
+
+- El indicador inferior ya no muestra únicamente el número: identifica el primer tipo de cambio pendiente.
+- Al tocarlo, el Centro de sincronización muestra toda la cola local con:
+  - operación legible;
+  - estudiante, actividad, clase o quiz relacionado cuando está disponible;
+  - fecha y hora local del cambio;
+  - estado (`Pendiente`, `Sincronizando` o `Reintento pendiente`);
+  - cantidad de intentos;
+  - mensaje de error devuelto por Supabase o por la red;
+  - nombre técnico de la operación para diagnóstico.
+- Si se pulsa `Sincronizar ahora` y el cambio continúa pendiente, el Centro vuelve a abrirse automáticamente mostrando la causa.
+- No requiere una nueva migración SQL.

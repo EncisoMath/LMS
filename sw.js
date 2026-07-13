@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-offline-v0.25.001';
+const SW_VERSION = 'encisomath-offline-v0.25.002';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
