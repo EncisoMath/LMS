@@ -3,7 +3,10 @@
 
   const config = window.ENCISOMATH_SUPABASE || {};
   let client = null;
+  let publicStudentClient = null;
   let session = null;
+  let teacherSession = null;
+  let sessionRefreshPromise = null;
   let profile = null;
   let assignments = [];
   let studentCodeToDbId = new Map();
@@ -99,6 +102,23 @@
     return client || init();
   }
 
+  function getStudentClient() {
+    if (publicStudentClient) return publicStudentClient;
+    assertConfigured();
+    publicStudentClient = window.supabase.createClient(config.url, config.publishableKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        storageKey: `${config.authStorageKey || 'encisomath.supabase.auth.v1'}.student-public`
+      },
+      global: {
+        headers: { 'x-application-name': 'EncisoMath-LMS-Student' }
+      }
+    });
+    return publicStudentClient;
+  }
+
   function isConfigured() {
     return Boolean(config.url && config.publishableKey);
   }
@@ -114,7 +134,7 @@
     return normalized;
   }
 
-  function authSessionError(message = 'Tu sesión de Supabase venció. Vuelve a iniciar sesión para sincronizar y subir archivos.') {
+  function authSessionError(message = 'La sesión se está recuperando automáticamente. El cambio quedará pendiente hasta que Supabase responda.') {
     const error = new Error(message);
     error.code = 'AUTH_SESSION_REQUIRED';
     error.status = 401;
@@ -247,6 +267,54 @@
       || null;
   }
 
+  function cacheTeacherSession(nextSession) {
+    teacherSession = nextSession?.user?.id ? nextSession : null;
+    if (!readStoredStudentPortalCode()) session = teacherSession;
+    return teacherSession;
+  }
+
+  async function refreshPersistentSession(candidateSession = null) {
+    if (sessionRefreshPromise) return sessionRefreshPromise;
+    sessionRefreshPromise = (async () => {
+      const supabaseClient = getClient();
+      let activeSession = candidateSession?.user?.id ? candidateSession : teacherSession;
+
+      const currentResult = await supabaseClient.auth.getSession();
+      if (!currentResult.error && currentResult.data?.session?.user?.id) {
+        activeSession = currentResult.data.session;
+      }
+      if (!activeSession?.user?.id) return null;
+
+      const expiresAt = Number(activeSession.expires_at || 0);
+      const stillFresh = !expiresAt || expiresAt > Math.floor(Date.now() / 1000) + 120;
+      if (stillFresh) return cacheTeacherSession(activeSession);
+
+      // No enviamos manualmente el refresh_token. Supabase administra su
+      // rotación y el bloqueo entre pestañas; así evitamos que dos guardados
+      // simultáneos intenten consumir el mismo token.
+      const refreshResult = await supabaseClient.auth.refreshSession();
+      if (!refreshResult.error && refreshResult.data?.session?.user?.id) {
+        lastAuthVerifiedUserId = String(refreshResult.data.session.user.id);
+        lastAuthVerifiedAt = Date.now();
+        return cacheTeacherSession(refreshResult.data.session);
+      }
+
+      // Otra pestaña o el refresco automático pudo haber ganado la carrera.
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+      const retryResult = await supabaseClient.auth.getSession();
+      if (!retryResult.error && retryResult.data?.session?.user?.id) {
+        lastAuthVerifiedUserId = String(retryResult.data.session.user.id);
+        lastAuthVerifiedAt = Date.now();
+        return cacheTeacherSession(retryResult.data.session);
+      }
+
+      throw authSessionError(refreshResult.error?.message || 'Supabase no pudo renovar la sesión en este momento. Se reintentará automáticamente.');
+    })().finally(() => {
+      sessionRefreshPromise = null;
+    });
+    return sessionRefreshPromise;
+  }
+
   async function getSession() {
     const storedStudent = readStoredStudentPortalState();
     const studentCode = storedStudent.code;
@@ -257,84 +325,66 @@
       session = studentPortalSession;
       return session;
     }
+
     const supabaseClient = getClient();
     const { data, error } = await supabaseClient.auth.getSession();
     if (error) {
-      session = null;
-      throw normalizeError(error, 'No se pudo recuperar la sesion.');
+      if (teacherSession?.user?.id) return teacherSession;
+      throw normalizeError(error, 'No se pudo recuperar la sesión guardada.');
     }
-    session = data?.session || null;
-    return session;
+    return cacheTeacherSession(data?.session || null);
   }
 
   async function restoreSession(storedSession = {}) {
+    const supabaseClient = getClient();
+    const currentResult = await supabaseClient.auth.getSession();
+    if (!currentResult.error && currentResult.data?.session?.user?.id) {
+      return cacheTeacherSession(currentResult.data.session);
+    }
+
     const accessToken = String(storedSession?.access_token || '').trim();
     const refreshToken = String(storedSession?.refresh_token || '').trim();
-    if (!accessToken || !refreshToken) throw authSessionError('La sesión guardada no puede renovarse. Vuelve a iniciar sesión.');
-    const supabaseClient = getClient();
+    if (!accessToken || !refreshToken) return teacherSession;
+
     const { data, error } = await supabaseClient.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken
     });
-    if (error || !data?.session?.user?.id) {
-      session = null;
-      throw authSessionError(error?.message || 'No fue posible restaurar la sesión de Supabase.');
+    if (!error && data?.session?.user?.id) return cacheTeacherSession(data.session);
+
+    // Si el token fue rotado por otra pestaña, releemos el almacenamiento
+    // oficial de supabase-js antes de considerar fallida la restauración.
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+    const retryResult = await supabaseClient.auth.getSession();
+    if (!retryResult.error && retryResult.data?.session?.user?.id) {
+      return cacheTeacherSession(retryResult.data.session);
     }
-    session = data.session;
-    return session;
+
+    throw authSessionError(error?.message || 'La sesión guardada se reintentará automáticamente.');
   }
 
   async function requireAuthenticatedSession() {
     const supabaseClient = getClient();
     let activeSession = null;
     const sessionResult = await supabaseClient.auth.getSession();
-    if (sessionResult.error) {
-      session = null;
-      throw authSessionError(sessionResult.error.message || 'No se pudo comprobar la sesión de Supabase.');
-    }
-    activeSession = sessionResult.data?.session || null;
-
-    const expiresAt = Number(activeSession?.expires_at || 0);
-    const expiresSoon = Boolean(expiresAt) && expiresAt <= Math.floor(Date.now() / 1000) + 90;
-    if (activeSession?.refresh_token && expiresSoon) {
-      const refreshResult = await supabaseClient.auth.refreshSession({ refresh_token: activeSession.refresh_token });
-      if (refreshResult.error || !refreshResult.data?.session?.user?.id) {
-        session = null;
-        throw authSessionError(refreshResult.error?.message || 'La sesión de Supabase venció.');
-      }
-      activeSession = refreshResult.data.session;
+    if (!sessionResult.error && sessionResult.data?.session?.user?.id) {
+      activeSession = sessionResult.data.session;
+    } else if (teacherSession?.user?.id) {
+      activeSession = teacherSession;
     }
 
     if (!activeSession?.user?.id) {
-      session = null;
-      throw authSessionError();
+      throw authSessionError('Supabase está recuperando la sesión docente. El cambio se guardará y se reintentará automáticamente.');
     }
 
-    // Verifica contra Auth antes de cualquier escritura o subida. Para no
-    // añadir una solicitud extra a cada punto/asistencia, reutiliza la
-    // verificación durante un minuto mientras el usuario no cambie.
-    const now = Date.now();
-    if (lastAuthVerifiedUserId === String(activeSession.user.id) && now - lastAuthVerifiedAt < 60000) {
-      session = activeSession;
-      return activeSession;
-    }
-    const userResult = await supabaseClient.auth.getUser();
-    if (userResult.error || !userResult.data?.user?.id) {
-      if (activeSession.refresh_token) {
-        const refreshResult = await supabaseClient.auth.refreshSession({ refresh_token: activeSession.refresh_token });
-        if (!refreshResult.error && refreshResult.data?.session?.user?.id) {
-          activeSession = refreshResult.data.session;
-          session = activeSession;
-          lastAuthVerifiedUserId = String(activeSession.user.id);
-          lastAuthVerifiedAt = Date.now();
-          return activeSession;
-        }
-      }
-      session = null;
-      throw authSessionError(userResult.error?.message || 'Supabase rechazó la sesión actual.');
+    const expiresAt = Number(activeSession.expires_at || 0);
+    const expiresSoon = Boolean(expiresAt) && expiresAt <= Math.floor(Date.now() / 1000) + 120;
+    if (expiresSoon) activeSession = await refreshPersistentSession(activeSession);
+    if (!activeSession?.user?.id) {
+      throw authSessionError('Supabase está recuperando la sesión docente. El cambio se guardará y se reintentará automáticamente.');
     }
 
-    session = activeSession;
+    cacheTeacherSession(activeSession);
     lastAuthVerifiedUserId = String(activeSession.user.id);
     lastAuthVerifiedAt = Date.now();
     return activeSession;
@@ -348,31 +398,24 @@
       password: String(password || '')
     });
     if (error) {
-      session = null;
-      throw normalizeError(error, 'No se pudo iniciar sesion.');
+      throw normalizeError(error, 'No se pudo iniciar sesión.');
     }
-    session = data?.session || null;
-    if (session?.user?.id) {
-      lastAuthVerifiedUserId = String(session.user.id);
+    const activeSession = cacheTeacherSession(data?.session || null);
+    if (activeSession?.user?.id) {
+      lastAuthVerifiedUserId = String(activeSession.user.id);
       lastAuthVerifiedAt = Date.now();
     }
-    return session;
+    return activeSession;
   }
 
   async function signInStudentCode(studentCode, options = {}) {
     const code = normalizeStudentPortalCode(studentCode);
     if (!code) throw new Error('Escribe el código del estudiante.');
     const remember = options.remember !== false;
-    const supabaseClient = getClient();
-    // El portal por código siempre opera como acceso público de solo lectura.
-    // Cerramos cualquier sesión docente previa para que no queden permisos de
-    // escritura activos detrás de la interfaz del estudiante.
-    const authResult = await supabaseClient.auth.getSession();
-    if (authResult.data?.session) {
-      const signOutResult = await supabaseClient.auth.signOut();
-      if (signOutResult.error) throw normalizeError(signOutResult.error, 'No se pudo preparar el acceso del estudiante.');
-    }
-    const { data, error } = await supabaseClient.rpc('encisomath_student_portal', { p_student_code: code });
+
+    // El portal estudiantil usa un cliente público separado. La sesión docente
+    // permanece intacta y continúa renovándose en segundo plano.
+    const { data, error } = await getStudentClient().rpc('encisomath_student_portal', { p_student_code: code });
     if (error) {
       const message = String(error.message || '').toLowerCase();
       if (error.code === 'PGRST202' || message.includes('encisomath_student_portal')) {
@@ -390,23 +433,46 @@
 
   async function signOut() {
     const supabaseClient = getClient();
+    const leavingStudentPortal = Boolean(readStoredStudentPortalCode() || session?.encisomathStudentPortal);
     clearStudentPortalAccess();
+
+    if (leavingStudentPortal) {
+      const currentResult = await supabaseClient.auth.getSession().catch(() => ({ data: null }));
+      cacheTeacherSession(currentResult?.data?.session || teacherSession || null);
+      profile = null;
+      assignments = [];
+      studentCodeToDbId = new Map();
+      studentDbIdToCode = new Map();
+      return { preservedTeacherSession: Boolean(teacherSession?.user?.id) };
+    }
+
     const { error } = await supabaseClient.auth.signOut();
     session = null;
+    teacherSession = null;
     lastAuthVerifiedAt = 0;
     lastAuthVerifiedUserId = '';
     profile = null;
     assignments = [];
     studentCodeToDbId = new Map();
     studentDbIdToCode = new Map();
-    if (error) throw normalizeError(error, 'No se pudo cerrar la sesion.');
+    if (error) throw normalizeError(error, 'No se pudo cerrar la sesión.');
+    return { preservedTeacherSession: false };
   }
 
   function onAuthStateChange(callback) {
     const supabaseClient = getClient();
     return supabaseClient.auth.onAuthStateChange((event, nextSession) => {
-      session = nextSession || null;
-      if (typeof callback === 'function') callback(event, nextSession || null);
+      teacherSession = nextSession?.user?.id ? nextSession : null;
+      const studentCode = readStoredStudentPortalCode();
+      if (studentCode) {
+        if (!studentPortalSession || studentPortalSession.studentCode !== studentCode) {
+          studentPortalSession = createStudentPortalSession(studentCode, null, readStoredStudentPortalState().remember);
+        }
+        session = studentPortalSession;
+        return;
+      }
+      session = teacherSession;
+      if (typeof callback === 'function') callback(event, teacherSession);
     });
   }
 
@@ -669,7 +735,7 @@
     if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
     let payload = studentPortalSession?.studentCode === code ? studentPortalSession.portalData : null;
     if (!payload) {
-      const { data, error } = await getClient().rpc('encisomath_student_portal', { p_student_code: code });
+      const { data, error } = await getStudentClient().rpc('encisomath_student_portal', { p_student_code: code });
       if (error) throw normalizeError(error, 'No se pudo cargar el portal del estudiante.');
       payload = data;
     }
@@ -1963,7 +2029,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.008', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.009', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2022,7 +2088,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.008',
+          appVersion: '0.25.009',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

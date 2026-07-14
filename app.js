@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.008';
+  const APP_VERSION = '0.25.009';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -672,14 +672,14 @@
     });
     window.addEventListener('offline', () => toast('Sin conexión. Puedes seguir trabajando; los cambios quedarán pendientes.'));
     window.addEventListener('online', () => toast('Conexión recuperada. Sincronizando cambios…'));
-    window.addEventListener('encisomath:auth-required', (event) => {
+    window.addEventListener('encisomath:auth-required', () => {
       const now = Date.now();
       if (now - Number(bindOfflineSyncEvents.lastAuthNotice || 0) < 5000) return;
       bindOfflineSyncEvents.lastAuthNotice = now;
-      toast(event.detail?.message || 'La sesión venció. El cambio quedó guardado localmente; inicia sesión nuevamente para sincronizar.');
+      toast('Renovando la conexión con Supabase. Tu cambio quedó guardado y se sincronizará automáticamente.');
     });
     window.addEventListener('encisomath:request-login', () => {
-      renderLogin();
+      cloudAPI()?.syncNow?.({ automatic: true }).catch(() => {});
     });
     navigator.serviceWorker?.addEventListener?.('message', (event) => {
       if (event.data?.type === 'ENCISOMATH_SYNC_REQUEST') cloudAPI()?.syncNow?.({ automatic: true }).catch(() => {});
@@ -891,14 +891,9 @@
       if (!cloudAPI()?.isConfigured?.()) throw new Error('Supabase no está configurado.');
       cloudAPI().init();
 
-      let activeSession = await cloudAPI().getSession();
-      const sessionMode = localStorage.getItem(CLOUD_SESSION_MODE_KEY) || 'persistent';
-      const tabSessionAlive = sessionStorage.getItem(CLOUD_SESSION_TAB_KEY) === '1';
-      if (activeSession && sessionMode === 'session' && !tabSessionAlive && navigator.onLine !== false) {
-        await cloudAPI().signOut();
-        activeSession = null;
-      }
+      const activeSession = await cloudAPI().getSession();
       if (activeSession) {
+        localStorage.setItem(CLOUD_SESSION_MODE_KEY, 'persistent');
         sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
         await enterCloudSession(activeSession);
         return;
@@ -1243,7 +1238,7 @@
             <label class="field-label" for="userPassword">Contraseña</label>
             <input class="input" id="userPassword" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña de Supabase" required />
             <div class="remember-row">
-              <label><input type="checkbox" id="teacherRemember" checked /> Mantener sesión iniciada</label>
+              <span>La sesión permanecerá iniciada en este dispositivo hasta que pulses Cerrar sesión.</span>
             </div>
             <button class="primary-btn full" id="teacherLoginSubmitBtn" type="submit">Iniciar sesión</button>
             <div class="last-user">
@@ -1306,14 +1301,13 @@
         event.preventDefault();
         const email = emailInput.value.trim().toLowerCase();
         const password = passwordInput.value;
-        const remember = document.getElementById('teacherRemember').checked;
         const submitButton = document.getElementById('teacherLoginSubmitBtn');
         if (!email || !password) return;
         submitButton.disabled = true;
         submitButton.textContent = 'Conectando...';
         try {
           const activeSession = await cloudAPI().signIn(email, password);
-          localStorage.setItem(CLOUD_SESSION_MODE_KEY, remember ? 'persistent' : 'session');
+          localStorage.setItem(CLOUD_SESSION_MODE_KEY, 'persistent');
           sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
           await enterCloudSession(activeSession);
         } catch (error) {
@@ -3406,7 +3400,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.008', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.009', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -14026,18 +14020,36 @@
     return state.data.users.find((user) => normalizeID(user.id) === normalized || normalizeID(user.username) === normalized);
   }
   async function logout() {
+    const leavingStudentPortal = isStudentPortal();
     try {
       if (cloudAPI()) await cloudAPI().signOut();
     } catch (error) {
       console.warn('No se pudo cerrar la sesión remota.', error);
     }
-    localStorage.removeItem('encisomath:session');
-    localStorage.removeItem(CLOUD_SESSION_MODE_KEY);
-    sessionStorage.removeItem(CLOUD_SESSION_TAB_KEY);
+
     state.user = null;
     state.assignment = null;
     state.cloud.enabled = false;
     state.cloud.attendance = {};
+
+    if (leavingStudentPortal && cloudAPI()) {
+      try {
+        const teacherSession = await cloudAPI().getSession();
+        if (teacherSession?.user?.id && !teacherSession.encisomathStudentPortal) {
+          localStorage.setItem(CLOUD_SESSION_MODE_KEY, 'persistent');
+          sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
+          mount(renderLoadingHTML('Regresando al perfil docente...'), null, { instant: true });
+          await enterCloudSession(teacherSession);
+          return;
+        }
+      } catch (error) {
+        console.warn('No se pudo recuperar inmediatamente la sesión docente.', error);
+      }
+    }
+
+    localStorage.removeItem('encisomath:session');
+    localStorage.removeItem(CLOUD_SESSION_MODE_KEY);
+    sessionStorage.removeItem(CLOUD_SESSION_TAB_KEY);
     renderLogin();
   }
 
@@ -14398,7 +14410,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.008', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.009', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,
