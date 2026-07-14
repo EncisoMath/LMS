@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.004';
+  const OFFLINE_VERSION = '0.25.005';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -142,6 +142,23 @@
       || message.includes('connection');
   }
 
+  function isAuthSessionError(error) {
+    const code = String(error?.code || '').toUpperCase();
+    const status = Number(error?.status || error?.statusCode || 0);
+    const message = String(error?.message || error || '').toLowerCase();
+    return code === 'AUTH_SESSION_REQUIRED'
+      || status === 401
+      || message.includes('auth session missing')
+      || message.includes('invalid jwt')
+      || message.includes('jwt expired')
+      || message.includes('refresh token')
+      || message.includes('session expired')
+      || message.includes('sesión de supabase')
+      || message.includes('sesion de supabase')
+      || message.includes('no hay una sesión activa')
+      || message.includes('no hay una sesion activa');
+  }
+
 
   function escapeMarkup(value) {
     return String(value ?? '')
@@ -207,7 +224,7 @@
   }
 
   function mutationStatusLabel(status) {
-    return ({ pending: 'Pendiente', retry: 'Reintento pendiente', syncing: 'Sincronizando', conflict: 'Descartado' })[String(status || '')] || 'Pendiente';
+    return ({ pending: 'Pendiente', retry: 'Reintento pendiente', syncing: 'Sincronizando', 'auth-required': 'Requiere iniciar sesión', conflict: 'Descartado' })[String(status || '')] || 'Pendiente';
   }
 
   function mutationPresentation(mutation) {
@@ -623,7 +640,7 @@
 
   async function pendingMutations() {
     const rows = await allMutations();
-    return rows.filter((row) => ['pending', 'retry', 'syncing'].includes(row.status)).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    return rows.filter((row) => ['pending', 'retry', 'syncing', 'auth-required'].includes(row.status)).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
   }
 
   async function mutationPut(row) {
@@ -690,11 +707,11 @@
       userId: activeUserId,
       type,
       payload,
-      status: 'pending',
+      status: options.status || 'pending',
       createdAt: nowIso(),
       baseServerTime: mutationBaseServerTime(type, payload),
       attempts: 0,
-      lastError: ''
+      lastError: options.lastError || ''
     };
     await mutationPut(mutation);
     try {
@@ -719,7 +736,7 @@
     const chip = ensureStatusChip();
     if (!chip) return;
     const mutations = await allMutations().catch(() => []);
-    const pendingRows = mutations.filter((item) => ['pending', 'retry', 'syncing'].includes(item.status));
+    const pendingRows = mutations.filter((item) => ['pending', 'retry', 'syncing', 'auth-required'].includes(item.status));
     const pending = pendingRows.length;
     const conflicts = mutations.filter((item) => item.status === 'conflict').length;
     const offline = !isOnline();
@@ -754,8 +771,9 @@
 
   async function openSyncCenter() {
     const rows = await allMutations().catch(() => []);
-    const pending = rows.filter((item) => ['pending', 'retry', 'syncing'].includes(item.status));
+    const pending = rows.filter((item) => ['pending', 'retry', 'syncing', 'auth-required'].includes(item.status));
     const conflicts = rows.filter((item) => item.status === 'conflict');
+    const requiresAuth = pending.some((item) => item.status === 'auth-required');
     const meta = activeSnapshot?._offline || {};
     const overlay = document.createElement('div');
     overlay.className = 'em-sync-center-overlay';
@@ -779,8 +797,9 @@
         </section>
         <div class="em-sync-progress" id="emSyncProgress" hidden><i></i><span>Sincronizando…</span></div>
         <div class="em-sync-actions">
+          ${requiresAuth ? '<button type="button" id="emReauthenticate">Iniciar sesión para sincronizar</button>' : ''}
           <button type="button" id="emPrepareOffline">Descargar todo para trabajar offline</button>
-          <button type="button" id="emSyncNow" ${isOnline() ? '' : 'disabled'}>Sincronizar ahora</button>
+          <button type="button" id="emSyncNow" ${isOnline() && !requiresAuth ? '' : 'disabled'}>Sincronizar ahora</button>
         </div>
         ${conflicts.length ? `<details><summary>${conflicts.length} cambio(s) descartado(s)</summary><div class="em-sync-conflicts">${conflicts.slice(-20).map((mutation) => { const item = mutationPresentation(mutation); return `<p><strong>${escapeMarkup(item.title)}</strong><span>${escapeMarkup(item.detail)}</span><span>${escapeMarkup(item.error || 'Supabase tenía una versión más reciente.')}</span></p>`; }).join('')}</div></details>` : ''}
       </section>
@@ -801,6 +820,10 @@
     };
     overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
     overlay.querySelector('.em-sync-close')?.addEventListener('click', close);
+    overlay.querySelector('#emReauthenticate')?.addEventListener('click', () => {
+      close();
+      dispatch('encisomath:request-login', { reason: 'sync-auth-required' });
+    });
     overlay.querySelector('#emSyncNow')?.addEventListener('click', async () => {
       const progress = overlay.querySelector('#emSyncProgress');
       const label = progress?.querySelector('span');
@@ -1554,11 +1577,18 @@
           mutationEntityKeys(mutation.type, mutation.payload || {}).forEach((key) => locallyAppliedKeys.add(key));
           summary.applied += 1;
         } catch (error) {
-          mutation.status = isNetworkError(error) ? 'retry' : 'retry';
+          const authRequired = isAuthSessionError(error);
+          mutation.status = authRequired ? 'auth-required' : 'retry';
           mutation.lastError = error?.message || String(error || 'Error de sincronización');
           await mutationPut(mutation);
           await finishMutationReceipt(mutation, 'error', mutation.lastError);
           summary.failed += 1;
+          if (authRequired) {
+            dispatch('encisomath:auth-required', {
+              message: 'La sesión de Supabase venció. El cambio permanece guardado en el dispositivo y se sincronizará al iniciar sesión nuevamente.'
+            });
+            break;
+          }
           if (isNetworkError(error)) break;
         }
       }
@@ -1594,6 +1624,8 @@
   async function executeMutation(type, payload, onlineAction, optimisticAction, options = {}) {
     const mutationId = options.mutationId || uuid();
     const preparedPayload = prepareMutationPayload(type, payload, mutationId);
+    let queueStatus = 'pending';
+    let queueError = '';
     if (isOnline()) {
       try {
         const result = await onlineAction(preparedPayload);
@@ -1601,29 +1633,51 @@
         await markMutationEntitiesSynced(type, preparedPayload).catch(() => {});
         return result;
       } catch (error) {
-        // Algunas escrituras de tipo evento deben conservarse en la cola aun
-        // cuando el navegador diga que hay conexion pero Supabase rechace o
-        // interrumpa temporalmente la solicitud. Esto evita que el punto se
-        // revierta visualmente y permite reintentarlo desde el centro de sync.
-        if (!isNetworkError(error) && !options.queueOnAnyError) throw error;
+        // Una sesión expirada no debe hacer perder el trabajo. La operación se
+        // conserva localmente igual que cuando no hay conexión y se reintenta
+        // después de volver a autenticar al docente.
+        const authRequired = isAuthSessionError(error);
+        if (!isNetworkError(error) && !authRequired && !options.queueOnAnyError) throw error;
+        if (authRequired) {
+          queueStatus = 'auth-required';
+          queueError = error?.message || 'La sesión de Supabase venció.';
+          dispatch('encisomath:auth-required', {
+            message: 'La sesión de Supabase venció. El cambio quedó guardado localmente; inicia sesión nuevamente para sincronizarlo.'
+          });
+        }
       }
     }
     const optimisticResult = typeof optimisticAction === 'function'
       ? await optimisticAction(preparedPayload, mutationId, null, false)
       : options.fallbackResult;
-    await queueMutation(type, preparedPayload, { mutationId });
+    await queueMutation(type, preparedPayload, { mutationId, status: queueStatus, lastError: queueError });
     return optimisticResult;
   }
 
   async function wrappedGetSession() {
     try {
-      const session = await cloud.getSession();
-      if (session?.user?.id) {
-        await rememberSession(session);
-        return session;
+      const liveSession = await cloud.getSession();
+      if (liveSession?.user?.id) {
+        await rememberSession(liveSession);
+        return liveSession;
       }
-      if (!isOnline()) return await cachedSession();
-      return null;
+
+      const cached = await cachedSession();
+      if (!isOnline()) return cached;
+      if (cached?.refresh_token && typeof cloud.restoreSession === 'function') {
+        try {
+          const restored = await cloud.restoreSession(cached);
+          if (restored?.user?.id) {
+            await rememberSession(restored);
+            return restored;
+          }
+        } catch (error) {
+          dispatch('encisomath:auth-required', {
+            message: 'La sesión guardada ya no es válida. Puedes seguir trabajando; inicia sesión nuevamente para sincronizar.'
+          });
+        }
+      }
+      return cached || null;
     } catch (error) {
       const cached = await cachedSession();
       if (cached) return cached;
@@ -1806,7 +1860,7 @@
       const rows = await allMutations();
       return {
         online: isOnline(),
-        pending: rows.filter((item) => ['pending', 'retry', 'syncing'].includes(item.status)).length,
+        pending: rows.filter((item) => ['pending', 'retry', 'syncing', 'auth-required'].includes(item.status)).length,
         conflicts: rows.filter((item) => item.status === 'conflict').length,
         snapshot: currentSnapshot()?._offline || {}
       };

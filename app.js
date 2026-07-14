@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.004';
+  const APP_VERSION = '0.25.005';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -663,6 +663,15 @@
     });
     window.addEventListener('offline', () => toast('Sin conexión. Puedes seguir trabajando; los cambios quedarán pendientes.'));
     window.addEventListener('online', () => toast('Conexión recuperada. Sincronizando cambios…'));
+    window.addEventListener('encisomath:auth-required', (event) => {
+      const now = Date.now();
+      if (now - Number(bindOfflineSyncEvents.lastAuthNotice || 0) < 5000) return;
+      bindOfflineSyncEvents.lastAuthNotice = now;
+      toast(event.detail?.message || 'La sesión venció. El cambio quedó guardado localmente; inicia sesión nuevamente para sincronizar.');
+    });
+    window.addEventListener('encisomath:request-login', () => {
+      renderLogin();
+    });
     navigator.serviceWorker?.addEventListener?.('message', (event) => {
       if (event.data?.type === 'ENCISOMATH_SYNC_REQUEST') cloudAPI()?.syncNow?.({ automatic: true }).catch(() => {});
     });
@@ -3297,7 +3306,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.004', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.005', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -14121,7 +14130,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.004', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.005', { updateViaCache: 'none' });
         registration.update();
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {

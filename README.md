@@ -1,12 +1,12 @@
-# EncisoMath LMS v0.25.004 — Offline First
+# EncisoMath LMS v0.25.005 — Offline First
 
 Esta versión convierte EncisoMath en una PWA con lectura y escritura offline. El LMS trabaja sobre una copia local en IndexedDB y sincroniza con Supabase cuando vuelve la conexión.
 
 ## Instalación obligatoria
 
 1. Si todavía no instalaste el motor offline, ejecuta primero `SUPABASE_MIGRATION_v0.25.000_OFFLINE_FIRST.sql`.
-2. Ejecuta una sola vez la corrección externa `SUPABASE_FIX_v0.25.004_IDEMPOTENCY.sql`. Esta corrige los índices `client_mutation_id` incompatibles con `ON CONFLICT`.
-3. Después publica los archivos modificados de la v0.25.004.
+2. Ejecuta una sola vez la corrección externa `SUPABASE_FIX_v0.25.005_IDEMPOTENCY.sql`. Esta corrige los índices `client_mutation_id` incompatibles con `ON CONFLICT`.
+3. Después publica los archivos modificados de la v0.25.005.
 4. Abre la aplicación con internet e inicia sesión al menos una vez.
 5. Toca el indicador de conexión y usa **Descargar todo para trabajar offline**.
 6. Espera la confirmación de preparación antes de probar el modo avión.
@@ -98,7 +98,7 @@ El indicador flotante muestra:
 - `supabase-adapter.js`: operaciones idempotentes y rutas estables para reintentos.
 - `app.js`: integración de snapshots y actualización de la interfaz al sincronizar.
 - `styles.css`: indicador y Centro de sincronización.
-- `index.html`: carga del motor offline y versionado v0.25.004.
+- `index.html`: carga del motor offline y versionado v0.25.005.
 
 ## Validación requerida antes de publicar
 
@@ -114,18 +114,18 @@ El indicador flotante muestra:
 Se conservan todos los cambios aprobados hasta v0.24.349: logo animado EncisoMaths, carga personalizada, clases PDF, actividades, rúbricas, grupos, seguimientos, NOTAS, exportación EducaCity, héroes, tabla de estudiantes y estilos actuales.
 
 
-## Identidad visual de instalación y notificaciones — v0.25.004
+## Identidad visual de instalación y notificaciones — v0.25.005
 
 - `assets/app-icon-192.png` y `assets/app-icon-512.png`: icono instalable de la PWA generado desde `APP.png`; se usan rutas nuevas para evitar que Android conserve el icono anterior en caché.
 - `assets/apple-touch-icon-180.png`: icono para accesos directos en dispositivos Apple.
 - `assets/notification-icon-96.png`: silueta monocromática transparente generada desde `NOTIFICATION.png`, usada como `badge` de Android en la barra superior.
 - Las notificaciones ampliadas conservan el icono a color de EncisoMath; el icono pequeño del sistema utiliza la silueta blanca.
 
-## v0.25.004 — Corrección de reintentos idempotentes
+## v0.25.005 — Corrección de reintentos idempotentes
 
 - Corrige el error `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
 - La causa era un índice `UNIQUE` parcial sobre `client_mutation_id`; PostgreSQL protegía duplicados, pero PostgREST no podía inferirlo para `ON CONFLICT`.
-- `SUPABASE_FIX_v0.25.004_IDEMPOTENCY.sql` recrea esos índices como `UNIQUE` normales. PostgreSQL permite múltiples `NULL`, por lo que no cambia el comportamiento esperado.
+- `SUPABASE_FIX_v0.25.005_IDEMPOTENCY.sql` recrea esos índices como `UNIQUE` normales. PostgreSQL permite múltiples `NULL`, por lo que no cambia el comportamiento esperado.
 - `supabase-adapter.js` incorpora además una ruta defensiva de inserción idempotente que:
   - consulta primero la mutación existente;
   - inserta solo lo que falta;
@@ -133,9 +133,19 @@ Se conservan todos los cambios aprobados hasta v0.24.349: logo animado EncisoMat
   - evita que visualizaciones de clase, puntos Rockstar, seguimientos y eventos de quiz queden atrapados en la cola.
 - Los pendientes existentes de `recordLessonView` se reprocesan automáticamente. Después de publicar y ejecutar el SQL, basta con pulsar **Sincronizar ahora**.
 
-## v0.25.004 — corrección de puntos Rockstar
+## v0.25.005 — corrección de puntos Rockstar
 
 - Los puntos Rockstar usan la RPC idempotente `encisomath_add_rockstar_event`.
 - Si Supabase falla temporalmente aunque el navegador indique conexión, el punto se conserva visualmente y se añade a la cola local.
 - Los reintentos usan `client_mutation_id`, por lo que no duplican puntos.
-- Ejecutar por separado `SUPABASE_FIX_v0.25.004_ROCKSTAR_RPC.sql` antes de probar la sincronización.
+- Ejecutar por separado `SUPABASE_FIX_v0.25.005_ROCKSTAR_RPC.sql` antes de probar la sincronización.
+
+
+## v0.25.005 — renovación de sesión antes de escribir o subir archivos
+
+- Cada escritura autenticada consulta la sesión real de Supabase en vez de reutilizar un objeto de sesión antiguo guardado en memoria.
+- Si el token está próximo a vencer, se renueva antes de subir PDFs, imágenes o entregables.
+- La sesión offline guardada puede restaurarse con `setSession` cuando vuelve la conexión.
+- Si Auth rechaza la sesión, el cambio se conserva en IndexedDB con estado `auth-required`; no se pierde ni se intenta subir sin credenciales válidas.
+- El Centro de sincronización muestra **Iniciar sesión para sincronizar** cuando la cola requiere reautenticación.
+- No requiere SQL adicional.

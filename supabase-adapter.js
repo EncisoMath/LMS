@@ -8,6 +8,8 @@
   let assignments = [];
   let studentCodeToDbId = new Map();
   let studentDbIdToCode = new Map();
+  let lastAuthVerifiedAt = 0;
+  let lastAuthVerifiedUserId = '';
 
   const LEGACY_DEMO_LESSON_IDS = [
     'bar-charts',
@@ -100,7 +102,19 @@
   function normalizeError(error, fallback = 'Ocurrio un error al comunicarse con Supabase.') {
     if (!error) return new Error(fallback);
     if (error instanceof Error) return error;
-    return new Error(error.message || error.error_description || fallback);
+    const normalized = new Error(error.message || error.error_description || fallback);
+    if (error.code) normalized.code = error.code;
+    if (error.status) normalized.status = error.status;
+    if (error.statusCode) normalized.statusCode = error.statusCode;
+    if (error.details) normalized.details = error.details;
+    return normalized;
+  }
+
+  function authSessionError(message = 'Tu sesión de Supabase venció. Vuelve a iniciar sesión para sincronizar y subir archivos.') {
+    const error = new Error(message);
+    error.code = 'AUTH_SESSION_REQUIRED';
+    error.status = 401;
+    return error;
   }
 
   function isUniqueViolation(error) {
@@ -176,9 +190,85 @@
   async function getSession() {
     const supabaseClient = getClient();
     const { data, error } = await supabaseClient.auth.getSession();
-    if (error) throw normalizeError(error, 'No se pudo recuperar la sesion.');
+    if (error) {
+      session = null;
+      throw normalizeError(error, 'No se pudo recuperar la sesion.');
+    }
     session = data?.session || null;
     return session;
+  }
+
+  async function restoreSession(storedSession = {}) {
+    const accessToken = String(storedSession?.access_token || '').trim();
+    const refreshToken = String(storedSession?.refresh_token || '').trim();
+    if (!accessToken || !refreshToken) throw authSessionError('La sesión guardada no puede renovarse. Vuelve a iniciar sesión.');
+    const supabaseClient = getClient();
+    const { data, error } = await supabaseClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error || !data?.session?.user?.id) {
+      session = null;
+      throw authSessionError(error?.message || 'No fue posible restaurar la sesión de Supabase.');
+    }
+    session = data.session;
+    return session;
+  }
+
+  async function requireAuthenticatedSession() {
+    const supabaseClient = getClient();
+    let activeSession = null;
+    const sessionResult = await supabaseClient.auth.getSession();
+    if (sessionResult.error) {
+      session = null;
+      throw authSessionError(sessionResult.error.message || 'No se pudo comprobar la sesión de Supabase.');
+    }
+    activeSession = sessionResult.data?.session || null;
+
+    const expiresAt = Number(activeSession?.expires_at || 0);
+    const expiresSoon = Boolean(expiresAt) && expiresAt <= Math.floor(Date.now() / 1000) + 90;
+    if (activeSession?.refresh_token && expiresSoon) {
+      const refreshResult = await supabaseClient.auth.refreshSession({ refresh_token: activeSession.refresh_token });
+      if (refreshResult.error || !refreshResult.data?.session?.user?.id) {
+        session = null;
+        throw authSessionError(refreshResult.error?.message || 'La sesión de Supabase venció.');
+      }
+      activeSession = refreshResult.data.session;
+    }
+
+    if (!activeSession?.user?.id) {
+      session = null;
+      throw authSessionError();
+    }
+
+    // Verifica contra Auth antes de cualquier escritura o subida. Para no
+    // añadir una solicitud extra a cada punto/asistencia, reutiliza la
+    // verificación durante un minuto mientras el usuario no cambie.
+    const now = Date.now();
+    if (lastAuthVerifiedUserId === String(activeSession.user.id) && now - lastAuthVerifiedAt < 60000) {
+      session = activeSession;
+      return activeSession;
+    }
+    const userResult = await supabaseClient.auth.getUser();
+    if (userResult.error || !userResult.data?.user?.id) {
+      if (activeSession.refresh_token) {
+        const refreshResult = await supabaseClient.auth.refreshSession({ refresh_token: activeSession.refresh_token });
+        if (!refreshResult.error && refreshResult.data?.session?.user?.id) {
+          activeSession = refreshResult.data.session;
+          session = activeSession;
+          lastAuthVerifiedUserId = String(activeSession.user.id);
+          lastAuthVerifiedAt = Date.now();
+          return activeSession;
+        }
+      }
+      session = null;
+      throw authSessionError(userResult.error?.message || 'Supabase rechazó la sesión actual.');
+    }
+
+    session = activeSession;
+    lastAuthVerifiedUserId = String(activeSession.user.id);
+    lastAuthVerifiedAt = Date.now();
+    return activeSession;
   }
 
   async function signIn(email, password) {
@@ -187,8 +277,15 @@
       email: String(email || '').trim().toLowerCase(),
       password: String(password || '')
     });
-    if (error) throw normalizeError(error, 'No se pudo iniciar sesion.');
+    if (error) {
+      session = null;
+      throw normalizeError(error, 'No se pudo iniciar sesion.');
+    }
     session = data?.session || null;
+    if (session?.user?.id) {
+      lastAuthVerifiedUserId = String(session.user.id);
+      lastAuthVerifiedAt = Date.now();
+    }
     return session;
   }
 
@@ -196,6 +293,8 @@
     const supabaseClient = getClient();
     const { error } = await supabaseClient.auth.signOut();
     session = null;
+    lastAuthVerifiedAt = 0;
+    lastAuthVerifiedUserId = '';
     profile = null;
     assignments = [];
     studentCodeToDbId = new Map();
@@ -394,7 +493,7 @@
 
   async function loadApplicationData() {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa en Supabase.');
 
     const { data: profileRow, error: profileError } = await supabaseClient
@@ -610,6 +709,7 @@
 
   async function saveAttendanceStatus({ assignmentId, studentCode, attendanceDate, status }) {
     const supabaseClient = getClient();
+    const activeSession = await requireAuthenticatedSession();
     const studentId = resolveStudentDbId(studentCode);
     if (!studentId) throw new Error(`No se encontro el estudiante ${studentCode} en Supabase.`);
     if (!status) {
@@ -629,7 +729,7 @@
         student_id: studentId,
         attendance_date: attendanceDate,
         status,
-        recorded_by: session?.user?.id || (await getSession())?.user?.id
+        recorded_by: activeSession.user.id
       }, { onConflict: 'assignment_id,student_id,attendance_date' })
       .select('id,assignment_id,student_id,attendance_date,status')
       .single();
@@ -639,6 +739,7 @@
 
   async function addRockstarEvent(event) {
     const supabaseClient = getClient();
+    const activeSession = await requireAuthenticatedSession();
     const studentId = resolveStudentDbId(event?.studentId);
     if (!studentId) throw new Error(`No se encontro el estudiante ${event?.studentId || ''} en Supabase.`);
     const row = {
@@ -649,11 +750,11 @@
       category: event.category || null,
       reason: event.reason || null,
       occurred_at: event.occurredAt || new Date().toISOString(),
-      created_by: session?.user?.id || (await getSession())?.user?.id,
+      created_by: activeSession.user.id,
       client_mutation_id: event.clientMutationId || event.mutationId || null
     };
 
-    // v0.25.004: la escritura Rockstar usa una RPC idempotente para evitar
+    // v0.25.005: la escritura Rockstar usa una RPC idempotente para evitar
     // depender de la inferencia ON CONFLICT de PostgREST. La RPC compara el
     // client_mutation_id y devuelve el evento existente si se trata de un
     // reintento de la cola offline.
@@ -699,6 +800,7 @@
 
   async function createStudentAndEnroll({ studentCode, firstName, lastName, groupId }) {
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const code = String(studentCode || '').trim();
     if (!code) throw new Error('El codigo del estudiante es obligatorio.');
     let student = null;
@@ -757,6 +859,7 @@
 
   async function withdrawStudent({ groupId, studentCode }) {
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const studentId = resolveStudentDbId(studentCode);
     if (!studentId) throw new Error(`No se encontro el estudiante ${studentCode} en Supabase.`);
     const { error } = await supabaseClient
@@ -769,7 +872,7 @@
 
   async function saveQuizzes(quizzes = [], options = {}) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa.');
 
     for (const quiz of quizzes) {
@@ -817,7 +920,7 @@
 
   async function savePreferences(preferences, options = {}) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) return;
     const { error } = await supabaseClient
       .from('user_preferences')
@@ -827,7 +930,7 @@
 
   async function uploadAssignmentImage({ assignmentId, type, file, mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa.');
     const extension = String(file?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
     const stableMutation = mutationId || clientMutationId || '';
@@ -849,6 +952,7 @@
 
   async function resetAssignmentImage({ assignmentId, type }) {
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const column = type === 'cover' ? 'cover_url' : 'icon_url';
     const { error } = await supabaseClient
       .from('teaching_assignments')
@@ -870,7 +974,7 @@
 
   async function createPdfLesson({ currentAssignment, targetAssignmentIds, title, period, pdfFile, thumbnailFile, pageCount = 1, lessonId: requestedLessonId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
     if (!ids.length) throw new Error('La clase debe asignarse al menos a un curso.');
@@ -971,7 +1075,7 @@
 
   async function uploadActivityFiles({ activityId, section, files = [], mutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     const bucket = config.storageBucket || 'lms-public';
     const uploaded = [];
     for (let index = 0; index < files.length; index += 1) {
@@ -998,7 +1102,7 @@
 
   async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], rubric = [], activityId: requestedActivityId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
     if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
@@ -1080,7 +1184,7 @@
 
   async function updateActivity({ activityId, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [], mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const safeActivityId = String(activityId || '').trim();
     if (!safeActivityId) throw new Error('No se encontró la actividad que deseas editar.');
@@ -1239,7 +1343,7 @@
 
   async function uploadActivitySubmission({ activityId, assignmentId, studentCode, file, mutationId = '' }) {
     if (!file) return null;
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     const bucket = config.storageBucket || 'lms-public';
     const path = `${activeSession.user.id}/activities/${activityId}/submissions/${assignmentId}/${safeStorageName(studentCode)}-${mutationId || Date.now()}-${safeStorageName(file.name || 'entrega')}`;
     const result = await getClient().storage.from(bucket).upload(path, file, {
@@ -1259,7 +1363,7 @@
 
   async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const codes = [...new Set([primaryStudentCode, ...(selectedStudentCodes || [])].filter(Boolean))];
     const dbRows = codes.map((code) => ({ code, studentId: resolveStudentDbId(code) }));
@@ -1333,6 +1437,7 @@
 
   async function deleteActivity({ activityId, assignmentId, mode = 'all' }) {
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const safeActivityId = String(activityId || '').trim();
     if (!safeActivityId) throw new Error('No se encontró la actividad que deseas eliminar.');
 
@@ -1362,6 +1467,7 @@
 
   async function deletePdfLesson({ lessonId, assignmentId, mode = 'all', storagePdfPath = '', storageThumbnailPath = '' }) {
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const safeLessonId = String(lessonId || '').trim();
     if (!safeLessonId) throw new Error('No se encontró la clase que deseas eliminar.');
 
@@ -1391,7 +1497,7 @@
 
   async function recordLessonView({ assignmentId, lessonId, mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) return;
     const row = {
       assignment_id: assignmentId,
@@ -1414,7 +1520,7 @@
 
   async function startQuizAttempt({ quiz, assignmentId, clientMutationId = '' }) {
     const supabaseClient = getClient();
-    const activeSession = session || await getSession();
+    const activeSession = await requireAuthenticatedSession();
     let quizAssignmentId = quiz?._quizAssignmentIds?.[assignmentId] || quiz?._quizAssignmentId;
     if (!quizAssignmentId && quiz?.id && assignmentId) {
       const lookup = await supabaseClient
@@ -1436,7 +1542,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.004', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.005', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -1468,6 +1574,7 @@
   async function submitQuizAttempt({ attemptId, quiz, assignmentId, answers, securityEvents, terminatedReason, clientMutationId = '' }) {
     if (!attemptId) return;
     const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const safeAnswers = Array.isArray(answers) ? answers : [];
     const score = safeAnswers.reduce((total, answer) => total + numericAnswerScore(answer), 0);
     const maxScore = safeAnswers.reduce((total, answer) => total + numericAnswerMax(answer), 0);
@@ -1494,7 +1601,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.004',
+          appVersion: '0.25.005',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1531,6 +1638,8 @@
     isConfigured,
     getClient,
     getSession,
+    restoreSession,
+    requireAuthenticatedSession,
     signIn,
     signOut,
     onAuthStateChange,
