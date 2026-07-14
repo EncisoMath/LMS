@@ -32123,3 +32123,38 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   .em-class-card-actions .em-class-edit-btn,
   .em-class-card-actions .em-class-delete-btn { width: 30px; height: 30px; }
 }
+
+/* v0.25.008 · acceso y vista de estudiante */
+.em-login-access-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 14px;
+}
+.em-login-access-switch .mini-btn {
+  min-height: 42px;
+  border-radius: 14px;
+  font-family: Montserrat, system-ui, sans-serif;
+  font-weight: 900;
+}
+.em-login-access-switch .mini-btn.selected {
+  background: var(--maincolor, #1368ce);
+  color: #fff;
+  border-color: transparent;
+}
+.em-login-mode[hidden] {
+  display: none !important;
+}
+.em-content-toolbar-readonly {
+  justify-content: flex-end !important;
+}
+.em-student-home-screen .profile-action-row {
+  justify-content: flex-end;
+}
+.em-activity-card.is-student-readonly .em-activity-card-copy {
+  padding-bottom: 20px;
+}
+.em-activity-detail-screen.is-student-readonly .em-activity-detail-main {
+  margin-bottom: 24px;
+}

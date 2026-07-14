@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.007';
+  const APP_VERSION = '0.25.008';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -608,6 +608,15 @@
   function isCloudReady() {
     return Boolean(state.cloud?.enabled && cloudAPI());
   }
+  function isStudentPortal() {
+    return String(state.user?.role || '').toLowerCase() === 'student';
+  }
+  function isTeacherPortal() {
+    return ['teacher', 'admin'].includes(String(state.user?.role || '').toLowerCase());
+  }
+  function renderRoleHome(options = {}) {
+    return isStudentPortal() ? renderStudentHome(options) : renderTeacherHome(options);
+  }
   function cloudAttendanceKey(assignmentId, date) {
     return `${assignmentId}|${date}`;
   }
@@ -652,7 +661,7 @@
       const snapshot = event.detail?.snapshot;
       const summary = event.detail?.summary || {};
       if (!applyCloudSnapshotToState(snapshot, { initializePeriod: false })) return;
-      if (state.appRoute?.screen === 'activity') {
+      if (state.appRoute?.screen === 'activity' && !isStudentPortal()) {
         const activity = (state.data.activities || []).find((item) => String(item.id) === String(state.activeActivityId || state.appRoute.activityId || ''));
         if (activity) loadActivityGradebook(activity).catch?.(() => {});
       } else if (state.appRoute?.screen === 'subject') {
@@ -843,13 +852,19 @@
     try {
       const cloudData = await cloudAPI().loadApplicationData();
       applyCloudSnapshotToState(cloudData, { initializePeriod: true });
-      localStorage.setItem('encisomath:lastUser', JSON.stringify({
-        id: cloudData.user.email || cloudData.user.id,
-        email: cloudData.user.email || '',
-        name: cloudData.user.fullName
-      }));
-      if (cloudData.user.role === 'teacher' || cloudData.user.role === 'admin') renderTeacherHome();
-      else renderStudentPlaceholder();
+      if (cloudData.user.role === 'student') {
+        localStorage.setItem('encisomath:lastStudentCode', String(cloudData.user.id || cloudData.user.username || ''));
+        localStorage.setItem('encisomath:lastLoginMode', 'student');
+        renderStudentHome();
+      } else {
+        localStorage.setItem('encisomath:lastUser', JSON.stringify({
+          id: cloudData.user.email || cloudData.user.id,
+          email: cloudData.user.email || '',
+          name: cloudData.user.fullName
+        }));
+        localStorage.setItem('encisomath:lastLoginMode', 'teacher');
+        renderTeacherHome();
+      }
       return true;
     } catch (error) {
       state.cloud.loading = false;
@@ -959,7 +974,8 @@
     return null;
   }
   function normalizeSubjectTab(tab) {
-    const value = String(tab || 'students');
+    const value = String(tab || (isStudentPortal() ? 'classes' : 'students'));
+    if (isStudentPortal()) return ['classes', 'activities'].includes(value) ? value : 'classes';
     return ['students', 'classes', 'activities', 'notes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
   function subjectTabDisplayLabel(tab) {
@@ -970,7 +986,7 @@
       notes: '📊 Notas',
       rockstars: '🚀 Rockstars',
       quizzes: '🎮 Quizzes'
-    }[normalizeSubjectTab(tab)] || '👥 Estudiantes';
+    }[normalizeSubjectTab(tab)] || (isStudentPortal() ? '📚 Clases' : '👥 Estudiantes');
   }
   function appRouteKey(route) {
     const normalized = normalizeAppRoute(route);
@@ -1054,7 +1070,7 @@
     if (state.assignment?.id) {
       return { screen: 'subject', assignmentId: state.assignment.id, tab: normalizeSubjectTab(state.activeSubjectTab || 'students') };
     }
-    return state.user.role === 'teacher' ? { screen: 'home' } : { screen: 'student' };
+    return isTeacherPortal() ? { screen: 'home' } : { screen: 'student' };
   }
   function applyAppRoute(route) {
     const normalized = normalizeAppRoute(route) || currentAppRouteFallback();
@@ -1069,19 +1085,19 @@
     }
 
     if (normalized.screen === 'student') {
-      renderStudentPlaceholder({ noHistory: true });
+      renderStudentHome({ noHistory: true });
       return;
     }
 
     if (normalized.screen === 'home') {
-      renderTeacherHome({ noHistory: true });
+      renderRoleHome({ noHistory: true });
       return;
     }
 
     if (normalized.screen === 'subject') {
-      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
+      const assignment = getAssignmentsForCurrentUser().find((item) => String(item.id) === String(normalized.assignmentId));
       if (!assignment) {
-        renderTeacherHome({ noHistory: true });
+        renderRoleHome({ noHistory: true });
         return;
       }
       state.assignment = assignment;
@@ -1090,22 +1106,22 @@
     }
 
     if (normalized.screen === 'lesson') {
-      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
-      const lesson = state.data.classes.find((item) => item.id === normalized.lessonId);
-      if (!assignment || !lesson) {
-        renderTeacherHome({ noHistory: true });
+      const assignment = getAssignmentsForCurrentUser().find((item) => String(item.id) === String(normalized.assignmentId));
+      const lesson = state.data.classes.find((item) => String(item.id) === String(normalized.lessonId));
+      if (!assignment || !lesson || !contentBelongsToAssignment(lesson, assignment)) {
+        renderRoleHome({ noHistory: true });
         return;
       }
       state.assignment = assignment;
       renderLesson(lesson, { noHistory: true });
+      return;
     }
 
-
     if (normalized.screen === 'activity') {
-      const assignment = state.data.assignments.find((item) => item.id === normalized.assignmentId);
-      const activity = state.data.activities.find((item) => item.id === normalized.activityId);
-      if (!assignment || !activity) {
-        renderTeacherHome({ noHistory: true });
+      const assignment = getAssignmentsForCurrentUser().find((item) => String(item.id) === String(normalized.assignmentId));
+      const activity = state.data.activities.find((item) => String(item.id) === String(normalized.activityId));
+      if (!assignment || !activity || !contentBelongsToAssignment(activity, assignment)) {
+        renderRoleHome({ noHistory: true });
         return;
       }
       state.assignment = assignment;
@@ -1206,6 +1222,8 @@
   function renderLogin(options = {}) {
     commitAppRoute({ screen: 'login' }, options);
     const last = readJSON('encisomath:lastUser');
+    const lastStudentCode = String(localStorage.getItem('encisomath:lastStudentCode') || '');
+    const preferredMode = localStorage.getItem('encisomath:lastLoginMode') === 'student' ? 'student' : 'teacher';
     const markup = `
       <main class="login-screen">
         ${animatedShapes('login')}
@@ -1214,39 +1232,82 @@
             ${encisoAnimatedLogoHTML('login')}
           </div>
 
-          <form id="loginForm" class="login-form">
+          <div class="em-login-access-switch" role="tablist" aria-label="Tipo de acceso">
+            <button class="mini-btn ${preferredMode === 'teacher' ? 'selected' : ''}" id="teacherLoginModeBtn" type="button" role="tab" aria-selected="${preferredMode === 'teacher'}">Docente</button>
+            <button class="mini-btn ${preferredMode === 'student' ? 'selected' : ''}" id="studentLoginModeBtn" type="button" role="tab" aria-selected="${preferredMode === 'student'}">Estudiante</button>
+          </div>
+
+          <form id="teacherLoginForm" class="login-form em-login-mode" data-login-mode="teacher" ${preferredMode === 'teacher' ? '' : 'hidden'}>
             <label class="field-label" for="userEmail">Correo electrónico</label>
             <input class="input" id="userEmail" name="email" type="email" inputmode="email" autocomplete="username" value="${escapeAttr(last?.email || last?.id || '')}" placeholder="enciso.math@gmail.com" required />
             <label class="field-label" for="userPassword">Contraseña</label>
             <input class="input" id="userPassword" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña de Supabase" required />
             <div class="remember-row">
-              <label><input type="checkbox" id="remember" checked /> Mantener sesión iniciada</label>
+              <label><input type="checkbox" id="teacherRemember" checked /> Mantener sesión iniciada</label>
             </div>
-            <button class="primary-btn full" id="loginSubmitBtn" type="submit">Iniciar sesión</button>
+            <button class="primary-btn full" id="teacherLoginSubmitBtn" type="submit">Iniciar sesión</button>
             <div class="last-user">
               <span>Último usuario</span>
               <button type="button" class="mini-btn" id="lastUserBtn">${last ? `${escapeHTML(last.name || '')} · ${escapeHTML(last.email || last.id || '')}` : 'Sin registro'}</button>
             </div>
-            <p class="login-hint">Acceso protegido con Supabase Auth. Los registros se guardan en la nube según el rol del usuario.</p>
+            <p class="login-hint">Acceso docente protegido con Supabase Auth.</p>
+          </form>
+
+          <form id="studentLoginForm" class="login-form em-login-mode" data-login-mode="student" ${preferredMode === 'student' ? '' : 'hidden'}>
+            <label class="field-label" for="studentCode">Código del estudiante</label>
+            <input class="input" id="studentCode" name="studentCode" type="text" inputmode="text" autocomplete="username" autocapitalize="characters" value="${escapeAttr(lastStudentCode)}" placeholder="Escribe tu student_code" required />
+            <div class="remember-row">
+              <label><input type="checkbox" id="studentRemember" checked /> Mantener sesión iniciada</label>
+            </div>
+            <button class="primary-btn full" id="studentLoginSubmitBtn" type="submit">Entrar como estudiante</button>
+            <div class="last-user">
+              <span>Último código</span>
+              <button type="button" class="mini-btn" id="lastStudentBtn">${lastStudentCode ? escapeHTML(lastStudentCode) : 'Sin registro'}</button>
+            </div>
+            <p class="login-hint">Acceso temporal de solo lectura para consultar clases y actividades del curso matriculado.</p>
           </form>
         </section>
       </main>
     `;
 
     mount(markup, () => {
+      const teacherForm = document.getElementById('teacherLoginForm');
+      const studentForm = document.getElementById('studentLoginForm');
+      const teacherModeButton = document.getElementById('teacherLoginModeBtn');
+      const studentModeButton = document.getElementById('studentLoginModeBtn');
       const emailInput = document.getElementById('userEmail');
       const passwordInput = document.getElementById('userPassword');
-      const submitButton = document.getElementById('loginSubmitBtn');
+      const studentCodeInput = document.getElementById('studentCode');
+
+      const setLoginMode = (mode) => {
+        const studentMode = mode === 'student';
+        teacherForm.hidden = studentMode;
+        studentForm.hidden = !studentMode;
+        teacherModeButton.classList.toggle('selected', !studentMode);
+        studentModeButton.classList.toggle('selected', studentMode);
+        teacherModeButton.setAttribute('aria-selected', studentMode ? 'false' : 'true');
+        studentModeButton.setAttribute('aria-selected', studentMode ? 'true' : 'false');
+        localStorage.setItem('encisomath:lastLoginMode', studentMode ? 'student' : 'teacher');
+        window.setTimeout(() => (studentMode ? studentCodeInput : emailInput)?.focus(), 0);
+      };
+
+      teacherModeButton.addEventListener('click', () => setLoginMode('teacher'));
+      studentModeButton.addEventListener('click', () => setLoginMode('student'));
       document.getElementById('lastUserBtn').addEventListener('click', () => {
         if (last?.email || last?.id) emailInput.value = last.email || last.id;
         passwordInput.focus();
       });
+      document.getElementById('lastStudentBtn').addEventListener('click', () => {
+        if (lastStudentCode) studentCodeInput.value = lastStudentCode;
+        studentCodeInput.focus();
+      });
 
-      document.getElementById('loginForm').addEventListener('submit', async (event) => {
+      teacherForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const email = emailInput.value.trim().toLowerCase();
         const password = passwordInput.value;
-        const remember = document.getElementById('remember').checked;
+        const remember = document.getElementById('teacherRemember').checked;
+        const submitButton = document.getElementById('teacherLoginSubmitBtn');
         if (!email || !password) return;
         submitButton.disabled = true;
         submitButton.textContent = 'Conectando...';
@@ -1261,6 +1322,28 @@
         } finally {
           submitButton.disabled = false;
           submitButton.textContent = 'Iniciar sesión';
+        }
+      });
+
+      studentForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const studentCode = studentCodeInput.value.trim();
+        const remember = document.getElementById('studentRemember').checked;
+        const submitButton = document.getElementById('studentLoginSubmitBtn');
+        if (!studentCode) return;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Comprobando código...';
+        try {
+          const activeSession = await cloudAPI().signInStudentCode(studentCode, { remember });
+          localStorage.setItem(CLOUD_SESSION_MODE_KEY, remember ? 'persistent' : 'session');
+          sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
+          await enterCloudSession(activeSession);
+        } catch (error) {
+          toast(authErrorMessage(error));
+          studentCodeInput.select();
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Entrar como estudiante';
         }
       });
     });
@@ -1341,7 +1424,7 @@
     void grid.offsetWidth;
     grid.classList.add('grid-local-update');
   }
-  function bindAssignmentCards(assignments = getTeacherAssignments(state.user?.id)) {
+  function bindAssignmentCards(assignments = getAssignmentsForCurrentUser()) {
     document.querySelectorAll('[data-open-assignment], [data-subject-id]').forEach((button) => {
       button.addEventListener('click', () => {
         const assignmentId = button.dataset.openAssignment || button.dataset.subjectId;
@@ -1350,7 +1433,7 @@
         const subjectColor = button.dataset.subjectColor || emGetSubjectColorForAssignment(assignment);
         emSetCurrentSubjectColor(subjectColor);
         state.assignment = assignment;
-        renderSubjectDetail('students');
+        renderSubjectDetail(isStudentPortal() ? 'classes' : 'students');
       });
     });
   }
@@ -1358,7 +1441,8 @@
     cleanupActivePdfViewer();
     tab = normalizeSubjectTab(tab);
     const assignment = state.assignment;
-    if (!assignment) return renderTeacherHome(options);
+    if (!assignment) return renderRoleHome(options);
+    const studentMode = isStudentPortal();
     commitAppRoute({ screen: 'subject', assignmentId: assignment.id, tab }, options);
     emSetCurrentSubjectColor(emGetSubjectColorForAssignment(assignment));
     const iconSrc = getAssignmentIcon(assignment);
@@ -1381,7 +1465,7 @@
               <div class="subject-chips compact">
                 <span>Grado ${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</span>
                 <span>${escapeHTML(assignment.sede)}</span>
-                <span>${studentCount} estudiantes</span>
+                <span>${studentMode ? 'Vista estudiante' : `${studentCount} estudiantes`}</span>
               </div>
             </div>
           </div>
@@ -1392,12 +1476,17 @@
               <span class="em-subject-section-label">Sección</span>
               <span class="em-subject-section-current" id="subjectSectionCurrent">${escapeHTML(subjectTabDisplayLabel(tab))}</span>
               <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
-                <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
-                <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
-                <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
-                <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Notas</option>
-                <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
-                <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
+                ${studentMode ? `
+                  <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
+                  <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
+                ` : `
+                  <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
+                  <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
+                  <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
+                  <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Notas</option>
+                  <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
+                  <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
+                `}
               </select>
               <span class="em-subject-section-chevron" aria-hidden="true">⌄</span>
             </label>
@@ -1408,7 +1497,7 @@
     `;
 
     mount(markup, () => {
-      document.getElementById('backBtn').addEventListener('click', renderTeacherHome);
+      document.getElementById('backBtn').addEventListener('click', renderRoleHome);
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
       const subjectSectionSelect = document.getElementById('subjectSectionSelect');
       subjectSectionSelect?.addEventListener('change', (event) => {
@@ -1420,7 +1509,10 @@
       emInitSubjectToolbar(document);
       applySubjectInfoTune();
       setActiveSubjectTabMeta(tab);
-      if (tab === 'students') renderStudentsTab({ animate: true });
+      if (studentMode) {
+        if (tab === 'activities') renderActivitiesTab({ animate: true });
+        else renderClassesTab({ animate: true });
+      } else if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'activities') renderActivitiesTab({ animate: true });
       else if (tab === 'notes') renderNotesTab({ animate: true });
       else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
@@ -3314,7 +3406,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.007', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.008', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -10898,12 +10990,13 @@
     const lesson = activityRelatedLesson(activity);
     const start = activity.startsAt ? formatActivityCardDate(activity.startsAt) : 'SIN FECHA';
     const due = activity.dueAt ? formatActivityCardDate(activity.dueAt) : 'SIN FECHA';
-    const progress = activityProgressForCurrentAssignment(activity);
+    const studentMode = isStudentPortal();
+    const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
     return `
-      <article class="em-activity-card" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress.percentage}%">
+      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''}" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress?.percentage || 0}%">
         <div class="em-activity-card-title-row">
           <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
-          <span class="em-activity-card-percent">${progress.percentage}%</span>
+          ${studentMode ? '' : `<span class="em-activity-card-percent">${progress.percentage}%</span>`}
         </div>
         <div class="em-activity-card-copy">
           <p class="em-activity-card-topic">${lesson ? escapeHTML(lesson.title || 'Clase') : 'Actividad independiente'}</p>
@@ -10911,10 +11004,12 @@
             <span><small>Asignada</small><strong>${escapeHTML(start)}</strong></span>
             <span><small>Finaliza</small><strong>${escapeHTML(due)}</strong></span>
           </div>
-          <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
-            <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
-            <i><b></b></i>
-          </div>
+          ${studentMode ? '' : `
+            <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
+              <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
+              <i><b></b></i>
+            </div>
+          `}
         </div>
       </article>
     `;
@@ -10935,8 +11030,8 @@
       <section class="activity-hero em-act-hero-host" data-em-activities-hero aria-label="Actividades de la asignatura">
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="view-row em-content-toolbar em-content-toolbar-has-action">
-        <button class="em-add-content-btn" id="openAddActivityBtn" type="button">＋ Añadir actividad</button>
+      <div class="view-row em-content-toolbar ${isStudentPortal() ? 'em-content-toolbar-readonly' : 'em-content-toolbar-has-action'}">
+        ${isStudentPortal() ? '' : '<button class="em-add-content-btn" id="openAddActivityBtn" type="button">＋ Añadir actividad</button>'}
         <div class="em-view-switch" aria-label="Vista de actividades">
           <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
@@ -11241,17 +11336,17 @@
 
   function renderActivityDetail(activity, options = {}) {
     if (!activity || !state.assignment) return renderSubjectDetail('activities', options);
+    const studentMode = isStudentPortal();
     state.activeActivityId = activity.id;
     commitAppRoute({ screen: 'activity', assignmentId: state.assignment.id, activityId: activity.id }, options);
     emSetCurrentSubjectColor(emGetSubjectColorForAssignment(state.assignment));
     const lesson = activityRelatedLesson(activity);
     const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
-    const progress = activityProgressForCurrentAssignment(activity);
-    const gradeCourse = emRsGetAssignmentGradeCourse(state.assignment);
-    const activityStudentColumnWidth = notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
+    const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
+    const activityStudentColumnWidth = studentMode ? 0 : notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
     mount(`
-      <main class="screen em-activity-detail-screen">
+      <main class="screen em-activity-detail-screen ${studentMode ? 'is-student-readonly' : ''}">
         <header class="topbar fixed-lock em-activity-detail-topbar">
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>Actividad</h1>
@@ -11288,9 +11383,11 @@
           </section>
 
           <section class="em-activity-detail-main">
-            <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
-              ${activityOverviewHTML(progress)}
-            </div>
+            ${studentMode ? '' : `
+              <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
+                ${activityOverviewHTML(progress)}
+              </div>
+            `}
             <div class="em-activity-detail-content-tabs" role="tablist" aria-label="Contenido de la actividad">
               <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
               <button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review">Resultado</button>
@@ -11301,31 +11398,35 @@
             <section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
               ${activityContentShellHTML(activity, 'review')}
             </section>
-            <div class="em-activity-detail-actions">
-              <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
-              <button class="ghost-btn em-activity-delete-btn" id="deleteActivityBtn" type="button">Eliminar actividad</button>
-            </div>
+            ${studentMode ? '' : `
+              <div class="em-activity-detail-actions">
+                <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
+                <button class="ghost-btn em-activity-delete-btn" id="deleteActivityBtn" type="button">Eliminar actividad</button>
+              </div>
+            `}
           </section>
 
-          <section class="em-activity-gradebook" style="--em-activity-student-width:${activityStudentColumnWidth}px">
-            <div class="em-activity-gradebook-head">
-              <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
-              <label class="em-activity-grade-search"><span aria-hidden="true">⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" autocomplete="off" /></label>
-            </div>
-            <div class="em-activity-grade-table-scroll">
-              <table class="em-activity-grade-table">
-                <thead>
-                  <tr>
-                    <th class="em-activity-grade-group-header" scope="col"><button type="button" data-activity-grade-sort="group" aria-label="Ordenar por grupo">G <span class="em-grade-sort-indicator">↕</span></button></th>
-                    <th class="em-activity-grade-student-header" scope="col"><button type="button" data-activity-grade-sort="lastName">Estudiante <span class="em-grade-sort-indicator">↑</span></button></th>
-                    <th class="em-activity-grade-score-header" scope="col"><button type="button" data-activity-grade-sort="score">Cal. <span class="em-grade-sort-indicator">↕</span></button></th>
-                    <th class="em-activity-grade-performance-header" scope="col"><button type="button" data-activity-grade-sort="performance">Desempeño <span class="em-grade-sort-indicator">↕</span></button></th>
-                  </tr>
-                </thead>
-                <tbody id="activityGradebookList" class="em-activity-gradebook-list"></tbody>
-              </table>
-            </div>
-          </section>
+          ${studentMode ? '' : `
+            <section class="em-activity-gradebook" style="--em-activity-student-width:${activityStudentColumnWidth}px">
+              <div class="em-activity-gradebook-head">
+                <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
+                <label class="em-activity-grade-search"><span aria-hidden="true">⌕</span><input id="activityGradeSearch" type="search" placeholder="Buscar estudiante" autocomplete="off" /></label>
+              </div>
+              <div class="em-activity-grade-table-scroll">
+                <table class="em-activity-grade-table">
+                  <thead>
+                    <tr>
+                      <th class="em-activity-grade-group-header" scope="col"><button type="button" data-activity-grade-sort="group" aria-label="Ordenar por grupo">G <span class="em-grade-sort-indicator">↕</span></button></th>
+                      <th class="em-activity-grade-student-header" scope="col"><button type="button" data-activity-grade-sort="lastName">Estudiante <span class="em-grade-sort-indicator">↑</span></button></th>
+                      <th class="em-activity-grade-score-header" scope="col"><button type="button" data-activity-grade-sort="score">Cal. <span class="em-grade-sort-indicator">↕</span></button></th>
+                      <th class="em-activity-grade-performance-header" scope="col"><button type="button" data-activity-grade-sort="performance">Desempeño <span class="em-grade-sort-indicator">↕</span></button></th>
+                    </tr>
+                  </thead>
+                  <tbody id="activityGradebookList" class="em-activity-gradebook-list"></tbody>
+                </table>
+              </div>
+            </section>
+          `}
         </div>
       </main>
     `, () => {
@@ -11333,10 +11434,12 @@
         if (window.history?.length > 1) window.history.back();
         else renderSubjectDetail('activities');
       });
-      document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
-      document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
-      document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
-      bindActivityGradeSortButtons();
+      if (!studentMode) {
+        document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
+        document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
+        document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
+        bindActivityGradeSortButtons();
+      }
       const setActivityDetailTab = (tabName = 'content') => {
         document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
           const active = button.dataset.activityDetailTab === tabName;
@@ -11352,9 +11455,12 @@
         button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content'));
       });
       setActivityDetailTab('content');
-      loadActivityGradebook(activity);
+      if (!studentMode) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
-      emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook'], { duration: 480, stagger: 35, distance: 14, scale: .985 });
+      const entranceSelectors = studentMode
+        ? ['.em-activity-detail-hero', '.em-activity-content-stage > *']
+        : ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook'];
+      emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), entranceSelectors, { duration: 480, stagger: 35, distance: 14, scale: .985 });
     });
   }
 
@@ -12186,8 +12292,8 @@
       <section class="class-hero em-cl-hero-host" data-em-classes-hero aria-label="Clases de la asignatura">
         ${emClClassesHeroHTML()}
       </section>
-      <div class="view-row em-content-toolbar em-content-toolbar-has-action em-class-view-only">
-        <button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button>
+      <div class="view-row em-content-toolbar ${isStudentPortal() ? 'em-content-toolbar-readonly' : 'em-content-toolbar-has-action'} em-class-view-only">
+        ${isStudentPortal() ? '' : '<button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button>'}
         <div class="em-view-switch" aria-label="Vista de clases">
           <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
@@ -12617,7 +12723,7 @@
     cleanupActivePdfViewer();
     const assignment = state.assignment;
     if (assignment?.id && lesson?.id) commitAppRoute({ screen: 'lesson', assignmentId: assignment.id, lessonId: lesson.id }, options);
-    if (isCloudReady() && assignment?.id && lesson?.id) {
+    if (isCloudReady() && !isStudentPortal() && assignment?.id && lesson?.id) {
       cloudAPI().recordLessonView({ assignmentId: assignment.id, lessonId: lesson.id })
         .catch((error) => reportCloudError('No se registró la apertura de la clase', error, { silent: true }));
     }
@@ -13123,11 +13229,52 @@
     await renderPage(1, 'none', { zoom: 1 });
   }
 
-  function renderStudentPlaceholder(options = {}) {
+  function renderStudentHome(options = {}) {
     commitAppRoute({ screen: 'student' }, options);
+    state.assignment = null;
     const student = state.user || {};
-    mount(`<main class="screen mobile-pad"><h1>Hola, ${escapeHTML(student.fullName || 'estudiante')}</h1><p>Tu cuenta ya está autenticada con Supabase. La siguiente fase habilitará aquí clases, quizzes, asistencia y resultados de tus asignaturas.</p><p class="card-sub">Usuario: ${escapeHTML(student.email || student.username || student.id || '')}</p><button class="primary-btn" id="logoutBtn">Cerrar sesión</button></main>`, () => {
-      document.getElementById('logoutBtn').addEventListener('click', logout);
+    const assignments = getStudentAssignments(student);
+    const gradeCourse = [student.grade, student.course].filter(Boolean).join('-');
+    const markup = `
+      <main class="screen home-screen em-student-home-screen">
+        <section class="twitter-profile">
+          <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
+          <div class="profile-info">
+            <div class="profile-action-row">
+              <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
+            </div>
+            <img class="profile-avatar" src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
+            <div class="profile-copy">
+              <span class="profile-kicker">Bienvenido</span>
+              <h1>${escapeHTML(student.fullName || 'Estudiante')}</h1>
+              <p class="profile-handle">@${escapeHTML(student.username || student.id || '')}</p>
+              <p class="profile-bio">Estudiante${gradeCourse ? ` · Grado ${escapeHTML(gradeCourse)}` : ''}</p>
+              <div class="profile-meta">
+                ${gradeCourse ? `<span>🎓 Grado ${escapeHTML(gradeCourse)}</span>` : ''}
+                <span>🏫 ${escapeHTML(student.sede || 'Municipal')}</span>
+                <span>📱 EncisoMath</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Panel estudiante</p>
+              <h2 class="section-title">Mis asignaturas</h2>
+            </div>
+          </div>
+          <div id="assignmentsGrid" class="em-sub-home-wrap">
+            ${emSubHomeSubjectsHTML(assignments)}
+          </div>
+        </section>
+      </main>
+    `;
+
+    mount(markup, () => {
+      document.getElementById('logoutBtn')?.addEventListener('click', logout);
+      bindAssignmentCards(assignments);
     });
   }
   const EM_FLAT_BACKGROUND_SHAPES = [
@@ -13545,12 +13692,15 @@
   }
   function classCardHTML(item, index = 0) {
     const thumb = item.thumbnailUrl || '';
+    const studentMode = isStudentPortal();
     return `
       <article class="em-class-card em-notebook-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
-        <div class="em-class-card-actions">
-          <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
-          <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
-        </div>
+        ${studentMode ? '' : `
+          <div class="em-class-card-actions">
+            <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
+            <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
+          </div>
+        `}
         <div class="em-class-cover ${thumb ? 'has-thumb' : ''}">
           <span class="em-notebook-binding" aria-hidden="true"></span>
           ${thumb ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />` : `<div class="em-class-cover-fallback">${emContentShapePairHTML('em-content-shape', index)}<span>PDF</span></div>`}
@@ -13579,8 +13729,9 @@
   }
 
   window.EncisoMathNav = {
-    home: () => renderTeacherHome(),
+    home: () => renderRoleHome(),
     students: () => {
+      if (isStudentPortal()) return renderSubjectDetail('classes');
       if (state.assignment) setSubjectTab('students');
       else toast('Elige primero una asignatura para ver estudiantes.');
     }
@@ -13633,6 +13784,29 @@
   }
   function getTeacherAssignments(teacherId) {
     return state.data.assignments.filter((item) => item.teacherId === teacherId);
+  }
+  function getStudentAssignments(student = state.user) {
+    const groupId = String(student?.groupId || '');
+    const grade = String(student?.grade || '');
+    const course = String(student?.course || '');
+    const sede = String(student?.sede || '');
+    return (state.data.assignments || []).filter((item) => {
+      if (item.active === false) return false;
+      if (groupId && item.groupId) return String(item.groupId) === groupId;
+      return String(item.grade || '') === grade
+        && String(item.course || '') === course
+        && (!sede || String(item.sede || '') === sede);
+    });
+  }
+  function getAssignmentsForCurrentUser() {
+    return isStudentPortal() ? getStudentAssignments(state.user) : getTeacherAssignments(state.user?.id);
+  }
+  function contentBelongsToAssignment(item, assignment = state.assignment) {
+    if (!item || !assignment) return false;
+    const ids = Array.isArray(item.assignmentIds) ? item.assignmentIds.map(String) : [];
+    if (ids.length) return ids.includes(String(assignment.id));
+    if (item.assignmentId) return String(item.assignmentId) === String(assignment.id);
+    return item.subject === assignment.subject || item.area === assignment.area;
   }
   function getStudentsForAssignment(assignment) {
     if (isCloudReady()) {
@@ -14224,7 +14398,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.007', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.008', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,

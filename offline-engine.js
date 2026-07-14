@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.007';
+  const OFFLINE_VERSION = '0.25.008';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -430,6 +430,11 @@
   async function rememberSession(session) {
     if (!session?.user?.id) return;
     activeUserId = String(session.user.id);
+    if (session.encisomathStudentPortal && session.encisomathRemember === false) {
+      await kvDelete(sessionKey()).catch(() => {});
+      await kvSet('last-user-id', activeUserId);
+      return;
+    }
     await kvSet(sessionKey(), {
       user: {
         id: session.user.id,
@@ -442,6 +447,9 @@
       refresh_token: session.refresh_token || '',
       expires_at: session.expires_at || 0,
       token_type: session.token_type || 'bearer',
+      encisomathStudentPortal: Boolean(session.encisomathStudentPortal),
+      encisomathRemember: session.encisomathRemember !== false,
+      studentCode: session.studentCode || '',
       offline: true,
       cachedAt: nowIso()
     });
@@ -1740,6 +1748,13 @@
     return session;
   }
 
+  async function wrappedSignInStudentCode(studentCode, options = {}) {
+    if (typeof cloud.signInStudentCode !== 'function') throw new Error('Esta versión no incluye acceso por código de estudiante.');
+    const session = await cloud.signInStudentCode(studentCode, options);
+    await rememberSession(session);
+    return session;
+  }
+
   async function wrappedSignOut() {
     try { await cloud.signOut(); } finally {
       activeUserId = '';
@@ -1800,6 +1815,7 @@
     getClient: cloud.getClient,
     getSession: wrappedGetSession,
     signIn: wrappedSignIn,
+    signInStudentCode: wrappedSignInStudentCode,
     signOut: wrappedSignOut,
     onAuthStateChange: wrappedOnAuthStateChange,
     loadApplicationData: wrappedLoadApplicationData,

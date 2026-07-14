@@ -10,6 +10,10 @@
   let studentDbIdToCode = new Map();
   let lastAuthVerifiedAt = 0;
   let lastAuthVerifiedUserId = '';
+  let studentPortalSession = null;
+
+  const STUDENT_PORTAL_LOCAL_KEY = 'encisomath:studentPortalCode';
+  const STUDENT_PORTAL_SESSION_KEY = 'encisomath:studentPortalCodeSession';
 
   const LEGACY_DEMO_LESSON_IDS = [
     'bar-charts',
@@ -117,6 +121,62 @@
     return error;
   }
 
+
+  function normalizeStudentPortalCode(value) {
+    return String(value || '').trim();
+  }
+
+  function readStoredStudentPortalState() {
+    try {
+      const sessionCode = normalizeStudentPortalCode(sessionStorage.getItem(STUDENT_PORTAL_SESSION_KEY) || '');
+      if (sessionCode) return { code: sessionCode, remember: false };
+      const localCode = normalizeStudentPortalCode(localStorage.getItem(STUDENT_PORTAL_LOCAL_KEY) || '');
+      return { code: localCode, remember: Boolean(localCode) };
+    } catch (_) {
+      return { code: '', remember: false };
+    }
+  }
+
+  function readStoredStudentPortalCode() {
+    return readStoredStudentPortalState().code;
+  }
+
+  function storeStudentPortalCode(code, remember = true) {
+    const safeCode = normalizeStudentPortalCode(code);
+    clearStudentPortalAccess();
+    if (!safeCode) return;
+    try {
+      (remember ? localStorage : sessionStorage).setItem(remember ? STUDENT_PORTAL_LOCAL_KEY : STUDENT_PORTAL_SESSION_KEY, safeCode);
+    } catch (_) {}
+  }
+
+  function clearStudentPortalAccess() {
+    studentPortalSession = null;
+    try { localStorage.removeItem(STUDENT_PORTAL_LOCAL_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(STUDENT_PORTAL_SESSION_KEY); } catch (_) {}
+  }
+
+  function createStudentPortalSession(code, portalData = null, remember = true) {
+    const safeCode = normalizeStudentPortalCode(code);
+    return {
+      user: {
+        id: `student:${safeCode}`,
+        email: '',
+        role: 'student',
+        app_metadata: { provider: 'student_code' },
+        user_metadata: { student_code: safeCode }
+      },
+      access_token: '',
+      refresh_token: '',
+      expires_at: 0,
+      token_type: 'student-code',
+      encisomathStudentPortal: true,
+      encisomathRemember: remember !== false,
+      studentCode: safeCode,
+      portalData
+    };
+  }
+
   function isUniqueViolation(error) {
     const code = String(error?.code || '').trim();
     const message = String(error?.message || error?.details || '').toLowerCase();
@@ -188,6 +248,15 @@
   }
 
   async function getSession() {
+    const storedStudent = readStoredStudentPortalState();
+    const studentCode = storedStudent.code;
+    if (studentCode) {
+      if (!studentPortalSession || studentPortalSession.studentCode !== studentCode) {
+        studentPortalSession = createStudentPortalSession(studentCode, null, storedStudent.remember);
+      }
+      session = studentPortalSession;
+      return session;
+    }
     const supabaseClient = getClient();
     const { data, error } = await supabaseClient.auth.getSession();
     if (error) {
@@ -272,6 +341,7 @@
   }
 
   async function signIn(email, password) {
+    clearStudentPortalAccess();
     const supabaseClient = getClient();
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: String(email || '').trim().toLowerCase(),
@@ -289,8 +359,38 @@
     return session;
   }
 
+  async function signInStudentCode(studentCode, options = {}) {
+    const code = normalizeStudentPortalCode(studentCode);
+    if (!code) throw new Error('Escribe el código del estudiante.');
+    const remember = options.remember !== false;
+    const supabaseClient = getClient();
+    // El portal por código siempre opera como acceso público de solo lectura.
+    // Cerramos cualquier sesión docente previa para que no queden permisos de
+    // escritura activos detrás de la interfaz del estudiante.
+    const authResult = await supabaseClient.auth.getSession();
+    if (authResult.data?.session) {
+      const signOutResult = await supabaseClient.auth.signOut();
+      if (signOutResult.error) throw normalizeError(signOutResult.error, 'No se pudo preparar el acceso del estudiante.');
+    }
+    const { data, error } = await supabaseClient.rpc('encisomath_student_portal', { p_student_code: code });
+    if (error) {
+      const message = String(error.message || '').toLowerCase();
+      if (error.code === 'PGRST202' || message.includes('encisomath_student_portal')) {
+        throw new Error('Falta ejecutar en Supabase el archivo SUPABASE_STUDENT_PORTAL_v0.25.008.sql.');
+      }
+      throw normalizeError(error, 'No se pudo comprobar el código del estudiante.');
+    }
+    if (!data || data.ok === false) throw new Error(data?.message || 'No encontramos un estudiante activo con ese código.');
+    const canonicalCode = normalizeStudentPortalCode(data?.student?.student_code || code);
+    storeStudentPortalCode(canonicalCode, remember);
+    studentPortalSession = createStudentPortalSession(canonicalCode, data, remember);
+    session = studentPortalSession;
+    return session;
+  }
+
   async function signOut() {
     const supabaseClient = getClient();
+    clearStudentPortalAccess();
     const { error } = await supabaseClient.auth.signOut();
     session = null;
     lastAuthVerifiedAt = 0;
@@ -491,7 +591,98 @@
     }).filter(Boolean);
   }
 
+  function normalizeStudentPortalData(payload, requestedCode = '') {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    if (source.ok === false) throw new Error(source.message || 'No encontramos un estudiante activo con ese código.');
+    const rawStudent = source.student && typeof source.student === 'object' ? source.student : null;
+    const enrollment = source.enrollment && typeof source.enrollment === 'object' ? source.enrollment : null;
+    if (!rawStudent || !enrollment) throw new Error('Supabase no devolvió una matrícula activa para este estudiante.');
+
+    studentCodeToDbId = new Map();
+    studentDbIdToCode = new Map();
+    const mappedStudent = mapStudent({ ...enrollment, student: rawStudent });
+    if (!mappedStudent) throw new Error('No se pudo interpretar la información del estudiante.');
+    const studentCode = normalizeStudentPortalCode(mappedStudent.id || requestedCode);
+    const appUser = {
+      id: studentCode,
+      authId: `student:${studentCode}`,
+      dbStudentId: mappedStudent.dbId || rawStudent.id || null,
+      username: studentCode,
+      role: 'student',
+      fullName: mappedStudent.fullName || 'Estudiante',
+      email: '',
+      photo: mappedStudent.photo || './assets/default-avatar.svg',
+      active: mappedStudent.active !== false,
+      groupId: mappedStudent.groupId || enrollment.group_id || '',
+      grade: mappedStudent.grade || '',
+      course: mappedStudent.course || '',
+      sede: mappedStudent.sede || 'Municipal'
+    };
+
+    assignments = (Array.isArray(source.assignments) ? source.assignments : [])
+      .map((row) => mapAssignment(row, null))
+      .filter((item) => item.id && item.active !== false);
+
+    const uniqueLessons = new Map();
+    (Array.isArray(source.lessons) ? source.lessons : []).map(mapLesson).filter(Boolean).forEach((lesson) => {
+      const existing = uniqueLessons.get(lesson.id);
+      if (!existing) {
+        uniqueLessons.set(lesson.id, lesson);
+        return;
+      }
+      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(lesson.assignmentIds || [])])];
+      existing.sortOrder = Math.min(existing.sortOrder || 0, lesson.sortOrder || 0);
+    });
+
+    const uniqueActivities = new Map();
+    (Array.isArray(source.activities) ? source.activities : []).map(mapActivity).filter(Boolean).forEach((activity) => {
+      const existing = uniqueActivities.get(activity.id);
+      if (!existing) {
+        activity.progressByAssignment = {};
+        uniqueActivities.set(activity.id, activity);
+        return;
+      }
+      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(activity.assignmentIds || [])])];
+      existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
+    });
+
+    return {
+      user: appUser,
+      data: {
+        users: [appUser],
+        assignments,
+        students: [mappedStudent],
+        classes: [...uniqueLessons.values()],
+        activities: [...uniqueActivities.values()],
+        activityGrades: [],
+        quizGrades: [],
+        rockstars: [],
+        quizzes: []
+      },
+      attendance: {},
+      preferences: {}
+    };
+  }
+
+  async function loadStudentApplicationData(studentCode = '') {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
+    let payload = studentPortalSession?.studentCode === code ? studentPortalSession.portalData : null;
+    if (!payload) {
+      const { data, error } = await getClient().rpc('encisomath_student_portal', { p_student_code: code });
+      if (error) throw normalizeError(error, 'No se pudo cargar el portal del estudiante.');
+      payload = data;
+    }
+    const snapshot = normalizeStudentPortalData(payload, code);
+    const remembered = studentPortalSession?.encisomathRemember ?? readStoredStudentPortalState().remember;
+    studentPortalSession = createStudentPortalSession(snapshot.user.id, null, remembered);
+    session = studentPortalSession;
+    return snapshot;
+  }
+
   async function loadApplicationData() {
+    const studentCode = readStoredStudentPortalCode();
+    if (studentCode) return loadStudentApplicationData(studentCode);
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa en Supabase.');
@@ -1772,7 +1963,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.007', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.008', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -1831,7 +2022,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.007',
+          appVersion: '0.25.008',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1871,6 +2062,7 @@
     restoreSession,
     requireAuthenticatedSession,
     signIn,
+    signInStudentCode,
     signOut,
     onAuthStateChange,
     loadApplicationData,
