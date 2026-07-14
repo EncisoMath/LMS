@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.005';
+  const APP_VERSION = '0.25.007';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -828,10 +828,18 @@
     if (raw.includes('failed to fetch') || raw.includes('network')) return 'No hay conexión con Supabase. Revisa internet e inténtalo otra vez.';
     return error?.message || 'No se pudo iniciar sesión.';
   }
+  function updateStartupLoadingText(text = '') {
+    const phrase = document.querySelector('.em-brand-loading-screen .loading-phrase');
+    if (phrase && text) phrase.textContent = text;
+  }
+
   async function enterCloudSession(activeSession) {
     if (!activeSession?.user?.id) return false;
     state.cloud.loading = true;
-    mount(renderLoadingHTML('Sincronizando EncisoMath con Supabase...'), null, { instant: true });
+    // El splash global solo pertenece al arranque real. Si ya está visible,
+    // actualizamos su texto; si el usuario viene del login o navega dentro de
+    // la app, la sincronización ocurre sin volver a montar la pantalla completa.
+    updateStartupLoadingText('Sincronizando EncisoMath con Supabase...');
     try {
       const cloudData = await cloudAPI().loadApplicationData();
       applyCloudSnapshotToState(cloudData, { initializePeriod: true });
@@ -3306,7 +3314,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.005', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.007', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -12264,58 +12272,98 @@
     }
   }
 
+  function classVisibilityTargets() {
+    const current = state.assignment;
+    if (!current) return [];
+    const map = new Map(getClassTargetAssignments('grade').map((item) => [String(item.id), item]));
+    map.set(String(current.id), current);
+    return [...map.values()].sort((a, b) => String(a.course || '').localeCompare(String(b.course || ''), 'es', { numeric: true }));
+  }
+
+  function newClientLessonId() {
+    const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `lesson-${token}`;
+  }
+
+  function setClassUploadProgress(value = 0, label = '') {
+    const host = document.getElementById('classUploadProgress');
+    const bar = document.getElementById('classUploadProgressBar');
+    const percent = document.getElementById('classUploadProgressValue');
+    const copy = document.getElementById('classUploadProgressLabel');
+    const safe = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    if (host) host.hidden = false;
+    if (bar) bar.style.setProperty('--em-class-upload-progress', `${safe}%`);
+    if (percent) percent.textContent = `${safe}%`;
+    if (copy && label) copy.textContent = label;
+  }
+
   function openAddClassModal() {
+    openClassEditorModal(null);
+  }
+
+  function openEditClassModal(lesson) {
+    openClassEditorModal(lesson);
+  }
+
+  function openClassEditorModal(lesson = null) {
     const assignment = state.assignment;
     if (!assignment) return;
-    const gradeTargets = getClassTargetAssignments('grade');
-    const gradeCourses = gradeTargets.map((item) => `${item.grade}-${item.course}`).join(', ');
+    const editing = Boolean(lesson?.id);
+    const targets = classVisibilityTargets();
+    const selectedIds = new Set(editing
+      ? (Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds.map(String) : [String(lesson.assignmentId || assignment.id)])
+      : [String(assignment.id)]);
     openModal(`
       <section class="modal-card em-class-create-modal" role="dialog" aria-modal="true" aria-labelledby="addClassTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <p class="section-kicker">Biblioteca de clases</p>
-        <h2 id="addClassTitle">Añadir clase</h2>
-        <p class="card-sub">Sube el material en PDF. La primera página será la portada cuando no elijas una imagen.</p>
-        <form id="addClassForm" class="em-class-create-form">
+        <h2 id="addClassTitle">${editing ? 'Editar clase' : 'Añadir clase'}</h2>
+        <p class="card-sub">${editing ? 'Actualiza el nombre, el PDF, la portada o los cursos que pueden verla.' : 'Sube el material en PDF. La primera página será la portada cuando no elijas una imagen.'}</p>
+        <form id="classEditorForm" class="em-class-create-form">
           <label class="field-label" for="classTitleInput">Nombre del tema</label>
-          <input class="input" id="classTitleInput" maxlength="120" autocomplete="off" placeholder="Ejemplo: Gráficos de barras" required />
+          <input class="input" id="classTitleInput" maxlength="120" autocomplete="off" placeholder="Ejemplo: Gráficos de barras" value="${escapeAttr(lesson?.title || '')}" required />
 
           <label class="field-label" for="classPeriodInput">Periodo</label>
           <select class="select" id="classPeriodInput" required>
-            ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(getAutomaticAcademicPeriod()) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
+            ${[1, 2, 3, 4].map((period) => `<option value="${period}" ${Number(lesson?.period || getAutomaticAcademicPeriod()) === period ? 'selected' : ''}>Periodo ${period}</option>`).join('')}
           </select>
 
-          <label class="field-label" for="classPdfInput">Archivo PDF</label>
+          <label class="field-label" for="classPdfInput">${editing ? 'Reemplazar archivo PDF ' : 'Archivo PDF'}${editing ? '<span>(opcional)</span>' : ''}</label>
           <label class="em-file-drop" for="classPdfInput" id="classPdfDrop">
-            <strong>Seleccionar PDF</strong>
-            <span id="classPdfName">Máximo 20 MB</span>
+            <strong>${editing ? 'Seleccionar un PDF nuevo' : 'Seleccionar PDF'}</strong>
+            <span id="classPdfName">${editing ? escapeHTML(lesson.sourceFileName || 'Conservar el PDF actual') : 'Máximo 20 MB'}</span>
           </label>
-          <input class="em-hidden-file" id="classPdfInput" type="file" accept="application/pdf,.pdf" required />
+          <input class="em-hidden-file" id="classPdfInput" type="file" accept="application/pdf,.pdf" ${editing ? '' : 'required'} />
 
-          <label class="field-label" for="classThumbInput">Imagen de portada <span>(opcional)</span></label>
+          <label class="field-label" for="classThumbInput">${editing ? 'Reemplazar imagen de portada' : 'Imagen de portada'} <span>(opcional)</span></label>
           <label class="em-file-drop is-optional" for="classThumbInput" id="classThumbDrop">
-            <strong>Seleccionar imagen</strong>
-            <span id="classThumbName">PNG, JPG o WEBP. Si la omites se usará la primera página.</span>
+            <strong>${editing ? 'Seleccionar una portada nueva' : 'Seleccionar imagen'}</strong>
+            <span id="classThumbName">${editing && lesson.thumbnailUrl ? 'Conservar la portada actual' : 'PNG, JPG o WEBP. Si la omites se usará la primera página.'}</span>
           </label>
           <input class="em-hidden-file" id="classThumbInput" type="file" accept="image/png,image/jpeg,image/webp" />
 
-          <fieldset class="em-class-scope">
-            <legend>¿Dónde estará disponible?</legend>
-            <label>
-              <input type="radio" name="classScope" value="course" checked />
-              <span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span>
-            </label>
-            <label>
-              <input type="radio" name="classScope" value="grade" />
-              <span><strong>Todo el grado ${escapeHTML(assignment.grade)}</strong><small>${escapeHTML(gradeCourses || `${assignment.grade}-${assignment.course}`)}</small></span>
-            </label>
+          <fieldset class="em-class-visibility">
+            <legend>Visibilidad de la clase</legend>
+            <p>Selecciona exactamente los cursos del grado que tendrán acceso.</p>
+            <div class="em-class-visibility-row">
+              ${targets.map((target) => {
+                const label = `${target.grade}-${target.course}`;
+                return `<label><input type="checkbox" data-class-target value="${escapeAttr(target.id)}" ${selectedIds.has(String(target.id)) ? 'checked' : ''}/><span>${escapeHTML(label)}</span></label>`;
+              }).join('')}
+            </div>
           </fieldset>
 
+          <div class="em-class-upload-progress" id="classUploadProgress" hidden aria-live="polite">
+            <div class="em-class-upload-progress-head"><span id="classUploadProgressLabel">Preparando archivos…</span><strong id="classUploadProgressValue">0%</strong></div>
+            <div class="em-pdf-loader-track"><span class="em-pdf-loader-bar" id="classUploadProgressBar"></span></div>
+          </div>
+
           <p class="em-class-create-error" id="classCreateError" role="alert"></p>
-          <button class="primary-btn full" id="createClassSubmitBtn" type="submit">Guardar clase</button>
+          <button class="primary-btn full" id="createClassSubmitBtn" type="submit">${editing ? 'Guardar cambios' : 'Guardar clase'}</button>
         </form>
       </section>
     `, () => {
-      const form = document.getElementById('addClassForm');
+      const form = document.getElementById('classEditorForm');
       const pdfInput = document.getElementById('classPdfInput');
       const thumbInput = document.getElementById('classThumbInput');
       const pdfName = document.getElementById('classPdfName');
@@ -12323,70 +12371,103 @@
       document.getElementById('classTitleInput')?.focus();
       pdfInput?.addEventListener('change', () => {
         const file = pdfInput.files?.[0];
-        pdfName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Máximo 20 MB';
+        pdfName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : (editing ? (lesson.sourceFileName || 'Conservar el PDF actual') : 'Máximo 20 MB');
       });
       thumbInput?.addEventListener('change', () => {
         const file = thumbInput.files?.[0];
-        thumbName.textContent = file ? file.name : 'PNG, JPG o WEBP. Si la omites se usará la primera página.';
+        thumbName.textContent = file ? file.name : (editing && lesson.thumbnailUrl ? 'Conservar la portada actual' : 'PNG, JPG o WEBP. Si la omites se usará la primera página.');
       });
-      form?.addEventListener('submit', submitNewClass);
+      form?.addEventListener('submit', (event) => submitClassEditor(event, lesson));
     });
   }
 
-  async function submitNewClass(event) {
+  async function submitClassEditor(event, lesson = null) {
     event.preventDefault();
     const assignment = state.assignment;
+    const editing = Boolean(lesson?.id);
     const title = document.getElementById('classTitleInput')?.value.trim() || '';
     const period = Number(document.getElementById('classPeriodInput')?.value || state.period || 1);
     const pdfFile = document.getElementById('classPdfInput')?.files?.[0] || null;
     const selectedThumb = document.getElementById('classThumbInput')?.files?.[0] || null;
-    const scope = document.querySelector('input[name="classScope"]:checked')?.value || 'course';
+    const targetAssignmentIds = [...document.querySelectorAll('[data-class-target]:checked')].map((input) => input.value).filter(Boolean);
     const submit = document.getElementById('createClassSubmitBtn');
     const errorBox = document.getElementById('classCreateError');
-    const fail = (message) => {
-      if (errorBox) errorBox.textContent = message;
-    };
+    const lessonId = editing ? String(lesson.id) : newClientLessonId();
+    const fail = (message) => { if (errorBox) errorBox.textContent = message; };
     fail('');
     if (!title) return fail('Escribe el nombre del tema.');
-    if (!pdfFile) return fail('Selecciona un archivo PDF.');
-    const isPdf = pdfFile.type === 'application/pdf' || /\.pdf$/i.test(pdfFile.name || '');
-    if (!isPdf) return fail('El material debe ser un archivo PDF válido.');
-    if (pdfFile.size > MAX_CLASS_PDF_BYTES) return fail('El PDF supera el máximo de 20 MB.');
+    if (!editing && !pdfFile) return fail('Selecciona un archivo PDF.');
+    if (!targetAssignmentIds.length) return fail('Selecciona al menos un curso para la visibilidad de la clase.');
+    if (pdfFile) {
+      const isPdf = pdfFile.type === 'application/pdf' || /\.pdf$/i.test(pdfFile.name || '');
+      if (!isPdf) return fail('El material debe ser un archivo PDF válido.');
+      if (pdfFile.size > MAX_CLASS_PDF_BYTES) return fail('El PDF supera el máximo de 20 MB.');
+    }
     if (selectedThumb && !/^image\/(png|jpeg|webp)$/i.test(selectedThumb.type || '')) return fail('La portada debe ser PNG, JPG o WEBP.');
     if (selectedThumb && selectedThumb.size > MAX_CLASS_THUMB_BYTES) return fail('La imagen de portada supera el máximo de 5 MB.');
-    if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase para guardar la clase.');
 
     submit.disabled = true;
-    submit.textContent = 'Preparando PDF...';
+    submit.textContent = editing ? 'Guardando…' : 'Preparando PDF…';
+    setClassUploadProgress(3, pdfFile ? 'Analizando PDF…' : 'Preparando cambios…');
+    const progressHandler = (progressEvent) => {
+      const detail = progressEvent.detail || {};
+      if (String(detail.lessonId || '') !== lessonId) return;
+      setClassUploadProgress(detail.progress || 0, detail.label || 'Subiendo archivos…');
+    };
+    window.addEventListener('encisomath:lesson-upload-progress', progressHandler);
     try {
-      const pdfInfo = await inspectClassPdf(pdfFile, !selectedThumb);
-      const thumbnailFile = selectedThumb || pdfInfo.thumbnailFile;
-      const targets = getClassTargetAssignments(scope);
-      if (!targets.length) throw new Error('No se encontraron cursos compatibles para esta clase.');
-      submit.textContent = 'Subiendo archivos...';
-      const lesson = await cloudAPI().createPdfLesson({
+      let pageCount = Math.max(1, Number(lesson?.pageCount || 1));
+      let generatedThumbnail = null;
+      if (pdfFile) {
+        const pdfInfo = await inspectClassPdf(pdfFile, !selectedThumb);
+        pageCount = pdfInfo.pageCount;
+        generatedThumbnail = pdfInfo.thumbnailFile;
+      }
+      const thumbnailFile = selectedThumb || generatedThumbnail;
+      setClassUploadProgress(8, navigator.onLine === false ? 'Guardando localmente…' : 'Preparando subida…');
+      const payload = {
+        lessonId,
         currentAssignment: assignment,
-        targetAssignmentIds: targets.map((item) => item.id),
+        targetAssignmentIds,
         title,
         period,
         pdfFile,
         thumbnailFile,
-        pageCount: pdfInfo.pageCount
-      });
-      state.data.classes.push(lesson);
-      closeModal(false);
-      syncAcademicPeriodState(period);
-      renderClassesTab({ animate: true });
-      toast(scope === 'grade'
-        ? `Clase guardada para ${targets.length} cursos del grado ${assignment.grade}.`
-        : `Clase guardada para ${assignment.grade}-${assignment.course}.`);
+        pageCount
+      };
+      const savedLesson = editing
+        ? await cloudAPI().updatePdfLesson({
+            ...payload,
+            existingContentUrl: lesson.sourceContentUrl || lesson.contentUrl || '',
+            existingThumbnailUrl: lesson.sourceThumbnailUrl || lesson.thumbnailUrl || '',
+            existingStoragePdfPath: lesson.storagePdfPath || '',
+            existingStorageThumbnailPath: lesson.storageThumbnailPath || '',
+            existingSourceFileName: lesson.sourceFileName || ''
+          })
+        : await cloudAPI().createPdfLesson(payload);
+      setClassUploadProgress(100, navigator.onLine === false ? 'Guardado en el dispositivo' : 'Clase guardada');
+      if (editing) {
+        const index = state.data.classes.findIndex((item) => String(item.id) === lessonId);
+        if (index >= 0) state.data.classes[index] = { ...state.data.classes[index], ...savedLesson };
+        else state.data.classes.push(savedLesson);
+      } else {
+        state.data.classes.push(savedLesson);
+      }
+      window.setTimeout(() => {
+        closeModal(false);
+        syncAcademicPeriodState(period);
+        renderClassesTab({ animate: true });
+        toast(`${editing ? 'Clase actualizada' : 'Clase guardada'} para ${targetAssignmentIds.length} curso${targetAssignmentIds.length === 1 ? '' : 's'}.`);
+      }, 180);
     } catch (error) {
-      fail(error?.message || 'No se pudo guardar la clase.');
-      reportCloudError('No se pudo guardar la clase', error, { silent: true });
+      fail(error?.message || `No se pudo ${editing ? 'actualizar' : 'guardar'} la clase.`);
+      reportCloudError(`No se pudo ${editing ? 'actualizar' : 'guardar'} la clase`, error, { silent: true });
+      setClassUploadProgress(0, 'No se pudo completar la operación');
     } finally {
+      window.removeEventListener('encisomath:lesson-upload-progress', progressHandler);
       if (document.body.contains(submit)) {
         submit.disabled = false;
-        submit.textContent = 'Guardar clase';
+        submit.textContent = editing ? 'Guardar cambios' : 'Guardar clase';
       }
     }
   }
@@ -12400,6 +12481,16 @@
     document.getElementById('listModeBtn')?.addEventListener('click', () => setClassViewMode('list'));
   }
   function bindClassCards() {
+    document.querySelectorAll('[data-edit-class-id]').forEach((button) => {
+      if (button.dataset.boundClassEdit === 'true') return;
+      button.dataset.boundClassEdit = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const item = state.data.classes.find((lesson) => lesson.id === button.dataset.editClassId);
+        if (item) openEditClassModal(item);
+      });
+    });
     document.querySelectorAll('[data-delete-class-id]').forEach((button) => {
       if (button.dataset.boundClassDelete === 'true') return;
       button.dataset.boundClassDelete = 'true';
@@ -12414,12 +12505,12 @@
       if (button.dataset.boundClassCard === 'true') return;
       button.dataset.boundClassCard = 'true';
       button.addEventListener('click', (event) => {
-        if (event.target.closest('[data-delete-class-id]')) return;
+        if (event.target.closest('[data-delete-class-id], [data-edit-class-id]')) return;
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
         if (item) renderLesson(item);
       });
       button.addEventListener('keydown', (event) => {
-        if (event.target.closest('[data-delete-class-id]')) return;
+        if (event.target.closest('[data-delete-class-id], [data-edit-class-id]')) return;
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         const item = state.data.classes.find((lesson) => lesson.id === button.dataset.classId);
@@ -13456,7 +13547,10 @@
     const thumb = item.thumbnailUrl || '';
     return `
       <article class="em-class-card em-notebook-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
-        <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
+        <div class="em-class-card-actions">
+          <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
+          <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
+        </div>
         <div class="em-class-cover ${thumb ? 'has-thumb' : ''}">
           <span class="em-notebook-binding" aria-hidden="true"></span>
           ${thumb ? `<img src="${escapeAttr(thumb)}" alt="" loading="lazy" />` : `<div class="em-class-cover-fallback">${emContentShapePairHTML('em-content-shape', index)}<span>PDF</span></div>`}
@@ -14130,13 +14224,12 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.005', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.007', { updateViaCache: 'none' });
         registration.update();
-        let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
+          // La actualización queda activa sin recargar la pantalla actual. Así,
+          // navegar a un curso no vuelve a disparar el splash de inicio.
+          console.info('[EncisoMath] Service worker actualizado; se usará plenamente en la próxima apertura.');
         });
       } catch (error) {
         console.warn('Service worker no registrado:', error);

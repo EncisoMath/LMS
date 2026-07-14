@@ -972,6 +972,58 @@
     return `lesson-${token}`;
   }
 
+  function emitLessonUploadProgress(lessonId, progress, label, phase = '') {
+    try {
+      window.dispatchEvent(new CustomEvent('encisomath:lesson-upload-progress', {
+        detail: {
+          lessonId: String(lessonId || ''),
+          progress: Math.max(0, Math.min(100, Math.round(Number(progress) || 0))),
+          label: String(label || ''),
+          phase: String(phase || '')
+        }
+      }));
+    } catch (_) {}
+  }
+
+  async function uploadStorageObjectWithProgress({ activeSession, bucket, path, file, upsert = false, onProgress = null }) {
+    if (!activeSession?.access_token) throw authSessionError();
+    if (!(file instanceof Blob)) throw new Error('No se encontró el archivo que deseas subir.');
+    const baseUrl = String(config.url || '').replace(/\/$/, '');
+    const safeBucket = encodeURIComponent(String(bucket || 'lms-public'));
+    const safePath = String(path || '').split('/').map((part) => encodeURIComponent(part)).join('/');
+    const url = `${baseUrl}/storage/v1/object/${safeBucket}/${safePath}`;
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.responseType = 'json';
+      xhr.setRequestHeader('Authorization', `Bearer ${activeSession.access_token}`);
+      xhr.setRequestHeader('apikey', config.publishableKey);
+      xhr.setRequestHeader('x-upsert', upsert ? 'true' : 'false');
+      xhr.setRequestHeader('cache-control', '3600');
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.upload.addEventListener('progress', (event) => {
+        if (!event.lengthComputable || typeof onProgress !== 'function') return;
+        onProgress(Math.max(0, Math.min(1, event.loaded / Math.max(1, event.total))));
+      });
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          if (typeof onProgress === 'function') onProgress(1);
+          resolve(xhr.response || {});
+          return;
+        }
+        const body = xhr.response && typeof xhr.response === 'object' ? xhr.response : {};
+        const error = new Error(body.message || body.error || `Storage rechazó la subida (${xhr.status}).`);
+        error.status = xhr.status;
+        error.statusCode = xhr.status;
+        error.code = body.error || body.statusCode || '';
+        reject(error);
+      });
+      xhr.addEventListener('error', () => reject(new Error('La conexión se interrumpió mientras se subía el archivo.')));
+      xhr.addEventListener('abort', () => reject(new Error('La subida del archivo fue cancelada.')));
+      xhr.send(file);
+    });
+  }
+
   async function createPdfLesson({ currentAssignment, targetAssignmentIds, title, period, pdfFile, thumbnailFile, pageCount = 1, lessonId: requestedLessonId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
@@ -988,23 +1040,36 @@
     const uploadedPaths = [];
 
     try {
-      const pdfUpload = await supabaseClient.storage
-        .from(config.storageBucket || 'lms-public')
-        .upload(pdfPath, pdfFile, { cacheControl: '3600', upsert: Boolean(mutationId || clientMutationId), contentType: 'application/pdf' });
-      if (pdfUpload.error) throw normalizeError(pdfUpload.error, 'No se pudo subir el PDF.');
+      const bucket = config.storageBucket || 'lms-public';
+      const pdfEnd = thumbnailFile ? 78 : 94;
+      emitLessonUploadProgress(lessonId, 5, 'Subiendo PDF…', 'pdf');
+      await uploadStorageObjectWithProgress({
+        activeSession,
+        bucket,
+        path: pdfPath,
+        file: pdfFile,
+        upsert: Boolean(mutationId || clientMutationId),
+        onProgress: (ratio) => emitLessonUploadProgress(lessonId, 5 + (pdfEnd - 5) * ratio, 'Subiendo PDF…', 'pdf')
+      });
       uploadedPaths.push(pdfPath);
-      pdfUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(pdfPath).data?.publicUrl || '';
+      pdfUrl = supabaseClient.storage.from(bucket).getPublicUrl(pdfPath).data?.publicUrl || '';
 
       if (thumbnailFile) {
         const extension = String(thumbnailFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'webp';
         thumbnailPath = `${rootPath}/portada.${extension}`;
-        const thumbUpload = await supabaseClient.storage
-          .from(config.storageBucket || 'lms-public')
-          .upload(thumbnailPath, thumbnailFile, { cacheControl: '3600', upsert: Boolean(mutationId || clientMutationId), contentType: thumbnailFile.type || 'image/webp' });
-        if (thumbUpload.error) throw normalizeError(thumbUpload.error, 'No se pudo subir la portada.');
+        emitLessonUploadProgress(lessonId, 80, 'Subiendo portada…', 'thumbnail');
+        await uploadStorageObjectWithProgress({
+          activeSession,
+          bucket,
+          path: thumbnailPath,
+          file: thumbnailFile,
+          upsert: Boolean(mutationId || clientMutationId),
+          onProgress: (ratio) => emitLessonUploadProgress(lessonId, 80 + 14 * ratio, 'Subiendo portada…', 'thumbnail')
+        });
         uploadedPaths.push(thumbnailPath);
-        thumbnailUrl = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(thumbnailPath).data?.publicUrl || '';
+        thumbnailUrl = supabaseClient.storage.from(bucket).getPublicUrl(thumbnailPath).data?.publicUrl || '';
       }
+      emitLessonUploadProgress(lessonId, 96, 'Guardando la clase…', 'database');
 
       const lessonRow = {
         id: lessonId,
@@ -1037,6 +1102,7 @@
       const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
       if (linkResult.error) throw normalizeError(linkResult.error, 'El PDF subió, pero no se pudo asignar a los cursos.');
 
+      emitLessonUploadProgress(lessonId, 100, 'Clase guardada', 'complete');
       return {
         id: lessonId,
         period: Number(period || 1),
@@ -1062,6 +1128,170 @@
       try { await supabaseClient.from('lessons').delete().eq('id', lessonId); } catch (_) {}
       if (uploadedPaths.length) {
         try { await supabaseClient.storage.from(config.storageBucket || 'lms-public').remove(uploadedPaths); } catch (_) {}
+      }
+      throw error;
+    }
+  }
+
+
+  async function updatePdfLesson({
+    lessonId,
+    currentAssignment,
+    targetAssignmentIds,
+    title,
+    period,
+    pdfFile = null,
+    thumbnailFile = null,
+    pageCount = 1,
+    existingContentUrl = '',
+    existingThumbnailUrl = '',
+    existingStoragePdfPath = '',
+    existingStorageThumbnailPath = '',
+    existingSourceFileName = '',
+    mutationId = '',
+    clientMutationId = ''
+  }) {
+    const supabaseClient = getClient();
+    const activeSession = await requireAuthenticatedSession();
+    if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
+    const safeLessonId = String(lessonId || '').trim();
+    if (!safeLessonId) throw new Error('No se encontró la clase que deseas editar.');
+    const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
+    if (!ids.length) throw new Error('La clase debe estar visible al menos en un curso.');
+    const bucket = config.storageBucket || 'lms-public';
+    const rootPath = `${activeSession.user.id}/lessons/${safeLessonId}`;
+    const currentLessonResult = await supabaseClient
+      .from('lessons')
+      .select('content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count')
+      .eq('id', safeLessonId)
+      .maybeSingle();
+    if (currentLessonResult.error) throw normalizeError(currentLessonResult.error, 'No se pudo consultar la clase que deseas editar.');
+    const currentLesson = currentLessonResult.data || {};
+    let pdfPath = String(existingStoragePdfPath || currentLesson.storage_pdf_path || '');
+    let thumbnailPath = String(existingStorageThumbnailPath || currentLesson.storage_thumbnail_path || '');
+    let pdfUrl = /^https?:\/\//i.test(String(existingContentUrl || '')) ? String(existingContentUrl) : String(currentLesson.content_url || '');
+    let thumbnailUrl = /^https?:\/\//i.test(String(existingThumbnailUrl || '')) ? String(existingThumbnailUrl) : String(currentLesson.thumbnail_url || '');
+    if (!pdfUrl && pdfPath) pdfUrl = supabaseClient.storage.from(bucket).getPublicUrl(pdfPath).data?.publicUrl || '';
+    if (!thumbnailUrl && thumbnailPath) thumbnailUrl = supabaseClient.storage.from(bucket).getPublicUrl(thumbnailPath).data?.publicUrl || '';
+    let sourceFileName = String(existingSourceFileName || currentLesson.source_file_name || '');
+    if (!pdfFile && (!pageCount || Number(pageCount) <= 1) && Number(currentLesson.page_count || 0) > 1) pageCount = Number(currentLesson.page_count);
+    const newlyUploaded = [];
+    const obsoletePaths = [];
+
+    try {
+      const hasPdf = pdfFile instanceof Blob;
+      const hasThumbnail = thumbnailFile instanceof Blob;
+      if (hasPdf) {
+        const extension = String(pdfFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
+        const nextPath = `${rootPath}/${safeStorageName(title)}.${extension}`;
+        const pdfEnd = hasThumbnail ? 76 : 92;
+        emitLessonUploadProgress(safeLessonId, 5, 'Subiendo PDF nuevo…', 'pdf');
+        await uploadStorageObjectWithProgress({
+          activeSession,
+          bucket,
+          path: nextPath,
+          file: pdfFile,
+          upsert: true,
+          onProgress: (ratio) => emitLessonUploadProgress(safeLessonId, 5 + (pdfEnd - 5) * ratio, 'Subiendo PDF nuevo…', 'pdf')
+        });
+        if (pdfPath && pdfPath !== nextPath) obsoletePaths.push(pdfPath);
+        if (nextPath !== pdfPath) newlyUploaded.push(nextPath);
+        pdfPath = nextPath;
+        pdfUrl = supabaseClient.storage.from(bucket).getPublicUrl(pdfPath).data?.publicUrl || '';
+        sourceFileName = pdfFile.name || sourceFileName;
+      }
+      if (!pdfPath || !pdfUrl) throw new Error('La clase no tiene un PDF válido para conservar.');
+
+      if (hasThumbnail) {
+        const extension = String(thumbnailFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'webp';
+        const nextPath = `${rootPath}/portada.${extension}`;
+        emitLessonUploadProgress(safeLessonId, hasPdf ? 78 : 18, 'Subiendo portada nueva…', 'thumbnail');
+        const start = hasPdf ? 78 : 18;
+        const end = 94;
+        await uploadStorageObjectWithProgress({
+          activeSession,
+          bucket,
+          path: nextPath,
+          file: thumbnailFile,
+          upsert: true,
+          onProgress: (ratio) => emitLessonUploadProgress(safeLessonId, start + (end - start) * ratio, 'Subiendo portada nueva…', 'thumbnail')
+        });
+        if (thumbnailPath && thumbnailPath !== nextPath) obsoletePaths.push(thumbnailPath);
+        if (nextPath !== thumbnailPath) newlyUploaded.push(nextPath);
+        thumbnailPath = nextPath;
+        thumbnailUrl = supabaseClient.storage.from(bucket).getPublicUrl(thumbnailPath).data?.publicUrl || '';
+      }
+
+      emitLessonUploadProgress(safeLessonId, 96, 'Guardando cambios…', 'database');
+      const updateResult = await supabaseClient
+        .from('lessons')
+        .update({
+          period: Number(period || 1),
+          area: currentAssignment?.area || '',
+          subject_name: currentAssignment?.subject || '',
+          title: String(title || '').trim(),
+          content_url: pdfUrl,
+          thumbnail_url: thumbnailUrl || null,
+          storage_pdf_path: pdfPath,
+          storage_thumbnail_path: thumbnailPath || null,
+          source_file_name: sourceFileName,
+          page_count: Math.max(1, Number(pageCount || 1)),
+          status: 'published',
+          client_mutation_id: mutationId || clientMutationId || null
+        })
+        .eq('id', safeLessonId);
+      if (updateResult.error) throw normalizeError(updateResult.error, 'No se pudo actualizar la clase.');
+
+      const currentLinksResult = await supabaseClient
+        .from('assignment_lessons')
+        .select('assignment_id,sort_order')
+        .eq('lesson_id', safeLessonId);
+      if (currentLinksResult.error) throw normalizeError(currentLinksResult.error, 'No se pudo consultar la visibilidad actual de la clase.');
+      const currentLinks = currentLinksResult.data || [];
+      const selectedSet = new Set(ids.map(String));
+      const removeIds = currentLinks.map((row) => String(row.assignment_id || '')).filter((id) => id && !selectedSet.has(id));
+      if (removeIds.length) {
+        const removeResult = await supabaseClient.from('assignment_lessons').delete().eq('lesson_id', safeLessonId).in('assignment_id', removeIds);
+        if (removeResult.error) throw normalizeError(removeResult.error, 'No se pudo actualizar la visibilidad de la clase.');
+      }
+      const sortMap = new Map(currentLinks.map((row) => [String(row.assignment_id || ''), Number(row.sort_order || 0)]));
+      const baseSort = Math.floor(Date.now() / 1000);
+      const linkRows = ids.map((assignmentId, index) => ({
+        assignment_id: assignmentId,
+        lesson_id: safeLessonId,
+        sort_order: sortMap.get(String(assignmentId)) || baseSort + index,
+        visible: true
+      }));
+      const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
+      if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudo asignar la clase a los cursos seleccionados.');
+
+      if (obsoletePaths.length) await removeStorageFiles(obsoletePaths).catch(() => {});
+      emitLessonUploadProgress(safeLessonId, 100, 'Cambios guardados', 'complete');
+      return {
+        id: safeLessonId,
+        period: Number(period || 1),
+        area: currentAssignment?.area || '',
+        subject: currentAssignment?.subject || '',
+        title: String(title || '').trim(),
+        emoji: '📘',
+        type: 'PDF',
+        lessonType: 'PDF',
+        estimatedTime: '',
+        contentUrl: pdfUrl,
+        thumbnailUrl,
+        storagePdfPath: pdfPath,
+        storageThumbnailPath: thumbnailPath,
+        sourceFileName,
+        pageCount: Math.max(1, Number(pageCount || 1)),
+        status: 'published',
+        assignmentId: ids[0] || '',
+        assignmentIds: ids,
+        sortOrder: linkRows[0]?.sort_order || 0
+      };
+    } catch (error) {
+      const cleanup = newlyUploaded.filter((path) => path && path !== existingStoragePdfPath && path !== existingStorageThumbnailPath);
+      if (cleanup.length) {
+        try { await supabaseClient.storage.from(bucket).remove(cleanup); } catch (_) {}
       }
       throw error;
     }
@@ -1542,7 +1772,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.005', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.007', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -1601,7 +1831,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.005',
+          appVersion: '0.25.007',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -1653,6 +1883,7 @@
     uploadAssignmentImage,
     resetAssignmentImage,
     createPdfLesson,
+    updatePdfLesson,
     createActivity,
     updateActivity,
     getActivityGradebook,

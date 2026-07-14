@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.005';
+  const OFFLINE_VERSION = '0.25.007';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -281,6 +281,11 @@
         title = 'Nueva clase';
         detail = offlineLessonTitle(payload.lessonId, payload);
         icon = '▤';
+        break;
+      case 'updatePdfLesson':
+        title = 'Editar clase';
+        detail = offlineLessonTitle(payload.lessonId, payload);
+        icon = '✎';
         break;
       case 'deletePdfLesson':
         title = 'Eliminar clase';
@@ -661,6 +666,7 @@
       case 'resetAssignmentImage':
         return [`assignment:${payload.assignmentId}`];
       case 'createPdfLesson':
+      case 'updatePdfLesson':
       case 'deletePdfLesson':
         return [`lesson:${payload.lessonId || payload.requestedLessonId || ''}`];
       case 'createActivity': {
@@ -1146,6 +1152,47 @@
     return lesson;
   }
 
+  async function optimisticUpdatePdfLesson(payload, mutationId, serverResult = null) {
+    const safeLessonId = String(payload.lessonId || '');
+    if (!safeLessonId) return serverResult;
+    const pdfDescriptor = payload.pdfFile instanceof Blob
+      ? await descriptorFromFile(payload.pdfFile, `local:${mutationId}:lesson-pdf-update`, 'lesson-pdf')
+      : null;
+    const thumbDescriptor = payload.thumbnailFile instanceof Blob
+      ? await descriptorFromFile(payload.thumbnailFile, `local:${mutationId}:lesson-thumb-update`, 'lesson-thumbnail')
+      : null;
+    let result = serverResult || null;
+    await updateSnapshot(async (snapshot) => {
+      const current = (snapshot.data.classes || []).find((item) => String(item.id) === safeLessonId);
+      if (!current && !serverResult) return;
+      const updated = serverResult ? { ...(current || {}), ...safeClone(serverResult) } : {
+        ...(current || {}),
+        id: safeLessonId,
+        period: Number(payload.period || current?.period || 1),
+        area: payload.currentAssignment?.area || current?.area || '',
+        subject: payload.currentAssignment?.subject || current?.subject || '',
+        title: String(payload.title || current?.title || '').trim(),
+        contentUrl: pdfDescriptor?.url || current?.contentUrl || payload.existingContentUrl || '',
+        thumbnailUrl: thumbDescriptor?.url || current?.thumbnailUrl || payload.existingThumbnailUrl || '',
+        offlinePdfKey: pdfDescriptor?.offlineKey || current?.offlinePdfKey || '',
+        offlineThumbnailKey: thumbDescriptor?.offlineKey || current?.offlineThumbnailKey || '',
+        sourceFileName: payload.pdfFile?.name || current?.sourceFileName || payload.existingSourceFileName || '',
+        pageCount: Math.max(1, Number(payload.pageCount || current?.pageCount || 1)),
+        assignmentIds: [...new Set((payload.targetAssignmentIds || current?.assignmentIds || []).filter(Boolean))],
+        status: 'published',
+        pendingSync: true
+      };
+      updated.assignmentId = updated.assignmentIds?.[0] || '';
+      const list = snapshot.data.classes || [];
+      const index = list.findIndex((item) => String(item.id) === safeLessonId);
+      if (index >= 0) list[index] = updated;
+      else list.push(updated);
+      snapshot.data.classes = list;
+      result = updated;
+    });
+    return result;
+  }
+
   async function payloadFilesFromOffline(files, mutationId, section) {
     const descriptors = [];
     for (let index = 0; index < (files || []).length; index += 1) {
@@ -1441,6 +1488,7 @@
         if (!studentId) return false;
         return serverRowUpdatedAfter('group_enrollments', { group_id: payload.groupId, student_id: studentId }, base);
       }
+      case 'updatePdfLesson':
       case 'deletePdfLesson':
         return serverRowUpdatedAfter('lessons', { id: payload.lessonId }, base);
       default:
@@ -1509,6 +1557,7 @@
       case 'uploadAssignmentImage': return cloud.uploadAssignmentImage(payload);
       case 'resetAssignmentImage': return cloud.resetAssignmentImage(payload);
       case 'createPdfLesson': return cloud.createPdfLesson(payload);
+      case 'updatePdfLesson': return cloud.updatePdfLesson(payload);
       case 'createActivity': return cloud.createActivity(payload);
       case 'updateActivity': return cloud.updateActivity(payload);
       case 'saveActivityGrades': return cloud.saveActivityGrades(payload);
@@ -1784,6 +1833,9 @@
     },
     createPdfLesson(payload) {
       return executeMutation('createPdfLesson', payload, cloud.createPdfLesson, optimisticPdfLesson);
+    },
+    updatePdfLesson(payload) {
+      return executeMutation('updatePdfLesson', payload, cloud.updatePdfLesson, optimisticUpdatePdfLesson);
     },
     createActivity(payload) {
       return executeMutation('createActivity', payload, cloud.createActivity, optimisticCreateActivity);
