@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.010';
+  const APP_VERSION = '0.25.011';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1218,9 +1218,18 @@
 
   function renderLogin(options = {}) {
     commitAppRoute({ screen: 'login' }, options);
-    const last = readJSON('encisomath:lastUser');
-    const lastStudentCode = String(localStorage.getItem('encisomath:lastStudentCode') || '');
-    const preferredMode = localStorage.getItem('encisomath:lastLoginMode') === 'student' ? 'student' : 'teacher';
+    const lastTeacher = readJSON('encisomath:lastUser');
+    const lastStudentIdentifier = String(localStorage.getItem('encisomath:lastStudentCode') || '');
+    const lastLoginMode = localStorage.getItem('encisomath:lastLoginMode') === 'student' ? 'student' : 'teacher';
+    const lastTeacherIdentifier = String(lastTeacher?.email || lastTeacher?.id || '');
+    const recentIdentifier = lastLoginMode === 'student'
+      ? (lastStudentIdentifier || lastTeacherIdentifier)
+      : (lastTeacherIdentifier || lastStudentIdentifier);
+    const recentLabel = recentIdentifier === lastStudentIdentifier && lastStudentIdentifier
+      ? lastStudentIdentifier
+      : (lastTeacher
+          ? [lastTeacher.name || '', lastTeacherIdentifier].filter(Boolean).join(' · ')
+          : recentIdentifier);
     const markup = `
       <main class="login-screen">
         ${animatedShapes('login')}
@@ -1229,119 +1238,107 @@
             ${encisoAnimatedLogoHTML('login')}
           </div>
 
-          <div class="em-login-access-switch" role="tablist" aria-label="Tipo de acceso">
-            <button class="mini-btn ${preferredMode === 'teacher' ? 'selected' : ''}" id="teacherLoginModeBtn" type="button" role="tab" aria-selected="${preferredMode === 'teacher'}">Docente</button>
-            <button class="mini-btn ${preferredMode === 'student' ? 'selected' : ''}" id="studentLoginModeBtn" type="button" role="tab" aria-selected="${preferredMode === 'student'}">Estudiante</button>
-          </div>
+          <form id="unifiedLoginForm" class="login-form em-unified-login-form">
+            <label class="field-label" for="loginIdentifier">Usuario, código o correo electrónico</label>
+            <input class="input" id="loginIdentifier" name="identifier" type="text" inputmode="text" autocomplete="username" autocapitalize="none" value="${escapeAttr(recentIdentifier)}" placeholder="Ejemplo: rubenen, 9868 o correo@dominio.com" required />
 
-          <form id="teacherLoginForm" class="login-form em-login-mode" data-login-mode="teacher" ${preferredMode === 'teacher' ? '' : 'hidden'}>
-            <label class="field-label" for="userEmail">Correo electrónico</label>
-            <input class="input" id="userEmail" name="email" type="email" inputmode="email" autocomplete="username" value="${escapeAttr(last?.email || last?.id || '')}" placeholder="enciso.math@gmail.com" required />
-            <label class="field-label" for="userPassword">Contraseña</label>
-            <input class="input" id="userPassword" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña de Supabase" required />
-            <div class="remember-row">
+            <div class="em-login-password-stage" id="teacherPasswordStage" hidden>
+              <div class="em-login-detected-role" aria-live="polite">
+                <span class="em-login-detected-dot" aria-hidden="true"></span>
+                Acceso docente detectado
+              </div>
+              <label class="field-label" for="userPassword">Contraseña</label>
+              <input class="input" id="userPassword" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña de Supabase" />
+            </div>
+
+            <div class="remember-row em-login-session-note">
               <span>La sesión permanecerá iniciada en este dispositivo hasta que pulses Cerrar sesión.</span>
             </div>
-            <button class="primary-btn full" id="teacherLoginSubmitBtn" type="submit">Iniciar sesión</button>
-            <div class="last-user">
-              <span>Último usuario</span>
-              <button type="button" class="mini-btn" id="lastUserBtn">${last ? `${escapeHTML(last.name || '')} · ${escapeHTML(last.email || last.id || '')}` : 'Sin registro'}</button>
-            </div>
-            <p class="login-hint">Acceso docente protegido con Supabase Auth.</p>
-          </form>
-
-          <form id="studentLoginForm" class="login-form em-login-mode" data-login-mode="student" ${preferredMode === 'student' ? '' : 'hidden'}>
-            <label class="field-label" for="studentCode">Usuario o Código en EducaCity</label>
-            <input class="input" id="studentCode" name="studentCode" type="text" inputmode="text" autocomplete="username" autocapitalize="none" value="${escapeAttr(lastStudentCode)}" placeholder="Ejemplo: rubenen o 9868" required />
-            <div class="remember-row">
-              <label><input type="checkbox" id="studentRemember" checked /> Mantener sesión iniciada</label>
-            </div>
-            <button class="primary-btn full" id="studentLoginSubmitBtn" type="submit">Entrar como estudiante</button>
+            <button class="primary-btn full" id="unifiedLoginSubmitBtn" type="submit">Entrar</button>
             <div class="last-user">
               <span>Último acceso</span>
-              <button type="button" class="mini-btn" id="lastStudentBtn">${lastStudentCode ? escapeHTML(lastStudentCode) : 'Sin registro'}</button>
+              <button type="button" class="mini-btn" id="lastAccessBtn">${recentLabel ? escapeHTML(recentLabel) : 'Sin registro'}</button>
             </div>
-            <p class="login-hint">Ingresa con tu nombre de usuario o con el Código en EducaCity. El acceso es de solo lectura.</p>
+            <p class="login-hint" id="unifiedLoginHint">Estudiantes: usa tu nombre de usuario o Código en EducaCity. Docentes: escribe tu correo y aparecerá la contraseña.</p>
           </form>
         </section>
       </main>
     `;
 
     mount(markup, () => {
-      const teacherForm = document.getElementById('teacherLoginForm');
-      const studentForm = document.getElementById('studentLoginForm');
-      const teacherModeButton = document.getElementById('teacherLoginModeBtn');
-      const studentModeButton = document.getElementById('studentLoginModeBtn');
-      const emailInput = document.getElementById('userEmail');
+      const form = document.getElementById('unifiedLoginForm');
+      const identifierInput = document.getElementById('loginIdentifier');
+      const passwordStage = document.getElementById('teacherPasswordStage');
       const passwordInput = document.getElementById('userPassword');
-      const studentCodeInput = document.getElementById('studentCode');
+      const submitButton = document.getElementById('unifiedLoginSubmitBtn');
+      const hint = document.getElementById('unifiedLoginHint');
+      let teacherMode = false;
 
-      const setLoginMode = (mode) => {
-        const studentMode = mode === 'student';
-        teacherForm.hidden = studentMode;
-        studentForm.hidden = !studentMode;
-        teacherModeButton.classList.toggle('selected', !studentMode);
-        studentModeButton.classList.toggle('selected', studentMode);
-        teacherModeButton.setAttribute('aria-selected', studentMode ? 'false' : 'true');
-        studentModeButton.setAttribute('aria-selected', studentMode ? 'true' : 'false');
-        localStorage.setItem('encisomath:lastLoginMode', studentMode ? 'student' : 'teacher');
-        window.setTimeout(() => (studentMode ? studentCodeInput : emailInput)?.focus(), 0);
+      const looksLikeTeacherEmail = (value = '') => {
+        const candidate = String(value || '').trim().toLowerCase();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate);
       };
 
-      teacherModeButton.addEventListener('click', () => setLoginMode('teacher'));
-      studentModeButton.addEventListener('click', () => setLoginMode('student'));
-      document.getElementById('lastUserBtn').addEventListener('click', () => {
-        if (last?.email || last?.id) emailInput.value = last.email || last.id;
-        passwordInput.focus();
-      });
-      document.getElementById('lastStudentBtn').addEventListener('click', () => {
-        if (lastStudentCode) studentCodeInput.value = lastStudentCode;
-        studentCodeInput.focus();
+      const updateLoginMode = ({ focusPassword = false } = {}) => {
+        const nextTeacherMode = looksLikeTeacherEmail(identifierInput.value);
+        const changed = nextTeacherMode !== teacherMode;
+        teacherMode = nextTeacherMode;
+        passwordStage.hidden = !teacherMode;
+        passwordInput.required = teacherMode;
+        submitButton.textContent = teacherMode ? 'Iniciar sesión' : 'Entrar';
+        hint.textContent = teacherMode
+          ? 'Correo docente reconocido. Escribe tu contraseña para continuar.'
+          : 'Estudiantes: usa tu nombre de usuario o Código en EducaCity. Docentes: escribe tu correo y aparecerá la contraseña.';
+        form.classList.toggle('is-teacher-login', teacherMode);
+        if (changed && !teacherMode) passwordInput.value = '';
+        if (teacherMode && focusPassword) window.setTimeout(() => passwordInput.focus(), 0);
+      };
+
+      identifierInput.addEventListener('input', () => updateLoginMode());
+      identifierInput.addEventListener('blur', () => updateLoginMode());
+      document.getElementById('lastAccessBtn').addEventListener('click', () => {
+        if (!recentIdentifier) return;
+        identifierInput.value = recentIdentifier;
+        updateLoginMode({ focusPassword: looksLikeTeacherEmail(recentIdentifier) });
+        if (!looksLikeTeacherEmail(recentIdentifier)) identifierInput.focus();
       });
 
-      teacherForm.addEventListener('submit', async (event) => {
+      form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const email = emailInput.value.trim().toLowerCase();
-        const password = passwordInput.value;
-        const submitButton = document.getElementById('teacherLoginSubmitBtn');
-        if (!email || !password) return;
+        const identifier = identifierInput.value.trim().toLowerCase();
+        if (!identifier) return;
+        updateLoginMode();
+
+        if (teacherMode && !passwordInput.value) {
+          passwordInput.focus();
+          return;
+        }
+
+        const defaultLabel = teacherMode ? 'Iniciar sesión' : 'Entrar';
         submitButton.disabled = true;
-        submitButton.textContent = 'Conectando...';
+        submitButton.textContent = teacherMode ? 'Conectando...' : 'Comprobando acceso...';
         try {
-          const activeSession = await cloudAPI().signIn(email, password);
+          const activeSession = teacherMode
+            ? await cloudAPI().signIn(identifier, passwordInput.value)
+            : await cloudAPI().signInStudentCode(identifier, { remember: true });
           localStorage.setItem(CLOUD_SESSION_MODE_KEY, 'persistent');
           sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
           await enterCloudSession(activeSession);
         } catch (error) {
           toast(authErrorMessage(error));
-          passwordInput.select();
+          if (teacherMode) passwordInput.select();
+          else identifierInput.select();
         } finally {
           submitButton.disabled = false;
-          submitButton.textContent = 'Iniciar sesión';
+          submitButton.textContent = defaultLabel;
         }
       });
 
-      studentForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const studentCode = studentCodeInput.value.trim().toLowerCase();
-        const remember = document.getElementById('studentRemember').checked;
-        const submitButton = document.getElementById('studentLoginSubmitBtn');
-        if (!studentCode) return;
-        submitButton.disabled = true;
-        submitButton.textContent = 'Comprobando código...';
-        try {
-          const activeSession = await cloudAPI().signInStudentCode(studentCode, { remember });
-          localStorage.setItem(CLOUD_SESSION_MODE_KEY, remember ? 'persistent' : 'session');
-          sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
-          await enterCloudSession(activeSession);
-        } catch (error) {
-          toast(authErrorMessage(error));
-          studentCodeInput.select();
-        } finally {
-          submitButton.disabled = false;
-          submitButton.textContent = 'Entrar como estudiante';
-        }
-      });
+      updateLoginMode({ focusPassword: false });
+      window.setTimeout(() => {
+        if (teacherMode && recentIdentifier) passwordInput.focus();
+        else identifierInput.focus();
+      }, 0);
     });
   }
   function renderLoadingHTML(text = randomPhrase()) {

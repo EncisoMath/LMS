@@ -32386,3 +32386,50 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
     padding-right: 58px;
   }
 }
+
+
+/* ================================================================
+   v0.25.011 · LOGIN UNIFICADO DOCENTE / ESTUDIANTE
+   ================================================================ */
+.em-unified-login-form {
+  margin-top: 4px;
+}
+.em-login-password-stage {
+  display: grid;
+  gap: 14px;
+  padding-top: 2px;
+  animation: emLoginPasswordStageIn 220ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.em-login-password-stage[hidden] {
+  display: none !important;
+}
+.em-login-detected-role {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 8px;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--maincolor, #1368ce) 18%, transparent);
+  color: #fff;
+  font-family: Montserrat, system-ui, sans-serif;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.em-login-detected-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #58cc02;
+  box-shadow: 0 0 0 4px rgba(88, 204, 2, .16);
+}
+.em-login-session-note {
+  justify-content: flex-start;
+  line-height: 1.4;
+}
+@keyframes emLoginPasswordStageIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
