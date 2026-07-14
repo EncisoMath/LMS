@@ -410,7 +410,7 @@
 
   async function signInStudentCode(studentCode, options = {}) {
     const code = normalizeStudentPortalCode(studentCode);
-    if (!code) throw new Error('Escribe el código del estudiante.');
+    if (!code) throw new Error('Escribe el usuario o código del estudiante.');
     const remember = options.remember !== false;
 
     // El portal estudiantil usa un cliente público separado. La sesión docente
@@ -419,11 +419,11 @@
     if (error) {
       const message = String(error.message || '').toLowerCase();
       if (error.code === 'PGRST202' || message.includes('encisomath_student_portal')) {
-        throw new Error('Falta ejecutar en Supabase el archivo SUPABASE_STUDENT_PORTAL_v0.25.008.sql.');
+        throw new Error('Falta ejecutar en Supabase el archivo SUPABASE_STUDENT_USERNAME_v0.25.010.sql.');
       }
-      throw normalizeError(error, 'No se pudo comprobar el código del estudiante.');
+      throw normalizeError(error, 'No se pudo comprobar el usuario o código del estudiante.');
     }
-    if (!data || data.ok === false) throw new Error(data?.message || 'No encontramos un estudiante activo con ese código.');
+    if (!data || data.ok === false) throw new Error(data?.message || 'No encontramos un estudiante activo con ese usuario o código.');
     const canonicalCode = normalizeStudentPortalCode(data?.student?.student_code || code);
     storeStudentPortalCode(canonicalCode, remember);
     studentPortalSession = createStudentPortalSession(canonicalCode, data, remember);
@@ -522,8 +522,8 @@
     return {
       id: code,
       dbId: student.id,
-      username: code,
-      fullName: student.display_name || `${student.last_name || ''}, ${student.first_name || ''}`.replace(/^,\s*/, '').trim(),
+      username: student.username || code,
+      fullName: `${student.last_name || ''}, ${student.first_name || ''}`.replace(/^,\s*/, '').trim() || student.display_name || code,
       firstName: student.first_name || '',
       lastName: student.last_name || '',
       grade: String(group?.grade ?? ''),
@@ -659,7 +659,7 @@
 
   function normalizeStudentPortalData(payload, requestedCode = '') {
     const source = payload && typeof payload === 'object' ? payload : {};
-    if (source.ok === false) throw new Error(source.message || 'No encontramos un estudiante activo con ese código.');
+    if (source.ok === false) throw new Error(source.message || 'No encontramos un estudiante activo con ese usuario o código.');
     const rawStudent = source.student && typeof source.student === 'object' ? source.student : null;
     const enrollment = source.enrollment && typeof source.enrollment === 'object' ? source.enrollment : null;
     if (!rawStudent || !enrollment) throw new Error('Supabase no devolvió una matrícula activa para este estudiante.');
@@ -673,7 +673,7 @@
       id: studentCode,
       authId: `student:${studentCode}`,
       dbStudentId: mappedStudent.dbId || rawStudent.id || null,
-      username: studentCode,
+      username: mappedStudent.username || studentCode,
       role: 'student',
       fullName: mappedStudent.fullName || 'Estudiante',
       email: '',
@@ -781,7 +781,7 @@
     if (groupIds.length) {
       const { data, error } = await supabaseClient
         .from('group_enrollments')
-        .select('id,group_id,student_id,status,group:academic_groups(id,grade,course,campus,label),student:students(id,student_code,display_name,first_name,last_name,photo_url,active)')
+        .select('id,group_id,student_id,status,group:academic_groups(id,grade,course,campus,label),student:students(id,student_code,username,display_name,first_name,last_name,photo_url,active)')
         .in('group_id', groupIds)
         .eq('status', 'active');
       if (error) throw normalizeError(error, 'No se pudieron cargar las matriculas.');
@@ -1063,7 +1063,7 @@
     let student = null;
     const existingResult = await supabaseClient
       .from('students')
-      .select('id,student_code,display_name,first_name,last_name,photo_url,active')
+      .select('id,student_code,username,display_name,first_name,last_name,photo_url,active')
       .eq('student_code', code)
       .maybeSingle();
     if (existingResult.error) throw normalizeError(existingResult.error, 'No se pudo buscar el estudiante.');
@@ -1072,7 +1072,7 @@
         .from('students')
         .update({ first_name: firstName, last_name: lastName, active: true })
         .eq('id', existingResult.data.id)
-        .select('id,student_code,display_name,first_name,last_name,photo_url,active')
+        .select('id,student_code,username,display_name,first_name,last_name,photo_url,active')
         .single();
       if (updateResult.error) throw normalizeError(updateResult.error, 'No se pudo actualizar el estudiante.');
       student = updateResult.data;
@@ -1080,7 +1080,7 @@
       const insertResult = await supabaseClient
         .from('students')
         .insert({ student_code: code, first_name: firstName, last_name: lastName, active: true })
-        .select('id,student_code,display_name,first_name,last_name,photo_url,active')
+        .select('id,student_code,username,display_name,first_name,last_name,photo_url,active')
         .single();
       if (insertResult.error) throw normalizeError(insertResult.error, 'No se pudo crear el estudiante.');
       student = insertResult.data;
@@ -1099,8 +1099,8 @@
     return {
       id: code,
       dbId: student.id,
-      username: code,
-      fullName: student.display_name,
+      username: student.username || code,
+      fullName: `${student.last_name || ''}, ${student.first_name || ''}`.replace(/^,\s*/, '').trim() || student.display_name || code,
       firstName: student.first_name,
       lastName: student.last_name,
       grade: String(assignment?.grade || ''),
@@ -1112,6 +1112,50 @@
       photo: student.photo_url || './assets/default-avatar.svg',
       active: true
     };
+  }
+
+  async function updateStudent({
+    studentDbId,
+    currentStudentCode,
+    currentGroupId,
+    targetGroupId,
+    studentCode,
+    username,
+    firstName,
+    lastName
+  }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const explicitStudentId = String(studentDbId || '').trim();
+    const safeStudentId = (!explicitStudentId.startsWith('offline-') ? explicitStudentId : '')
+      || String(resolveStudentDbId(currentStudentCode) || '').trim();
+    if (!safeStudentId) throw new Error('El estudiante todavía está pendiente de sincronización. Espera a recuperar conexión antes de editarlo.');
+
+    const { data, error } = await supabaseClient.rpc('encisomath_update_student', {
+      p_student_id: safeStudentId,
+      p_current_group_id: String(currentGroupId || ''),
+      p_target_group_id: String(targetGroupId || currentGroupId || ''),
+      p_student_code: String(studentCode || '').trim(),
+      p_username: String(username || '').trim().toLowerCase(),
+      p_first_name: String(firstName || '').trim(),
+      p_last_name: String(lastName || '').trim()
+    });
+    if (error) {
+      const message = String(error.message || '').toLowerCase();
+      if (error.code === 'PGRST202' || message.includes('encisomath_update_student')) {
+        throw new Error('Falta ejecutar en Supabase el archivo SUPABASE_STUDENT_USERNAME_v0.25.010.sql.');
+      }
+      throw normalizeError(error, 'No se pudo editar el estudiante.');
+    }
+    if (!data || data.ok === false) throw new Error(data?.message || 'No se pudo editar el estudiante.');
+
+    const mapped = mapStudent({ ...(data.enrollment || {}), student: data.student || {} });
+    if (!mapped) throw new Error('Supabase guardó el cambio, pero no devolvió el estudiante actualizado.');
+    const oldCode = String(currentStudentCode || '');
+    if (oldCode && oldCode !== mapped.id) studentCodeToDbId.delete(oldCode);
+    studentCodeToDbId.set(mapped.id, mapped.dbId);
+    studentDbIdToCode.set(mapped.dbId, mapped.id);
+    return mapped;
   }
 
   async function withdrawStudent({ groupId, studentCode }) {
@@ -2029,7 +2073,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.009', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.010', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2088,7 +2132,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.009',
+          appVersion: '0.25.010',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2135,6 +2179,7 @@
     saveAttendanceStatus,
     addRockstarEvent,
     createStudentAndEnroll,
+    updateStudent,
     withdrawStudent,
     saveQuizzes,
     savePreferences,

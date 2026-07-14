@@ -1,13 +1,14 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.009';
+  const APP_VERSION = '0.25.010';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
   let pdfJsModulePromise = null;
   let activePdfViewerCleanup = null;
   let excelJsLoaderPromise = null;
+  let usernameDuplicateCheckShown = false;
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const DATA_FILES = {
     users: './data/users.json',
@@ -864,6 +865,7 @@
         }));
         localStorage.setItem('encisomath:lastLoginMode', 'teacher');
         renderTeacherHome();
+        window.setTimeout(() => openDuplicateUsernamesModal({ startup: true }), 260);
       }
       return true;
     } catch (error) {
@@ -1249,17 +1251,17 @@
           </form>
 
           <form id="studentLoginForm" class="login-form em-login-mode" data-login-mode="student" ${preferredMode === 'student' ? '' : 'hidden'}>
-            <label class="field-label" for="studentCode">Código del estudiante</label>
-            <input class="input" id="studentCode" name="studentCode" type="text" inputmode="text" autocomplete="username" autocapitalize="characters" value="${escapeAttr(lastStudentCode)}" placeholder="Escribe tu student_code" required />
+            <label class="field-label" for="studentCode">Usuario o Código en EducaCity</label>
+            <input class="input" id="studentCode" name="studentCode" type="text" inputmode="text" autocomplete="username" autocapitalize="none" value="${escapeAttr(lastStudentCode)}" placeholder="Ejemplo: rubenen o 9868" required />
             <div class="remember-row">
               <label><input type="checkbox" id="studentRemember" checked /> Mantener sesión iniciada</label>
             </div>
             <button class="primary-btn full" id="studentLoginSubmitBtn" type="submit">Entrar como estudiante</button>
             <div class="last-user">
-              <span>Último código</span>
+              <span>Último acceso</span>
               <button type="button" class="mini-btn" id="lastStudentBtn">${lastStudentCode ? escapeHTML(lastStudentCode) : 'Sin registro'}</button>
             </div>
-            <p class="login-hint">Acceso temporal de solo lectura para consultar clases y actividades del curso matriculado.</p>
+            <p class="login-hint">Ingresa con tu nombre de usuario o con el Código en EducaCity. El acceso es de solo lectura.</p>
           </form>
         </section>
       </main>
@@ -1321,7 +1323,7 @@
 
       studentForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        const studentCode = studentCodeInput.value.trim();
+        const studentCode = studentCodeInput.value.trim().toLowerCase();
         const remember = document.getElementById('studentRemember').checked;
         const submitButton = document.getElementById('studentLoginSubmitBtn');
         if (!studentCode) return;
@@ -1645,6 +1647,13 @@
       });
     });
 
+    document.querySelectorAll('[data-edit-student]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const student = getStudentsForAssignment(assignment).find((item) => item.id === button.dataset.editStudent);
+        if (student) openEditStudentModal(student);
+      });
+    });
+
     document.querySelectorAll('[data-delete-student]').forEach((button) => {
       button.addEventListener('click', () => {
         const student = getStudentsForAssignment(assignment).find((item) => item.id === button.dataset.deleteStudent);
@@ -1713,13 +1722,259 @@
       });
       state.data.students.push(student);
       closeModal();
-      toast(`Añadiste a ${fullName}. Registro guardado en Supabase.`);
+      toast(`Añadiste a ${fullName}. Usuario @${student.username || student.id}.`);
       state.studentSearch = '';
       renderStudentsTab({ animate: false });
     } catch (error) {
       reportCloudError('No se pudo añadir el estudiante', error);
     }
   }
+  function cleanStudentUsername(value = '') {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9._-]+/g, '');
+  }
+  function suggestedStudentUsername(firstName = '', lastName = '', studentCode = '') {
+    const first = cleanStudentUsername(String(firstName || '').trim().split(/\s+/)[0] || '');
+    const last = cleanStudentUsername(String(lastName || '').trim().split(/\s+/)[0] || '');
+    return `${first}${last.slice(0, 2)}` || cleanStudentUsername(studentCode) || 'estudiante';
+  }
+  function teacherStudentGroups() {
+    const source = getTeacherAssignments(state.user?.id || '');
+    const groups = new Map();
+    source.forEach((assignment) => {
+      const groupId = String(assignment.groupId || '');
+      if (!groupId || groups.has(groupId)) return;
+      groups.set(groupId, {
+        groupId,
+        grade: String(assignment.grade || ''),
+        course: String(assignment.course || ''),
+        sede: assignment.sede || 'Municipal'
+      });
+    });
+    return [...groups.values()].sort((a, b) => {
+      const gradeCompare = String(a.grade).localeCompare(String(b.grade), 'es', { numeric: true });
+      if (gradeCompare) return gradeCompare;
+      return String(a.course).localeCompare(String(b.course), 'es', { numeric: true });
+    });
+  }
+  function studentIdentityKey(student = {}) {
+    return String(student.dbId || student.id || '').trim();
+  }
+  function duplicateStudentUsernameGroups() {
+    const identities = new Map();
+    (state.data.students || []).filter((student) => student.active !== false).forEach((student) => {
+      const identity = studentIdentityKey(student);
+      if (!identity) return;
+      const existing = identities.get(identity);
+      const courseLabel = [student.grade, student.course].filter(Boolean).join('-');
+      if (existing) {
+        existing.courses = [...new Set([...(existing.courses || []), courseLabel].filter(Boolean))];
+        return;
+      }
+      identities.set(identity, { ...student, courses: courseLabel ? [courseLabel] : [] });
+    });
+    const byUsername = new Map();
+    identities.forEach((student) => {
+      const username = cleanStudentUsername(student.username);
+      if (!username) return;
+      if (!byUsername.has(username)) byUsername.set(username, []);
+      byUsername.get(username).push(student);
+    });
+    return [...byUsername.entries()]
+      .filter(([, students]) => students.length > 1)
+      .map(([username, students]) => ({
+        username,
+        students: students.sort((a, b) => String(a.fullName || '').localeCompare(String(b.fullName || ''), 'es'))
+      }))
+      .sort((a, b) => a.username.localeCompare(b.username, 'es'));
+  }
+  function openDuplicateUsernamesModal(options = {}) {
+    if (!isTeacherPortal()) return false;
+    if (options.startup && usernameDuplicateCheckShown) return false;
+    if (options.startup) usernameDuplicateCheckShown = true;
+    const groups = duplicateStudentUsernameGroups();
+    if (!groups.length) return false;
+    const totalStudents = groups.reduce((sum, group) => sum + group.students.length, 0);
+    openModal(`
+      <section class="modal-card em-duplicate-usernames-modal" role="dialog" aria-modal="true" aria-labelledby="duplicateUsernameTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-duplicate-usernames-head">
+          <span class="em-duplicate-usernames-icon" aria-hidden="true">⚠</span>
+          <div>
+            <p class="section-kicker">Revisión necesaria</p>
+            <h2 id="duplicateUsernameTitle">Hay usernames repetidos</h2>
+            <p>${totalStudents} estudiantes comparten ${groups.length} username${groups.length === 1 ? '' : 's'}. Mientras estén repetidos, deberán ingresar con su Código en EducaCity.</p>
+          </div>
+        </div>
+        <div class="em-duplicate-usernames-list">
+          ${groups.map((group) => `
+            <section class="em-duplicate-username-group">
+              <div class="em-duplicate-username-label">@${escapeHTML(group.username)}</div>
+              ${group.students.map((student) => `
+                <div class="em-duplicate-student-row">
+                  <div>
+                    <strong>${escapeHTML(student.fullName || 'Estudiante')}</strong>
+                    <span>Código ${escapeHTML(student.id || '')}${student.courses?.length ? ` · ${escapeHTML(student.courses.join(', '))}` : ''}</span>
+                  </div>
+                  <button class="em-duplicate-edit-btn" type="button" data-duplicate-edit-student="${escapeAttr(studentIdentityKey(student))}" aria-label="Editar ${escapeAttr(student.fullName || 'estudiante')}" title="Editar estudiante">✎</button>
+                </div>
+              `).join('')}
+            </section>
+          `).join('')}
+        </div>
+        <button class="ghost-btn full" type="button" data-close-modal>Cerrar por ahora</button>
+      </section>
+    `, () => {
+      document.querySelectorAll('[data-duplicate-edit-student]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const identity = button.dataset.duplicateEditStudent;
+          const student = (state.data.students || []).find((item) => studentIdentityKey(item) === identity && item.active !== false);
+          if (student) openEditStudentModal(student, { returnToDuplicates: true });
+        });
+      });
+    });
+    return true;
+  }
+  function openEditStudentModal(student, options = {}) {
+    if (!student || !isTeacherPortal()) return;
+    const groups = teacherStudentGroups();
+    const currentUsername = cleanStudentUsername(student.username) || suggestedStudentUsername(student.firstName, student.lastName, student.id);
+    openModal(`
+      <section class="modal-card em-edit-student-modal" role="dialog" aria-modal="true" aria-labelledby="editStudentTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Datos del estudiante</p>
+        <h2 id="editStudentTitle">Editar estudiante</h2>
+        <p class="card-sub">Los cambios se aplicarán en Supabase y en todas las asignaturas del curso.</p>
+        <form id="editStudentForm" class="em-edit-student-form">
+          <div class="em-edit-student-grid">
+            <label class="em-edit-student-field">
+              <span>Nombres</span>
+              <input class="input" id="editStudentFirstName" autocomplete="off" value="${escapeAttr(student.firstName || '')}" required />
+            </label>
+            <label class="em-edit-student-field">
+              <span>Apellidos</span>
+              <input class="input" id="editStudentLastName" autocomplete="off" value="${escapeAttr(student.lastName || '')}" required />
+            </label>
+            <label class="em-edit-student-field">
+              <span>Código en EducaCity</span>
+              <input class="input" id="editStudentCode" autocomplete="off" value="${escapeAttr(student.id || '')}" required />
+            </label>
+            <label class="em-edit-student-field">
+              <span>Username</span>
+              <input class="input" id="editStudentUsername" autocomplete="off" autocapitalize="none" spellcheck="false" value="${escapeAttr(currentUsername)}" required />
+              <small>Sin espacios. El estudiante podrá ingresar con este usuario o con su código.</small>
+            </label>
+            <label class="em-edit-student-field em-edit-student-field-wide">
+              <span>Grado y curso</span>
+              <select class="input" id="editStudentGroup" required>
+                ${groups.map((group) => `<option value="${escapeAttr(group.groupId)}" ${String(group.groupId) === String(student.groupId) ? 'selected' : ''}>${escapeHTML(group.grade)}-${escapeHTML(group.course)} · ${escapeHTML(group.sede)}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+          <p class="em-edit-student-error" id="editStudentError" role="alert"></p>
+          <div class="em-edit-student-actions">
+            <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+            <button class="primary-btn" id="saveStudentEditBtn" type="submit">Guardar cambios</button>
+          </div>
+        </form>
+      </section>
+    `, () => {
+      const firstNameInput = document.getElementById('editStudentFirstName');
+      const lastNameInput = document.getElementById('editStudentLastName');
+      const usernameInput = document.getElementById('editStudentUsername');
+      const codeInput = document.getElementById('editStudentCode');
+      const errorBox = document.getElementById('editStudentError');
+      const originalSuggested = suggestedStudentUsername(student.firstName, student.lastName, student.id);
+      let usernameWasManuallyEdited = currentUsername !== originalSuggested;
+
+      usernameInput.addEventListener('input', () => {
+        usernameWasManuallyEdited = true;
+        const clean = cleanStudentUsername(usernameInput.value);
+        if (usernameInput.value !== clean) usernameInput.value = clean;
+      });
+      const updateSuggestedUsername = () => {
+        if (usernameWasManuallyEdited) return;
+        usernameInput.value = suggestedStudentUsername(firstNameInput.value, lastNameInput.value, codeInput.value);
+      };
+      firstNameInput.addEventListener('input', updateSuggestedUsername);
+      lastNameInput.addEventListener('input', updateSuggestedUsername);
+      codeInput.addEventListener('input', updateSuggestedUsername);
+      firstNameInput.focus();
+
+      document.getElementById('editStudentForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
+        const studentCode = codeInput.value.trim();
+        const username = cleanStudentUsername(usernameInput.value);
+        const targetGroupId = document.getElementById('editStudentGroup').value;
+        const submit = document.getElementById('saveStudentEditBtn');
+        if (!firstName || !lastName || !studentCode || !username || !targetGroupId) {
+          errorBox.textContent = 'Completa todos los campos.';
+          return;
+        }
+
+        const identity = studentIdentityKey(student);
+        const duplicateCode = (state.data.students || []).some((item) => item.active !== false && studentIdentityKey(item) !== identity && String(item.id || '').trim().toLowerCase() === studentCode.toLowerCase());
+        if (duplicateCode) {
+          errorBox.textContent = 'Ese Código en EducaCity ya pertenece a otro estudiante.';
+          return;
+        }
+        const duplicateUsername = (state.data.students || []).some((item) => item.active !== false && studentIdentityKey(item) !== identity && cleanStudentUsername(item.username) === username);
+        if (duplicateUsername && username !== currentUsername) {
+          errorBox.textContent = `El username @${username} ya pertenece a otro estudiante. Escribe uno diferente.`;
+          return;
+        }
+
+        submit.disabled = true;
+        submit.textContent = 'Guardando...';
+        errorBox.textContent = '';
+        const currentAssignmentId = state.assignment?.id || '';
+        try {
+          await cloudAPI().updateStudent({
+            studentDbId: student.dbId,
+            currentStudentCode: student.id,
+            currentGroupId: student.groupId,
+            targetGroupId,
+            studentCode,
+            username,
+            firstName,
+            lastName
+          });
+          const refreshed = await cloudAPI().loadApplicationData();
+          applyCloudSnapshotToState(refreshed, { initializePeriod: false });
+          closeModal();
+          toast(`${lastName}, ${firstName} quedó actualizado.`);
+
+          if (options.returnToDuplicates) {
+            renderTeacherHome();
+            window.setTimeout(() => openDuplicateUsernamesModal({ force: true }), 220);
+            return;
+          }
+          const assignment = (state.data.assignments || []).find((item) => String(item.id) === String(currentAssignmentId));
+          if (assignment) {
+            state.assignment = assignment;
+            renderSubjectDetail('students');
+          } else {
+            renderTeacherHome();
+          }
+        } catch (error) {
+          errorBox.textContent = error?.message || 'No se pudo editar el estudiante.';
+          reportCloudError('No se pudo editar el estudiante', error, { silent: true });
+        } finally {
+          if (document.body.contains(submit)) {
+            submit.disabled = false;
+            submit.textContent = 'Guardar cambios';
+          }
+        }
+      });
+    });
+  }
+
   function updateStudentCardAttendance(studentId, status) {
     const card = document.querySelector(`[data-student-card="${escapeSelector(studentId)}"]`);
     if (!card) return;
@@ -3400,7 +3655,7 @@
     let workbook = new ExcelJS.Workbook();
     let sheet = null;
     try {
-      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.009', document.baseURI).href;
+      const templateUrl = new URL('./assets/templates/educacity-planilla-base.xlsx?v=0.25.010', document.baseURI).href;
       const templateResponse = await fetch(templateUrl, { cache: 'no-store' });
       if (!templateResponse.ok) throw new Error(`Plantilla HTTP ${templateResponse.status}`);
       await workbook.xlsx.load(await templateResponse.arrayBuffer());
@@ -13670,7 +13925,10 @@
           </div>
         </div>
 
-        <button class="em-rs-trash-btn" type="button" data-delete-student="${escapeAttr(id)}" aria-label="Pasar estudiante a inactivo" title="Pasar estudiante a inactivo">🗑️</button>
+        <div class="em-rs-student-card-actions">
+          <button class="em-rs-edit-btn" type="button" data-edit-student="${escapeAttr(id)}" aria-label="Editar ${escapeAttr(emRsGetStudentName(student))}" title="Editar estudiante">✎</button>
+          <button class="em-rs-trash-btn" type="button" data-delete-student="${escapeAttr(id)}" aria-label="Pasar estudiante a inactivo" title="Pasar estudiante a inactivo">🗑️</button>
+        </div>
 
         <div class="em-rs-att-actions">
           <button class="em-rs-att-btn present ${visualStatus === 'present' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="present">✅ Asistió</button>
@@ -14410,7 +14668,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.009', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.010', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,

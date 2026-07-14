@@ -32158,3 +32158,231 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
 .em-activity-detail-screen.is-student-readonly .em-activity-detail-main {
   margin-bottom: 24px;
 }
+
+/* ================================================================
+   v0.25.010 · USERNAME Y EDICIÓN DE ESTUDIANTES
+   ================================================================ */
+
+.em-rs-student-card-actions {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.em-rs-att-card .em-rs-student-card-actions .em-rs-trash-btn,
+.em-rs-att-card .em-rs-student-card-actions .em-rs-edit-btn {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  width: 27px;
+  height: 27px;
+  min-width: 27px;
+  padding: 0;
+  border: 2px solid rgba(255,255,255,.16);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.em-rs-att-card .em-rs-student-card-actions .em-rs-edit-btn {
+  background: #1368ce;
+  border-color: rgba(255,255,255,.26);
+}
+
+.em-rs-att-card .em-rs-student-card-actions .em-rs-trash-btn {
+  background: rgba(226,27,60,.78);
+}
+
+.em-rs-att-card .em-rs-edit-btn:active,
+.em-rs-att-card .em-rs-trash-btn:active,
+.em-duplicate-edit-btn:active {
+  transform: scale(.88);
+}
+
+.em-edit-student-modal,
+.em-duplicate-usernames-modal {
+  width: min(calc(100vw - 24px), 590px);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+}
+
+.em-edit-student-modal > h2,
+.em-duplicate-usernames-modal h2 {
+  margin: 2px 0 8px;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-weight: 900;
+}
+
+.em-edit-student-form {
+  margin-top: 18px;
+}
+
+.em-edit-student-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.em-edit-student-field {
+  display: grid;
+  gap: 6px;
+}
+
+.em-edit-student-field > span {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.em-edit-student-field small {
+  margin-top: -2px;
+  color: var(--muted, #667085);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.em-edit-student-field-wide {
+  grid-column: 1 / -1;
+}
+
+.em-edit-student-error {
+  min-height: 20px;
+  margin: 12px 0 4px;
+  color: #e21b3c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.em-edit-student-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.em-duplicate-usernames-head {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.em-duplicate-usernames-head p {
+  margin: 0;
+  color: var(--muted, #667085);
+  line-height: 1.45;
+}
+
+.em-duplicate-usernames-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #ebb513;
+  color: #000000;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 29px;
+  font-weight: 900;
+}
+
+.em-duplicate-usernames-list {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.em-duplicate-username-group {
+  overflow: hidden;
+  border: 2px solid #111827;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.em-duplicate-username-label {
+  padding: 9px 12px;
+  background: #111827;
+  color: #ffffff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.em-duplicate-student-row {
+  display: grid;
+  grid-template-columns: 1fr 34px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid #d0d5dd;
+}
+
+.em-duplicate-student-row:first-of-type {
+  border-top: 0;
+}
+
+.em-duplicate-student-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.em-duplicate-student-row strong,
+.em-duplicate-student-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.em-duplicate-student-row strong {
+  font-size: 12px;
+}
+
+.em-duplicate-student-row span {
+  color: #667085;
+  font-size: 10px;
+}
+
+.em-duplicate-edit-btn {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: #1368ce;
+  color: #ffffff;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 560px) {
+  .em-edit-student-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .em-edit-student-field-wide {
+    grid-column: auto;
+  }
+
+  .em-edit-student-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .em-rs-att-card .em-rs-info {
+    padding-right: 58px;
+  }
+}

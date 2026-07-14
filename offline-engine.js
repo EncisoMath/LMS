@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.009';
+  const OFFLINE_VERSION = '0.25.010';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -251,6 +251,11 @@
         title = 'Nuevo estudiante';
         detail = `${[payload.lastName, payload.firstName].filter(Boolean).join(', ') || 'Estudiante'} · Código ${safeMutationText(payload.studentCode, 'sin código')}`;
         icon = '+';
+        break;
+      case 'updateStudent':
+        title = 'Edición de estudiante';
+        detail = `${[payload.lastName, payload.firstName].filter(Boolean).join(', ') || 'Estudiante'} · @${safeMutationText(payload.username, 'usuario pendiente')}`;
+        icon = '✎';
         break;
       case 'withdrawStudent':
         title = 'Retiro de estudiante';
@@ -691,6 +696,12 @@
       }
       case 'saveQuizzes':
         return (payload.quizzes || []).map((quiz) => `quiz:${quiz.id}`);
+      case 'updateStudent':
+        return [
+          `student:${payload.studentDbId || payload.currentStudentCode || payload.studentCode || ''}`,
+          `enrollment:${payload.currentGroupId || ''}:${payload.currentStudentCode || ''}`,
+          `enrollment:${payload.targetGroupId || payload.currentGroupId || ''}:${payload.studentCode || ''}`
+        ];
       case 'withdrawStudent':
       case 'createStudentAndEnroll':
         return [`enrollment:${payload.groupId}:${payload.studentCode}`];
@@ -1049,7 +1060,7 @@
       created = {
         id: code,
         dbId: `offline-${code}`,
-        username: code,
+        username: offlineGeneratedStudentUsername(payload.firstName, payload.lastName, code),
         fullName: `${payload.lastName || ''}, ${payload.firstName || ''}`.replace(/^,\s*/, '').trim(),
         firstName: payload.firstName || '',
         lastName: payload.lastName || '',
@@ -1070,6 +1081,78 @@
       snapshot.data.students = current;
     });
     return created;
+  }
+
+  function offlineGeneratedStudentUsername(firstName = '', lastName = '', studentCode = '') {
+    const clean = (value) => String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9._-]+/g, '');
+    const first = clean(String(firstName || '').trim().split(/\s+/)[0] || '');
+    const last = clean(String(lastName || '').trim().split(/\s+/)[0] || '');
+    return `${first}${last.slice(0, 2)}` || clean(studentCode) || 'estudiante';
+  }
+
+  async function optimisticUpdateStudent(payload) {
+    let updated = null;
+    await updateSnapshot(async (snapshot) => {
+      const oldCode = String(payload.currentStudentCode || '');
+      const newCode = String(payload.studentCode || oldCode);
+      const targetGroupId = String(payload.targetGroupId || payload.currentGroupId || '');
+      const assignment = assignmentForGroup(snapshot, targetGroupId) || {};
+      const identity = String(payload.studentDbId || '');
+      const username = String(payload.username || '').trim().toLowerCase()
+        || offlineGeneratedStudentUsername(payload.firstName, payload.lastName, newCode);
+
+      (snapshot.data.students || []).forEach((student) => {
+        const sameStudent = (identity && String(student.dbId || '') === identity)
+          || (!identity && String(student.id || '') === oldCode);
+        if (!sameStudent) return;
+        Object.assign(student, {
+          id: newCode,
+          username,
+          fullName: `${payload.lastName || ''}, ${payload.firstName || ''}`.replace(/^,\s*/, '').trim(),
+          firstName: payload.firstName || '',
+          lastName: payload.lastName || '',
+          grade: String(assignment.grade || student.grade || ''),
+          course: String(assignment.course || student.course || ''),
+          sede: assignment.sede || student.sede || 'Municipal',
+          groupId: targetGroupId,
+          enrollmentStatus: 'active',
+          active: true,
+          pendingSync: true
+        });
+        updated = { ...student };
+      });
+
+      if (oldCode && newCode && oldCode !== newCode) {
+        Object.values(snapshot.attendance || {}).forEach((attendance) => {
+          if (!attendance || typeof attendance !== 'object' || !(oldCode in attendance)) return;
+          attendance[newCode] = attendance[oldCode];
+          delete attendance[oldCode];
+        });
+        (snapshot.data.rockstars || []).forEach((row) => {
+          if (String(row.studentId || '') === oldCode) row.studentId = newCode;
+        });
+        (snapshot.data.activityGrades || []).forEach((row) => {
+          if (String(row.studentCode || '') === oldCode) row.studentCode = newCode;
+        });
+        (snapshot.data.quizGrades || []).forEach((row) => {
+          if (String(row.studentCode || '') === oldCode) row.studentCode = newCode;
+        });
+      }
+    });
+    return updated || {
+      id: payload.studentCode || payload.currentStudentCode || '',
+      dbId: payload.studentDbId || '',
+      username: payload.username || '',
+      firstName: payload.firstName || '',
+      lastName: payload.lastName || '',
+      groupId: payload.targetGroupId || payload.currentGroupId || '',
+      pendingSync: true
+    };
   }
 
   async function optimisticWithdraw(payload) {
@@ -1491,6 +1574,8 @@
         if (!ids.length) return false;
         return serverRowUpdatedAfter('quizzes', { id: ids }, base);
       }
+      case 'updateStudent':
+        return serverRowUpdatedAfter('students', { id: payload.studentDbId }, base);
       case 'withdrawStudent': {
         const studentId = cloud.resolveStudentDbId(payload.studentCode);
         if (!studentId) return false;
@@ -1559,6 +1644,7 @@
       case 'saveAttendanceStatus': return cloud.saveAttendanceStatus(payload);
       case 'addRockstarEvent': return cloud.addRockstarEvent({ ...(payload.event || payload), clientMutationId: mutation.id });
       case 'createStudentAndEnroll': return cloud.createStudentAndEnroll(payload);
+      case 'updateStudent': return cloud.updateStudent(payload);
       case 'withdrawStudent': return cloud.withdrawStudent(payload);
       case 'saveQuizzes': return cloud.saveQuizzes(payload.quizzes || [], { clientMutationId: mutation.id });
       case 'savePreferences': return cloud.savePreferences(payload.preferences || {}, { clientMutationId: mutation.id });
@@ -1829,6 +1915,9 @@
     },
     createStudentAndEnroll(payload) {
       return executeMutation('createStudentAndEnroll', payload, cloud.createStudentAndEnroll, optimisticStudent);
+    },
+    updateStudent(payload) {
+      return executeMutation('updateStudent', payload, cloud.updateStudent, optimisticUpdateStudent);
     },
     withdrawStudent(payload) {
       return executeMutation('withdrawStudent', payload, cloud.withdrawStudent, optimisticWithdraw);
