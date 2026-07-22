@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.011';
+  const APP_VERSION = '0.25.012';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -838,21 +838,42 @@
     if (raw.includes('failed to fetch') || raw.includes('network')) return 'No hay conexión con Supabase. Revisa internet e inténtalo otra vez.';
     return error?.message || 'No se pudo iniciar sesión.';
   }
-  function updateStartupLoadingText(text = '') {
-    const phrase = document.querySelector('.em-brand-loading-screen .loading-phrase');
+  function updateStartupLoadingProgress(value = 0, text = '') {
+    const safe = Math.max(0, Math.min(100, Number(value) || 0));
+    const screen = document.querySelector('.em-brand-loading-screen');
+    const track = screen?.querySelector('.em-app-loader-progress');
+    const phrase = screen?.querySelector('.loading-phrase');
+    if (track) {
+      track.style.setProperty('--em-app-load-progress', `${safe}%`);
+      track.setAttribute('aria-valuenow', String(Math.round(safe)));
+    }
     if (phrase && text) phrase.textContent = text;
+    screen?.classList.toggle('is-complete', safe >= 100);
   }
 
-  async function enterCloudSession(activeSession) {
+  function updateStartupLoadingText(text = '') {
+    updateStartupLoadingProgress(Number(document.querySelector('.em-app-loader-progress')?.getAttribute('aria-valuenow') || 0), text);
+  }
+
+  async function enterCloudSession(activeSession, options = {}) {
     if (!activeSession?.user?.id) return false;
+    const loadingVisible = Boolean(document.querySelector('.em-brand-loading-screen'));
+    if (!loadingVisible) mount(renderLoadingHTML('Conectando con Supabase...', 6), null, { instant: true });
+    const progressStart = Math.max(0, Math.min(90, Number(options.progressStart ?? (loadingVisible ? 34 : 6)) || 0));
+    const progressEnd = Math.max(progressStart + 1, Math.min(98, Number(options.progressEnd ?? 96) || 96));
     state.cloud.loading = true;
-    // El splash global solo pertenece al arranque real. Si ya está visible,
-    // actualizamos su texto; si el usuario viene del login o navega dentro de
-    // la app, la sincronización ocurre sin volver a montar la pantalla completa.
-    updateStartupLoadingText('Sincronizando EncisoMath con Supabase...');
+    updateStartupLoadingProgress(progressStart, 'Sincronizando EncisoMath con Supabase...');
     try {
-      const cloudData = await cloudAPI().loadApplicationData();
+      const cloudData = await cloudAPI().loadApplicationData({
+        onProgress(detail = {}) {
+          const cloudProgress = Math.max(0, Math.min(100, Number(detail.progress) || 0));
+          const mapped = progressStart + ((progressEnd - progressStart) * cloudProgress / 100);
+          updateStartupLoadingProgress(mapped, detail.label || 'Sincronizando EncisoMath con Supabase...');
+        }
+      });
+      updateStartupLoadingProgress(98, 'Preparando tu espacio de trabajo...');
       applyCloudSnapshotToState(cloudData, { initializePeriod: true });
+      updateStartupLoadingProgress(100, 'EncisoMath está listo.');
       if (cloudData.user.role === 'student') {
         localStorage.setItem('encisomath:lastStudentCode', String(cloudData.user.id || cloudData.user.username || ''));
         localStorage.setItem('encisomath:lastLoginMode', 'student');
@@ -887,19 +908,25 @@
     bindQuizSecurityGuards();
     bindAppBackNavigation();
     bindOfflineSyncEvents();
-    mount(renderLoadingHTML('Preparando EncisoMath...'), null, { instant: true });
+    mount(renderLoadingHTML('Preparando EncisoMath...', 3), null, { instant: true });
     try {
-      state.data = await loadAllData();
+      state.data = await loadAllData(({ completed, total, key }) => {
+        const ratio = total ? completed / total : 1;
+        updateStartupLoadingProgress(3 + ratio * 23, `Cargando recursos locales${key ? `: ${key}` : ''}...`);
+      });
+      updateStartupLoadingProgress(29, 'Conectando los servicios de EncisoMath...');
       if (!cloudAPI()?.isConfigured?.()) throw new Error('Supabase no está configurado.');
       cloudAPI().init();
 
+      updateStartupLoadingProgress(33, 'Comprobando tu sesión...');
       const activeSession = await cloudAPI().getSession();
       if (activeSession) {
         localStorage.setItem(CLOUD_SESSION_MODE_KEY, 'persistent');
         sessionStorage.setItem(CLOUD_SESSION_TAB_KEY, '1');
-        await enterCloudSession(activeSession);
+        await enterCloudSession(activeSession, { progressStart: 35, progressEnd: 96 });
         return;
       }
+      updateStartupLoadingProgress(100, 'Acceso preparado.');
       renderLogin();
     } catch (error) {
       console.error(error);
@@ -907,11 +934,16 @@
     }
   }
 
-  async function loadAllData() {
-    const entries = await Promise.all(Object.entries(DATA_FILES).map(async ([key, url]) => {
+  async function loadAllData(onProgress = null) {
+    const sourceEntries = Object.entries(DATA_FILES);
+    let completed = 0;
+    const entries = await Promise.all(sourceEntries.map(async ([key, url]) => {
       const response = await fetch(url, { cache: navigator.onLine === false ? 'force-cache' : 'default' });
       if (!response.ok) throw new Error(`No se pudo cargar ${url}`);
-      return [key, await response.json()];
+      const value = await response.json();
+      completed += 1;
+      if (typeof onProgress === 'function') onProgress({ completed, total: sourceEntries.length, key, url });
+      return [key, value];
     }));
     return Object.fromEntries(entries);
   }
@@ -1341,12 +1373,13 @@
       }, 0);
     });
   }
-  function renderLoadingHTML(text = randomPhrase()) {
+  function renderLoadingHTML(text = randomPhrase(), progress = 0) {
+    const safeProgress = Math.max(0, Math.min(100, Number(progress) || 0));
     return `
-      <main class="loading-screen em-brand-loading-screen">
+      <main class="loading-screen em-brand-loading-screen ${safeProgress >= 100 ? 'is-complete' : ''}">
         <section class="loader-card em-brand-loading-card">
           ${encisoAnimatedLogoHTML('loading')}
-          <div class="em-app-loader-progress em-pdf-loader-track" aria-hidden="true">
+          <div class="em-app-loader-progress em-pdf-loader-track" role="progressbar" aria-label="Progreso de carga" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(safeProgress)}" style="--em-app-load-progress:${safeProgress}%">
             <span class="em-pdf-loader-bar"></span>
           </div>
           <div class="loading-phrase">${escapeHTML(text)}</div>

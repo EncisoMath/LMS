@@ -730,25 +730,41 @@
     };
   }
 
-  async function loadStudentApplicationData(studentCode = '') {
+  function reportApplicationLoadProgress(options, progress, label, detail = {}) {
+    if (typeof options?.onProgress !== 'function') return;
+    try {
+      options.onProgress({
+        progress: Math.max(0, Math.min(100, Number(progress) || 0)),
+        label: String(label || ''),
+        ...detail
+      });
+    } catch (_) {}
+  }
+
+  async function loadStudentApplicationData(studentCode = '', options = {}) {
+    reportApplicationLoadProgress(options, 5, 'Validando el acceso del estudiante...');
     const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
     if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
     let payload = studentPortalSession?.studentCode === code ? studentPortalSession.portalData : null;
     if (!payload) {
+      reportApplicationLoadProgress(options, 22, 'Consultando clases y actividades...');
       const { data, error } = await getStudentClient().rpc('encisomath_student_portal', { p_student_code: code });
       if (error) throw normalizeError(error, 'No se pudo cargar el portal del estudiante.');
       payload = data;
     }
+    reportApplicationLoadProgress(options, 78, 'Organizando el portal del estudiante...');
     const snapshot = normalizeStudentPortalData(payload, code);
     const remembered = studentPortalSession?.encisomathRemember ?? readStoredStudentPortalState().remember;
     studentPortalSession = createStudentPortalSession(snapshot.user.id, null, remembered);
     session = studentPortalSession;
+    reportApplicationLoadProgress(options, 100, 'Portal del estudiante cargado.');
     return snapshot;
   }
 
-  async function loadApplicationData() {
+  async function loadApplicationData(options = {}) {
     const studentCode = readStoredStudentPortalCode();
-    if (studentCode) return loadStudentApplicationData(studentCode);
+    if (studentCode) return loadStudentApplicationData(studentCode, options);
+    reportApplicationLoadProgress(options, 3, 'Validando la sesión con Supabase...');
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesion activa en Supabase.');
@@ -761,6 +777,7 @@
     if (profileError) throw normalizeError(profileError, 'No se pudo cargar el perfil.');
     profile = profileRow;
     const appUser = mapProfile(profileRow, activeSession.user);
+    reportApplicationLoadProgress(options, 12, 'Perfil cargado. Buscando asignaturas...');
 
     const { data: assignmentRows, error: assignmentError } = await supabaseClient
       .from('teaching_assignments')
@@ -771,8 +788,10 @@
     assignments = (assignmentRows || []).map((row) => mapAssignment(row, appUser));
     const assignmentIds = assignments.map((item) => item.id);
     const groupIds = [...new Set(assignments.map((item) => item.groupId).filter(Boolean))];
+    reportApplicationLoadProgress(options, 22, 'Asignaturas cargadas. Preparando cursos...');
 
     await purgeLegacyDemoContent(assignmentIds);
+    reportApplicationLoadProgress(options, 28, 'Datos base preparados. Cargando estudiantes...');
 
     studentCodeToDbId = new Map();
     studentDbIdToCode = new Map();
@@ -788,6 +807,7 @@
       enrollmentRows = data || [];
     }
     const students = enrollmentRows.map(mapStudent).filter(Boolean).sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
+    reportApplicationLoadProgress(options, 38, 'Estudiantes cargados. Consultando contenido académico...');
 
     let lessonRows = [];
     let activityRows = [];
@@ -797,34 +817,46 @@
     let attendanceRows = [];
     let rockstarRows = [];
     if (assignmentIds.length) {
+      let completedAcademicQueries = 0;
+      const academicQueryTotal = 6;
+      const trackAcademicQuery = (query, label) => Promise.resolve(query).then((result) => {
+        completedAcademicQueries += 1;
+        reportApplicationLoadProgress(
+          options,
+          38 + (completedAcademicQueries / academicQueryTotal) * 34,
+          label,
+          { completed: completedAcademicQueries, total: academicQueryTotal }
+        );
+        return result;
+      });
       const [lessonsResult, activitiesResult, activityProgressResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
-        supabaseClient
+        trackAcademicQuery(supabaseClient
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
           .in('assignment_id', assignmentIds)
-          .eq('visible', true),
-        supabaseClient
+          .eq('visible', true), 'Clases cargadas...'),
+        trackAcademicQuery(supabaseClient
           .from('activity_assignments')
           .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
           .in('assignment_id', assignmentIds)
-          .eq('visible', true),
-        supabaseClient
+          .eq('visible', true), 'Actividades cargadas...'),
+        trackAcademicQuery(supabaseClient
           .from('activity_student_records')
           .select('activity_id,assignment_id,student_id,score,graded_at,grading_group_id,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
-          .in('assignment_id', assignmentIds),
-        supabaseClient
+          .in('assignment_id', assignmentIds), 'Avances de actividades cargados...'),
+        trackAcademicQuery(supabaseClient
           .from('quiz_assignments')
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
-          .in('assignment_id', assignmentIds),
-        supabaseClient
+          .in('assignment_id', assignmentIds), 'Quizzes cargados...'),
+        trackAcademicQuery(supabaseClient
           .from('attendance_records')
           .select('assignment_id,student_id,attendance_date,status')
-          .in('assignment_id', assignmentIds),
-        supabaseClient
+          .in('assignment_id', assignmentIds), 'Asistencia cargada...'),
+        trackAcademicQuery(supabaseClient
           .from('rockstar_events')
           .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')
           .in('assignment_id', assignmentIds)
-          .order('occurred_at', { ascending: true })
+          .order('occurred_at', { ascending: true }), 'Puntos Rockstar cargados...')
       ]);
       if (lessonsResult.error) throw normalizeError(lessonsResult.error, 'No se pudieron cargar las clases.');
       if (activitiesResult.error) throw normalizeError(activitiesResult.error, 'No se pudieron cargar las actividades.');
@@ -852,6 +884,7 @@
         }
       }
     }
+    reportApplicationLoadProgress(options, 80, 'Organizando clases, actividades y calificaciones...');
 
     const uniqueLessons = new Map();
     lessonRows.map(mapLesson).filter(Boolean).forEach((lesson) => {
@@ -935,12 +968,14 @@
     });
     const quizGrades = [...bestQuizGrades.values()];
 
+    reportApplicationLoadProgress(options, 91, 'Cargando preferencias de la cuenta...');
     const { data: preferencesRow, error: preferencesError } = await supabaseClient
       .from('user_preferences')
       .select('preferences')
       .eq('user_id', activeSession.user.id)
       .maybeSingle();
     if (preferencesError) throw normalizeError(preferencesError, 'No se pudieron cargar las preferencias.');
+    reportApplicationLoadProgress(options, 100, 'Datos de Supabase cargados.');
 
     return {
       user: appUser,

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.010';
+  const OFFLINE_VERSION = '0.25.012';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -774,7 +774,8 @@
     const pendingLabel = pending
       ? `${pending} pendiente${pending === 1 ? '' : 's'}${firstPending ? ` · ${firstPending.title}` : ''}`
       : 'Todo guardado';
-    chip.innerHTML = `<span class="em-offline-dot" aria-hidden="true"></span><strong>${offline ? 'Sin conexión' : (syncPromise ? 'Sincronizando' : 'En línea')}</strong><small>${escapeMarkup(pendingLabel)}</small>`;
+    const activelySyncing = Boolean(syncPromise && pending > 0);
+    chip.innerHTML = `<span class="em-offline-dot" aria-hidden="true"></span><strong>${offline ? 'Sin conexión' : (activelySyncing ? 'Sincronizando' : 'En línea')}</strong><small>${escapeMarkup(pendingLabel)}</small>`;
     const titleParts = [];
     if (firstPending) titleParts.push(`${firstPending.title}: ${firstPending.detail}`);
     if (conflicts) titleParts.push(`${conflicts} cambio(s) no aplicado(s) porque Supabase tenía una versión más reciente.`);
@@ -797,7 +798,9 @@
 
   async function openSyncCenter() {
     const rows = await allMutations().catch(() => []);
-    const pending = rows.filter((item) => ['pending', 'retry', 'syncing', 'auth-required'].includes(item.status));
+    const pending = rows
+      .filter((item) => ['pending', 'retry', 'syncing', 'auth-required'].includes(item.status))
+      .map((item) => item.status === 'syncing' && !syncPromise ? { ...item, status: 'retry' } : item);
     const conflicts = rows.filter((item) => item.status === 'conflict');
     const requiresAuth = false;
     const meta = activeSnapshot?._offline || {};
@@ -824,23 +827,34 @@
         <div class="em-sync-progress" id="emSyncProgress" hidden><i></i><span>Sincronizando…</span></div>
         <div class="em-sync-actions">
           <button type="button" id="emPrepareOffline">Descargar todo para trabajar offline</button>
-          <button type="button" id="emSyncNow" ${isOnline() ? '' : 'disabled'}>Sincronizar ahora</button>
+          <button type="button" id="emSyncNow" ${isOnline() && pending.length ? '' : 'disabled'}>${pending.length ? 'Sincronizar ahora' : 'Todo sincronizado'}</button>
         </div>
         ${conflicts.length ? `<details><summary>${conflicts.length} cambio(s) descartado(s)</summary><div class="em-sync-conflicts">${conflicts.slice(-20).map((mutation) => { const item = mutationPresentation(mutation); return `<p><strong>${escapeMarkup(item.title)}</strong><span>${escapeMarkup(item.detail)}</span><span>${escapeMarkup(item.error || 'Supabase tenía una versión más reciente.')}</span></p>`; }).join('')}</div></details>` : ''}
       </section>
     `;
-    const progressHandler = (event) => {
+    const showProgress = (labelText, completed = 0, total = 0) => {
       const progress = overlay.querySelector('#emSyncProgress');
       const label = progress?.querySelector('span');
-      const detail = event.detail || {};
       if (!progress || !label) return;
       progress.hidden = false;
-      if (detail.phase === 'gradebooks') label.textContent = `Preparando calificaciones ${detail.completed || 0}/${detail.total || 0}…`;
-      if (detail.phase === 'files') label.textContent = `Descargando archivos ${detail.completed || 0}/${detail.total || 0}…`;
+      const percent = total > 0 ? Math.max(0, Math.min(100, (Number(completed) || 0) / total * 100)) : 18;
+      progress.style.setProperty('--em-sync-progress-value', `${percent}%`);
+      label.textContent = labelText;
+    };
+    const progressHandler = (event) => {
+      const detail = event.detail || {};
+      if (detail.phase === 'gradebooks') showProgress(`Preparando calificaciones ${detail.completed || 0}/${detail.total || 0}…`, detail.completed, detail.total);
+      if (detail.phase === 'files') showProgress(`Descargando archivos ${detail.completed || 0}/${detail.total || 0}…`, detail.completed, detail.total);
+    };
+    const syncProgressHandler = (event) => {
+      const detail = event.detail || {};
+      showProgress(detail.label || `Sincronizando cambios ${detail.index || 0}/${detail.total || 0}…`, detail.completed ?? Math.max(0, (detail.index || 1) - 1), detail.total);
     };
     window.addEventListener('encisomath:offline-progress', progressHandler);
+    window.addEventListener('encisomath:sync-progress', syncProgressHandler);
     const close = () => {
       window.removeEventListener('encisomath:offline-progress', progressHandler);
+      window.removeEventListener('encisomath:sync-progress', syncProgressHandler);
       overlay.remove();
     };
     overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
@@ -850,10 +864,7 @@
       dispatch('encisomath:request-login', { reason: 'sync-auth-required' });
     });
     overlay.querySelector('#emSyncNow')?.addEventListener('click', async () => {
-      const progress = overlay.querySelector('#emSyncProgress');
-      const label = progress?.querySelector('span');
-      if (progress) progress.hidden = false;
-      if (label) label.textContent = 'Sincronizando cambios pendientes…';
+      showProgress('Sincronizando cambios pendientes…', 0, pending.length);
       await syncNow({ manual: true }).catch(() => {});
       const remaining = await pendingMutations().catch(() => []);
       const discarded = (await allMutations().catch(() => [])).filter((item) => item.status === 'conflict');
@@ -1691,12 +1702,19 @@
       const summary = { applied: 0, conflicts: 0, failed: 0, total: queue.length };
       const locallyAppliedKeys = new Set();
       let index = 0;
+      if (typeof options.onProgress === 'function') {
+        try { options.onProgress({ index: 0, completed: 0, total: queue.length, label: queue.length ? 'Preparando cambios pendientes...' : 'No hay cambios pendientes.' }); } catch (_) {}
+      }
       for (const mutation of queue) {
         index += 1;
         mutation.status = 'syncing';
         mutation.attempts = Number(mutation.attempts || 0) + 1;
         await mutationPut(mutation);
-        dispatch('encisomath:sync-progress', { index, total: queue.length, mutationType: mutation.type });
+        const progressDetail = { index, completed: index - 1, total: queue.length, mutationType: mutation.type, label: `Sincronizando cambios ${index}/${queue.length}...` };
+        dispatch('encisomath:sync-progress', progressDetail);
+        if (typeof options.onProgress === 'function') {
+          try { options.onProgress(progressDetail); } catch (_) {}
+        }
         try {
           const conflict = await mutationHasConflict(mutation, locallyAppliedKeys);
           if (conflict) {
@@ -1705,6 +1723,9 @@
             await mutationPut(mutation);
             await finishMutationReceipt(mutation, 'conflict', mutation.lastError);
             summary.conflicts += 1;
+            const completedDetail = { index, completed: index, total: queue.length, mutationType: mutation.type, label: `Cambios procesados ${index}/${queue.length}.` };
+            dispatch('encisomath:sync-progress', completedDetail);
+            if (typeof options.onProgress === 'function') { try { options.onProgress(completedDetail); } catch (_) {} }
             continue;
           }
           const receipt = await claimMutation(mutation);
@@ -1712,6 +1733,9 @@
             await mutationDelete(mutation.id);
             mutationEntityKeys(mutation.type, mutation.payload || {}).forEach((key) => locallyAppliedKeys.add(key));
             summary.applied += 1;
+            const completedDetail = { index, completed: index, total: queue.length, mutationType: mutation.type, label: `Cambios procesados ${index}/${queue.length}.` };
+            dispatch('encisomath:sync-progress', completedDetail);
+            if (typeof options.onProgress === 'function') { try { options.onProgress(completedDetail); } catch (_) {} }
             continue;
           }
           await replayMutation(mutation);
@@ -1728,8 +1752,15 @@
           await mutationPut(mutation);
           await finishMutationReceipt(mutation, 'error', mutation.lastError);
           summary.failed += 1;
+          const completedDetail = { index, completed: index, total: queue.length, mutationType: mutation.type, label: `Cambios procesados ${index}/${queue.length}.` };
+          dispatch('encisomath:sync-progress', completedDetail);
+          if (typeof options.onProgress === 'function') { try { options.onProgress(completedDetail); } catch (_) {} }
           if (authRequired || isNetworkError(error)) break;
+          continue;
         }
+        const completedDetail = { index, completed: index, total: queue.length, mutationType: mutation.type, label: `Cambios procesados ${index}/${queue.length}.` };
+        dispatch('encisomath:sync-progress', completedDetail);
+        if (typeof options.onProgress === 'function') { try { options.onProgress(completedDetail); } catch (_) {} }
       }
       if (isOnline()) {
         try {
@@ -1855,7 +1886,12 @@
     });
   }
 
-  async function wrappedLoadApplicationData() {
+  async function wrappedLoadApplicationData(options = {}) {
+    const report = (progress, label, detail = {}) => {
+      if (typeof options?.onProgress !== 'function') return;
+      try { options.onProgress({ progress, label, ...detail }); } catch (_) {}
+    };
+    report(2, 'Comprobando la copia local y la conexión...');
     let session = null;
     try { session = await wrappedGetSession(); } catch (_) {}
     if (session?.user?.id) activeUserId = String(session.user.id);
@@ -1863,34 +1899,59 @@
       try {
         const pending = await pendingMutations();
         if (pending.length) {
-          await syncNow({ bootstrap: true });
+          report(6, `Sincronizando ${pending.length} cambio(s) pendiente(s)...`);
+          await syncNow({
+            bootstrap: true,
+            onProgress(detail = {}) {
+              const total = Math.max(1, Number(detail.total) || pending.length || 1);
+              const completed = Math.max(0, Number(detail.completed ?? detail.index) || 0);
+              report(6 + (completed / total) * 24, detail.label || `Sincronizando cambios ${completed}/${total}...`, detail);
+            }
+          });
           const synced = await loadSnapshot(activeUserId);
           if (synced) {
+            report(88, 'Preparando la copia sincronizada...');
             const hydratedSynced = await hydrateSnapshot(synced);
             prefetchEverything(synced).catch(() => {});
             scheduleStatusUpdate();
+            report(100, 'Sincronización completada.');
             return hydratedSynced;
           }
         }
+        report(6, 'Consultando la hora del servidor...');
         const serverSyncedAt = await getServerNow();
-        const fresh = await cloud.loadApplicationData();
+        const fresh = await cloud.loadApplicationData({
+          onProgress(detail = {}) {
+            const cloudProgress = Math.max(0, Math.min(100, Number(detail.progress) || 0));
+            report(8 + cloudProgress * .78, detail.label || 'Cargando datos de Supabase...', detail);
+          }
+        });
+        report(89, 'Guardando una copia offline segura...');
         await saveSnapshot(fresh, { serverSyncedAt });
+        report(95, 'Preparando archivos y datos para la aplicación...');
         const hydrated = await hydrateSnapshot(fresh);
         prefetchEverything(fresh).catch(() => {});
         scheduleStatusUpdate();
+        report(100, 'Datos preparados.');
         return hydrated;
       } catch (error) {
         if (!isNetworkError(error)) {
           const cached = await loadSnapshot(activeUserId);
           if (!cached) throw error;
-          return hydrateSnapshot(cached);
+          report(82, 'Supabase no respondió. Abriendo la copia local...');
+          const hydratedCached = await hydrateSnapshot(cached);
+          report(100, 'Copia local preparada.');
+          return hydratedCached;
         }
       }
     }
+    report(45, 'Sin conexión. Abriendo la copia offline...');
     const cached = await loadSnapshot(activeUserId);
     if (!cached) throw new Error('Todavía no existe una copia offline. Abre EncisoMath una vez con internet para preparar el dispositivo.');
     scheduleStatusUpdate();
-    return hydrateSnapshot(cached);
+    const hydratedCached = await hydrateSnapshot(cached);
+    report(100, 'Copia offline preparada.');
+    return hydratedCached;
   }
 
   const wrapped = {

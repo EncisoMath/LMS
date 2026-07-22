@@ -32433,3 +32433,132 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* ================================================================
+   v0.25.012 · PROGRESO REAL, ACTIVIDADES EN UNA FILA Y SYNC EN REPOSO
+   ================================================================ */
+
+/* La barra principal representa el porcentaje informado por las operaciones
+   reales. Ya no recorre 0-100 en bucle ni se reinicia mientras Supabase sigue. */
+.em-app-loader-progress.em-pdf-loader-track {
+  --em-app-load-progress: 0%;
+}
+.em-app-loader-progress .em-pdf-loader-bar {
+  width: var(--em-app-load-progress, 0%) !important;
+  animation: none !important;
+  transition: width 260ms cubic-bezier(.2, .8, .2, 1) !important;
+}
+.em-brand-loading-screen.is-complete .em-app-loader-progress .em-pdf-loader-bar::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+/* Hidden debe ganar sobre el display del componente. La barra del centro de
+   sincronización solo se muestra mientras existe una tarea real. */
+.em-sync-progress[hidden] {
+  display: none !important;
+}
+.em-sync-progress {
+  --em-sync-progress-value: 18%;
+}
+.em-sync-progress i {
+  background: rgba(255,255,255,.09) !important;
+}
+.em-sync-progress i::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--em-sync-progress-value, 18%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e21b3c, #ff7a00, #ebb513, #54c600, #1368ce, #7b1fa2);
+  transition: width 240ms cubic-bezier(.2,.8,.2,1);
+}
+.em-sync-progress i::after {
+  width: min(32%, var(--em-sync-progress-value, 18%));
+}
+
+/* Los cuatro formatos permanecen en una sola fila tanto en escritorio como
+   en móvil, sin perder el aspecto de tarjeta seleccionable. */
+html body #app .em-activity-create-modal .em-activity-type-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+html body #app .em-activity-create-modal .em-activity-type-option {
+  min-width: 0;
+}
+html body #app .em-activity-create-modal .em-activity-type-option span {
+  min-width: 0;
+  min-height: 68px;
+  padding: 7px 3px;
+  overflow: hidden;
+  font-size: clamp(.5rem, 1.8vw, .67rem);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+html body #app .em-activity-create-modal .em-activity-type-option b {
+  font-size: clamp(.9rem, 3.5vw, 1.15rem);
+}
+
+/* Editores oscuros y legibles, coherentes con los fondos de actividades. */
+html body #app .em-activity-create-modal .em-rich-toolbar button {
+  border-color: rgba(255,255,255,.13) !important;
+  background: #0b1627 !important;
+  color: #fff !important;
+}
+html body #app .em-activity-create-modal .em-rich-toolbar button:hover,
+html body #app .em-activity-create-modal .em-rich-toolbar button:focus-visible {
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, #0b1627 76%) !important;
+}
+html body #app .em-activity-create-modal .em-rich-editor,
+html body #app .em-activity-create-modal textarea.em-code-input {
+  border-color: rgba(255,255,255,.13) !important;
+  background: #07101d !important;
+  color: #f8fafc !important;
+  caret-color: #fff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+html body #app .em-activity-create-modal .em-rich-editor:focus,
+html body #app .em-activity-create-modal textarea.em-code-input:focus {
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 22%, transparent) !important;
+}
+html body #app .em-activity-create-modal .em-rich-editor:empty::before,
+html body #app .em-activity-create-modal textarea.em-code-input::placeholder {
+  color: #8290a7 !important;
+  opacity: 1 !important;
+}
+html body #app .em-activity-create-modal .em-rich-editor a {
+  color: #6db6ff;
+}
+
+/* Entregaron, Calificados, Avance y Promedio siempre ocupan cuatro columnas
+   en una sola fila; en pantallas estrechas se compactan sin saltar de línea. */
+html body #app .em-activity-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+html body #app .em-activity-overview-grid article {
+  min-width: 0 !important;
+}
+@media (max-width: 520px) {
+  html body #app .em-activity-overview-grid {
+    gap: 5px !important;
+  }
+  html body #app .em-activity-overview-grid article {
+    min-height: 54px !important;
+    padding: 7px 3px !important;
+  }
+  html body #app .em-activity-overview-grid small {
+    font-size: clamp(.43rem, 1.95vw, .56rem) !important;
+    letter-spacing: .015em !important;
+    white-space: nowrap;
+  }
+  html body #app .em-activity-overview-grid strong {
+    font-size: clamp(.88rem, 4vw, 1.16rem) !important;
+  }
+  html body #app .em-activity-average-track {
+    width: 88% !important;
+    height: 4px !important;
+  }
+}
