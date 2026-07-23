@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.021';
+  const APP_VERSION = '0.25.022';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -915,7 +915,14 @@
   }
 
   async function startConnectionPresence(options = {}) {
-    if (!state.user || !cloudAPI()?.startConnectionSession) return null;
+    if (!state.user) return null;
+    if (!cloudAPI()?.startConnectionSession) {
+      const error = new Error('El adaptador de Supabase cargado no contiene el registro de conexiones. Cierra completamente la PWA y vuelve a abrirla después de publicar la actualización.');
+      state.connections.trackingError = error.message;
+      if (options.throwOnError) throw error;
+      console.warn(error.message);
+      return null;
+    }
     if (state.connections.sessionId && state.connections.sessionToken) {
       startConnectionHeartbeatTimer();
       return state.connections.sessionId;
@@ -1183,11 +1190,11 @@
       </section>
     `, () => {
       document.getElementById('openAcademicPeriodsBtn')?.addEventListener('click', () => {
-        closeModal();
+        closeModal(false, { restoreFocus: false });
         openAcademicPeriodsModal();
       });
       document.getElementById('openTeacherConnectionsBtn')?.addEventListener('click', () => {
-        closeModal();
+        closeModal(false, { restoreFocus: false });
         renderConnectionsDashboard();
       });
     });
@@ -1296,7 +1303,10 @@
       });
       updateStartupLoadingProgress(98, 'Preparando tu espacio de trabajo...');
       applyCloudSnapshotToState(cloudData, { initializePeriod: true });
-      startConnectionPresence().catch(() => {});
+      await startConnectionPresence().catch((error) => {
+        state.connections.trackingError = error?.message || String(error || '');
+        return null;
+      });
       updateStartupLoadingProgress(100, 'EncisoMath está listo.');
       if (cloudData.user.role === 'student') {
         localStorage.setItem('encisomath:lastStudentCode', String(cloudData.user.id || cloudData.user.username || ''));
@@ -2054,7 +2064,7 @@
           <div class="em-connections-error">
             <strong>No se pudo cargar Conexiones.</strong>
             <span>${escapeHTML(state.connections.trackingError)}</span>
-            <small>Ejecuta <b>SUPABASE_CONNECTIONS_v0.25.021.sql</b> en Supabase y vuelve a intentar.</small>
+            <small>Ejecuta <b>SUPABASE_CONNECTIONS_v0.25.022.sql</b> en Supabase y vuelve a intentar.</small>
           </div>
         `;
       }
@@ -15532,14 +15542,30 @@
     }
     return { hue: h, saturation: s, lightness: l };
   }
+  let modalReturnFocusElement = null;
+
+  function focusFirstModalControl(layer) {
+    if (!layer) return;
+    const target = layer.querySelector('[autofocus], .modal-close, button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (target && typeof target.focus === 'function') {
+      try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
+      return;
+    }
+    const dialog = layer.querySelector('[role="dialog"]') || layer;
+    if (!dialog.hasAttribute('tabindex')) dialog.setAttribute('tabindex', '-1');
+    try { dialog.focus({ preventScroll: true }); } catch (_) { dialog.focus(); }
+  }
+
   function openModal(markup, afterRender) {
     const existing = document.getElementById('modalLayer');
     if (existing) existing.remove();
-    const appRoot = document.getElementById('app');
-    if (appRoot) {
-      appRoot.inert = true;
-      appRoot.setAttribute('aria-hidden', 'true');
+    const active = document.activeElement;
+    if (active && active !== document.body && !active.closest?.('#modalLayer')) {
+      modalReturnFocusElement = active;
+      try { active.blur(); } catch (_) {}
     }
+    const appRoot = document.getElementById('app');
+    if (appRoot) appRoot.inert = true;
     const wrapper = document.createElement('div');
     wrapper.id = 'modalLayer';
     wrapper.className = 'modal-layer';
@@ -15552,19 +15578,28 @@
     document.addEventListener('keydown', escCloseModal);
     if (typeof afterRender === 'function') afterRender();
     emFlatApplyBackgrounds(wrapper);
-    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      wrapper.classList.add('show');
+      focusFirstModalControl(wrapper);
+    }));
   }
-  function closeModal(animate = true) {
+
+  function closeModal(animate = true, options = {}) {
     const layer = document.getElementById('modalLayer');
     if (!layer) return;
     document.removeEventListener('keydown', escCloseModal);
+    const restoreFocus = options.restoreFocus !== false;
+    const returnTarget = modalReturnFocusElement;
     const removeLayer = () => {
       layer.remove();
       document.body.classList.remove('modal-open');
       const appRoot = document.getElementById('app');
-      if (appRoot) {
-        appRoot.inert = false;
-        appRoot.removeAttribute('aria-hidden');
+      if (appRoot) appRoot.inert = false;
+      modalReturnFocusElement = null;
+      if (restoreFocus && returnTarget?.isConnected && typeof returnTarget.focus === 'function') {
+        requestAnimationFrame(() => {
+          try { returnTarget.focus({ preventScroll: true }); } catch (_) { returnTarget.focus(); }
+        });
       }
     };
     if (!animate) {
@@ -15756,7 +15791,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.021', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.022', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,

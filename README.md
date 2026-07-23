@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.021
+# EncisoMath LMS v0.25.022
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -12,7 +12,7 @@ Todos los controles y paneles nuevos usan el lenguaje visual existente de Enciso
 
 Ejecuta completo en **Supabase → SQL Editor**:
 
-`SUPABASE_CONNECTIONS_v0.25.021.sql`
+`SUPABASE_CONNECTIONS_v0.25.022.sql`
 
 La migración crea o corrige:
 
@@ -38,5 +38,5 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `supabase-adapter.js`: Auth, RPC, CRUD y Storage.
 - `offline-engine.js`: IndexedDB y sincronización offline.
 - `sw.js`: Service Worker y caché.
-- `SUPABASE_CONNECTIONS_v0.25.021.sql`: migración necesaria.
-- `INSTALACION_CONEXIONES_v0.25.021.txt`: pasos rápidos.
+- `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
+- `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.

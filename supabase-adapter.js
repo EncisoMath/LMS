@@ -2305,7 +2305,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.021', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.022', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2347,7 +2347,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.021',
+          appVersion: '0.25.022',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2390,7 +2390,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.021',
+          appVersion: '0.25.022',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2427,16 +2427,17 @@
   function connectionMigrationError(error, fallback) {
     const message = String(error?.message || '').toLowerCase();
     if (error?.code === 'PGRST202' || message.includes('encisomath_connection_') || message.includes('encisomath_teacher_connections')) {
-      return new Error('Falta ejecutar SUPABASE_CONNECTIONS_v0.25.021.sql en Supabase.');
+      return new Error('Falta ejecutar SUPABASE_CONNECTIONS_v0.25.022.sql en Supabase.');
     }
     return normalizeError(error, fallback);
   }
 
   function connectionRpcContext() {
-    const studentCode = readStoredStudentPortalCode();
+    const studentPortalActive = Boolean(session?.encisomathStudentPortal);
+    const studentCode = studentPortalActive ? readStoredStudentPortalCode() : '';
     return {
       studentCode,
-      rpcClient: studentCode ? getStudentClient() : getClient()
+      rpcClient: studentPortalActive ? getStudentClient() : getClient()
     };
   }
 

@@ -33720,3 +33720,9 @@ html body #app .em-quiz-card-clean.is-student-quiz-card.is-graded .em-quiz-start
   .em-connection-meta-grid { grid-template-columns: 1fr; gap: 8px; }
   .em-connection-context { grid-column: auto; }
 }
+
+
+/* v0.25.022 · foco accesible de modales y diagnóstico de conexiones */
+#modalLayer [role="dialog"]:focus { outline: none; }
+.em-connections-notice.is-error span,
+.em-connections-error span { overflow-wrap: anywhere; }
