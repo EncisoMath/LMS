@@ -2305,7 +2305,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.017', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.020', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2347,7 +2347,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.017',
+          appVersion: '0.25.020',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2390,7 +2390,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.017',
+          appVersion: '0.25.020',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2421,6 +2421,72 @@
       }
     }
     return { score, maxScore, grade: maxScore > 0 ? Math.max(0, Math.min(10, (score / maxScore) * 10)) : 0 };
+  }
+
+
+  function connectionMigrationError(error, fallback) {
+    const message = String(error?.message || '').toLowerCase();
+    if (error?.code === 'PGRST202' || message.includes('encisomath_connection_') || message.includes('encisomath_teacher_connections')) {
+      return new Error('Falta ejecutar SUPABASE_CONNECTIONS_v0.25.020.sql en Supabase.');
+    }
+    return normalizeError(error, fallback);
+  }
+
+  function connectionRpcContext() {
+    const studentCode = readStoredStudentPortalCode();
+    return {
+      studentCode,
+      rpcClient: studentCode ? getStudentClient() : getClient()
+    };
+  }
+
+  async function startConnectionSession({ device = {}, context = {}, appVersion = '' } = {}) {
+    const { studentCode, rpcClient } = connectionRpcContext();
+    if (!studentCode) await requireAuthenticatedSession();
+    const { data, error } = await rpcClient.rpc('encisomath_connection_start', {
+      p_student_code: studentCode || null,
+      p_device: device && typeof device === 'object' ? device : {},
+      p_context: context && typeof context === 'object' ? context : {},
+      p_app_version: String(appVersion || '')
+    });
+    if (error) throw connectionMigrationError(error, 'No se pudo registrar la conexión.');
+    if (!data?.ok || !data?.sessionId) throw new Error(data?.message || 'Supabase no devolvió una sesión de conexión válida.');
+    return data;
+  }
+
+  async function heartbeatConnectionSession(sessionId, context = {}) {
+    const safeId = String(sessionId || '').trim();
+    if (!safeId) return null;
+    const { rpcClient } = connectionRpcContext();
+    const { data, error } = await rpcClient.rpc('encisomath_connection_heartbeat', {
+      p_session_id: safeId,
+      p_context: context && typeof context === 'object' ? context : {}
+    });
+    if (error) throw connectionMigrationError(error, 'No se pudo actualizar la presencia.');
+    return data || null;
+  }
+
+  async function endConnectionSession(sessionId, context = {}) {
+    const safeId = String(sessionId || '').trim();
+    if (!safeId) return null;
+    const { rpcClient } = connectionRpcContext();
+    const { data, error } = await rpcClient.rpc('encisomath_connection_end', {
+      p_session_id: safeId,
+      p_context: context && typeof context === 'object' ? context : {}
+    });
+    if (error) throw connectionMigrationError(error, 'No se pudo cerrar la sesión de conexión.');
+    return data || null;
+  }
+
+  async function loadConnectionReport({ days = 7, limit = 500 } = {}) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const { data, error } = await supabaseClient.rpc('encisomath_teacher_connections', {
+      p_days: Math.max(1, Math.min(365, Number(days) || 7)),
+      p_limit: Math.max(20, Math.min(2000, Number(limit) || 500))
+    });
+    if (error) throw connectionMigrationError(error, 'No se pudieron cargar las conexiones.');
+    return data || { ok: true, sessions: [], summary: {} };
   }
 
   window.EncisoSupabase = Object.freeze({
@@ -2457,6 +2523,10 @@
     recordLessonView,
     startQuizAttempt,
     submitQuizAttempt,
+    startConnectionSession,
+    heartbeatConnectionSession,
+    endConnectionSession,
+    loadConnectionReport,
     resolveStudentDbId
   });
 })();

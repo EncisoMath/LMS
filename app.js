@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.019';
+  const APP_VERSION = '0.25.020';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -557,6 +557,17 @@
       deferredPromptReady: false,
       installRequested: false,
       installedEventFired: false
+    },
+    connections: {
+      sessionId: '',
+      startedAt: '',
+      trackingError: '',
+      report: null,
+      loading: false,
+      days: 7,
+      roleFilter: 'all',
+      statusFilter: 'all',
+      search: ''
     }
   };
 
@@ -614,6 +625,7 @@
   const CLOUD_SESSION_TAB_KEY = 'encisomath:cloudSessionTab';
 
   setupInstallRequirementEvents();
+  setupConnectionPresenceEvents();
   document.addEventListener('DOMContentLoaded', boot);
 
   function cloudAPI() {
@@ -802,6 +814,173 @@
       refreshInstallGateUI();
     });
   }
+
+  let connectionHeartbeatTimer = null;
+  let connectionHeartbeatBusy = false;
+  let connectionStartPromise = null;
+  let connectionDashboardRefreshTimer = null;
+
+  function detectConnectionDevice() {
+    const ua = String(navigator.userAgent || '');
+    const uaData = navigator.userAgentData || null;
+    const isIPad = /ipad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isTablet = isIPad || /tablet|playbook|silk/i.test(ua) || (/android/i.test(ua) && !/mobile/i.test(ua));
+    const isPhone = !isTablet && (Boolean(uaData?.mobile) || /iphone|ipod|android.*mobile|windows phone/i.test(ua));
+    const deviceType = isTablet ? 'Tablet' : (isPhone ? 'Celular' : 'Computador');
+    const androidModelMatch = ua.match(/Android[^;)]*;\s*([^;)]+?)(?:\s+Build\/|\))/i);
+    const androidModel = androidModelMatch ? String(androidModelMatch[1] || '').replace(/;.*$/, '').trim() : '';
+    const deviceName = androidModel && !/wv$/i.test(androidModel) ? `${deviceType} ${androidModel}` : deviceType;
+
+    let osName = 'Sistema desconocido';
+    const android = ua.match(/android\s([\d.]+)/i);
+    const ios = ua.match(/(?:iphone os|cpu (?:iphone )?os)\s([\d_]+)/i);
+    const windows = ua.match(/windows nt\s([\d.]+)/i);
+    const mac = ua.match(/mac os x\s([\d_]+)/i);
+    if (android) osName = `Android ${android[1]}`;
+    else if (ios || isIPad) osName = `iOS ${(ios?.[1] || '').replace(/_/g, '.')}`.trim();
+    else if (windows) osName = 'Windows';
+    else if (mac) osName = `macOS ${(mac[1] || '').replace(/_/g, '.')}`.trim();
+    else if (/linux/i.test(ua)) osName = 'Linux';
+
+    let browserName = 'Navegador desconocido';
+    const samsung = ua.match(/SamsungBrowser\/([\d.]+)/i);
+    const edge = ua.match(/EdgA?\/([\d.]+)/i);
+    const firefox = ua.match(/(?:Firefox|FxiOS)\/([\d.]+)/i);
+    const chrome = ua.match(/(?:Chrome|CriOS)\/([\d.]+)/i);
+    const safari = ua.match(/Version\/([\d.]+).*Safari/i);
+    if (samsung) browserName = `Samsung Internet ${samsung[1].split('.')[0]}`;
+    else if (edge) browserName = `Microsoft Edge ${edge[1].split('.')[0]}`;
+    else if (firefox) browserName = `Firefox ${firefox[1].split('.')[0]}`;
+    else if (chrome) browserName = `Chrome ${chrome[1].split('.')[0]}`;
+    else if (safari) browserName = `Safari ${safari[1].split('.')[0]}`;
+
+    return {
+      deviceType,
+      osName,
+      browserName,
+      deviceLabel: `${deviceName} · ${osName} · ${browserName}`,
+      userAgent: ua.slice(0, 700),
+      isPwa: isStandaloneAppMode()
+    };
+  }
+
+  function currentConnectionContext() {
+    const route = state.appRoute || currentAppRouteFallback();
+    const assignment = state.assignment || null;
+    return {
+      screen: String(route?.screen || ''),
+      tab: String(route?.tab || state.activeSubjectTab || ''),
+      assignmentId: String(assignment?.id || route?.assignmentId || ''),
+      subject: String(assignment?.subject || ''),
+      group: assignment ? `${assignment.grade || ''}-${assignment.course || ''}` : '',
+      period: Number(state.activePeriod || 1),
+      visibility: String(document.visibilityState || 'visible'),
+      path: String(location.pathname || '')
+    };
+  }
+
+  function scheduleConnectionHeartbeat(delay = 180) {
+    if (!state.connections.sessionId) return;
+    window.clearTimeout(scheduleConnectionHeartbeat.timer);
+    scheduleConnectionHeartbeat.timer = window.setTimeout(() => heartbeatConnectionPresence({ silent: true }), delay);
+  }
+
+  async function heartbeatConnectionPresence(options = {}) {
+    if (!state.connections.sessionId || connectionHeartbeatBusy || !cloudAPI()?.heartbeatConnectionSession) return null;
+    if (navigator.onLine === false) return null;
+    connectionHeartbeatBusy = true;
+    try {
+      const result = await cloudAPI().heartbeatConnectionSession(state.connections.sessionId, currentConnectionContext());
+      if (result?.ok === false) {
+        state.connections.sessionId = '';
+        if (state.user) startConnectionPresence().catch(() => {});
+      }
+      return result;
+    } catch (error) {
+      state.connections.trackingError = error?.message || String(error || '');
+      if (!options.silent) console.warn('No se pudo actualizar la presencia de conexión.', error);
+      return null;
+    } finally {
+      connectionHeartbeatBusy = false;
+    }
+  }
+
+  function startConnectionHeartbeatTimer() {
+    window.clearInterval(connectionHeartbeatTimer);
+    connectionHeartbeatTimer = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden') heartbeatConnectionPresence({ silent: true });
+    }, 45000);
+  }
+
+  async function startConnectionPresence() {
+    if (!state.user || !cloudAPI()?.startConnectionSession) return null;
+    if (state.connections.sessionId) {
+      startConnectionHeartbeatTimer();
+      return state.connections.sessionId;
+    }
+    if (connectionStartPromise) return connectionStartPromise;
+    connectionStartPromise = (async () => {
+      try {
+        const result = await cloudAPI().startConnectionSession({
+          device: detectConnectionDevice(),
+          context: currentConnectionContext(),
+          appVersion: APP_VERSION
+        });
+        state.connections.sessionId = String(result?.sessionId || '');
+        state.connections.startedAt = String(result?.connectedAt || '');
+        state.connections.trackingError = '';
+        startConnectionHeartbeatTimer();
+        return state.connections.sessionId;
+      } catch (error) {
+        state.connections.trackingError = error?.message || String(error || '');
+        console.warn('El registro de conexiones no está disponible.', error);
+        return null;
+      } finally {
+        connectionStartPromise = null;
+      }
+    })();
+    return connectionStartPromise;
+  }
+
+  async function stopConnectionPresence({ end = true } = {}) {
+    window.clearInterval(connectionHeartbeatTimer);
+    connectionHeartbeatTimer = null;
+    window.clearTimeout(scheduleConnectionHeartbeat.timer);
+    const sessionId = state.connections.sessionId;
+    state.connections.sessionId = '';
+    state.connections.startedAt = '';
+    if (!end || !sessionId || !cloudAPI()?.endConnectionSession || navigator.onLine === false) return null;
+    try {
+      return await cloudAPI().endConnectionSession(sessionId, currentConnectionContext());
+    } catch (error) {
+      console.warn('No se pudo cerrar formalmente la sesión de conexión.', error);
+      return null;
+    }
+  }
+
+  function setupConnectionPresenceEvents() {
+    if (setupConnectionPresenceEvents.bound) return;
+    setupConnectionPresenceEvents.bound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (state.connections.sessionId) heartbeatConnectionPresence({ silent: true });
+    });
+    window.addEventListener('online', () => {
+      if (state.user) {
+        if (state.connections.sessionId) heartbeatConnectionPresence({ silent: true });
+        else startConnectionPresence().catch(() => {});
+      }
+    });
+    window.addEventListener('focus', () => scheduleConnectionHeartbeat(80));
+    window.addEventListener('pagehide', () => {
+      if (state.connections.sessionId) heartbeatConnectionPresence({ silent: true });
+    });
+  }
+
+  function stopConnectionsDashboardAutoRefresh() {
+    window.clearInterval(connectionDashboardRefreshTimer);
+    connectionDashboardRefreshTimer = null;
+  }
+
   function renderRoleHome(options = {}) {
     return isStudentPortal() ? renderStudentHome(options) : renderTeacherHome(options);
   }
@@ -1076,6 +1255,7 @@
       });
       updateStartupLoadingProgress(98, 'Preparando tu espacio de trabajo...');
       applyCloudSnapshotToState(cloudData, { initializePeriod: true });
+      startConnectionPresence().catch(() => {});
       updateStartupLoadingProgress(100, 'EncisoMath está listo.');
       if (cloudData.user.role === 'student') {
         localStorage.setItem('encisomath:lastStudentCode', String(cloudData.user.id || cloudData.user.username || ''));
@@ -1206,7 +1386,7 @@
         activityId: String(route.activityId || '')
       };
     }
-    if (['login', 'home', 'student'].includes(screen)) return { screen };
+    if (['login', 'home', 'student', 'connections'].includes(screen)) return { screen };
     return null;
   }
   function normalizeSubjectTab(tab) {
@@ -1244,6 +1424,8 @@
     const normalized = normalizeAppRoute(route);
     if (!normalized) return;
     state.appRoute = normalized;
+    if (normalized.screen !== 'connections') stopConnectionsDashboardAutoRefresh();
+    scheduleConnectionHeartbeat(220);
     if (options.noHistory || state.applyingHistoryRoute) return;
     if (state.quizFullscreenActive) return;
     if (!window.history || typeof window.history.pushState !== 'function') return;
@@ -1327,6 +1509,15 @@
 
     if (normalized.screen === 'home') {
       renderRoleHome({ noHistory: true });
+      return;
+    }
+
+    if (normalized.screen === 'connections') {
+      if (!isTeacherPortal()) {
+        renderRoleHome({ noHistory: true });
+        return;
+      }
+      renderConnectionsDashboard({ noHistory: true });
       return;
     }
 
@@ -1625,6 +1816,18 @@
           </div>
         </section>
 
+        <section class="section em-connections-home-section">
+          <button class="em-connections-home-card" id="openConnectionsBtn" type="button">
+            <span class="em-connections-home-signal" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="em-connections-home-copy">
+              <small>Panel docente</small>
+              <strong>Conexiones</strong>
+              <span>Consulta quién ingresó, cuándo se conectó, desde qué dispositivo y cuánto duró su sesión.</span>
+            </span>
+            <b>Ver registro</b>
+          </button>
+        </section>
+
         <section class="section">
           <div class="section-head">
             <div>
@@ -1644,9 +1847,252 @@
       document.getElementById('logoutBtn').addEventListener('click', logout);
       document.getElementById('periodSettingsBtn')?.addEventListener('click', openAcademicPeriodsModal);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
+      document.getElementById('openConnectionsBtn')?.addEventListener('click', () => renderConnectionsDashboard());
       bindAssignmentCards(assignments);
     });
   }
+
+  function formatConnectionDate(value, options = {}) {
+    if (!value) return 'Sin registro';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('es-CO', options.compact
+      ? { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }
+      : { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }
+    ).format(date);
+  }
+
+  function formatConnectionDuration(secondsValue) {
+    const seconds = Math.max(0, Number(secondsValue) || 0);
+    if (seconds <= 0) return '0 s';
+    if (seconds < 60) return `${Math.max(1, Math.round(seconds))} s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const restMinutes = minutes % 60;
+    if (hours < 24) return restMinutes ? `${hours} h ${restMinutes} min` : `${hours} h`;
+    const days = Math.floor(hours / 24);
+    const restHours = hours % 24;
+    return restHours ? `${days} d ${restHours} h` : `${days} d`;
+  }
+
+  function connectionRoleLabel(session = {}) {
+    return String(session.actorType || session.role || '').toLowerCase() === 'teacher' ? 'Docente' : 'Estudiante';
+  }
+
+  function connectionGroupsLabel(session = {}) {
+    const groups = Array.isArray(session.groups) ? session.groups : [];
+    const labels = groups.map((group) => group?.label || `${group?.grade || ''}-${group?.course || ''}`).filter(Boolean);
+    return labels.length ? [...new Set(labels)].join(', ') : (connectionRoleLabel(session) === 'Docente' ? 'Perfil docente' : 'Sin grupo visible');
+  }
+
+  function connectionContextLabel(context = {}) {
+    const screen = String(context?.screen || '');
+    const tab = String(context?.tab || '');
+    if (screen === 'subject') {
+      const section = {
+        students: 'Estudiantes', classes: 'Clases', activities: 'Actividades', notes: 'Notas',
+        rockstars: 'Rockstars', quizzes: 'Quizzes'
+      }[tab] || 'Asignatura';
+      return [context.subject, section].filter(Boolean).join(' · ') || section;
+    }
+    if (screen === 'lesson') return context.subject ? `${context.subject} · Clase` : 'Vista de clase';
+    if (screen === 'activity') return context.subject ? `${context.subject} · Actividad` : 'Vista de actividad';
+    if (screen === 'connections') return 'Panel de conexiones';
+    if (screen === 'student') return 'Inicio del estudiante';
+    if (screen === 'home') return 'Inicio del docente';
+    if (screen === 'login') return 'Inicio de sesión';
+    return 'EncisoMath';
+  }
+
+  function filteredConnectionSessions() {
+    const source = Array.isArray(state.connections.report?.sessions) ? state.connections.report.sessions : [];
+    const search = normalizeSearch(state.connections.search || '');
+    return source.filter((session) => {
+      const role = connectionRoleLabel(session).toLowerCase();
+      if (state.connections.roleFilter !== 'all' && role !== state.connections.roleFilter) return false;
+      const status = session.online ? 'online' : 'offline';
+      if (state.connections.statusFilter !== 'all' && status !== state.connections.statusFilter) return false;
+      if (!search) return true;
+      const haystack = normalizeSearch([
+        session.displayName,
+        session.username,
+        connectionGroupsLabel(session),
+        session.deviceLabel,
+        session.osName,
+        session.browserName,
+        connectionContextLabel(session.context)
+      ].filter(Boolean).join(' '));
+      return haystack.includes(search);
+    });
+  }
+
+  function connectionsSummaryHTML() {
+    const summary = state.connections.report?.summary || {};
+    return `
+      <article><small>En línea ahora</small><strong>${Number(summary.online || 0)}</strong><span>Actividad en los últimos 90 segundos</span></article>
+      <article><small>Conexiones hoy</small><strong>${Number(summary.today || 0)}</strong><span>Sesiones iniciadas hoy</span></article>
+      <article><small>Usuarios hoy</small><strong>${Number(summary.uniqueToday || 0)}</strong><span>Personas diferentes</span></article>
+      <article><small>Tiempo promedio</small><strong>${escapeHTML(formatConnectionDuration(summary.averageDurationSeconds || 0))}</strong><span>Duración aproximada</span></article>
+    `;
+  }
+
+  function connectionCardsHTML() {
+    const sessions = filteredConnectionSessions();
+    if (!sessions.length) {
+      return `
+        <div class="em-connections-empty">
+          <strong>No hay conexiones para estos filtros.</strong>
+          <span>Cuando estudiantes o docentes entren a EncisoMath, sus sesiones aparecerán aquí.</span>
+        </div>
+      `;
+    }
+    return sessions.map((session) => {
+      const online = Boolean(session.online);
+      const device = session.deviceLabel || [session.deviceType, session.osName, session.browserName].filter(Boolean).join(' · ') || 'Dispositivo desconocido';
+      return `
+        <article class="em-connection-card ${online ? 'is-online' : 'is-offline'}">
+          <header>
+            <div class="em-connection-person">
+              <span class="em-connection-avatar">${escapeHTML(String(session.displayName || 'U').trim().charAt(0).toUpperCase() || 'U')}</span>
+              <div>
+                <strong>${escapeHTML(session.displayName || 'Usuario')}</strong>
+                <span>${escapeHTML(session.username ? `@${session.username}` : connectionRoleLabel(session))}</span>
+              </div>
+            </div>
+            <span class="em-connection-status"><i></i>${online ? 'En línea' : 'Desconectado'}</span>
+          </header>
+          <div class="em-connection-meta-grid">
+            <div><small>Rol y grupo</small><strong>${escapeHTML(connectionRoleLabel(session))}</strong><span>${escapeHTML(connectionGroupsLabel(session))}</span></div>
+            <div><small>Se conectó</small><strong>${escapeHTML(formatConnectionDate(session.connectedAt, { compact: true }))}</strong><span>${online ? 'Sesión activa' : `Última actividad: ${escapeHTML(formatConnectionDate(session.lastSeenAt, { compact: true }))}`}</span></div>
+            <div><small>Tiempo conectado</small><strong>${escapeHTML(formatConnectionDuration(session.durationSeconds))}</strong><span>${online ? 'Contando actualmente' : 'Duración aproximada'}</span></div>
+            <div><small>Dispositivo</small><strong>${escapeHTML(device)}</strong><span>${session.isPwa ? 'PWA instalada' : 'Navegador web'} · v${escapeHTML(session.appVersion || '—')}</span></div>
+            <div class="em-connection-context"><small>Última vista</small><strong>${escapeHTML(connectionContextLabel(session.context))}</strong><span>${escapeHTML(formatConnectionDate(session.lastSeenAt))}</span></div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderConnectionsDashboardData() {
+    const summary = document.getElementById('connectionsSummary');
+    const list = document.getElementById('connectionsList');
+    const count = document.getElementById('connectionsResultCount');
+    if (summary) summary.innerHTML = connectionsSummaryHTML();
+    if (list) list.innerHTML = connectionCardsHTML();
+    if (count) count.textContent = `${filteredConnectionSessions().length} registro(s)`;
+  }
+
+  async function loadConnectionsDashboard(options = {}) {
+    if (!isTeacherPortal() || !cloudAPI()?.loadConnectionReport) return;
+    if (state.connections.loading) return;
+    state.connections.loading = true;
+    const list = document.getElementById('connectionsList');
+    const refreshButton = document.getElementById('refreshConnectionsBtn');
+    if (!options.silent && list) list.innerHTML = '<div class="em-connections-loading">Cargando conexiones...</div>';
+    if (refreshButton) refreshButton.disabled = true;
+    try {
+      state.connections.report = await cloudAPI().loadConnectionReport({ days: state.connections.days, limit: 800 });
+      state.connections.trackingError = '';
+      renderConnectionsDashboardData();
+    } catch (error) {
+      state.connections.trackingError = error?.message || String(error || '');
+      if (list) {
+        list.innerHTML = `
+          <div class="em-connections-error">
+            <strong>No se pudo cargar Conexiones.</strong>
+            <span>${escapeHTML(state.connections.trackingError)}</span>
+            <small>Ejecuta <b>SUPABASE_CONNECTIONS_v0.25.020.sql</b> en Supabase y vuelve a intentar.</small>
+          </div>
+        `;
+      }
+    } finally {
+      state.connections.loading = false;
+      if (refreshButton) refreshButton.disabled = false;
+    }
+  }
+
+  function startConnectionsDashboardAutoRefresh() {
+    stopConnectionsDashboardAutoRefresh();
+    connectionDashboardRefreshTimer = window.setInterval(() => {
+      if (state.appRoute?.screen === 'connections' && document.visibilityState !== 'hidden') {
+        loadConnectionsDashboard({ silent: true });
+      }
+    }, 30000);
+  }
+
+  function renderConnectionsDashboard(options = {}) {
+    if (!isTeacherPortal()) return renderRoleHome(options);
+    commitAppRoute({ screen: 'connections' }, options);
+    state.assignment = null;
+    const markup = `
+      <main class="screen em-connections-screen">
+        <header class="topbar fixed-lock em-connections-topbar">
+          <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
+          <h1>Conexiones</h1>
+          <span class="spacer"></span>
+          <button class="mini-btn" id="refreshConnectionsBtn" type="button">Actualizar</button>
+        </header>
+        <section class="section em-connections-hero">
+          <p class="section-kicker">Actividad de acceso</p>
+          <h2>Quién está usando EncisoMath</h2>
+          <p>Las duraciones son aproximadas y se calculan mediante señales periódicas enviadas mientras la aplicación está abierta.</p>
+        </section>
+        <section class="section">
+          <div class="em-connections-summary" id="connectionsSummary">
+            <article><small>En línea ahora</small><strong>—</strong><span>Cargando</span></article>
+            <article><small>Conexiones hoy</small><strong>—</strong><span>Cargando</span></article>
+            <article><small>Usuarios hoy</small><strong>—</strong><span>Cargando</span></article>
+            <article><small>Tiempo promedio</small><strong>—</strong><span>Cargando</span></article>
+          </div>
+        </section>
+        <section class="section em-connections-log-section">
+          <div class="section-head em-connections-log-head">
+            <div><p class="section-kicker">Historial</p><h2 class="section-title">Registro de conexiones</h2></div>
+            <span id="connectionsResultCount">0 registro(s)</span>
+          </div>
+          <div class="em-connections-filters">
+            <label><span>Periodo</span><select id="connectionsDaysFilter"><option value="1">Hoy</option><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></label>
+            <label><span>Rol</span><select id="connectionsRoleFilter"><option value="all">Todos</option><option value="estudiante">Estudiantes</option><option value="docente">Docentes</option></select></label>
+            <label><span>Estado</span><select id="connectionsStatusFilter"><option value="all">Todos</option><option value="online">En línea</option><option value="offline">Desconectados</option></select></label>
+            <label class="em-connections-search"><span>Buscar</span><input id="connectionsSearchInput" type="search" placeholder="Nombre, grupo o dispositivo" value="${escapeAttr(state.connections.search || '')}" /></label>
+          </div>
+          <div class="em-connections-list" id="connectionsList"><div class="em-connections-loading">Cargando conexiones...</div></div>
+        </section>
+      </main>
+    `;
+    mount(markup, () => {
+      document.getElementById('backBtn')?.addEventListener('click', () => renderTeacherHome());
+      document.getElementById('refreshConnectionsBtn')?.addEventListener('click', () => loadConnectionsDashboard());
+      const days = document.getElementById('connectionsDaysFilter');
+      const role = document.getElementById('connectionsRoleFilter');
+      const status = document.getElementById('connectionsStatusFilter');
+      const search = document.getElementById('connectionsSearchInput');
+      if (days) days.value = String(state.connections.days || 7);
+      if (role) role.value = state.connections.roleFilter || 'all';
+      if (status) status.value = state.connections.statusFilter || 'all';
+      days?.addEventListener('change', () => {
+        state.connections.days = Number(days.value) || 7;
+        loadConnectionsDashboard();
+      });
+      role?.addEventListener('change', () => {
+        state.connections.roleFilter = role.value;
+        renderConnectionsDashboardData();
+      });
+      status?.addEventListener('change', () => {
+        state.connections.statusFilter = status.value;
+        renderConnectionsDashboardData();
+      });
+      search?.addEventListener('input', () => {
+        state.connections.search = search.value;
+        renderConnectionsDashboardData();
+      });
+      if (!state.connections.sessionId) startConnectionPresence().catch(() => {});
+      loadConnectionsDashboard();
+      startConnectionsDashboardAutoRefresh();
+    });
+  }
+
   function renderTeacherAssignmentGrid() {
     const teacher = state.user;
     const assignments = getTeacherAssignments(teacher.id);
@@ -14871,6 +15317,7 @@
   }
   async function logout() {
     const leavingStudentPortal = isStudentPortal();
+    await stopConnectionPresence({ end: true });
     try {
       if (cloudAPI()) await cloudAPI().signOut();
     } catch (error) {
@@ -15260,7 +15707,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.019', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.020', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,
