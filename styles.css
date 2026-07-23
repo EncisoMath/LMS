@@ -32888,3 +32888,116 @@ html body #app .em-quiz-card-clean.is-student-quiz-card.is-graded .em-quiz-start
   font-size: .69rem;
   line-height: 1.45;
 }
+
+
+/* v0.25.018 · instalación obligatoria en móviles */
+.em-install-gate-screen {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(19, 104, 206, .22), transparent 38%),
+    linear-gradient(180deg, #07111c 0%, #0b1524 45%, #050a12 100%);
+}
+.em-install-gate-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.em-install-gate-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  border-radius: 28px;
+  padding: 26px 22px 24px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(12, 21, 34, .96), rgba(7, 12, 22, .98));
+  box-shadow: 0 24px 60px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.04);
+  text-align: center;
+}
+.em-install-gate-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.em-install-gate-card .section-kicker {
+  margin: 0 0 8px;
+}
+.em-install-gate-card h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 4.8vw, 2rem);
+}
+.em-install-gate-copy {
+  margin: 12px auto 0;
+  max-width: 42ch;
+  color: rgba(235, 243, 255, .84);
+  line-height: 1.55;
+}
+.em-install-gate-steps {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  text-align: left;
+}
+.em-install-gate-step {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.07);
+}
+.em-install-gate-step b {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: .95rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 68%, white 10%));
+}
+.em-install-gate-step span {
+  color: rgba(245, 248, 255, .92);
+  line-height: 1.45;
+}
+.em-install-gate-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+.em-install-gate-actions .primary-btn,
+.em-install-gate-actions .ghost-btn {
+  width: 100%;
+}
+.em-install-android-btn[disabled] {
+  opacity: .6;
+  cursor: wait;
+}
+.em-install-gate-ios-note,
+.em-install-gate-status {
+  color: rgba(220, 231, 255, .82);
+  line-height: 1.45;
+}
+.em-install-gate-ios-note {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+}
+.em-install-gate-status {
+  margin: 6px 0 0;
+  min-height: 42px;
+  font-size: .95rem;
+}
+@media (min-width: 768px) {
+  .em-install-gate-card {
+    padding: 30px 28px 28px;
+  }
+}

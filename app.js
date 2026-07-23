@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.017';
+  const APP_VERSION = '0.25.018';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -549,6 +549,14 @@
       attendance: {},
       sessionMode: localStorage.getItem('encisomath:cloudSessionMode') || 'persistent',
       lastSyncError: ''
+    },
+    install: {
+      platform: 'unknown',
+      required: false,
+      gateVisible: false,
+      deferredPromptReady: false,
+      installRequested: false,
+      installedEventFired: false
     }
   };
 
@@ -618,6 +626,161 @@
   }
   function isTeacherPortal() {
     return ['teacher', 'admin'].includes(String(state.user?.role || '').toLowerCase());
+  }
+
+  let deferredInstallPrompt = null;
+
+  function isIOSDevice() {
+    const ua = String(navigator.userAgent || '');
+    return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function isAndroidDevice() {
+    return /android/i.test(String(navigator.userAgent || ''));
+  }
+  function isMobileDevice() {
+    if (isIOSDevice() || isAndroidDevice()) return true;
+    return window.matchMedia?.('(pointer: coarse)')?.matches && /mobile/i.test(String(navigator.userAgent || ''));
+  }
+  function isStandaloneAppMode() {
+    return Boolean(
+      window.matchMedia?.('(display-mode: standalone)')?.matches ||
+      window.navigator.standalone === true ||
+      String(document.referrer || '').startsWith('android-app://')
+    );
+  }
+  function detectInstallPlatform() {
+    if (isIOSDevice()) return 'ios';
+    if (isAndroidDevice()) return 'android';
+    return isMobileDevice() ? 'mobile' : 'desktop';
+  }
+  function shouldForceInstalledApp() {
+    return isMobileDevice() && !isStandaloneAppMode();
+  }
+  function installGateMessageHTML(platform = detectInstallPlatform()) {
+    if (platform === 'ios') {
+      return `
+        <div class="em-install-gate-steps" aria-label="Pasos para instalar en iPhone o iPad">
+          <div class="em-install-gate-step"><b>1</b><span>Toca <strong>Compartir</strong> en Safari o Chrome.</span></div>
+          <div class="em-install-gate-step"><b>2</b><span>Elige <strong>Añadir a pantalla de inicio</strong>.</span></div>
+          <div class="em-install-gate-step"><b>3</b><span>Cuando termine, abre EncisoMath desde su icono.</span></div>
+        </div>
+      `;
+    }
+    if (platform === 'android') {
+      return `
+        <div class="em-install-gate-steps" aria-label="Pasos para instalar en Android">
+          <div class="em-install-gate-step"><b>1</b><span>Toca <strong>Instalar aplicación</strong>.</span></div>
+          <div class="em-install-gate-step"><b>2</b><span>Acepta el diálogo de Android.</span></div>
+          <div class="em-install-gate-step"><b>3</b><span>Después, entra a EncisoMath desde el icono instalado.</span></div>
+        </div>
+      `;
+    }
+    return `
+      <div class="em-install-gate-steps" aria-label="Instalación requerida">
+        <div class="em-install-gate-step"><b>1</b><span>Instala EncisoMath en este dispositivo.</span></div>
+        <div class="em-install-gate-step"><b>2</b><span>Ábrela desde el icono de la pantalla de inicio.</span></div>
+      </div>
+    `;
+  }
+  function renderInstallGate() {
+    const platform = detectInstallPlatform();
+    state.install.platform = platform;
+    state.install.required = shouldForceInstalledApp();
+    state.install.gateVisible = true;
+    const isAndroid = platform === 'android';
+    const isIOS = platform === 'ios';
+    const installLabel = deferredInstallPrompt
+      ? 'Instalar aplicación'
+      : 'Preparando instalación...';
+    return `
+      <main class="em-install-gate-screen">
+        <div class="em-install-gate-backdrop">${animatedShapes('login')}</div>
+        <section class="em-install-gate-card">
+          <div class="em-install-gate-logo">${encisoAnimatedLogoHTML('login')}</div>
+          <p class="section-kicker">Instalación requerida</p>
+          <h1>Usa EncisoMath como app</h1>
+          <p class="em-install-gate-copy">En celulares y tablets, EncisoMath solo se puede usar desde la aplicación instalada. En computador puedes seguir entrando desde el navegador.</p>
+          ${installGateMessageHTML(platform)}
+          <div class="em-install-gate-actions">
+            ${isAndroid ? `<button class="primary-btn em-install-android-btn" id="installAppBtn" type="button" ${deferredInstallPrompt ? '' : 'disabled'}>${escapeHTML(installLabel)}</button>` : ''}
+            ${isIOS ? `<div class="em-install-gate-ios-note" id="installIosNote">Después de añadirla, cierra el navegador y abre EncisoMath desde el icono de inicio.</div>` : ''}
+            ${!isAndroid && !isIOS ? `<div class="em-install-gate-ios-note">Instálala desde el menú del navegador y luego ábrela desde su icono.</div>` : ''}
+            <button class="ghost-btn" id="installGateRetryBtn" type="button">Ya la instalé</button>
+          </div>
+          <p class="em-install-gate-status" id="installGateStatus" aria-live="polite">${isAndroid ? (deferredInstallPrompt ? 'Lista para instalar.' : 'Esperando el aviso nativo de instalación...') : (isIOS ? 'La instalación se hace manualmente desde el menú Compartir.' : 'Instálala y luego entra desde su icono.')}</p>
+        </section>
+      </main>
+    `;
+  }
+  function refreshInstallGateUI() {
+    if (!state.install.gateVisible) return;
+    const button = document.getElementById('installAppBtn');
+    const status = document.getElementById('installGateStatus');
+    if (button) {
+      button.disabled = !deferredInstallPrompt;
+      button.textContent = deferredInstallPrompt ? 'Instalar aplicación' : 'Preparando instalación...';
+    }
+    if (status) {
+      if (state.install.installedEventFired) {
+        status.textContent = 'Instalada. Ahora abre EncisoMath desde el icono de tu pantalla de inicio.';
+      } else if (state.install.platform === 'android') {
+        status.textContent = deferredInstallPrompt ? 'Toca el botón para instalar EncisoMath.' : 'Esperando el aviso nativo de instalación...';
+      } else if (state.install.platform === 'ios') {
+        status.textContent = 'En iPhone o iPad, instálala desde Compartir → Añadir a pantalla de inicio.';
+      } else {
+        status.textContent = 'Instálala desde el menú del navegador y luego ábrela desde su icono.';
+      }
+    }
+  }
+  async function promptInstallApp() {
+    if (!deferredInstallPrompt) {
+      refreshInstallGateUI();
+      toast(state.install.platform === 'android'
+        ? 'Todavía no aparece el aviso nativo de instalación. Espera un momento e inténtalo de nuevo.'
+        : 'Instálala desde el menú del navegador.');
+      return;
+    }
+    state.install.installRequested = true;
+    try {
+      const promptEvent = deferredInstallPrompt;
+      deferredInstallPrompt = null;
+      promptEvent.prompt();
+      await promptEvent.userChoice.catch?.(() => null);
+    } catch (error) {
+      console.warn('No se pudo lanzar la instalación de la PWA.', error);
+      toast('No se pudo abrir el instalador en este momento.');
+    } finally {
+      refreshInstallGateUI();
+    }
+  }
+  function bindInstallGateEvents() {
+    document.getElementById('installAppBtn')?.addEventListener('click', () => { promptInstallApp(); });
+    document.getElementById('installGateRetryBtn')?.addEventListener('click', () => {
+      if (isStandaloneAppMode()) {
+        location.reload();
+        return;
+      }
+      toast(state.install.platform === 'ios'
+        ? 'Después de instalarla, debes abrir EncisoMath desde el icono de la pantalla de inicio.'
+        : 'Cuando termine la instalación, entra a EncisoMath desde el icono instalado.');
+    });
+    refreshInstallGateUI();
+  }
+  function setupInstallRequirementEvents() {
+    state.install.platform = detectInstallPlatform();
+    state.install.required = shouldForceInstalledApp();
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      state.install.deferredPromptReady = true;
+      refreshInstallGateUI();
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      state.install.deferredPromptReady = false;
+      state.install.installedEventFired = true;
+      refreshInstallGateUI();
+    });
   }
   function renderRoleHome(options = {}) {
     return isStudentPortal() ? renderStudentHome(options) : renderTeacherHome(options);
@@ -924,10 +1087,15 @@
   async function boot() {
     applyPreferences();
     applyQuizFeedbackTune();
+    setupInstallRequirementEvents();
     registerServiceWorker();
     bindQuizSecurityGuards();
     bindAppBackNavigation();
     bindOfflineSyncEvents();
+    if (shouldForceInstalledApp()) {
+      mount(renderInstallGate(), bindInstallGateEvents, { instant: true });
+      return;
+    }
     mount(renderLoadingHTML('Preparando EncisoMath...', 3), null, { instant: true });
     try {
       state.data = await loadAllData(({ completed, total, key }) => {
@@ -15073,7 +15241,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.010', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.018', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,
