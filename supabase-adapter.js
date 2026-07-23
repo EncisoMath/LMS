@@ -1377,7 +1377,7 @@
     const path = `${activeSession.user.id}/assignments/${assignmentId}/${type}-${stableMutation || Date.now()}.${extension}`;
     const uploadResult = await supabaseClient.storage
       .from(config.storageBucket || 'lms-public')
-      .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type || undefined });
+      .upload(path, file, { cacheControl: '31536000', upsert: true, contentType: file.type || undefined });
     if (uploadResult.error) throw normalizeError(uploadResult.error, 'No se pudo subir la imagen.');
     const { data: publicData } = supabaseClient.storage.from(config.storageBucket || 'lms-public').getPublicUrl(path);
     const publicUrl = publicData?.publicUrl || '';
@@ -1439,7 +1439,7 @@
       xhr.setRequestHeader('Authorization', `Bearer ${activeSession.access_token}`);
       xhr.setRequestHeader('apikey', config.publishableKey);
       xhr.setRequestHeader('x-upsert', upsert ? 'true' : 'false');
-      xhr.setRequestHeader('cache-control', '3600');
+      xhr.setRequestHeader('cache-control', '31536000');
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.upload.addEventListener('progress', (event) => {
         if (!event.lengthComputable || typeof onProgress !== 'function') return;
@@ -1624,7 +1624,8 @@
       const hasThumbnail = thumbnailFile instanceof Blob;
       if (hasPdf) {
         const extension = String(pdfFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
-        const nextPath = `${rootPath}/${safeStorageName(title)}.${extension}`;
+        const revisionToken = safeStorageName(mutationId || clientMutationId || String(Date.now()));
+        const nextPath = `${rootPath}/${safeStorageName(title)}-${revisionToken}.${extension}`;
         const pdfEnd = hasThumbnail ? 76 : 92;
         emitLessonUploadProgress(safeLessonId, 5, 'Subiendo PDF nuevo…', 'pdf');
         await uploadStorageObjectWithProgress({
@@ -1645,7 +1646,8 @@
 
       if (hasThumbnail) {
         const extension = String(thumbnailFile.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'webp';
-        const nextPath = `${rootPath}/portada.${extension}`;
+        const revisionToken = safeStorageName(mutationId || clientMutationId || String(Date.now()));
+        const nextPath = `${rootPath}/portada-${revisionToken}.${extension}`;
         emitLessonUploadProgress(safeLessonId, hasPdf ? 78 : 18, 'Subiendo portada nueva…', 'thumbnail');
         const start = hasPdf ? 78 : 18;
         const end = 94;
@@ -1758,7 +1760,7 @@
       const stableSection = mutationId ? `${section}-${mutationId}` : section;
       const path = `${activeSession.user.id}/activities/${activityId}/${stableSection}/${String(index + 1).padStart(2, '0')}-${safeStorageName(file?.name || `archivo.${extension}`)}`;
       const result = await supabaseClient.storage.from(bucket).upload(path, file, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: Boolean(mutationId),
         contentType: file?.type || undefined
       });
@@ -2094,7 +2096,7 @@
     const bucket = config.storageBucket || 'lms-public';
     const path = `${activeSession.user.id}/activities/${activityId}/submissions/${assignmentId}/${safeStorageName(studentCode)}-${mutationId || Date.now()}-${safeStorageName(file.name || 'entrega')}`;
     const result = await getClient().storage.from(bucket).upload(path, file, {
-      cacheControl: '3600',
+      cacheControl: '31536000',
       upsert: Boolean(mutationId),
       contentType: file.type || undefined
     });
@@ -2305,7 +2307,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.022', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.023', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2347,7 +2349,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.022',
+          appVersion: '0.25.023',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2390,7 +2392,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.022',
+          appVersion: '0.25.023',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

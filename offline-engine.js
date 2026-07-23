@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.022';
+  const OFFLINE_VERSION = '0.25.023';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -10,6 +10,7 @@
     blobs: 'blobs',
     gradebooks: 'gradebooks'
   });
+  const MEDIA_CACHE = 'encisomath-media-v1';
   const STATIC_EXTERNAL_URLS = [
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js',
     'https://unpkg.com/@supabase/supabase-js@2.49.1/dist/umd/supabase.js',
@@ -546,23 +547,6 @@
     };
   }
 
-  async function cacheRemoteUrl(url, metadata = {}) {
-    const sourceUrl = String(url || '');
-    if (!/^https?:\/\//i.test(sourceUrl)) return null;
-    const existing = await blobByUrl(sourceUrl);
-    if (existing?.blob) return existing;
-    const response = await fetch(sourceUrl, { cache: 'no-store', credentials: 'omit' });
-    if (!response.ok) throw new Error(`No se pudo descargar ${metadata.name || sourceUrl}.`);
-    const blob = await response.blob();
-    return blobPut({
-      key: `remote:${hashString(sourceUrl)}`,
-      blob,
-      sourceUrl,
-      name: metadata.name || sourceUrl.split('/').pop() || 'archivo',
-      type: metadata.type || blob.type || '',
-      kind: metadata.kind || 'remote'
-    });
-  }
 
   async function hydrateDescriptor(descriptor) {
     if (!descriptor || typeof descriptor !== 'object') return descriptor;
@@ -818,6 +802,11 @@
     const conflicts = rows.filter((item) => item.status === 'conflict');
     const requiresAuth = false;
     const meta = activeSnapshot?._offline || {};
+    const offlineScope = currentOfflineScope();
+    const canPrepareScope = Boolean(offlineScope.assignmentId);
+    const scopeLabel = canPrepareScope
+      ? `${offlineScope.subject || 'Asignatura'}${offlineScope.grade !== '' ? ` · ${offlineScope.grade}-${offlineScope.course}` : ''} · Periodo ${offlineScope.period || 1}`
+      : 'Abre una asignatura para preparar su contenido';
     const overlay = document.createElement('div');
     overlay.className = 'em-sync-center-overlay';
     overlay.innerHTML = `
@@ -831,6 +820,7 @@
           <article><small>Conflictos</small><strong>${conflicts.length}</strong></article>
         </div>
         <p class="em-sync-last">Última sincronización: ${meta.serverSyncedAt ? new Date(meta.serverSyncedAt).toLocaleString('es-CO') : 'todavía no registrada'}.</p>
+        <p class="em-sync-last">Preparación offline: ${escapeMarkup(scopeLabel)}.</p>
         <section class="em-sync-pending-section" aria-labelledby="emSyncPendingTitle">
           <div class="em-sync-section-head">
             <div><small>COLA LOCAL</small><h3 id="emSyncPendingTitle">Qué falta por sincronizar</h3></div>
@@ -840,7 +830,7 @@
         </section>
         <div class="em-sync-progress" id="emSyncProgress" hidden><i></i><span>Sincronizando…</span></div>
         <div class="em-sync-actions">
-          <button type="button" id="emPrepareOffline">Descargar todo para trabajar offline</button>
+          <button type="button" id="emPrepareOffline" ${canPrepareScope ? '' : 'disabled'}>Descargar curso y periodo actuales</button>
           <button type="button" id="emSyncNow" ${isOnline() && pending.length ? '' : 'disabled'}>${pending.length ? 'Sincronizar ahora' : 'Todo sincronizado'}</button>
         </div>
         ${conflicts.length ? `<details><summary>${conflicts.length} cambio(s) descartado(s)</summary><div class="em-sync-conflicts">${conflicts.slice(-20).map((mutation) => { const item = mutationPresentation(mutation); return `<p><strong>${escapeMarkup(item.title)}</strong><span>${escapeMarkup(item.detail)}</span><span>${escapeMarkup(item.error || 'Supabase tenía una versión más reciente.')}</span></p>`; }).join('')}</div></details>` : ''}
@@ -857,8 +847,7 @@
     };
     const progressHandler = (event) => {
       const detail = event.detail || {};
-      if (detail.phase === 'gradebooks') showProgress(`Preparando calificaciones ${detail.completed || 0}/${detail.total || 0}…`, detail.completed, detail.total);
-      if (detail.phase === 'files') showProgress(`Descargando archivos ${detail.completed || 0}/${detail.total || 0}…`, detail.completed, detail.total);
+      if (detail.phase === 'files') showProgress(`Descargando contenido ${detail.completed || 0}/${detail.total || 0}…`, detail.completed, detail.total);
     };
     const syncProgressHandler = (event) => {
       const detail = event.detail || {};
@@ -889,17 +878,15 @@
       const progress = overlay.querySelector('#emSyncProgress');
       const label = progress?.querySelector('span');
       if (progress) progress.hidden = false;
-      if (label) label.textContent = 'Descargando datos y archivos…';
-      let failed = false;
-      await prefetchEverything(activeSnapshot, { force: true }).catch((error) => {
-        failed = true;
+      if (label) label.textContent = `Preparando ${scopeLabel}…`;
+      let result = null;
+      await prefetchEverything(activeSnapshot, { force: true, scope: offlineScope }).then((value) => { result = value; }).catch((error) => {
         if (label) label.textContent = error?.message || 'No se pudo completar la descarga.';
       });
-      if (!failed && label) {
-        const meta = activeSnapshot?._offline || {};
-        label.textContent = meta.fileFailedCount
-          ? `Preparación completada. ${meta.fileFailedCount} archivo(s) se reintentarán al volver a sincronizar.`
-          : `Preparación offline completada: ${meta.fileCachedCount || meta.fileCount || 0} archivo(s).`;
+      if (result && label) {
+        if (!result.fileCount) label.textContent = 'No hay archivos remotos en este curso y periodo.';
+        else if (result.failedCount) label.textContent = `Preparación completada: ${result.cachedCount} disponibles y ${result.failedCount} con error.`;
+        else label.textContent = `Preparación offline completada: ${result.cachedCount} archivo(s), ${result.existingCount} ya estaban guardados.`;
       }
     });
     document.body.appendChild(overlay);
@@ -911,8 +898,50 @@
     } catch (_) {}
   }
 
-  function collectRemoteUrls(snapshot, gradebooks = []) {
+  function currentOfflineScope() {
+    try {
+      const value = window.EncisoOfflineContext?.current?.();
+      return value && typeof value === 'object' ? value : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function itemAssignmentIds(item = {}) {
+    return [...new Set([
+      ...(Array.isArray(item.assignmentIds) ? item.assignmentIds : []),
+      ...(Array.isArray(item.targetAssignmentIds) ? item.targetAssignmentIds : []),
+      item.assignmentId
+    ].map((value) => String(value || '')).filter(Boolean))];
+  }
+
+  function belongsToOfflineScope(item = {}, assignmentId = '') {
+    const safeId = String(assignmentId || '');
+    return Boolean(safeId && itemAssignmentIds(item).includes(safeId));
+  }
+
+  async function cacheRemoteUrlInMediaCache(url) {
+    const sourceUrl = String(url || '');
+    if (!/^https?:\/\//i.test(sourceUrl) || !('caches' in window)) return { cached: false, existing: false };
+    const cache = await caches.open(MEDIA_CACHE);
+    const request = new Request(sourceUrl, { credentials: 'omit' });
+    const existing = await cache.match(request, { ignoreSearch: false });
+    if (existing) return { cached: true, existing: true };
+    let response;
+    try {
+      response = await fetch(request);
+    } catch (_) {
+      response = await fetch(new Request(sourceUrl, { mode: 'no-cors', credentials: 'omit' }));
+    }
+    if (!response || (!response.ok && response.type !== 'opaque')) throw new Error(`No se pudo descargar ${sourceUrl}.`);
+    await cache.put(request, response.clone());
+    return { cached: true, existing: false };
+  }
+
+  function collectRemoteUrls(snapshot, options = {}) {
     const values = [];
+    const assignmentId = String(options.assignmentId || '');
+    const period = [1, 2, 3, 4].includes(Number(options.period)) ? Number(options.period) : 1;
     const add = (url, name = '', kind = 'file') => {
       if (/^https?:\/\//i.test(String(url || ''))) values.push({ url: String(url), name, kind });
     };
@@ -938,23 +967,30 @@
         });
       }
     };
-    (snapshot?.data?.assignments || []).forEach((item) => {
-      add(item.icon, 'Icono de asignatura', 'image');
-      add(item.cover, 'Portada de asignatura', 'image');
-    });
-    (snapshot?.data?.students || []).forEach((item) => add(item.photo, `Foto ${item.fullName || item.id}`, 'image'));
-    (snapshot?.data?.classes || []).forEach((item) => {
-      add(item.contentUrl, item.sourceFileName || item.title || 'Clase PDF', 'lesson');
-      add(item.thumbnailUrl, `Portada ${item.title || ''}`, 'image');
-    });
-    (snapshot?.data?.activities || []).forEach((item) => {
-      (item.contentPayload?.files || []).forEach((file) => add(file.url, file.name || item.title, 'activity'));
-      (item.reviewPayload?.files || []).forEach((file) => add(file.url, file.name || item.title, 'review'));
-      scanObject(item.contentPayload, `Contenido ${item.title || 'actividad'}`);
-      scanObject(item.reviewPayload, `Resultado ${item.title || 'actividad'}`);
-    });
-    (snapshot?.data?.quizzes || []).forEach((quiz) => scanObject(quiz, `Quiz ${quiz.title || quiz.id || ''}`));
-    gradebooks.forEach((rows) => (rows || []).forEach((row) => add(row.submissionFile?.url, row.submissionFile?.name || 'Entregable', 'submission')));
+    const assignment = (snapshot?.data?.assignments || []).find((item) => String(item.id || '') === assignmentId);
+    if (assignment) {
+      add(assignment.icon, 'Icono de asignatura', 'image');
+      add(assignment.cover, 'Portada de asignatura', 'image');
+    }
+    (snapshot?.data?.classes || [])
+      .filter((item) => belongsToOfflineScope(item, assignmentId) && Number(item.period || 1) === period)
+      .forEach((item) => {
+        add(item.sourceContentUrl || item.contentUrl, item.sourceFileName || item.title || 'Clase PDF', 'lesson');
+        add(item.sourceThumbnailUrl || item.thumbnailUrl, `Portada ${item.title || ''}`, 'image');
+      });
+    (snapshot?.data?.activities || [])
+      .filter((item) => belongsToOfflineScope(item, assignmentId) && Number(item.period || 1) === period)
+      .forEach((item) => {
+        (item.contentPayload?.files || []).forEach((file) => add(file.sourceUrl || file.url, file.name || item.title, 'activity'));
+        (item.reviewPayload?.files || []).forEach((file) => add(file.sourceUrl || file.url, file.name || item.title, 'review'));
+        scanObject(item.contentPayload, `Contenido ${item.title || 'actividad'}`);
+        scanObject(item.reviewPayload, `Resultado ${item.title || 'actividad'}`);
+      });
+    (snapshot?.data?.quizzes || [])
+      .filter((item) => belongsToOfflineScope(item, assignmentId) && Number(item.period || 1) === period)
+      .forEach((quiz) => scanObject(quiz, `Quiz ${quiz.title || quiz.id || ''}`));
+    // Las entregas de estudiantes no se descargan en bloque. Se conservan sus
+    // metadatos y el archivo se almacena únicamente cuando el docente lo abre.
     return [...new Map(values.map((item) => [item.url, item])).values()];
   }
 
@@ -972,66 +1008,57 @@
   }
 
   async function prefetchEverything(snapshot = activeSnapshot, options = {}) {
-    if (!snapshot || !isOnline()) return;
+    if (!snapshot) throw new Error('No hay una copia local disponible para preparar.');
+    if (!isOnline()) throw new Error('Necesitas conexión para descargar el contenido offline.');
     if (prefetchPromise && !options.force) return prefetchPromise;
     prefetchPromise = (async () => {
+      const scope = { ...currentOfflineScope(), ...(options.scope || {}) };
+      const assignmentId = String(scope.assignmentId || '');
+      const period = [1, 2, 3, 4].includes(Number(scope.period)) ? Number(scope.period) : 1;
+      if (!assignmentId) throw new Error('Abre primero una asignatura y el periodo que deseas preparar.');
       await requestPersistentStorage();
-      await prefetchExternalScripts();
-      const activities = snapshot.data?.activities || [];
-      const gradebooks = [];
-      const pairs = [];
-      activities.forEach((activity) => {
-        const ids = Array.isArray(activity.assignmentIds) && activity.assignmentIds.length
-          ? activity.assignmentIds
-          : [activity.assignmentId].filter(Boolean);
-        ids.forEach((assignmentId) => pairs.push({ activityId: activity.id, assignmentId }));
-      });
+      const files = collectRemoteUrls(snapshot, { assignmentId, period });
       let completed = 0;
-      const totalBase = pairs.length;
-      for (const pair of pairs) {
-        try {
-          const rows = await cloud.getActivityGradebook(pair);
-          await gradebookPut(pair.activityId, pair.assignmentId, rows);
-          gradebooks.push(rows);
-        } catch (_) {}
-        completed += 1;
-        dispatch('encisomath:offline-progress', { phase: 'gradebooks', completed, total: totalBase });
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      const files = collectRemoteUrls(snapshot, gradebooks);
-      completed = 0;
       let cachedCount = 0;
+      let existingCount = 0;
       let failedCount = 0;
       const queue = files.slice();
-      const workers = Array.from({ length: Math.min(3, queue.length || 1) }, async () => {
+      const workers = Array.from({ length: Math.min(2, queue.length || 1) }, async () => {
         while (queue.length) {
           const item = queue.shift();
           try {
-            const cached = await cacheRemoteUrl(item.url, item);
-            if (cached) cachedCount += 1;
-            else failedCount += 1;
+            const result = await cacheRemoteUrlInMediaCache(item.url);
+            if (result.cached) cachedCount += 1;
+            if (result.existing) existingCount += 1;
           } catch (_) {
             failedCount += 1;
           }
           completed += 1;
-          dispatch('encisomath:offline-progress', { phase: 'files', completed, total: files.length, cachedCount, failedCount });
+          dispatch('encisomath:offline-progress', {
+            phase: 'files', completed, total: files.length, cachedCount, existingCount, failedCount,
+            assignmentId, period
+          });
           await new Promise((resolve) => setTimeout(resolve, 0));
         }
       });
       await Promise.all(workers);
-      try {
-        navigator.serviceWorker?.controller?.postMessage({ type: 'CACHE_URLS', urls: files.map((item) => item.url) });
-      } catch (_) {}
       const current = await loadSnapshot(activeUserId) || snapshot;
+      const scopeKey = `${assignmentId}:p${period}`;
       current._offline = {
         ...(current._offline || {}),
         filesPreparedAt: nowIso(),
         fileCount: files.length,
         fileCachedCount: cachedCount,
-        fileFailedCount: failedCount
+        fileExistingCount: existingCount,
+        fileFailedCount: failedCount,
+        preparedScopes: {
+          ...(current._offline?.preparedScopes || {}),
+          [scopeKey]: { preparedAt: nowIso(), fileCount: files.length, cachedCount, existingCount, failedCount }
+        }
       };
       await saveSnapshot(current);
-      dispatch('encisomath:offline-ready', { fileCount: files.length, cachedCount, failedCount });
+      dispatch('encisomath:offline-ready', { fileCount: files.length, cachedCount, existingCount, failedCount, assignmentId, period });
+      return { fileCount: files.length, cachedCount, existingCount, failedCount, assignmentId, period };
     })().finally(() => { prefetchPromise = null; });
     return prefetchPromise;
   }
@@ -1857,7 +1884,6 @@
           await saveSnapshot(fresh, { serverSyncedAt });
           const hydrated = await hydrateSnapshot(fresh);
           dispatch('encisomath:sync-complete', { snapshot: hydrated, summary });
-          prefetchEverything(fresh).catch(() => {});
         } catch (_) {}
       }
       return summary;
@@ -2000,7 +2026,6 @@
           if (synced) {
             report(88, 'Preparando la copia sincronizada...');
             const hydratedSynced = await hydrateSnapshot(synced);
-            prefetchEverything(synced).catch(() => {});
             scheduleStatusUpdate();
             report(100, 'Sincronización completada.');
             return hydratedSynced;
@@ -2016,11 +2041,10 @@
         });
         report(89, 'Guardando una copia offline segura...');
         await saveSnapshot(fresh, { serverSyncedAt });
-        report(95, 'Preparando archivos y datos para la aplicación...');
+        report(95, 'Preparando los datos de la aplicación...');
         const hydrated = await hydrateSnapshot(fresh);
-        prefetchEverything(fresh).catch(() => {});
         scheduleStatusUpdate();
-        report(100, 'Datos preparados.');
+        report(100, 'Datos preparados. Los archivos se descargarán al abrirlos.');
         return hydrated;
       } catch (error) {
         if (!isNetworkError(error)) {
@@ -2106,9 +2130,6 @@
         try {
           const rows = await cloud.getActivityGradebook(payload);
           await gradebookPut(payload.activityId, payload.assignmentId, rows);
-          for (const row of rows) {
-            if (row.submissionFile?.url) cacheRemoteUrl(row.submissionFile.url, { name: row.submissionFile.name || 'Entregable', kind: 'submission' }).catch(() => {});
-          }
           return rows;
         } catch (error) {
           if (!isNetworkError(error)) throw error;

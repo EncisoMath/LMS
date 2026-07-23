@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.022';
+  const APP_VERSION = '0.25.023';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -15086,6 +15086,25 @@
     }
   };
 
+
+  // Contexto mínimo para la preparación offline bajo demanda. El motor
+  // offline no descarga archivos masivamente al iniciar sesión; solo prepara
+  // la asignatura y el periodo que el usuario tiene abiertos cuando lo pide.
+  window.EncisoOfflineContext = Object.freeze({
+    current() {
+      const assignment = state.assignment || null;
+      return {
+        assignmentId: String(assignment?.id || ''),
+        period: Number(state.activePeriod || state.period || 1),
+        grade: assignment?.grade ?? '',
+        course: assignment?.course ?? '',
+        subject: String(assignment?.subject || assignment?.area || ''),
+        role: String(state.user?.role || ''),
+        screen: String(state.appRoute?.screen || '')
+      };
+    }
+  });
+
   function animatedShapes(mode = 'loading') {
     const palette = ['#e21b3c', '#1368ce', '#54c600', '#EBB513', '#ff7a00', '#24b49a'];
     const colorFor = (index) => palette[(index + Math.floor(Math.random() * palette.length)) % palette.length];
@@ -15791,7 +15810,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.022', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.023', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,

@@ -40,3 +40,8 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `sw.js`: Service Worker y caché.
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
+
+
+## v0.25.023 — optimización de Storage
+
+Los archivos de Supabase Storage ya no se precargan en cada inicio o sincronización. Se descargan al abrirlos y se conservan en una caché multimedia estable. La preparación offline manual se limita al curso y periodo abiertos. No requiere SQL.

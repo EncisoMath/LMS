@@ -1,7 +1,8 @@
-const SW_VERSION = 'encisomath-offline-v0.25.022';
+const SW_VERSION = 'encisomath-offline-v0.25.023';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
+const MEDIA_CACHE = 'encisomath-media-v1';
 
 const PRECACHE_URLS = [
   './',
@@ -81,9 +82,24 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    const keep = new Set([APP_CACHE, RUNTIME_CACHE, EXTERNAL_CACHE]);
+    const keep = new Set([APP_CACHE, RUNTIME_CACHE, EXTERNAL_CACHE, MEDIA_CACHE]);
     const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => key.startsWith('encisomath-') && !keep.has(key)).map((key) => caches.delete(key)));
+    const media = await caches.open(MEDIA_CACHE);
+    // Conserva los PDFs e imágenes que el usuario ya abrió en versiones
+    // anteriores antes de eliminar las cachés runtime versionadas.
+    for (const key of keys.filter((name) => name.startsWith('encisomath-') && !keep.has(name))) {
+      try {
+        const oldCache = await caches.open(key);
+        const requests = await oldCache.keys();
+        for (const request of requests) {
+          const url = new URL(request.url);
+          if (!isSupabaseStorageGet(url) || await media.match(request)) continue;
+          const response = await oldCache.match(request);
+          if (response) await media.put(request, response);
+        }
+      } catch (_) {}
+      await caches.delete(key);
+    }
     await self.clients.claim();
   })());
 });
@@ -138,8 +154,8 @@ async function staleWhileRevalidate(request) {
   return cached || await update || new Response('', { status: 503, statusText: 'Sin conexión' });
 }
 
-async function externalCacheFirst(request) {
-  const cache = await caches.open(EXTERNAL_CACHE);
+async function externalCacheFirst(request, cacheName = EXTERNAL_CACHE) {
+  const cache = await caches.open(cacheName);
   const cached = await cache.match(request, { ignoreSearch: false });
   if (cached) return cached;
   try {
@@ -149,6 +165,53 @@ async function externalCacheFirst(request) {
   } catch (_) {
     return new Response('', { status: 503, statusText: 'Recurso externo no disponible' });
   }
+}
+
+
+function mediaBaseRequest(request) {
+  return new Request(request.url, { method: 'GET', credentials: 'omit' });
+}
+
+async function rangedResponseFromFull(response, rangeHeader) {
+  const buffer = await response.clone().arrayBuffer();
+  const size = buffer.byteLength;
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(String(rangeHeader || '').trim());
+  if (!match || !size) return response;
+  let start = match[1] ? Number(match[1]) : 0;
+  let end = match[2] ? Number(match[2]) : size - 1;
+  if (!match[1] && match[2]) {
+    const suffix = Math.max(0, Number(match[2]) || 0);
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  }
+  start = Math.max(0, Math.min(start, size - 1));
+  end = Math.max(start, Math.min(end, size - 1));
+  const headers = new Headers(response.headers);
+  headers.delete('Content-Encoding');
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('Content-Range', `bytes ${start}-${end}/${size}`);
+  headers.set('Content-Length', String(end - start + 1));
+  return new Response(buffer.slice(start, end + 1), { status: 206, statusText: 'Partial Content', headers });
+}
+
+async function mediaCacheFirst(request) {
+  const cache = await caches.open(MEDIA_CACHE);
+  const baseRequest = mediaBaseRequest(request);
+  let response = await cache.match(baseRequest, { ignoreSearch: false });
+  if (!response) {
+    try {
+      const network = await fetch(baseRequest);
+      if (!network.ok) return network;
+      response = network.clone();
+      await cache.put(baseRequest, network.clone());
+    } catch (_) {
+      return new Response('', { status: 503, statusText: 'Archivo no disponible sin conexión' });
+    }
+  }
+  const range = request.headers.get('range');
+  if (!range) return response;
+  try { return await rangedResponseFromFull(response, range); }
+  catch (_) { return response; }
 }
 
 self.addEventListener('fetch', (event) => {
@@ -162,7 +225,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isSupabaseStorageGet(url)) {
-    event.respondWith(externalCacheFirst(request));
+    event.respondWith(mediaCacheFirst(request));
     return;
   }
 
@@ -190,13 +253,14 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
   if (event.data?.type === 'CACHE_URLS' && Array.isArray(event.data.urls)) {
     event.waitUntil((async () => {
-      const cache = await caches.open(RUNTIME_CACHE);
+      const cache = await caches.open(MEDIA_CACHE);
       await Promise.allSettled(event.data.urls.map(async (url) => {
         const target = new URL(url, self.location.href);
-        const request = target.origin === self.location.origin
-          ? new Request(target.href, { cache: 'reload' })
-          : new Request(target.href, { mode: 'no-cors', credentials: 'omit', cache: 'reload' });
-        const response = await fetch(request);
+        const request = new Request(target.href, { credentials: 'omit' });
+        if (await cache.match(request)) return;
+        let response;
+        try { response = await fetch(request); }
+        catch (_) { response = await fetch(new Request(target.href, { mode: 'no-cors', credentials: 'omit' })); }
         if (response.ok || response.type === 'opaque') await cache.put(request, response);
       }));
     })());
