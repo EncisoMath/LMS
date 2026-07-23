@@ -33001,3 +33001,34 @@ html body #app .em-quiz-card-clean.is-student-quiz-card.is-graded .em-quiz-start
     padding: 30px 28px 28px;
   }
 }
+
+
+/* v0.25.019 · fallback de instalación Android sin espera infinita */
+.em-install-android-btn {
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+.em-install-android-btn.has-native-prompt::after {
+  content: ' · Android';
+  font-size: .72em;
+  opacity: .78;
+}
+.em-install-android-manual {
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  text-align: left;
+  color: rgba(240,246,255,.92);
+  background: rgba(235,181,19,.09);
+  border: 1px solid rgba(235,181,19,.22);
+}
+.em-install-android-manual[hidden] {
+  display: none !important;
+}
+.em-install-android-manual strong {
+  color: #ffd96a;
+}
+.em-install-android-manual span {
+  line-height: 1.45;
+}

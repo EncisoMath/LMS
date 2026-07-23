@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.018';
+  const APP_VERSION = '0.25.019';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -613,6 +613,7 @@
   const CLOUD_SESSION_MODE_KEY = 'encisomath:cloudSessionMode';
   const CLOUD_SESSION_TAB_KEY = 'encisomath:cloudSessionTab';
 
+  setupInstallRequirementEvents();
   document.addEventListener('DOMContentLoaded', boot);
 
   function cloudAPI() {
@@ -689,9 +690,6 @@
     state.install.gateVisible = true;
     const isAndroid = platform === 'android';
     const isIOS = platform === 'ios';
-    const installLabel = deferredInstallPrompt
-      ? 'Instalar aplicación'
-      : 'Preparando instalación...';
     return `
       <main class="em-install-gate-screen">
         <div class="em-install-gate-backdrop">${animatedShapes('login')}</div>
@@ -702,12 +700,16 @@
           <p class="em-install-gate-copy">En celulares y tablets, EncisoMath solo se puede usar desde la aplicación instalada. En computador puedes seguir entrando desde el navegador.</p>
           ${installGateMessageHTML(platform)}
           <div class="em-install-gate-actions">
-            ${isAndroid ? `<button class="primary-btn em-install-android-btn" id="installAppBtn" type="button" ${deferredInstallPrompt ? '' : 'disabled'}>${escapeHTML(installLabel)}</button>` : ''}
+            ${isAndroid ? `<button class="primary-btn em-install-android-btn" id="installAppBtn" type="button">Instalar aplicación</button>
+              <div class="em-install-android-manual" id="installAndroidManual" hidden>
+                <strong>Instalación manual en Android</strong>
+                <span>Abre el menú <b>⋮</b> del navegador y toca <b>Instalar aplicación</b> o <b>Añadir a pantalla de inicio</b>.</span>
+              </div>` : ''}
             ${isIOS ? `<div class="em-install-gate-ios-note" id="installIosNote">Después de añadirla, cierra el navegador y abre EncisoMath desde el icono de inicio.</div>` : ''}
             ${!isAndroid && !isIOS ? `<div class="em-install-gate-ios-note">Instálala desde el menú del navegador y luego ábrela desde su icono.</div>` : ''}
             <button class="ghost-btn" id="installGateRetryBtn" type="button">Ya la instalé</button>
           </div>
-          <p class="em-install-gate-status" id="installGateStatus" aria-live="polite">${isAndroid ? (deferredInstallPrompt ? 'Lista para instalar.' : 'Esperando el aviso nativo de instalación...') : (isIOS ? 'La instalación se hace manualmente desde el menú Compartir.' : 'Instálala y luego entra desde su icono.')}</p>
+          <p class="em-install-gate-status" id="installGateStatus" aria-live="polite">${isAndroid ? (deferredInstallPrompt ? 'Lista para instalar.' : 'Toca Instalar aplicación. Si Android no abre el instalador, aparecerá el método manual.') : (isIOS ? 'La instalación se hace manualmente desde el menú Compartir.' : 'Instálala y luego entra desde su icono.')}</p>
         </section>
       </main>
     `;
@@ -717,14 +719,15 @@
     const button = document.getElementById('installAppBtn');
     const status = document.getElementById('installGateStatus');
     if (button) {
-      button.disabled = !deferredInstallPrompt;
-      button.textContent = deferredInstallPrompt ? 'Instalar aplicación' : 'Preparando instalación...';
+      button.disabled = false;
+      button.textContent = 'Instalar aplicación';
+      button.classList.toggle('has-native-prompt', Boolean(deferredInstallPrompt));
     }
     if (status) {
       if (state.install.installedEventFired) {
         status.textContent = 'Instalada. Ahora abre EncisoMath desde el icono de tu pantalla de inicio.';
       } else if (state.install.platform === 'android') {
-        status.textContent = deferredInstallPrompt ? 'Toca el botón para instalar EncisoMath.' : 'Esperando el aviso nativo de instalación...';
+        status.textContent = deferredInstallPrompt ? 'Toca el botón para abrir el instalador de Android.' : 'Toca Instalar aplicación. Si el navegador no ofrece el diálogo nativo, usa el método manual.';
       } else if (state.install.platform === 'ios') {
         status.textContent = 'En iPhone o iPad, instálala desde Compartir → Añadir a pantalla de inicio.';
       } else {
@@ -735,8 +738,14 @@
   async function promptInstallApp() {
     if (!deferredInstallPrompt) {
       refreshInstallGateUI();
+      const manual = document.getElementById('installAndroidManual');
+      if (manual) manual.hidden = false;
+      const status = document.getElementById('installGateStatus');
+      if (status && state.install.platform === 'android') {
+        status.textContent = 'Este navegador no entregó el instalador automático. Usa el menú ⋮ y elige Instalar aplicación o Añadir a pantalla de inicio.';
+      }
       toast(state.install.platform === 'android'
-        ? 'Todavía no aparece el aviso nativo de instalación. Espera un momento e inténtalo de nuevo.'
+        ? 'Abre el menú ⋮ y toca Instalar aplicación o Añadir a pantalla de inicio.'
         : 'Instálala desde el menú del navegador.');
       return;
     }
@@ -765,8 +774,19 @@
         : 'Cuando termine la instalación, entra a EncisoMath desde el icono instalado.');
     });
     refreshInstallGateUI();
+    if (state.install.platform === 'android') {
+      window.setTimeout(() => {
+        if (deferredInstallPrompt || !state.install.gateVisible) return;
+        const manual = document.getElementById('installAndroidManual');
+        const status = document.getElementById('installGateStatus');
+        if (manual) manual.hidden = false;
+        if (status) status.textContent = 'Si el botón no abre un diálogo, usa el menú ⋮ del navegador y toca Instalar aplicación o Añadir a pantalla de inicio.';
+      }, 2200);
+    }
   }
   function setupInstallRequirementEvents() {
+    if (setupInstallRequirementEvents.bound) return;
+    setupInstallRequirementEvents.bound = true;
     state.install.platform = detectInstallPlatform();
     state.install.required = shouldForceInstalledApp();
     window.addEventListener('beforeinstallprompt', (event) => {
@@ -1087,7 +1107,6 @@
   async function boot() {
     applyPreferences();
     applyQuizFeedbackTune();
-    setupInstallRequirementEvents();
     registerServiceWorker();
     bindQuizSecurityGuards();
     bindAppBackNavigation();
@@ -15241,7 +15260,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.018', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.019', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,
