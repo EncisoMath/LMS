@@ -1,45 +1,42 @@
-# EncisoMath LMS v0.25.020
+# EncisoMath LMS v0.25.021
 
-PWA estática para gestión de clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase como backend y funcionamiento offline-first.
+PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
-## Novedad v0.25.020: Conexiones
+## Conexiones
 
-El inicio del docente incorpora una sección **Conexiones** para consultar:
+La opción **Conexiones** está dentro de la tuerca del perfil docente, junto a **Calendario académico**. El panel muestra quién ingresó, hora de entrada, última actividad, duración aproximada, dispositivo, sistema, navegador, uso como PWA y última vista.
 
-- Quién ingresó a EncisoMath.
-- Hora de conexión y última actividad.
-- Estado en línea o desconectado.
-- Duración aproximada de la sesión.
-- Celular, tablet o computador.
-- Sistema operativo y navegador.
-- Si se abrió como PWA instalada.
-- Última sección visitada dentro del LMS.
-
-La presencia se actualiza mediante latidos periódicos. Se considera en línea a una persona cuya última señal haya ocurrido durante los últimos 90 segundos. La duración es aproximada si el dispositivo pierde internet o la app se cierra de forma abrupta.
-
-No se registra ubicación ni dirección IP.
+Todos los controles y paneles nuevos usan el lenguaje visual existente de EncisoMath y bordes de 4 px.
 
 ## Instalación obligatoria de Supabase
 
-Antes de usar Conexiones, ejecutar completo en **Supabase → SQL Editor**:
+Ejecuta completo en **Supabase → SQL Editor**:
 
-`SUPABASE_CONNECTIONS_v0.25.020.sql`
+`SUPABASE_CONNECTIONS_v0.25.021.sql`
 
-La migración crea:
+La migración crea o corrige:
 
 - Tabla `connection_sessions`.
-- RPC de inicio, latido y cierre de sesión.
-- RPC docente para consultar el historial.
-- Índices y restricciones de seguridad.
+- Token privado por sesión.
+- RPC de inicio, latido y cierre.
+- RPC docente de consulta.
+- Índices y permisos.
+- Recarga inmediata del esquema de PostgREST.
 
-La tabla no concede lectura o escritura directa a `anon` ni `authenticated`. El acceso se realiza mediante funciones `SECURITY DEFINER`, y cada docente solo recibe estudiantes matriculados en alguno de sus grupos activos, además de sus propias sesiones.
+La URL correcta en `supabase-config.js` es la URL base del proyecto:
+
+`https://jjllrciujqauqpjffsud.supabase.co`
+
+No se debe añadir `/rest/v1/`; `supabase-js` lo agrega automáticamente.
+
+No se registra ubicación ni dirección IP. La duración es aproximada porque depende de señales periódicas mientras la aplicación está abierta.
 
 ## Archivos principales
 
-- `app.js`: interfaz, navegación y lógica de negocio.
-- `styles.css`: diseño completo del LMS.
+- `app.js`: interfaz y lógica.
+- `styles.css`: diseño del LMS.
 - `supabase-adapter.js`: Auth, RPC, CRUD y Storage.
-- `offline-engine.js`: IndexedDB, cola offline y sincronización.
-- `sw.js`: caché y Service Worker.
-- `SUPABASE_CONNECTIONS_v0.25.020.sql`: migración del panel Conexiones.
-- `INSTALACION_CONEXIONES_v0.25.020.txt`: pasos rápidos de instalación.
+- `offline-engine.js`: IndexedDB y sincronización offline.
+- `sw.js`: Service Worker y caché.
+- `SUPABASE_CONNECTIONS_v0.25.021.sql`: migración necesaria.
+- `INSTALACION_CONEXIONES_v0.25.021.txt`: pasos rápidos.

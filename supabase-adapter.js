@@ -2305,7 +2305,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.020', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.021', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2347,7 +2347,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.020',
+          appVersion: '0.25.021',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2390,7 +2390,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.020',
+          appVersion: '0.25.021',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2427,7 +2427,7 @@
   function connectionMigrationError(error, fallback) {
     const message = String(error?.message || '').toLowerCase();
     if (error?.code === 'PGRST202' || message.includes('encisomath_connection_') || message.includes('encisomath_teacher_connections')) {
-      return new Error('Falta ejecutar SUPABASE_CONNECTIONS_v0.25.020.sql en Supabase.');
+      return new Error('Falta ejecutar SUPABASE_CONNECTIONS_v0.25.021.sql en Supabase.');
     }
     return normalizeError(error, fallback);
   }
@@ -2450,28 +2450,32 @@
       p_app_version: String(appVersion || '')
     });
     if (error) throw connectionMigrationError(error, 'No se pudo registrar la conexión.');
-    if (!data?.ok || !data?.sessionId) throw new Error(data?.message || 'Supabase no devolvió una sesión de conexión válida.');
+    if (!data?.ok || !data?.sessionId || !data?.sessionToken) throw new Error(data?.message || 'Supabase no devolvió una sesión de conexión válida.');
     return data;
   }
 
-  async function heartbeatConnectionSession(sessionId, context = {}) {
+  async function heartbeatConnectionSession(sessionId, sessionToken, context = {}) {
     const safeId = String(sessionId || '').trim();
-    if (!safeId) return null;
+    const safeToken = String(sessionToken || '').trim();
+    if (!safeId || !safeToken) return null;
     const { rpcClient } = connectionRpcContext();
     const { data, error } = await rpcClient.rpc('encisomath_connection_heartbeat', {
       p_session_id: safeId,
+      p_session_token: safeToken,
       p_context: context && typeof context === 'object' ? context : {}
     });
     if (error) throw connectionMigrationError(error, 'No se pudo actualizar la presencia.');
     return data || null;
   }
 
-  async function endConnectionSession(sessionId, context = {}) {
+  async function endConnectionSession(sessionId, sessionToken, context = {}) {
     const safeId = String(sessionId || '').trim();
-    if (!safeId) return null;
+    const safeToken = String(sessionToken || '').trim();
+    if (!safeId || !safeToken) return null;
     const { rpcClient } = connectionRpcContext();
     const { data, error } = await rpcClient.rpc('encisomath_connection_end', {
       p_session_id: safeId,
+      p_session_token: safeToken,
       p_context: context && typeof context === 'object' ? context : {}
     });
     if (error) throw connectionMigrationError(error, 'No se pudo cerrar la sesión de conexión.');

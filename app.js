@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.020';
+  const APP_VERSION = '0.25.021';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -560,6 +560,7 @@
     },
     connections: {
       sessionId: '',
+      sessionToken: '',
       startedAt: '',
       trackingError: '',
       report: null,
@@ -890,9 +891,10 @@
     if (navigator.onLine === false) return null;
     connectionHeartbeatBusy = true;
     try {
-      const result = await cloudAPI().heartbeatConnectionSession(state.connections.sessionId, currentConnectionContext());
+      const result = await cloudAPI().heartbeatConnectionSession(state.connections.sessionId, state.connections.sessionToken, currentConnectionContext());
       if (result?.ok === false) {
         state.connections.sessionId = '';
+        state.connections.sessionToken = '';
         if (state.user) startConnectionPresence().catch(() => {});
       }
       return result;
@@ -912,9 +914,9 @@
     }, 45000);
   }
 
-  async function startConnectionPresence() {
+  async function startConnectionPresence(options = {}) {
     if (!state.user || !cloudAPI()?.startConnectionSession) return null;
-    if (state.connections.sessionId) {
+    if (state.connections.sessionId && state.connections.sessionToken) {
       startConnectionHeartbeatTimer();
       return state.connections.sessionId;
     }
@@ -927,13 +929,20 @@
           appVersion: APP_VERSION
         });
         state.connections.sessionId = String(result?.sessionId || '');
+        state.connections.sessionToken = String(result?.sessionToken || '');
         state.connections.startedAt = String(result?.connectedAt || '');
+        if (!state.connections.sessionId || !state.connections.sessionToken) {
+          throw new Error('Supabase no devolvió los identificadores completos de la sesión de conexión.');
+        }
         state.connections.trackingError = '';
         startConnectionHeartbeatTimer();
         return state.connections.sessionId;
       } catch (error) {
+        state.connections.sessionId = '';
+        state.connections.sessionToken = '';
         state.connections.trackingError = error?.message || String(error || '');
         console.warn('El registro de conexiones no está disponible.', error);
+        if (options.throwOnError) throw error;
         return null;
       } finally {
         connectionStartPromise = null;
@@ -947,11 +956,13 @@
     connectionHeartbeatTimer = null;
     window.clearTimeout(scheduleConnectionHeartbeat.timer);
     const sessionId = state.connections.sessionId;
+    const sessionToken = state.connections.sessionToken;
     state.connections.sessionId = '';
+    state.connections.sessionToken = '';
     state.connections.startedAt = '';
     if (!end || !sessionId || !cloudAPI()?.endConnectionSession || navigator.onLine === false) return null;
     try {
-      return await cloudAPI().endConnectionSession(sessionId, currentConnectionContext());
+      return await cloudAPI().endConnectionSession(sessionId, sessionToken, currentConnectionContext());
     } catch (error) {
       console.warn('No se pudo cerrar formalmente la sesión de conexión.', error);
       return null;
@@ -1152,6 +1163,36 @@
     }
     return '';
   }
+  function openTeacherToolsModal() {
+    openModal(`
+      <section class="modal-card em-teacher-tools-modal" role="dialog" aria-modal="true" aria-labelledby="teacherToolsTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Perfil docente</p>
+        <h2 id="teacherToolsTitle">Herramientas</h2>
+        <p class="card-sub">Configura el calendario académico o consulta el registro de acceso a EncisoMath.</p>
+        <div class="em-teacher-tools-list">
+          <button class="ghost-btn em-teacher-tool-button" id="openAcademicPeriodsBtn" type="button">
+            <strong>Calendario académico</strong>
+            <span>Fechas de inicio de los cuatro periodos.</span>
+          </button>
+          <button class="ghost-btn em-teacher-tool-button" id="openTeacherConnectionsBtn" type="button">
+            <strong>Conexiones</strong>
+            <span>Usuarios, horas, dispositivos y duración aproximada.</span>
+          </button>
+        </div>
+      </section>
+    `, () => {
+      document.getElementById('openAcademicPeriodsBtn')?.addEventListener('click', () => {
+        closeModal();
+        openAcademicPeriodsModal();
+      });
+      document.getElementById('openTeacherConnectionsBtn')?.addEventListener('click', () => {
+        closeModal();
+        renderConnectionsDashboard();
+      });
+    });
+  }
+
   function openAcademicPeriodsModal() {
     const starts = getAcademicPeriodStarts();
     const autoPeriod = getAutomaticAcademicPeriod(todayISO(), starts);
@@ -1798,7 +1839,7 @@
           <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
-              <button class="round-action em-period-settings-button" id="periodSettingsBtn" type="button" aria-label="Configurar fechas de periodos" title="Configurar periodos">⚙</button>
+              <button class="round-action em-period-settings-button" id="periodSettingsBtn" type="button" aria-label="Abrir herramientas del docente" title="Herramientas">⚙</button>
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
             <img class="profile-avatar" src="${escapeAttr(teacher.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
@@ -1814,18 +1855,6 @@
               </div>
             </div>
           </div>
-        </section>
-
-        <section class="section em-connections-home-section">
-          <button class="em-connections-home-card" id="openConnectionsBtn" type="button">
-            <span class="em-connections-home-signal" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="em-connections-home-copy">
-              <small>Panel docente</small>
-              <strong>Conexiones</strong>
-              <span>Consulta quién ingresó, cuándo se conectó, desde qué dispositivo y cuánto duró su sesión.</span>
-            </span>
-            <b>Ver registro</b>
-          </button>
         </section>
 
         <section class="section">
@@ -1845,9 +1874,8 @@
 
     mount(markup, () => {
       document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('periodSettingsBtn')?.addEventListener('click', openAcademicPeriodsModal);
+      document.getElementById('periodSettingsBtn')?.addEventListener('click', openTeacherToolsModal);
       document.getElementById('notifyBtn').addEventListener('click', requestNotificationTest);
-      document.getElementById('openConnectionsBtn')?.addEventListener('click', () => renderConnectionsDashboard());
       bindAssignmentCards(assignments);
     });
   }
@@ -1927,6 +1955,16 @@
     });
   }
 
+  function connectionTrackingNoticeHTML() {
+    if (state.connections.trackingError) {
+      return `<div class="em-connections-notice is-error"><strong>No se está registrando esta sesión.</strong><span>${escapeHTML(state.connections.trackingError)}</span><button class="mini-btn" id="retryConnectionTrackingBtn" type="button">Reintentar</button></div>`;
+    }
+    if (state.connections.sessionId) {
+      return `<div class="em-connections-notice is-ok"><strong>Registro activo</strong><span>Esta sesión ya está siendo escrita en Supabase.</span></div>`;
+    }
+    return `<div class="em-connections-notice"><strong>Comprobando registro…</strong><span>EncisoMath está iniciando la sesión de presencia.</span></div>`;
+  }
+
   function connectionsSummaryHTML() {
     const summary = state.connections.report?.summary || {};
     return `
@@ -1978,9 +2016,23 @@
     const summary = document.getElementById('connectionsSummary');
     const list = document.getElementById('connectionsList');
     const count = document.getElementById('connectionsResultCount');
+    const notice = document.getElementById('connectionTrackingNotice');
     if (summary) summary.innerHTML = connectionsSummaryHTML();
     if (list) list.innerHTML = connectionCardsHTML();
     if (count) count.textContent = `${filteredConnectionSessions().length} registro(s)`;
+    if (notice) {
+      notice.innerHTML = connectionTrackingNoticeHTML();
+      document.getElementById('retryConnectionTrackingBtn')?.addEventListener('click', async () => {
+        state.connections.trackingError = '';
+        renderConnectionsDashboardData();
+        try {
+          await startConnectionPresence({ throwOnError: true });
+          await loadConnectionsDashboard();
+        } catch (_) {
+          renderConnectionsDashboardData();
+        }
+      });
+    }
   }
 
   async function loadConnectionsDashboard(options = {}) {
@@ -1992,8 +2044,8 @@
     if (!options.silent && list) list.innerHTML = '<div class="em-connections-loading">Cargando conexiones...</div>';
     if (refreshButton) refreshButton.disabled = true;
     try {
+      await startConnectionPresence({ throwOnError: true });
       state.connections.report = await cloudAPI().loadConnectionReport({ days: state.connections.days, limit: 800 });
-      state.connections.trackingError = '';
       renderConnectionsDashboardData();
     } catch (error) {
       state.connections.trackingError = error?.message || String(error || '');
@@ -2002,7 +2054,7 @@
           <div class="em-connections-error">
             <strong>No se pudo cargar Conexiones.</strong>
             <span>${escapeHTML(state.connections.trackingError)}</span>
-            <small>Ejecuta <b>SUPABASE_CONNECTIONS_v0.25.020.sql</b> en Supabase y vuelve a intentar.</small>
+            <small>Ejecuta <b>SUPABASE_CONNECTIONS_v0.25.021.sql</b> en Supabase y vuelve a intentar.</small>
           </div>
         `;
       }
@@ -2033,29 +2085,27 @@
           <span class="spacer"></span>
           <button class="mini-btn" id="refreshConnectionsBtn" type="button">Actualizar</button>
         </header>
-        <section class="section em-connections-hero">
-          <p class="section-kicker">Actividad de acceso</p>
-          <h2>Quién está usando EncisoMath</h2>
-          <p>Las duraciones son aproximadas y se calculan mediante señales periódicas enviadas mientras la aplicación está abierta.</p>
-        </section>
-        <section class="section">
+        <section class="section em-connections-main-section">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Panel docente</p>
+              <h2 class="section-title">Registro de conexiones</h2>
+              <p class="card-sub">La duración es aproximada y se calcula mientras EncisoMath permanece abierto.</p>
+            </div>
+            <span class="em-connections-result-count" id="connectionsResultCount">0 registro(s)</span>
+          </div>
+          <div id="connectionTrackingNotice">${connectionTrackingNoticeHTML()}</div>
           <div class="em-connections-summary" id="connectionsSummary">
             <article><small>En línea ahora</small><strong>—</strong><span>Cargando</span></article>
             <article><small>Conexiones hoy</small><strong>—</strong><span>Cargando</span></article>
             <article><small>Usuarios hoy</small><strong>—</strong><span>Cargando</span></article>
             <article><small>Tiempo promedio</small><strong>—</strong><span>Cargando</span></article>
           </div>
-        </section>
-        <section class="section em-connections-log-section">
-          <div class="section-head em-connections-log-head">
-            <div><p class="section-kicker">Historial</p><h2 class="section-title">Registro de conexiones</h2></div>
-            <span id="connectionsResultCount">0 registro(s)</span>
-          </div>
           <div class="em-connections-filters">
-            <label><span>Periodo</span><select id="connectionsDaysFilter"><option value="1">Hoy</option><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></label>
-            <label><span>Rol</span><select id="connectionsRoleFilter"><option value="all">Todos</option><option value="estudiante">Estudiantes</option><option value="docente">Docentes</option></select></label>
-            <label><span>Estado</span><select id="connectionsStatusFilter"><option value="all">Todos</option><option value="online">En línea</option><option value="offline">Desconectados</option></select></label>
-            <label class="em-connections-search"><span>Buscar</span><input id="connectionsSearchInput" type="search" placeholder="Nombre, grupo o dispositivo" value="${escapeAttr(state.connections.search || '')}" /></label>
+            <label><span>Periodo</span><select class="input" id="connectionsDaysFilter"><option value="1">Hoy</option><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></label>
+            <label><span>Rol</span><select class="input" id="connectionsRoleFilter"><option value="all">Todos</option><option value="estudiante">Estudiantes</option><option value="docente">Docentes</option></select></label>
+            <label><span>Estado</span><select class="input" id="connectionsStatusFilter"><option value="all">Todos</option><option value="online">En línea</option><option value="offline">Desconectados</option></select></label>
+            <label class="em-connections-search"><span>Buscar</span><input class="input" id="connectionsSearchInput" type="search" placeholder="Nombre, grupo o dispositivo" value="${escapeAttr(state.connections.search || '')}" /></label>
           </div>
           <div class="em-connections-list" id="connectionsList"><div class="em-connections-loading">Cargando conexiones...</div></div>
         </section>
@@ -2087,7 +2137,6 @@
         state.connections.search = search.value;
         renderConnectionsDashboardData();
       });
-      if (!state.connections.sessionId) startConnectionPresence().catch(() => {});
       loadConnectionsDashboard();
       startConnectionsDashboardAutoRefresh();
     });
@@ -15707,7 +15756,7 @@
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', async () => {
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.020', { updateViaCache: 'none' });
+        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.021', { updateViaCache: 'none' });
         registration.update();
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           // La actualización queda activa sin recargar la pantalla actual. Así,
