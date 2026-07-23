@@ -32436,7 +32436,7 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
 
 
 /* ================================================================
-   v0.25.012 · PROGRESO REAL, ACTIVIDADES EN UNA FILA Y SYNC EN REPOSO
+   v0.25.013 · CORRECCION REAL DEL MODAL DE ACTIVIDADES
    ================================================================ */
 
 /* La barra principal representa el porcentaje informado por las operaciones
@@ -32478,59 +32478,108 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   width: min(32%, var(--em-sync-progress-value, 18%));
 }
 
-/* Los cuatro formatos permanecen en una sola fila tanto en escritorio como
-   en móvil, sin perder el aspecto de tarjeta seleccionable. */
-html body #app .em-activity-create-modal .em-activity-type-grid {
+/* v0.25.013 - El modal se inserta directamente en <body>, fuera de #app.
+   Por eso los selectores anteriores con #app nunca alcanzaban estos controles. */
+html body #modalLayer .em-activity-create-modal .em-activity-type-grid,
+html body .modal-layer .em-activity-create-modal .em-activity-type-grid {
+  display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
   gap: 7px !important;
+  width: 100% !important;
 }
-html body #app .em-activity-create-modal .em-activity-type-option {
-  min-width: 0;
+html body #modalLayer .em-activity-create-modal .em-activity-type-option,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option {
+  min-width: 0 !important;
+  width: 100% !important;
 }
-html body #app .em-activity-create-modal .em-activity-type-option span {
-  min-width: 0;
-  min-height: 68px;
-  padding: 7px 3px;
-  overflow: hidden;
-  font-size: clamp(.5rem, 1.8vw, .67rem);
-  line-height: 1.12;
-  overflow-wrap: anywhere;
+html body #modalLayer .em-activity-create-modal .em-activity-type-option span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option span {
+  min-width: 0 !important;
+  width: 100% !important;
+  min-height: 68px !important;
+  padding: 7px 3px !important;
+  overflow: hidden !important;
+  font-size: clamp(.48rem, 1.8vw, .67rem) !important;
+  line-height: 1.12 !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
 }
-html body #app .em-activity-create-modal .em-activity-type-option b {
-  font-size: clamp(.9rem, 3.5vw, 1.15rem);
+html body #modalLayer .em-activity-create-modal .em-activity-type-option b,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option b {
+  font-size: clamp(.88rem, 3.5vw, 1.15rem) !important;
 }
 
-/* Editores oscuros y legibles, coherentes con los fondos de actividades. */
-html body #app .em-activity-create-modal .em-rich-toolbar button {
-  border-color: rgba(255,255,255,.13) !important;
-  background: #0b1627 !important;
-  color: #fff !important;
-}
-html body #app .em-activity-create-modal .em-rich-toolbar button:hover,
-html body #app .em-activity-create-modal .em-rich-toolbar button:focus-visible {
-  border-color: var(--em-current-subject-color, #1368ce) !important;
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, #0b1627 76%) !important;
-}
-html body #app .em-activity-create-modal .em-rich-editor,
-html body #app .em-activity-create-modal textarea.em-code-input {
-  border-color: rgba(255,255,255,.13) !important;
-  background: #07101d !important;
+/* Editores oscuros reales: fondo, texto escrito, caret, contenido pegado y
+   placeholders. Se aplica tanto al editor enriquecido como a HTML/CSS. */
+html body #modalLayer .em-activity-create-modal .em-rich-toolbar button,
+html body .modal-layer .em-activity-create-modal .em-rich-toolbar button {
+  border-color: rgba(255,255,255,.15) !important;
+  background: #111c2d !important;
   color: #f8fafc !important;
-  caret-color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  box-shadow: none !important;
 }
-html body #app .em-activity-create-modal .em-rich-editor:focus,
-html body #app .em-activity-create-modal textarea.em-code-input:focus {
+html body #modalLayer .em-activity-create-modal .em-rich-toolbar button:hover,
+html body #modalLayer .em-activity-create-modal .em-rich-toolbar button:focus-visible,
+html body .modal-layer .em-activity-create-modal .em-rich-toolbar button:hover,
+html body .modal-layer .em-activity-create-modal .em-rich-toolbar button:focus-visible {
   border-color: var(--em-current-subject-color, #1368ce) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 22%, transparent) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 26%, #111c2d 74%) !important;
 }
-html body #app .em-activity-create-modal .em-rich-editor:empty::before,
-html body #app .em-activity-create-modal textarea.em-code-input::placeholder {
-  color: #8290a7 !important;
+html body #modalLayer .em-activity-create-modal .em-rich-editor,
+html body #modalLayer .em-activity-create-modal textarea.em-code-input,
+html body .modal-layer .em-activity-create-modal .em-rich-editor,
+html body .modal-layer .em-activity-create-modal textarea.em-code-input {
+  border: 1px solid rgba(255,255,255,.15) !important;
+  background-color: #091321 !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.025), transparent 42%) !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.015) !important;
   opacity: 1 !important;
 }
-html body #app .em-activity-create-modal .em-rich-editor a {
-  color: #6db6ff;
+html body #modalLayer .em-activity-create-modal .em-rich-editor *,
+html body .modal-layer .em-activity-create-modal .em-rich-editor * {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+  background-color: transparent !important;
+}
+html body #modalLayer .em-activity-create-modal .em-rich-editor:focus,
+html body #modalLayer .em-activity-create-modal textarea.em-code-input:focus,
+html body .modal-layer .em-activity-create-modal .em-rich-editor:focus,
+html body .modal-layer .em-activity-create-modal textarea.em-code-input:focus {
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 24%, transparent), inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  outline: none !important;
+}
+html body #modalLayer .em-activity-create-modal .em-rich-editor:empty::before,
+html body #modalLayer .em-activity-create-modal textarea.em-code-input::placeholder,
+html body .modal-layer .em-activity-create-modal .em-rich-editor:empty::before,
+html body .modal-layer .em-activity-create-modal textarea.em-code-input::placeholder {
+  color: #8795aa !important;
+  -webkit-text-fill-color: #8795aa !important;
+  opacity: 1 !important;
+}
+html body #modalLayer .em-activity-create-modal .em-rich-editor a,
+html body .modal-layer .em-activity-create-modal .em-rich-editor a {
+  color: #72baff !important;
+  -webkit-text-fill-color: #72baff !important;
+}
+
+@media (max-width: 420px) {
+  html body #modalLayer .em-activity-create-modal .em-activity-type-grid,
+  html body .modal-layer .em-activity-create-modal .em-activity-type-grid {
+    gap: 5px !important;
+  }
+  html body #modalLayer .em-activity-create-modal .em-activity-type-option span,
+  html body .modal-layer .em-activity-create-modal .em-activity-type-option span {
+    min-height: 64px !important;
+    padding: 6px 2px !important;
+    font-size: clamp(.45rem, 2.05vw, .58rem) !important;
+  }
 }
 
 /* Entregaron, Calificados, Avance y Promedio siempre ocupan cuatro columnas
