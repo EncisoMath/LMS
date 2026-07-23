@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.013';
+  const APP_VERSION = '0.25.015';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -11743,6 +11743,8 @@
     });
   }
 
+
+
   function activityContentEditorHTML(prefix, type = 'pdf', payload = {}) {
     const files = activityPayloadFiles(payload);
     const fileText = files.length ? files.map((file) => file.name || 'Archivo guardado').join(', ') : '';
@@ -11754,11 +11756,11 @@
         </div>
         <div class="em-activity-type-grid" role="radiogroup" aria-label="Formato del contenido">
           ${[
-            ['pdf', 'PDF', '📄'],
-            ['image', 'Imágenes', '🖼️'],
-            ['rich_text', 'Texto enriquecido', '✍️'],
-            ['html_css', 'HTML + CSS', '⌨️']
-          ].map(([value, label, icon]) => `<label class="em-activity-type-option"><input type="radio" name="${prefix}Type" value="${value}" ${type === value ? 'checked' : ''}/><span><b>${icon}</b>${label}</span></label>`).join('')}
+            ['pdf', 'PDF'],
+            ['image', 'Imágenes'],
+            ['rich_text', 'Texto enriquecido'],
+            ['html_css', 'HTML + CSS']
+          ].map(([value, label]) => `<label class="em-activity-type-option"><input type="radio" name="${prefix}Type" value="${value}" ${type === value ? 'checked' : ''}/><span>${label}</span></label>`).join('')}
         </div>
         <div class="em-activity-editor-panel" data-editor-panel="pdf">
           <label class="em-file-drop" for="${prefix}PdfInput"><strong>Seleccionar PDF</strong><span data-file-name>${escapeHTML(type === 'pdf' && fileText ? fileText : 'Máximo 20 MB')}</span></label>

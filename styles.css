@@ -32611,3 +32611,70 @@ html body #app .em-activity-overview-grid article {
     height: 4px !important;
   }
 }
+
+
+/* v0.25.015 · opciones de formato como botones simples del LMS */
+html body #modalLayer .em-activity-create-modal .em-activity-type-grid,
+html body .modal-layer .em-activity-create-modal .em-activity-type-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option span {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 5px !important;
+  border: 1px solid rgba(255,255,255,.13) !important;
+  border-radius: 9px !important;
+  background: rgba(255,255,255,.055) !important;
+  color: #dbe4f2 !important;
+  box-shadow: none !important;
+  font: 750 clamp(.48rem, 1.8vw, .66rem)/1.12 "Montserrat", Arial, sans-serif !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  overflow-wrap: anywhere !important;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option:hover span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option:hover span {
+  background: rgba(255,255,255,.09) !important;
+  border-color: rgba(255,255,255,.21) !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option:active span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option:active span {
+  transform: translateY(1px) scale(.99) !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option input:focus-visible + span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option input:focus-visible + span {
+  outline: 2px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 76%, white 12%) !important;
+  outline-offset: 2px !important;
+}
+html body #modalLayer .em-activity-create-modal .em-activity-type-option input:checked + span,
+html body .modal-layer .em-activity-create-modal .em-activity-type-option input:checked + span {
+  border-color: var(--em-current-subject-color, #1368ce) !important;
+  background: var(--em-current-subject-color, #1368ce) !important;
+  color: var(--em-current-subject-ink, #07111f) !important;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 26%, transparent) !important;
+}
+@media (max-width: 420px) {
+  html body #modalLayer .em-activity-create-modal .em-activity-type-grid,
+  html body .modal-layer .em-activity-create-modal .em-activity-type-grid {
+    gap: 5px !important;
+  }
+  html body #modalLayer .em-activity-create-modal .em-activity-type-option span,
+  html body .modal-layer .em-activity-create-modal .em-activity-type-option span {
+    min-height: 40px !important;
+    padding: 7px 3px !important;
+    font-size: clamp(.44rem, 2vw, .57rem) !important;
+  }
+}
