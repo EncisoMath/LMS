@@ -618,6 +618,7 @@
       if (!existing.assignmentIds.includes(row.assignment_id)) existing.assignmentIds.push(row.assignment_id);
       existing._quizAssignmentIds[row.assignment_id] = row.id;
       existing._quizAssignmentId = existing._quizAssignmentId || row.id;
+      existing.availableFrom = row.available_from || existing.availableFrom || '';
       existing.availableUntil = row.due_at || existing.availableUntil || '';
       existing.attempts = row.max_attempts || existing.attempts || 1;
       existing.assignmentSettings = { ...(existing.assignmentSettings || {}), [row.assignment_id]: row.settings || {} };
@@ -655,6 +656,49 @@
         reason: row.reason || ''
       };
     }).filter(Boolean);
+  }
+
+  function normalizeStudentPeriodStartsByAssignment(value) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return Object.fromEntries(Object.entries(source).map(([assignmentId, starts]) => [String(assignmentId), starts && typeof starts === 'object' ? starts : {}]));
+  }
+
+  function mapStudentPortalQuizzes(source = {}) {
+    const rawQuizzes = Array.isArray(source.quizzes)
+      ? source.quizzes
+      : (Array.isArray(source.quiz_assignments) ? source.quiz_assignments : []);
+    const quizzes = rawQuizzes.some((row) => row?.quiz || row?.assignment_id)
+      ? mapQuizAssignments(rawQuizzes)
+      : rawQuizzes.map((quiz) => ({ ...quiz }));
+    const attempts = Array.isArray(source.quiz_attempts)
+      ? source.quiz_attempts
+      : (Array.isArray(source.quizAttempts) ? source.quizAttempts : []);
+
+    quizzes.forEach((quiz) => {
+      const assignmentIds = new Set(Object.values(quiz?._quizAssignmentIds || {}).map(String));
+      if (quiz?._quizAssignmentId) assignmentIds.add(String(quiz._quizAssignmentId));
+      const relevant = attempts.filter((attempt) => assignmentIds.has(String(attempt?.quiz_assignment_id || attempt?.quizAssignmentId || '')));
+      const completed = relevant.filter((attempt) => ['submitted', 'graded', 'abandoned'].includes(String(attempt?.status || '')));
+      quiz.attemptsMade = completed.length;
+      const scored = completed.filter((attempt) => Number(attempt?.max_score ?? attempt?.maxScore ?? 0) > 0);
+      if (scored.length) {
+        const best = scored.slice().sort((a, b) => {
+          const aRatio = Number(a.score || 0) / Number(a.max_score ?? a.maxScore ?? 1);
+          const bRatio = Number(b.score || 0) / Number(b.max_score ?? b.maxScore ?? 1);
+          if (bRatio !== aRatio) return bRatio - aRatio;
+          return String(b.submitted_at || b.submittedAt || b.started_at || '').localeCompare(String(a.submitted_at || a.submittedAt || a.started_at || ''));
+        })[0];
+        const score = Number(best.score || 0);
+        const maxScore = Number(best.max_score ?? best.maxScore ?? 0);
+        quiz.studentResult = {
+          grade: Math.max(0, Math.min(10, (score / maxScore) * 10)),
+          score,
+          maxScore,
+          submittedAt: best.submitted_at || best.submittedAt || ''
+        };
+      }
+    });
+    return quizzes;
   }
 
   function normalizeStudentPortalData(payload, requestedCode = '') {
@@ -712,6 +756,11 @@
       existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
     });
 
+    const quizzes = mapStudentPortalQuizzes(source).filter((quiz) => String(quiz.status || 'published') === 'published');
+    const periodStartsByAssignment = normalizeStudentPeriodStartsByAssignment(
+      source.academic_period_starts_by_assignment || source.academicPeriodStartsByAssignment || source.preferences?.academicPeriodStartsByAssignment
+    );
+
     return {
       user: appUser,
       data: {
@@ -723,10 +772,13 @@
         activityGrades: [],
         quizGrades: [],
         rockstars: [],
-        quizzes: []
+        quizzes
       },
       attendance: {},
-      preferences: {}
+      preferences: {
+        ...(source.preferences && typeof source.preferences === 'object' ? source.preferences : {}),
+        academicPeriodStartsByAssignment: periodStartsByAssignment
+      }
     };
   }
 
@@ -752,6 +804,18 @@
       if (error) throw normalizeError(error, 'No se pudo cargar el portal del estudiante.');
       payload = data;
     }
+    reportApplicationLoadProgress(options, 62, 'Cargando quizzes y calendario académico...');
+    const { data: academicContext, error: academicContextError } = await getStudentClient().rpc('encisomath_student_academic_context', { p_student_code: code });
+    if (academicContextError) {
+      const message = String(academicContextError.message || '').toLowerCase();
+      const missingFunction = academicContextError.code === 'PGRST202' || message.includes('encisomath_student_academic_context');
+      if (missingFunction) throw new Error('Falta ejecutar SUPABASE_STUDENT_QUIZZES_PERIODS_v0.25.016.sql en Supabase.');
+      throw normalizeError(academicContextError, 'No se pudieron cargar los quizzes y el calendario académico del estudiante.');
+    }
+    if (!academicContext || academicContext.ok === false) {
+      throw new Error(academicContext?.message || 'No se pudo cargar el contexto académico del estudiante.');
+    }
+    payload = { ...payload, ...academicContext };
     reportApplicationLoadProgress(options, 78, 'Organizando el portal del estudiante...');
     const snapshot = normalizeStudentPortalData(payload, code);
     const remembered = studentPortalSession?.encisomathRemember ?? readStoredStudentPortalState().remember;
@@ -2085,9 +2149,25 @@
   }
 
   async function startQuizAttempt({ quiz, assignmentId, clientMutationId = '' }) {
+    let quizAssignmentId = quiz?._quizAssignmentIds?.[assignmentId] || quiz?._quizAssignmentId;
+    if (session?.encisomathStudentPortal) {
+      if (!quizAssignmentId) throw new Error('No se encontró la asignación de este quiz para tu curso.');
+      const { data, error } = await getStudentClient().rpc('encisomath_student_start_quiz_attempt', {
+        p_student_code: session.studentCode,
+        p_quiz_assignment_id: String(quizAssignmentId)
+      });
+      if (error) {
+        const message = String(error.message || '');
+        if (error.code === 'PGRST202' || message.toLowerCase().includes('encisomath_student_start_quiz_attempt')) {
+          throw new Error('Falta ejecutar SUPABASE_STUDENT_QUIZZES_PERIODS_v0.25.016.sql en Supabase.');
+        }
+        throw normalizeError(error, 'No se pudo iniciar el intento del quiz.');
+      }
+      if (!data || data.ok === false) throw new Error(data?.message || 'No se pudo iniciar el intento del quiz.');
+      return data.attempt || data;
+    }
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
-    let quizAssignmentId = quiz?._quizAssignmentIds?.[assignmentId] || quiz?._quizAssignmentId;
     if (!quizAssignmentId && quiz?.id && assignmentId) {
       const lookup = await supabaseClient
         .from('quiz_assignments')
@@ -2108,7 +2188,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.010', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.016', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2138,12 +2218,38 @@
   }
 
   async function submitQuizAttempt({ attemptId, quiz, assignmentId, answers, securityEvents, terminatedReason, clientMutationId = '' }) {
-    if (!attemptId) return;
-    const supabaseClient = getClient();
-    await requireAuthenticatedSession();
+    if (!attemptId) return null;
     const safeAnswers = Array.isArray(answers) ? answers : [];
     const score = safeAnswers.reduce((total, answer) => total + numericAnswerScore(answer), 0);
     const maxScore = safeAnswers.reduce((total, answer) => total + numericAnswerMax(answer), 0);
+    if (session?.encisomathStudentPortal) {
+      const { data, error } = await getStudentClient().rpc('encisomath_student_submit_quiz_attempt', {
+        p_student_code: session.studentCode,
+        p_attempt_id: String(attemptId),
+        p_answers: safeAnswers,
+        p_score: score,
+        p_max_score: maxScore,
+        p_result: {
+          appVersion: '0.25.016',
+          assignmentId,
+          quizId: quiz?.id || '',
+          answerCount: safeAnswers.length,
+          securityTerminated: Boolean(terminatedReason),
+          securityTerminatedReason: terminatedReason || null
+        }
+      });
+      if (error) {
+        const message = String(error.message || '');
+        if (error.code === 'PGRST202' || message.toLowerCase().includes('encisomath_student_submit_quiz_attempt')) {
+          throw new Error('Falta ejecutar SUPABASE_STUDENT_QUIZZES_PERIODS_v0.25.016.sql en Supabase.');
+        }
+        throw normalizeError(error, 'No se pudo guardar el resultado del quiz.');
+      }
+      if (!data || data.ok === false) throw new Error(data?.message || 'No se pudo guardar el resultado del quiz.');
+      return data;
+    }
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
     const answerRows = safeAnswers.map((answer) => ({
       attempt_id: attemptId,
       question_id: String(answer.questionId || `q${Number(answer.index || 0) + 1}`),
@@ -2167,7 +2273,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.010',
+          appVersion: '0.25.016',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2197,6 +2303,7 @@
         if (securityResult.error) throw normalizeError(securityResult.error, 'No se pudieron guardar los eventos de seguridad.');
       }
     }
+    return { score, maxScore, grade: maxScore > 0 ? Math.max(0, Math.min(10, (score / maxScore) * 10)) : 0 };
   }
 
   window.EncisoSupabase = Object.freeze({

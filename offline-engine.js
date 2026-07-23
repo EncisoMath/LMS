@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.013';
+  const OFFLINE_VERSION = '0.25.016';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -1026,6 +1026,10 @@
     return activeSnapshot;
   }
 
+  function isStudentPortalSnapshot() {
+    return activeSnapshot?.user?.role === 'student' || String(activeUserId || '').startsWith('student:');
+  }
+
   async function updateSnapshot(mutator) {
     const snapshot = activeSnapshot || await loadSnapshot(activeUserId);
     if (!snapshot) return null;
@@ -2039,6 +2043,13 @@
       return executeMutation('recordLessonView', payload, cloud.recordLessonView, null, { fallbackResult: null });
     },
     async startQuizAttempt(payload) {
+      // El portal por código no tiene una sesión Auth propia. Sus intentos se
+      // validan mediante RPC y deben abrirse en el servidor antes de jugar;
+      // no se fabrica un intento offline que después podría quedar huérfano.
+      if (isStudentPortalSnapshot()) {
+        if (!isOnline()) throw new Error('Necesitas conexión a internet para iniciar un quiz.');
+        return cloud.startQuizAttempt(payload);
+      }
       if (isOnline()) {
         try { return await cloud.startQuizAttempt(payload); } catch (error) { if (!isNetworkError(error)) throw error; }
       }
@@ -2047,6 +2058,12 @@
       return { id: localId, started_at: nowIso(), offline: true };
     },
     async submitQuizAttempt(payload) {
+      // Igual que el inicio: el resultado estudiantil se guarda de inmediato
+      // en la RPC segura para preservar propiedad, intentos y calificación.
+      if (isStudentPortalSnapshot()) {
+        if (!isOnline()) throw new Error('Necesitas conexión a internet para entregar el quiz. No cierres esta pantalla.');
+        return cloud.submitQuizAttempt(payload);
+      }
       if (String(payload.attemptId || '').startsWith('offline-attempt-') || !isOnline()) {
         const stored = await kvGet(`quiz-attempt:${payload.attemptId}`) || {};
         const bundle = { ...stored, ...payload, serverAttemptId: '' };

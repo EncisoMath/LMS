@@ -32678,3 +32678,33 @@ html body .modal-layer .em-activity-create-modal .em-activity-type-option input:
     font-size: clamp(.44rem, 2vw, .57rem) !important;
   }
 }
+
+/* v0.25.016 · Quizzes en portal estudiante */
+html body #app .em-quiz-toolbar.is-student-readonly {
+  justify-content: flex-end !important;
+}
+html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-top {
+  grid-template-columns: minmax(0, 1fr) 92px !important;
+}
+html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-action-slot {
+  width: 92px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-start {
+  width: 92px !important;
+}
+@media (max-width: 360px) {
+  html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-top {
+    grid-template-columns: minmax(0, 1fr) 84px !important;
+  }
+  html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-action-slot,
+  html body #app .em-quiz-card-clean.is-student-quiz-card .em-quiz-start {
+    width: 84px !important;
+  }
+}
+html body #app .em-quiz-card-clean.is-student-quiz-card.is-graded .em-quiz-start {
+  visibility: visible !important;
+  pointer-events: none !important;
+  opacity: .82;
+  color: #ffffff !important;
+}

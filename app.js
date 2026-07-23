@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.015';
+  const APP_VERSION = '0.25.016';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -68,6 +68,7 @@
     quizFeedbackEffects: true,
     quizSounds: true,
     academicPeriodStarts: { 1: '', 2: '', 3: '', 4: '' },
+    academicPeriodStartsByAssignment: {},
     gradebookConfigs: {}
   };
 
@@ -618,6 +619,11 @@
   function renderRoleHome(options = {}) {
     return isStudentPortal() ? renderStudentHome(options) : renderTeacherHome(options);
   }
+  function activateAssignment(assignment) {
+    state.assignment = assignment || null;
+    if (state.assignment && isStudentPortal()) initializeAcademicPeriodState();
+    return state.assignment;
+  }
   function cloudAttendanceKey(assignmentId, date) {
     return `${assignmentId}|${date}`;
   }
@@ -648,6 +654,7 @@
     if (cloudData.preferences && typeof cloudData.preferences === 'object') {
       state.prefs = { ...state.prefs, ...cloudData.preferences, heroAnimations: true, tabTransitions: false };
       state.prefs.academicPeriodStarts = normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
+      state.prefs.academicPeriodStartsByAssignment = normalizeAcademicPeriodStartsByAssignment(state.prefs.academicPeriodStartsByAssignment);
       localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
       applyPreferences();
     }
@@ -695,7 +702,16 @@
       4: /^\d{4}-\d{2}-\d{2}$/.test(String(source[4] || source.p4 || '')) ? String(source[4] || source.p4) : ''
     };
   }
+  function normalizeAcademicPeriodStartsByAssignment(value) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return Object.fromEntries(Object.entries(source).map(([assignmentId, starts]) => [String(assignmentId), normalizeAcademicPeriodStarts(starts)]));
+  }
   function getAcademicPeriodStarts() {
+    if (isStudentPortal()) {
+      const byAssignment = normalizeAcademicPeriodStartsByAssignment(state.prefs.academicPeriodStartsByAssignment);
+      const assignmentId = String(state.assignment?.id || '');
+      return normalizeAcademicPeriodStarts(assignmentId ? byAssignment[assignmentId] : null);
+    }
     return normalizeAcademicPeriodStarts(state.prefs.academicPeriodStarts);
   }
   function getAutomaticAcademicPeriod(dateValue = todayISO(), startsValue = getAcademicPeriodStarts()) {
@@ -1004,7 +1020,7 @@
   }
   function normalizeSubjectTab(tab) {
     const value = String(tab || (isStudentPortal() ? 'classes' : 'students'));
-    if (isStudentPortal()) return ['classes', 'activities'].includes(value) ? value : 'classes';
+    if (isStudentPortal()) return ['classes', 'activities', 'quizzes'].includes(value) ? value : 'classes';
     return ['students', 'classes', 'activities', 'notes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
   function subjectTabDisplayLabel(tab) {
@@ -1129,7 +1145,7 @@
         renderRoleHome({ noHistory: true });
         return;
       }
-      state.assignment = assignment;
+      activateAssignment(assignment);
       renderSubjectDetail(normalized.tab, { noHistory: true });
       return;
     }
@@ -1141,7 +1157,7 @@
         renderRoleHome({ noHistory: true });
         return;
       }
-      state.assignment = assignment;
+      activateAssignment(assignment);
       renderLesson(lesson, { noHistory: true });
       return;
     }
@@ -1153,7 +1169,7 @@
         renderRoleHome({ noHistory: true });
         return;
       }
-      state.assignment = assignment;
+      activateAssignment(assignment);
       renderActivityDetail(activity, { noHistory: true });
     }
   }
@@ -1458,7 +1474,7 @@
         if (!assignment) return;
         const subjectColor = button.dataset.subjectColor || emGetSubjectColorForAssignment(assignment);
         emSetCurrentSubjectColor(subjectColor);
-        state.assignment = assignment;
+        activateAssignment(assignment);
         renderSubjectDetail(isStudentPortal() ? 'classes' : 'students');
       });
     });
@@ -1505,6 +1521,7 @@
                 ${studentMode ? `
                   <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
                   <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
+                  <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
                 ` : `
                   <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
                   <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
@@ -1537,6 +1554,7 @@
       setActiveSubjectTabMeta(tab);
       if (studentMode) {
         if (tab === 'activities') renderActivitiesTab({ animate: true });
+        else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
         else renderClassesTab({ animate: true });
       } else if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'activities') renderActivitiesTab({ animate: true });
@@ -1987,7 +2005,7 @@
           }
           const assignment = (state.data.assignments || []).find((item) => String(item.id) === String(currentAssignmentId));
           if (assignment) {
-            state.assignment = assignment;
+            activateAssignment(assignment);
             renderSubjectDetail('students');
           } else {
             renderTeacherHome();
@@ -4075,6 +4093,7 @@
     const assignment = state.assignment;
     const $content = document.getElementById('tabContent');
     if (!assignment || !$content) return;
+    const studentMode = isStudentPortal();
     setActiveSubjectTabMeta('quizzes');
     const quizzes = getQuizzesForCurrentAssignment();
     const activeQuiz = getActiveQuiz(quizzes);
@@ -4082,8 +4101,8 @@
       <section class="quiz-hero em-qz-hero-host" data-em-quizzes-hero aria-label="Quizzes de la asignatura">
         ${emQzQuizzesHeroHTML(assignment.subject || 'ESTADÍSTICA', emQzGetAssignmentGradeCourse(assignment))}
       </section>
-      <div class="view-row em-content-toolbar em-content-toolbar-has-action em-quiz-toolbar">
-        <button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz</button>
+      <div class="view-row em-content-toolbar ${studentMode ? '' : 'em-content-toolbar-has-action'} em-quiz-toolbar ${studentMode ? 'is-student-readonly' : ''}">
+        ${studentMode ? '' : '<button class="em-add-quiz-group-btn" id="openQuizStudioBtn" type="button" data-action="open-quiz-studio">Añadir quiz</button>'}
         <div class="em-view-switch" aria-label="Vista de quizzes">
           <button class="mini-btn ${state.quizViewMode === 'grid' ? 'selected' : ''}" id="quizGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.quizViewMode === 'list' ? 'selected' : ''}" id="quizListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
@@ -4200,8 +4219,14 @@
     if (!assignment) return [];
     return getBaseQuizzes().filter((quiz) => {
       if (Number(quiz.period || 1) !== Number(state.quizPeriod)) return false;
-      const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds : [];
-      if (ids.length) return ids.includes('*') || ids.includes(assignment.id);
+      const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds.map(String) : [];
+      // En el portal estudiantil nunca se usa la coincidencia amplia por área
+      // o asignatura: el quiz debe estar publicado y vinculado a la carga
+      // exacta del curso/grado que el estudiante abrió.
+      if (isStudentPortal()) {
+        return String(quiz.status || 'published') === 'published' && ids.includes(String(assignment.id));
+      }
+      if (ids.length) return ids.includes('*') || ids.includes(String(assignment.id));
       if (quiz.subject && quiz.subject === assignment.subject) return true;
       if (quiz.area && quiz.area === assignment.area) return true;
       return !ids.length && !quiz.subject && !quiz.area;
@@ -4467,16 +4492,21 @@
     return EM_QUIZ_CARD_CLEAN_COLORS[Math.abs(Number(index) || 0) % EM_QUIZ_CARD_CLEAN_COLORS.length] || EM_QUIZ_CARD_CLEAN_COLORS[0];
   }
   function quizCardButtonHTML(quiz, active, index = 0) {
+    const studentMode = isStudentPortal();
     const gradeInfo = getQuizGradeInfo(quiz);
-    const graded = Boolean(gradeInfo);
-    const color = getQuizCardCleanColor(index, gradeInfo);
+    const hasGrade = Boolean(gradeInfo);
+    const attemptsMade = getQuizAttemptsMade(quiz);
+    const attemptLimit = getQuizAttemptLimitRaw(quiz);
+    const attemptsExhausted = Boolean(studentMode && attemptLimit && attemptsMade >= attemptLimit);
+    const locked = studentMode ? attemptsExhausted : hasGrade;
+    const color = getQuizCardCleanColor(index, hasGrade ? gradeInfo : null);
     const title = quiz.title || 'Quiz sin título';
     const closeLabel = getQuizCloseLabel(quiz);
     const period = Number(quiz.period || state.quizPeriod || 1);
     const style = `--quiz-color:${color};--active-color:${color};--grade-accent:${gradeInfo?.color || color};`;
-    const actionAttrs = graded ? 'aria-hidden="true" tabindex="-1" disabled' : 'tabindex="-1"';
+    const actionAttrs = locked ? 'aria-hidden="true" tabindex="-1" disabled' : 'tabindex="-1"';
     return `
-      <article class="em-quiz-card-clean ${active ? 'active ' : ''}${graded ? 'is-graded' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" data-period="${escapeAttr(period)}" data-quiz-graded="${graded ? 'true' : 'false'}" ${graded ? 'role="article" tabindex="-1"' : `role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(title)}"`} style="${escapeAttr(style)}">
+      <article class="em-quiz-card-clean ${active ? 'active ' : ''}${locked ? 'is-graded ' : ''}${studentMode ? 'is-student-quiz-card ' : ''}" data-quiz-id="${escapeAttr(quiz.id)}" data-period="${escapeAttr(period)}" data-quiz-graded="${locked ? 'true' : 'false'}" ${locked ? 'role="article" tabindex="-1"' : `role="button" tabindex="0" aria-label="Iniciar ${escapeAttr(title)}"`} style="${escapeAttr(style)}">
         <header class="em-quiz-top">
           <span class="em-quiz-shape circle" aria-hidden="true"></span>
           <span class="em-quiz-shape x" aria-hidden="true"></span>
@@ -4484,8 +4514,8 @@
           <h3 class="em-quiz-title">${escapeHTML(title)}</h3>
 
           <div class="em-quiz-action-slot">
-            <button class="em-quiz-edit" type="button" tabindex="-1" data-edit-quiz-id="${escapeAttr(quiz.id)}">Editar</button>
-            <button class="em-quiz-start" type="button" ${actionAttrs}>Iniciar</button>
+            ${studentMode ? '' : `<button class="em-quiz-edit" type="button" tabindex="-1" data-edit-quiz-id="${escapeAttr(quiz.id)}">Editar</button>`}
+            <button class="em-quiz-start" type="button" ${actionAttrs}>${locked ? 'Completado' : 'Iniciar'}</button>
           </div>
         </header>
 
@@ -6408,7 +6438,7 @@
   }
   function beginCloudQuizAttempt(quiz) {
     const quizSession = getQuizSession();
-    if (!isCloudReady() || !quiz || !state.assignment?.id) return;
+    if (!isCloudReady() || !quiz || !state.assignment?.id) return Promise.resolve('');
     quizSession.cloudSubmitted = false;
     quizSession.cloudAttemptPromise = cloudAPI().startQuizAttempt({
       quiz,
@@ -6417,9 +6447,11 @@
       quizSession.cloudAttemptId = attempt?.id || '';
       return quizSession.cloudAttemptId;
     }).catch((error) => {
+      if (isStudentPortal()) throw error;
       reportCloudError('El quiz comenzó, pero no se creó el intento en Supabase', error);
       return '';
     });
+    return quizSession.cloudAttemptPromise;
   }
   async function persistCloudQuizAttempt(quiz) {
     const quizSession = getQuizSession();
@@ -6431,7 +6463,7 @@
         quizSession.cloudSubmitted = false;
         return;
       }
-      await cloudAPI().submitQuizAttempt({
+      const result = await cloudAPI().submitQuizAttempt({
         attemptId,
         quiz,
         assignmentId: state.assignment.id,
@@ -6439,6 +6471,10 @@
         securityEvents: quizSession.securityEvents || [],
         terminatedReason: quizSession.securityTerminatedReason || ''
       });
+      if (isStudentPortal() && result && Number.isFinite(Number(result.grade))) {
+        quiz.studentResult = { grade: Number(result.grade), score: Number(result.score || 0), maxScore: Number(result.maxScore || 0) };
+        quiz.attemptsMade = Math.max(Number(quiz.attemptsMade || 0) + 1, Number(result.attemptsMade || 0));
+      }
     } catch (error) {
       quizSession.cloudSubmitted = false;
       reportCloudError('No se guardó el resultado del quiz en Supabase', error);
@@ -9248,7 +9284,7 @@
     resetQuizSession('confirm');
     openModal(quizStartModalHTML(quiz), () => bindQuizPlayerEvents());
   }
-  function beginQuizFromConfirm() {
+  async function beginQuizFromConfirm() {
     const quiz = getActiveQuiz();
     if (!quiz) return;
     const selectedMode = document.querySelector('[data-quiz-time-scoring-mode]')?.value || getQuizTimeScoringMode();
@@ -9256,7 +9292,19 @@
     const session = getQuizSession();
     session.timeScoringMode = normalizeQuizTimeScoringMode(selectedMode);
     prepareQuizAttemptRuntime(quiz);
-    beginCloudQuizAttempt(quiz);
+    if (isStudentPortal()) {
+      try {
+        const attemptId = await beginCloudQuizAttempt(quiz);
+        if (!attemptId) throw new Error('No se pudo abrir un intento válido para este quiz.');
+      } catch (error) {
+        toast(error?.message || 'No se pudo iniciar el quiz. Comprueba la conexión e inténtalo de nuevo.');
+        closeModal(false);
+        window.setTimeout(() => openModal(quizStartModalHTML(quiz), () => bindQuizPlayerEvents()), 0);
+        return;
+      }
+    } else {
+      beginCloudQuizAttempt(quiz);
+    }
     closeModal(false);
     preloadQuizSounds();
     clearQuizTimers();
