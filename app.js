@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.016';
+  const APP_VERSION = '0.25.017';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -512,6 +512,9 @@
     period: 1,
     classViewMode: localStorage.getItem('encisomath:classViewMode') === 'list' ? 'list' : 'grid',
     activityViewMode: localStorage.getItem('encisomath:activityViewMode') === 'list' ? 'list' : 'grid',
+    classSortMode: false,
+    activitySortMode: false,
+    contentSortSaving: false,
     quizViewMode: localStorage.getItem('encisomath:quizViewMode') === 'list' ? 'list' : 'grid',
     rockstarPeriod: 1,
     activitiesPeriod: 1,
@@ -745,6 +748,7 @@
       if (content) {
         content.innerHTML = activitiesPeriodHTML();
         bindActivityCards();
+        bindContentSorting('activity');
         if (animate) pulseElement(content, 'class-grid-update');
       }
     } else if (tab === 'notes') renderNotesTab({ animate });
@@ -3272,8 +3276,8 @@
     return getActivitiesForCurrentAssignment()
       .filter((activity) => Number(activity.period || 1) === Number(state.activePeriod || 1))
       .sort((a, b) => {
-        const aOrder = Number(a.sortOrder || 0);
-        const bOrder = Number(b.sortOrder || 0);
+        const aOrder = contentSortOrderForAssignment(a, state.assignment?.id || '');
+        const bOrder = contentSortOrderForAssignment(b, state.assignment?.id || '');
         if (aOrder !== bOrder) return aOrder - bOrder;
         const aDate = String(a.startsAt || a.createdAt || '');
         const bDate = String(b.startsAt || b.createdAt || '');
@@ -11199,14 +11203,63 @@
     });
   }
 
+  function contentAssignmentIds(item) {
+    return [...new Set((Array.isArray(item?.assignmentIds) ? item.assignmentIds : [item?.assignmentId]).map(String).filter(Boolean))];
+  }
+
+  function contentIsAssignedTo(item, assignmentId = state.assignment?.id || '') {
+    return contentAssignmentIds(item).includes(String(assignmentId || ''));
+  }
+
+  function contentSortOrderForAssignment(item, assignmentId = state.assignment?.id || '') {
+    const id = String(assignmentId || '');
+    const mapped = Number(item?.sortOrderByAssignment?.[id]);
+    if (Number.isFinite(mapped) && mapped > 0) return mapped;
+    if (String(item?.assignmentId || '') === id) {
+      const fallback = Number(item?.sortOrder || 0);
+      if (Number.isFinite(fallback) && fallback > 0) return fallback;
+    }
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  function compareContentForCurrentAssignment(a, b) {
+    const assignmentId = String(state.assignment?.id || '');
+    const aAssigned = contentIsAssignedTo(a, assignmentId);
+    const bAssigned = contentIsAssignedTo(b, assignmentId);
+    if (aAssigned !== bAssigned) return aAssigned ? -1 : 1;
+    if (aAssigned && bAssigned) {
+      const aOrder = contentSortOrderForAssignment(a, assignmentId);
+      const bOrder = contentSortOrderForAssignment(b, assignmentId);
+      if (aOrder !== bOrder) return aOrder - bOrder;
+    }
+    const aCreated = String(a?.createdAt || '');
+    const bCreated = String(b?.createdAt || '');
+    if (aCreated !== bCreated) return aCreated.localeCompare(bCreated);
+    return String(a?.title || '').localeCompare(String(b?.title || ''), 'es');
+  }
+
+  function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {
+    if (!assignment || contentAssignmentIds(activity).length) return false;
+    if (activity.libraryAssignmentId) return String(activity.libraryAssignmentId) === String(assignment.id || '');
+    if (activity.librarySubject || activity.libraryArea) {
+      return String(activity.librarySubject || '') === String(assignment.subject || '')
+        && String(activity.libraryArea || '') === String(assignment.area || '');
+    }
+    const lesson = activityRelatedLesson(activity);
+    return Boolean(lesson
+      && String(lesson.subject || '') === String(assignment.subject || '')
+      && String(lesson.area || '') === String(assignment.area || ''));
+  }
+
   function getActivitiesForCurrentAssignment() {
     const assignmentId = String(state.assignment?.id || '');
+    const studentMode = isStudentPortal();
     return (state.data.activities || [])
       .filter((item) => {
-        const ids = Array.isArray(item.assignmentIds) ? item.assignmentIds : [item.assignmentId].filter(Boolean);
-        return ids.includes(assignmentId);
+        if (contentIsAssignedTo(item, assignmentId)) return true;
+        return !studentMode && activityMatchesCurrentLibrary(item, state.assignment);
       })
-      .sort((a, b) => Number(b.sortOrder || 0) - Number(a.sortOrder || 0));
+      .sort(compareContentForCurrentAssignment);
   }
 
   function activityTypeLabel(type) {
@@ -11219,6 +11272,9 @@
 
   function activityProgressForCurrentAssignment(activity) {
     const assignmentId = String(state.assignment?.id || '');
+    if (!contentIsAssignedTo(activity, assignmentId)) {
+      return { total: 0, delivered: 0, graded: 0, percentage: 0, average: null, pending: 0 };
+    }
     const stored = activity?.progressByAssignment?.[assignmentId] || {};
     const fallbackTotal = state.assignment ? getStudentsForAssignment(state.assignment).length : 0;
     const total = Math.max(0, Number(stored.total ?? fallbackTotal) || 0);
@@ -11318,12 +11374,23 @@
     const start = activity.startsAt ? formatActivityCardDate(activity.startsAt) : 'SIN FECHA';
     const due = activity.dueAt ? formatActivityCardDate(activity.dueAt) : 'SIN FECHA';
     const studentMode = isStudentPortal();
-    const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
+    const assignmentId = String(state.assignment?.id || '');
+    const assigned = contentIsAssignedTo(activity, assignmentId);
+    const assignedItems = getActivitiesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.activitiesPeriod) && contentIsAssignedTo(item, assignmentId));
+    const orderPosition = Math.max(1, assignedItems.findIndex((item) => String(item.id) === String(activity.id)) + 1);
+    const progress = studentMode ? null : (assigned ? activityProgressForCurrentAssignment(activity) : { total: 0, delivered: 0, graded: 0, percentage: 0, average: null, pending: 0 });
     return `
-      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''}" data-activity-id="${escapeAttr(activity.id)}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress?.percentage || 0}%">
+      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''} ${assigned ? '' : 'is-unassigned'}" data-activity-id="${escapeAttr(activity.id)}" data-sort-content-id="${escapeAttr(activity.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress?.percentage || 0}%">
+        ${studentMode ? '' : assigned ? `
+          <div class="em-content-sort-controls" aria-label="Posición de la actividad">
+            <span data-sort-position>${orderPosition}</span>
+            <button type="button" data-sort-move="-1">Subir</button>
+            <button type="button" data-sort-move="1">Bajar</button>
+          </div>
+        ` : '<span class="em-unassigned-badge">Sin asignar</span>'}
         <div class="em-activity-card-title-row">
           <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
-          ${studentMode ? '' : `<span class="em-activity-card-percent">${progress.percentage}%</span>`}
+          ${studentMode || !assigned ? '' : `<span class="em-activity-card-percent">${progress.percentage}%</span>`}
         </div>
         <div class="em-activity-card-copy">
           <p class="em-activity-card-topic">${lesson ? escapeHTML(lesson.title || 'Clase') : 'Actividad independiente'}</p>
@@ -11331,7 +11398,7 @@
             <span><small>Asignada</small><strong>${escapeHTML(start)}</strong></span>
             <span><small>Finaliza</small><strong>${escapeHTML(due)}</strong></span>
           </div>
-          ${studentMode ? '' : `
+          ${studentMode || !assigned ? '' : `
             <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
               <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
               <i><b></b></i>
@@ -11358,12 +11425,13 @@
         ${emActActivitiesHeroHTML(assignment.subject || 'ESTADÍSTICA', emRsGetAssignmentGradeCourse(assignment))}
       </section>
       <div class="view-row em-content-toolbar ${isStudentPortal() ? 'em-content-toolbar-readonly' : 'em-content-toolbar-has-action'}">
-        ${isStudentPortal() ? '' : '<button class="em-add-content-btn" id="openAddActivityBtn" type="button">＋ Añadir actividad</button>'}
+        ${isStudentPortal() ? '' : '<div class="em-content-toolbar-actions"><button class="em-add-content-btn" id="openAddActivityBtn" type="button">＋ Añadir actividad</button><button class="mini-btn em-sort-toggle" id="toggleActivitySortBtn" type="button">Ordenar</button></div>'}
         <div class="em-view-switch" aria-label="Vista de actividades">
           <button class="mini-btn ${state.activityViewMode === 'grid' ? 'selected' : ''}" id="activityGridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.activityViewMode === 'list' ? 'selected' : ''}" id="activityListModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
         </div>
       </div>
+      ${isStudentPortal() ? '' : '<p class="em-sort-instruction" id="activitySortInstruction" hidden>Mantén pulsada una actividad y arrástrala, o usa Subir y Bajar. Las actividades sin asignar permanecen en la biblioteca.</p>'}
       <div id="activitiesPeriodContent" class="em-content-list is-${state.activityViewMode}">
         ${activitiesPeriodHTML()}
       </div>
@@ -11372,6 +11440,8 @@
     bindActivityViewButtons();
     bindActivityCards();
     document.getElementById('openAddActivityBtn')?.addEventListener('click', openAddActivityModal);
+    document.getElementById('toggleActivitySortBtn')?.addEventListener('click', () => setContentSortMode('activity', !state.activitySortMode));
+    bindContentSorting('activity');
     emActInitActivitiesHero($content);
     emPlayTabEntrance($content, 'activities');
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -11395,6 +11465,235 @@
         open();
       });
     });
+  }
+
+  function contentSortConfig(kind) {
+    if (kind === 'class') {
+      return {
+        stateKey: 'classSortMode',
+        containerId: 'classGrid',
+        toggleId: 'toggleClassSortBtn',
+        instructionId: 'classSortInstruction',
+        itemName: 'clase',
+        idsKey: 'lessonIds',
+        apiMethod: 'reorderLessons',
+        dataList: state.data.classes || []
+      };
+    }
+    return {
+      stateKey: 'activitySortMode',
+      containerId: 'activitiesPeriodContent',
+      toggleId: 'toggleActivitySortBtn',
+      instructionId: 'activitySortInstruction',
+      itemName: 'actividad',
+      idsKey: 'activityIds',
+      apiMethod: 'reorderActivities',
+      dataList: state.data.activities || []
+    };
+  }
+
+  function sortableAssignedCards(container) {
+    return [...(container?.querySelectorAll('[data-sort-content-id][data-sort-assigned="true"]') || [])];
+  }
+
+  function updateContentSortPositions(container) {
+    sortableAssignedCards(container).forEach((card, index) => {
+      const position = card.querySelector('[data-sort-position]');
+      if (position) position.textContent = String(index + 1);
+      card.dataset.sortPosition = String(index + 1);
+    });
+  }
+
+  function setContentSortMode(kind, active) {
+    if (isStudentPortal()) return;
+    const config = contentSortConfig(kind);
+    const container = document.getElementById(config.containerId);
+    if (!container) return;
+    const cards = sortableAssignedCards(container);
+    if (active && cards.length < 2) {
+      state[config.stateKey] = false;
+      toast(`Necesitas al menos dos ${config.itemName}s asignadas a este curso para ordenarlas.`);
+      return;
+    }
+    state[config.stateKey] = Boolean(active);
+    container.classList.toggle('is-sorting', Boolean(active));
+    container.querySelectorAll('[data-sort-content-id]').forEach((card) => {
+      const assigned = card.dataset.sortAssigned === 'true';
+      card.draggable = Boolean(active && assigned);
+      card.setAttribute('aria-grabbed', 'false');
+    });
+    const toggle = document.getElementById(config.toggleId);
+    if (toggle) {
+      toggle.classList.toggle('selected', Boolean(active));
+      toggle.textContent = active ? 'Terminar orden' : 'Ordenar';
+    }
+    const instruction = document.getElementById(config.instructionId);
+    if (instruction) instruction.hidden = !active;
+    updateContentSortPositions(container);
+  }
+
+  function reorderCardRelativeToPointer(container, card, target, clientX, clientY) {
+    if (!target || target === card || target.dataset.sortAssigned !== 'true') return false;
+    const rect = target.getBoundingClientRect();
+    const sameRow = Math.abs(clientY - (rect.top + rect.height / 2)) < rect.height * .42;
+    const before = sameRow ? clientX < rect.left + rect.width / 2 : clientY < rect.top + rect.height / 2;
+    if (before) target.before(card);
+    else target.after(card);
+    updateContentSortPositions(container);
+    return true;
+  }
+
+  async function persistContentOrder(kind, container) {
+    if (state.contentSortSaving) {
+      if (container) container.dataset.sortSavePending = 'true';
+      return;
+    }
+    const config = contentSortConfig(kind);
+    const assignmentId = String(state.assignment?.id || '');
+    const ids = sortableAssignedCards(container).map((card) => String(card.dataset.sortContentId || '')).filter(Boolean);
+    if (!assignmentId || !ids.length) return;
+    state.contentSortSaving = true;
+    const toggle = document.getElementById(config.toggleId);
+    const oldText = toggle?.textContent || '';
+    if (toggle) {
+      toggle.disabled = true;
+      toggle.textContent = 'Guardando orden…';
+    }
+    ids.forEach((id, index) => {
+      const item = config.dataList.find((entry) => String(entry.id) === id);
+      if (!item) return;
+      item.sortOrderByAssignment = { ...(item.sortOrderByAssignment || {}), [assignmentId]: index + 1 };
+      item.sortOrder = index + 1;
+    });
+    try {
+      await cloudAPI()[config.apiMethod]({ assignmentId, [config.idsKey]: ids });
+      toast(`Orden de ${config.itemName}s guardado.`);
+    } catch (error) {
+      reportCloudError(`No se pudo guardar el orden de ${config.itemName}s`, error, { silent: true });
+      toast(error?.message || `No se pudo guardar el orden de ${config.itemName}s.`);
+    } finally {
+      state.contentSortSaving = false;
+      if (toggle && document.body.contains(toggle)) {
+        toggle.disabled = false;
+        toggle.textContent = state[config.stateKey] ? 'Terminar orden' : (oldText || 'Ordenar');
+      }
+      if (container?.dataset.sortSavePending === 'true') {
+        delete container.dataset.sortSavePending;
+        persistContentOrder(kind, container);
+      }
+    }
+  }
+
+  function moveContentCard(kind, card, offset) {
+    const config = contentSortConfig(kind);
+    const container = document.getElementById(config.containerId);
+    if (!container || !state[config.stateKey] || card.dataset.sortAssigned !== 'true') return;
+    const cards = sortableAssignedCards(container);
+    const index = cards.indexOf(card);
+    const nextIndex = Math.max(0, Math.min(cards.length - 1, index + Number(offset || 0)));
+    if (index < 0 || nextIndex === index) return;
+    const target = cards[nextIndex];
+    if (nextIndex < index) target.before(card);
+    else target.after(card);
+    updateContentSortPositions(container);
+    persistContentOrder(kind, container);
+  }
+
+  function bindContentSorting(kind) {
+    if (isStudentPortal()) return;
+    const config = contentSortConfig(kind);
+    const container = document.getElementById(config.containerId);
+    if (!container || container.dataset.sortBound === 'true') return;
+    container.dataset.sortBound = 'true';
+    let dragged = null;
+    let pointerCard = null;
+    let pointerTimer = 0;
+    let pointerActive = false;
+    let pointerMoved = false;
+
+    container.addEventListener('click', (event) => {
+      const moveButton = event.target.closest('[data-sort-move]');
+      if (moveButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = moveButton.closest('[data-sort-content-id]');
+        if (card) moveContentCard(kind, card, Number(moveButton.dataset.sortMove || 0));
+        return;
+      }
+      if (state[config.stateKey]) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, true);
+
+    container.addEventListener('dragstart', (event) => {
+      const card = event.target.closest('[data-sort-content-id]');
+      if (!state[config.stateKey] || !card || card.dataset.sortAssigned !== 'true') {
+        event.preventDefault();
+        return;
+      }
+      dragged = card;
+      card.classList.add('is-dragging');
+      card.setAttribute('aria-grabbed', 'true');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', card.dataset.sortContentId || '');
+    });
+    container.addEventListener('dragover', (event) => {
+      if (!dragged || !state[config.stateKey]) return;
+      event.preventDefault();
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-sort-content-id]');
+      reorderCardRelativeToPointer(container, dragged, target, event.clientX, event.clientY);
+    });
+    container.addEventListener('drop', (event) => {
+      if (!dragged) return;
+      event.preventDefault();
+      persistContentOrder(kind, container);
+    });
+    container.addEventListener('dragend', () => {
+      if (!dragged) return;
+      dragged.classList.remove('is-dragging');
+      dragged.setAttribute('aria-grabbed', 'false');
+      dragged = null;
+    });
+
+    container.addEventListener('pointerdown', (event) => {
+      const card = event.target.closest('[data-sort-content-id]');
+      if (!state[config.stateKey] || !card || card.dataset.sortAssigned !== 'true' || event.target.closest('button,input,a,select,textarea')) return;
+      pointerCard = card;
+      pointerMoved = false;
+      pointerTimer = window.setTimeout(() => {
+        pointerActive = true;
+        pointerCard.classList.add('is-dragging');
+        pointerCard.setAttribute('aria-grabbed', 'true');
+        try { pointerCard.setPointerCapture(event.pointerId); } catch (_) {}
+        if (navigator.vibrate) navigator.vibrate(20);
+      }, 220);
+    });
+    container.addEventListener('pointermove', (event) => {
+      if (!pointerActive || !pointerCard) return;
+      event.preventDefault();
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-sort-content-id]');
+      pointerMoved = reorderCardRelativeToPointer(container, pointerCard, target, event.clientX, event.clientY) || pointerMoved;
+    }, { passive: false });
+    const finishPointer = (event) => {
+      window.clearTimeout(pointerTimer);
+      if (pointerActive && pointerCard) {
+        pointerCard.classList.remove('is-dragging');
+        pointerCard.setAttribute('aria-grabbed', 'false');
+        const releasedCard = pointerCard;
+        releasedCard.dataset.sortJustDragged = 'true';
+        window.setTimeout(() => { delete releasedCard.dataset.sortJustDragged; }, 80);
+        if (pointerMoved) persistContentOrder(kind, container);
+        try { pointerCard.releasePointerCapture(event.pointerId); } catch (_) {}
+      }
+      pointerCard = null;
+      pointerActive = false;
+      pointerMoved = false;
+    };
+    container.addEventListener('pointerup', finishPointer);
+    container.addEventListener('pointercancel', finishPointer);
+
+    if (state[config.stateKey]) setContentSortMode(kind, true);
   }
 
   function activityPayloadFiles(payload) {
@@ -11664,6 +11963,7 @@
   function renderActivityDetail(activity, options = {}) {
     if (!activity || !state.assignment) return renderSubjectDetail('activities', options);
     const studentMode = isStudentPortal();
+    const assignedToCurrentCourse = contentIsAssignedTo(activity, state.assignment.id);
     state.activeActivityId = activity.id;
     commitAppRoute({ screen: 'activity', assignmentId: state.assignment.id, activityId: activity.id }, options);
     emSetCurrentSubjectColor(emGetSubjectColorForAssignment(state.assignment));
@@ -11671,7 +11971,7 @@
     const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
     const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
-    const activityStudentColumnWidth = studentMode ? 0 : notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
+    const activityStudentColumnWidth = studentMode || !assignedToCurrentCourse ? 0 : notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
     mount(`
       <main class="screen em-activity-detail-screen ${studentMode ? 'is-student-readonly' : ''}">
         <header class="topbar fixed-lock em-activity-detail-topbar">
@@ -11710,11 +12010,11 @@
           </section>
 
           <section class="em-activity-detail-main">
-            ${studentMode ? '' : `
+            ${studentMode ? '' : assignedToCurrentCourse ? `
               <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
                 ${activityOverviewHTML(progress)}
               </div>
-            `}
+            ` : '<div class="em-library-only-notice"><strong>Actividad sin asignar</strong><span>Está guardada en tu biblioteca. Ningún estudiante puede verla hasta que selecciones un curso al editarla.</span></div>'}
             <div class="em-activity-detail-content-tabs" role="tablist" aria-label="Contenido de la actividad">
               <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
               <button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review">Resultado</button>
@@ -11733,7 +12033,7 @@
             `}
           </section>
 
-          ${studentMode ? '' : `
+          ${studentMode || !assignedToCurrentCourse ? '' : `
             <section class="em-activity-gradebook" style="--em-activity-student-width:${activityStudentColumnWidth}px">
               <div class="em-activity-gradebook-head">
                 <div><p class="section-kicker">Calificaciones</p><h2>Estudiantes</h2></div>
@@ -11764,8 +12064,10 @@
       if (!studentMode) {
         document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
         document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
-        document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
-        bindActivityGradeSortButtons();
+        if (assignedToCurrentCourse) {
+          document.getElementById('activityGradeSearch')?.addEventListener('input', refreshActivityGradebookList);
+          bindActivityGradeSortButtons();
+        }
       }
       const setActivityDetailTab = (tabName = 'content') => {
         document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
@@ -11782,11 +12084,13 @@
         button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content'));
       });
       setActivityDetailTab('content');
-      if (!studentMode) loadActivityGradebook(activity);
+      if (!studentMode && assignedToCurrentCourse) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
       const entranceSelectors = studentMode
         ? ['.em-activity-detail-hero', '.em-activity-content-stage > *']
-        : ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook'];
+        : assignedToCurrentCourse
+          ? ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook']
+          : ['.em-activity-detail-hero', '.em-library-only-notice', '.em-activity-content-stage > *', '.em-activity-detail-actions > *'];
       emPlayEntranceSequence(document.querySelector('.em-activity-detail-wrap'), entranceSelectors, { duration: 480, stagger: 35, distance: 14, scale: .985 });
     });
   }
@@ -11853,8 +12157,10 @@
     const today = todayISO();
     const gradeTargets = getClassTargetAssignments('grade');
     const gradeCourses = gradeTargets.map((item) => `${item.grade}-${item.course}`).join(', ');
-    const activityIds = Array.isArray(activity?.assignmentIds) ? activity.assignmentIds : [];
+    const activityIds = Array.isArray(activity?.assignmentIds) ? activity.assignmentIds.filter(Boolean) : [];
+    const unassignedScope = editing && activityIds.length === 0;
     const gradeScope = activityIds.length > 1;
+    const courseScope = !unassignedScope && !gradeScope;
     openModal(`
       <section class="modal-card em-activity-create-modal" role="dialog" aria-modal="true" aria-labelledby="addActivityTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -11891,8 +12197,9 @@
               </div>
               <fieldset class="em-class-scope em-activity-scope">
                 <legend>¿Dónde estará disponible?</legend>
-                <label><input type="radio" name="activityScope" value="course" ${gradeScope ? '' : 'checked'} /><span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span></label>
+                <label><input type="radio" name="activityScope" value="course" ${courseScope ? 'checked' : ''} /><span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span></label>
                 <label><input type="radio" name="activityScope" value="grade" ${gradeScope ? 'checked' : ''} /><span><strong>Todo el grado ${escapeHTML(assignment.grade)}</strong><small>${escapeHTML(gradeCourses || `${assignment.grade}-${assignment.course}`)}</small></span></label>
+                <label><input type="radio" name="activityScope" value="none" ${unassignedScope ? 'checked' : ''} /><span><strong>Guardar sin asignar</strong><small>Solo en tu biblioteca; ningún estudiante la verá.</small></span></label>
               </fieldset>
             </div>
 
@@ -12060,13 +12367,13 @@
     const startsAt = document.getElementById('activityStartInput')?.value || '';
     const dueAt = document.getElementById('activityDueInput')?.value || '';
     const scope = document.querySelector('input[name="activityScope"]:checked')?.value || 'course';
-    const targets = getClassTargetAssignments(scope);
+    const targets = scope === 'none' ? [] : getClassTargetAssignments(scope);
     const content = collectActivityEditor('activityContent');
     const review = collectActivityEditor('activityReview');
     const { criteria, total } = updateRubricTotal();
     if (!title) return fail('Escribe el nombre de la actividad.');
     if (!startsAt || !dueAt || dueAt < startsAt) return fail('Revisa las fechas de inicio y entrega.');
-    if (!targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
+    if (scope !== 'none' && !targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
     const contentError = validateActivityEditor(content, 'Actividad', existingActivity?.contentPayload, existingActivity?.contentType);
     if (contentError) return fail(contentError);
     const reviewError = validateActivityEditor(review, 'Revisión', existingActivity?.reviewPayload, existingActivity?.reviewType);
@@ -12125,7 +12432,9 @@
       syncAcademicPeriodState(period);
       if (existingActivity) renderActivityDetail(activity, { replaceHistory: true });
       else renderActivitiesTab({ animate: true });
-      toast(existingActivity ? 'Actividad actualizada en Supabase.' : `Actividad guardada para ${targets.length} curso${targets.length === 1 ? '' : 's'}.`);
+      toast(targets.length
+        ? (existingActivity ? 'Actividad actualizada en Supabase.' : `Actividad guardada para ${targets.length} curso${targets.length === 1 ? '' : 's'}.`)
+        : `${existingActivity ? 'Actividad actualizada' : 'Actividad guardada'} en tu biblioteca, sin asignar a estudiantes.`);
     } catch (error) {
       fail(error?.message || 'No se pudo guardar la actividad.');
       reportCloudError('No se pudo guardar la actividad', error, { silent: true });
@@ -12622,12 +12931,13 @@
         ${emClClassesHeroHTML()}
       </section>
       <div class="view-row em-content-toolbar ${isStudentPortal() ? 'em-content-toolbar-readonly' : 'em-content-toolbar-has-action'} em-class-view-only">
-        ${isStudentPortal() ? '' : '<button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button>'}
+        ${isStudentPortal() ? '' : '<div class="em-content-toolbar-actions"><button class="em-add-content-btn" id="openAddClassBtn" type="button">＋ Añadir clase</button><button class="mini-btn em-sort-toggle" id="toggleClassSortBtn" type="button">Ordenar</button></div>'}
         <div class="em-view-switch" aria-label="Vista de clases">
           <button class="mini-btn ${state.classViewMode === 'grid' ? 'selected' : ''}" id="gridModeBtn" type="button" aria-label="Vista en cuadrícula" title="Cuadrícula">▦</button>
           <button class="mini-btn ${state.classViewMode === 'list' ? 'selected' : ''}" id="listModeBtn" type="button" aria-label="Vista en lista" title="Lista">☰</button>
         </div>
       </div>
+      ${isStudentPortal() ? '' : '<p class="em-sort-instruction" id="classSortInstruction" hidden>Mantén pulsada una clase y arrástrala, o usa Subir y Bajar. Las clases sin asignar permanecen en la biblioteca.</p>'}
       <div id="classGrid" class="em-content-list is-${state.classViewMode}">
         ${renderClassCardsHTML()}
       </div>
@@ -12636,6 +12946,8 @@
     bindClassViewButtons();
     bindClassCards();
     document.getElementById('openAddClassBtn')?.addEventListener('click', openAddClassModal);
+    document.getElementById('toggleClassSortBtn')?.addEventListener('click', () => setContentSortMode('class', !state.classSortMode));
+    bindContentSorting('class');
     emClInitClassesHero($content);
     emPlayTabEntrance($content, 'classes');
     if (options.animate) pulseElement($content, 'tab-enter');
@@ -12643,11 +12955,16 @@
   function getClassesForCurrentAssignment() {
     const assignment = state.assignment;
     if (!assignment) return [];
-    return state.data.classes.filter((item) => {
-      const ids = Array.isArray(item.assignmentIds) ? item.assignmentIds : [];
-      if (ids.length) return ids.includes(assignment.id);
-      return item.assignmentId === assignment.id || item.subject === assignment.subject || item.area === assignment.area;
-    });
+    const assignmentId = String(assignment.id || '');
+    const studentMode = isStudentPortal();
+    return (state.data.classes || [])
+      .filter((item) => {
+        if (contentIsAssignedTo(item, assignmentId)) return true;
+        if (studentMode || contentAssignmentIds(item).length) return false;
+        return String(item.subject || '') === String(assignment.subject || '')
+          && String(item.area || '') === String(assignment.area || '');
+      })
+      .sort(compareContentForCurrentAssignment);
   }
   function getClassTargetAssignments(scope = 'course') {
     const current = state.assignment;
@@ -12745,9 +13062,10 @@
     if (!assignment) return;
     const editing = Boolean(lesson?.id);
     const targets = classVisibilityTargets();
-    const selectedIds = new Set(editing
-      ? (Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds.map(String) : [String(lesson.assignmentId || assignment.id)])
-      : [String(assignment.id)]);
+    const existingAssignmentIds = editing
+      ? (Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds : [lesson.assignmentId]).map(String).filter(Boolean)
+      : [String(assignment.id)];
+    const selectedIds = new Set(existingAssignmentIds);
     openModal(`
       <section class="modal-card em-class-create-modal" role="dialog" aria-modal="true" aria-labelledby="addClassTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -12779,7 +13097,7 @@
 
           <fieldset class="em-class-visibility">
             <legend>Visibilidad de la clase</legend>
-            <p>Selecciona exactamente los cursos del grado que tendrán acceso.</p>
+            <p>Marca los cursos que tendrán acceso. Puedes dejar todos sin marcar para guardarla únicamente en tu biblioteca.</p>
             <div class="em-class-visibility-row">
               ${targets.map((target) => {
                 const label = `${target.grade}-${target.course}`;
@@ -12832,7 +13150,6 @@
     fail('');
     if (!title) return fail('Escribe el nombre del tema.');
     if (!editing && !pdfFile) return fail('Selecciona un archivo PDF.');
-    if (!targetAssignmentIds.length) return fail('Selecciona al menos un curso para la visibilidad de la clase.');
     if (pdfFile) {
       const isPdf = pdfFile.type === 'application/pdf' || /\.pdf$/i.test(pdfFile.name || '');
       if (!isPdf) return fail('El material debe ser un archivo PDF válido.');
@@ -12892,7 +13209,9 @@
         closeModal(false);
         syncAcademicPeriodState(period);
         renderClassesTab({ animate: true });
-        toast(`${editing ? 'Clase actualizada' : 'Clase guardada'} para ${targetAssignmentIds.length} curso${targetAssignmentIds.length === 1 ? '' : 's'}.`);
+        toast(targetAssignmentIds.length
+          ? `${editing ? 'Clase actualizada' : 'Clase guardada'} para ${targetAssignmentIds.length} curso${targetAssignmentIds.length === 1 ? '' : 's'}.`
+          : `${editing ? 'Clase actualizada' : 'Clase guardada'} en tu biblioteca, sin asignar a estudiantes.`);
       }, 180);
     } catch (error) {
       fail(error?.message || `No se pudo ${editing ? 'actualizar' : 'guardar'} la clase.`);
@@ -13036,6 +13355,7 @@
     grid.className = `em-content-list is-${state.classViewMode}`;
     grid.innerHTML = renderClassCardsHTML();
     bindClassCards();
+    bindContentSorting('class');
     if (animate) {
       pulseElement(grid, 'class-grid-update');
       emPlayTabEntrance(document.getElementById('tabContent') || grid, 'classes');
@@ -14025,9 +14345,14 @@
   function classCardHTML(item, index = 0) {
     const thumb = item.thumbnailUrl || '';
     const studentMode = isStudentPortal();
+    const assignmentId = String(state.assignment?.id || '');
+    const assigned = contentIsAssignedTo(item, assignmentId);
+    const assignedItems = getClassesForCurrentAssignment().filter((lesson) => Number(lesson.period) === Number(state.period) && contentIsAssignedTo(lesson, assignmentId));
+    const orderPosition = Math.max(1, assignedItems.findIndex((lesson) => String(lesson.id) === String(item.id)) + 1);
     return `
-      <article class="em-class-card em-notebook-card" data-class-id="${escapeAttr(item.id)}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
+      <article class="em-class-card em-notebook-card ${assigned ? '' : 'is-unassigned'}" data-class-id="${escapeAttr(item.id)}" data-sort-content-id="${escapeAttr(item.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
         ${studentMode ? '' : `
+          ${assigned ? `<div class="em-content-sort-controls" aria-label="Posición de la clase"><span data-sort-position>${orderPosition}</span><button type="button" data-sort-move="-1">Subir</button><button type="button" data-sort-move="1">Bajar</button></div>` : '<span class="em-unassigned-badge">Sin asignar</span>'}
           <div class="em-class-card-actions">
             <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
             <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>
@@ -14041,7 +14366,7 @@
         <div class="em-class-body">
           <div>
             <h3 class="em-class-title">${escapeHTML(item.title || 'Clase sin título')}</h3>
-            <p class="em-class-meta">Periodo ${Number(item.period || 1)} · ${Number(item.pageCount || 1)} pág.</p>
+            <p class="em-class-meta">Periodo ${Number(item.period || 1)} · ${Number(item.pageCount || 1)} pág.${assigned ? '' : ' · Biblioteca'}</p>
           </div>
           <span class="em-class-open-mark" aria-hidden="true">›</span>
         </div>

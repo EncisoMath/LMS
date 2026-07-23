@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.016';
+  const OFFLINE_VERSION = '0.25.017';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -292,6 +292,11 @@
         detail = offlineLessonTitle(payload.lessonId, payload);
         icon = '✎';
         break;
+      case 'reorderLessons':
+        title = 'Orden de clases';
+        detail = `${(payload.lessonIds || []).length} clase${(payload.lessonIds || []).length === 1 ? '' : 's'} por ordenar`;
+        icon = '↕';
+        break;
       case 'deletePdfLesson':
         title = 'Eliminar clase';
         detail = offlineLessonTitle(payload.lessonId, payload);
@@ -306,6 +311,11 @@
         title = 'Editar actividad';
         detail = offlineActivityTitle(payload.activityId, payload);
         icon = '✎';
+        break;
+      case 'reorderActivities':
+        title = 'Orden de actividades';
+        detail = `${(payload.activityIds || []).length} actividad${(payload.activityIds || []).length === 1 ? '' : 'es'} por ordenar`;
+        icon = '↕';
         break;
       case 'deleteActivity':
         title = 'Eliminar actividad';
@@ -683,6 +693,8 @@
       case 'updatePdfLesson':
       case 'deletePdfLesson':
         return [`lesson:${payload.lessonId || payload.requestedLessonId || ''}`];
+      case 'reorderLessons':
+        return [`lesson-order:${payload.assignmentId || ''}`];
       case 'createActivity': {
         const id = payload.activityId || payload.requestedActivityId || '';
         return [`activity:${id}`, `activity-grade-root:${id}`];
@@ -690,6 +702,8 @@
       case 'updateActivity':
       case 'deleteActivity':
         return [`activity:${payload.activityId || payload.requestedActivityId || ''}`];
+      case 'reorderActivities':
+        return [`activity-order:${payload.assignmentId || ''}`];
       case 'saveActivityGrades': {
         const codes = [...new Set([payload.primaryStudentCode, ...(payload.selectedStudentCodes || [])].filter(Boolean))];
         return codes.map((code) => `activity-grade:${payload.activityId}:${payload.assignmentId}:${code}`);
@@ -1250,6 +1264,7 @@
       assignmentId: ids[0] || '',
       assignmentIds: ids,
       sortOrder: Math.floor(Date.now() / 1000),
+      sortOrderByAssignment: Object.fromEntries(ids.map((id, index) => [String(id), Math.floor(Date.now() / 1000) + index])),
       pendingSync: true
     };
     await updateSnapshot(async (snapshot) => {
@@ -1284,7 +1299,8 @@
         offlineThumbnailKey: thumbDescriptor?.offlineKey || current?.offlineThumbnailKey || '',
         sourceFileName: payload.pdfFile?.name || current?.sourceFileName || payload.existingSourceFileName || '',
         pageCount: Math.max(1, Number(payload.pageCount || current?.pageCount || 1)),
-        assignmentIds: [...new Set((payload.targetAssignmentIds || current?.assignmentIds || []).filter(Boolean))],
+        assignmentIds: [...new Set((payload.targetAssignmentIds || []).filter(Boolean))],
+        sortOrderByAssignment: Object.fromEntries([...new Set((payload.targetAssignmentIds || []).filter(Boolean))].map((id, index) => [String(id), Number(current?.sortOrderByAssignment?.[id] || current?.sortOrder || Math.floor(Date.now() / 1000) + index)])),
         status: 'published',
         pendingSync: true
       };
@@ -1323,7 +1339,18 @@
       startsAt: payload.startsAt || '',
       dueAt: payload.dueAt || '',
       contentType: payload.contentType || 'rich_text',
-      contentPayload: { text: payload.contentText || '', html: payload.contentHtml || '', css: payload.contentCss || '', files: contentFiles },
+      contentPayload: {
+        text: payload.contentText || '',
+        html: payload.contentHtml || '',
+        css: payload.contentCss || '',
+        files: contentFiles,
+        library: {
+          assignmentId: String(payload.currentAssignment?.id || ''),
+          subject: String(payload.currentAssignment?.subject || ''),
+          area: String(payload.currentAssignment?.area || ''),
+          grade: String(payload.currentAssignment?.grade || '')
+        }
+      },
       reviewType: payload.reviewType || 'rich_text',
       reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles },
       rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
@@ -1331,6 +1358,11 @@
       assignmentId: ids[0] || '',
       assignmentIds: ids,
       sortOrder: Math.floor(Date.now() / 1000),
+      sortOrderByAssignment: Object.fromEntries(ids.map((id, index) => [String(id), Math.floor(Date.now() / 1000) + index])),
+      libraryAssignmentId: String(payload.currentAssignment?.id || ''),
+      librarySubject: String(payload.currentAssignment?.subject || ''),
+      libraryArea: String(payload.currentAssignment?.area || ''),
+      libraryGrade: String(payload.currentAssignment?.grade || ''),
       createdAt: nowIso(),
       pendingSync: true,
       progressByAssignment: Object.fromEntries(ids.map((id) => [id, { total: 0, delivered: 0, graded: 0 }]))
@@ -1359,17 +1391,67 @@
         startsAt: payload.startsAt || '',
         dueAt: payload.dueAt || '',
         contentType: payload.contentType,
-        contentPayload: { text: payload.contentText || '', html: payload.contentHtml || '', css: payload.contentCss || '', files: contentFiles },
+        contentPayload: {
+          text: payload.contentText || '',
+          html: payload.contentHtml || '',
+          css: payload.contentCss || '',
+          files: contentFiles,
+          library: {
+            assignmentId: String(payload.existingContentPayload?.library?.assignmentId || payload.currentAssignment?.id || ''),
+            subject: String(payload.existingContentPayload?.library?.subject || payload.currentAssignment?.subject || ''),
+            area: String(payload.existingContentPayload?.library?.area || payload.currentAssignment?.area || ''),
+            grade: String(payload.existingContentPayload?.library?.grade || payload.currentAssignment?.grade || '')
+          }
+        },
         reviewType: payload.reviewType,
         reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles },
         rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
         assignmentIds: [...new Set((payload.targetAssignmentIds || []).filter(Boolean))],
+        sortOrderByAssignment: Object.fromEntries([...new Set((payload.targetAssignmentIds || []).filter(Boolean))].map((id, index) => [String(id), Number(activity.sortOrderByAssignment?.[id] || activity.sortOrder || Math.floor(Date.now() / 1000) + index)])),
+        libraryAssignmentId: String(payload.existingContentPayload?.library?.assignmentId || payload.currentAssignment?.id || activity.libraryAssignmentId || ''),
+        librarySubject: String(payload.existingContentPayload?.library?.subject || payload.currentAssignment?.subject || activity.librarySubject || ''),
+        libraryArea: String(payload.existingContentPayload?.library?.area || payload.currentAssignment?.area || activity.libraryArea || ''),
+        libraryGrade: String(payload.existingContentPayload?.library?.grade || payload.currentAssignment?.grade || activity.libraryGrade || ''),
         pendingSync: true
       });
       activity.assignmentId = activity.assignmentIds[0] || '';
       result = activity;
     });
     return result;
+  }
+
+  async function optimisticReorderLessons(payload) {
+    const assignmentId = String(payload.assignmentId || '');
+    const ids = [...new Set((payload.lessonIds || []).map(String).filter(Boolean))];
+    if (!assignmentId || !ids.length) return { assignmentId, lessonIds: ids };
+    await updateSnapshot(async (snapshot) => {
+      const byId = new Map((snapshot.data.classes || []).map((item) => [String(item.id), item]));
+      ids.forEach((id, index) => {
+        const lesson = byId.get(id);
+        if (!lesson) return;
+        lesson.sortOrderByAssignment = { ...(lesson.sortOrderByAssignment || {}), [assignmentId]: index + 1 };
+        if (String(lesson.assignmentId || '') === assignmentId || (lesson.assignmentIds || []).includes(assignmentId)) lesson.sortOrder = index + 1;
+        lesson.pendingSync = true;
+      });
+    });
+    return { assignmentId, lessonIds: ids };
+  }
+
+  async function optimisticReorderActivities(payload) {
+    const assignmentId = String(payload.assignmentId || '');
+    const ids = [...new Set((payload.activityIds || []).map(String).filter(Boolean))];
+    if (!assignmentId || !ids.length) return { assignmentId, activityIds: ids };
+    await updateSnapshot(async (snapshot) => {
+      const byId = new Map((snapshot.data.activities || []).map((item) => [String(item.id), item]));
+      ids.forEach((id, index) => {
+        const activity = byId.get(id);
+        if (!activity) return;
+        activity.sortOrderByAssignment = { ...(activity.sortOrderByAssignment || {}), [assignmentId]: index + 1 };
+        if (String(activity.assignmentId || '') === assignmentId || (activity.assignmentIds || []).includes(assignmentId)) activity.sortOrder = index + 1;
+        activity.pendingSync = true;
+      });
+    });
+    return { assignmentId, activityIds: ids };
   }
 
   async function optimisticDeleteActivity(payload) {
@@ -1667,8 +1749,10 @@
       case 'resetAssignmentImage': return cloud.resetAssignmentImage(payload);
       case 'createPdfLesson': return cloud.createPdfLesson(payload);
       case 'updatePdfLesson': return cloud.updatePdfLesson(payload);
+      case 'reorderLessons': return cloud.reorderLessons(payload);
       case 'createActivity': return cloud.createActivity(payload);
       case 'updateActivity': return cloud.updateActivity(payload);
+      case 'reorderActivities': return cloud.reorderActivities(payload);
       case 'saveActivityGrades': return cloud.saveActivityGrades(payload);
       case 'deleteActivity': return cloud.deleteActivity(payload);
       case 'deletePdfLesson': return cloud.deletePdfLesson(payload);
@@ -2005,11 +2089,17 @@
     updatePdfLesson(payload) {
       return executeMutation('updatePdfLesson', payload, cloud.updatePdfLesson, optimisticUpdatePdfLesson);
     },
+    reorderLessons(payload) {
+      return executeMutation('reorderLessons', payload, cloud.reorderLessons, optimisticReorderLessons);
+    },
     createActivity(payload) {
       return executeMutation('createActivity', payload, cloud.createActivity, optimisticCreateActivity);
     },
     updateActivity(payload) {
       return executeMutation('updateActivity', payload, cloud.updateActivity, optimisticUpdateActivity);
+    },
+    reorderActivities(payload) {
+      return executeMutation('reorderActivities', payload, cloud.reorderActivities, optimisticReorderActivities);
     },
     async getActivityGradebook(payload) {
       if (isOnline()) {

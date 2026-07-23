@@ -540,6 +540,8 @@
   function mapLesson(row) {
     const lesson = Array.isArray(row?.lesson) ? row.lesson[0] : row?.lesson;
     if (!lesson) return null;
+    const assignmentId = String(row?.assignment_id || '');
+    const sortOrder = Number(row?.sort_order || 0);
     return {
       id: String(lesson.id || ''),
       period: Number(lesson.period || 1),
@@ -557,33 +559,60 @@
       pageCount: Number(lesson.page_count || 1),
       lessonType: lesson.lesson_type || 'Clase',
       status: lesson.status || 'published',
-      assignmentId: row?.assignment_id || '',
-      assignmentIds: row?.assignment_id ? [row.assignment_id] : [],
-      sortOrder: Number(row?.sort_order || 0)
+      createdAt: lesson.created_at || '',
+      createdBy: lesson.created_by || '',
+      assignmentId,
+      assignmentIds: assignmentId ? [assignmentId] : [],
+      sortOrder,
+      sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {}
     };
   }
 
   function mapActivity(row) {
     const activity = Array.isArray(row?.activity) ? row.activity[0] : row?.activity;
     if (!activity) return null;
+    const contentPayload = activity.content_payload && typeof activity.content_payload === 'object' ? activity.content_payload : {};
+    const library = contentPayload.library && typeof contentPayload.library === 'object' ? contentPayload.library : {};
+    const assignmentId = String(row?.assignment_id || '');
+    const sortOrder = Number(row?.sort_order || 0);
     return {
       id: String(activity.id || ''),
+      ownerId: activity.owner_id || '',
       title: activity.title || 'Actividad',
       lessonId: activity.lesson_id || '',
       period: Number(activity.period || 1),
       startsAt: activity.starts_at || '',
       dueAt: activity.due_at || '',
       contentType: activity.content_type || 'rich_text',
-      contentPayload: activity.content_payload && typeof activity.content_payload === 'object' ? activity.content_payload : {},
+      contentPayload,
       reviewType: activity.review_type || 'rich_text',
       reviewPayload: activity.review_payload && typeof activity.review_payload === 'object' ? activity.review_payload : {},
       rubric: Array.isArray(activity.rubric) ? activity.rubric : [],
       status: activity.status || 'published',
-      assignmentId: row?.assignment_id || '',
-      assignmentIds: row?.assignment_id ? [row.assignment_id] : [],
-      sortOrder: Number(row?.sort_order || 0),
+      libraryAssignmentId: String(library.assignmentId || ''),
+      librarySubject: String(library.subject || ''),
+      libraryArea: String(library.area || ''),
+      libraryGrade: String(library.grade || ''),
+      assignmentId,
+      assignmentIds: assignmentId ? [assignmentId] : [],
+      sortOrder,
+      sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {},
       createdAt: activity.created_at || ''
     };
+  }
+
+  function mergeMappedAssignmentMetadata(existing, incoming) {
+    const ids = new Set([...(existing.assignmentIds || []), ...(incoming.assignmentIds || [])].filter(Boolean));
+    existing.assignmentIds = [...ids];
+    existing.assignmentId = existing.assignmentIds[0] || '';
+    existing.sortOrderByAssignment = {
+      ...(existing.sortOrderByAssignment || {}),
+      ...(incoming.sortOrderByAssignment || {})
+    };
+    const values = Object.values(existing.sortOrderByAssignment).map(Number).filter(Number.isFinite);
+    existing.sortOrder = values.length ? Math.min(...values) : Number(existing.sortOrder || incoming.sortOrder || 0);
+    if (!existing.createdAt && incoming.createdAt) existing.createdAt = incoming.createdAt;
+    return existing;
   }
 
   function cleanQuizPayload(quiz) {
@@ -740,8 +769,7 @@
         uniqueLessons.set(lesson.id, lesson);
         return;
       }
-      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(lesson.assignmentIds || [])])];
-      existing.sortOrder = Math.min(existing.sortOrder || 0, lesson.sortOrder || 0);
+      mergeMappedAssignmentMetadata(existing, lesson);
     });
 
     const uniqueActivities = new Map();
@@ -752,8 +780,7 @@
         uniqueActivities.set(activity.id, activity);
         return;
       }
-      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(activity.assignmentIds || [])])];
-      existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
+      mergeMappedAssignmentMetadata(existing, activity);
     });
 
     const quizzes = mapStudentPortalQuizzes(source).filter((quiz) => String(quiz.status || 'published') === 'published');
@@ -875,6 +902,8 @@
 
     let lessonRows = [];
     let activityRows = [];
+    let ownedLessonRows = [];
+    let ownedActivityRows = [];
     let activityProgressRows = [];
     let quizAssignmentRows = [];
     let quizAttemptRows = [];
@@ -882,7 +911,7 @@
     let rockstarRows = [];
     if (assignmentIds.length) {
       let completedAcademicQueries = 0;
-      const academicQueryTotal = 6;
+      const academicQueryTotal = 8;
       const trackAcademicQuery = (query, label) => Promise.resolve(query).then((result) => {
         completedAcademicQueries += 1;
         reportApplicationLoadProgress(
@@ -893,7 +922,7 @@
         );
         return result;
       });
-      const [lessonsResult, activitiesResult, activityProgressResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
+      const [lessonsResult, activitiesResult, ownedLessonsResult, ownedActivitiesResult, activityProgressResult, quizzesResult, attendanceResult, rockstarResult] = await Promise.all([
         trackAcademicQuery(supabaseClient
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
@@ -904,6 +933,14 @@
           .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
           .in('assignment_id', assignmentIds)
           .eq('visible', true), 'Actividades cargadas...'),
+        trackAcademicQuery(supabaseClient
+          .from('lessons')
+          .select('id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status,created_at,created_by')
+          .eq('created_by', activeSession.user.id), 'Biblioteca de clases cargada...'),
+        trackAcademicQuery(supabaseClient
+          .from('activities')
+          .select('id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at')
+          .eq('owner_id', activeSession.user.id), 'Biblioteca de actividades cargada...'),
         trackAcademicQuery(supabaseClient
           .from('activity_student_records')
           .select('activity_id,assignment_id,student_id,score,graded_at,grading_group_id,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
@@ -924,12 +961,18 @@
       ]);
       if (lessonsResult.error) throw normalizeError(lessonsResult.error, 'No se pudieron cargar las clases.');
       if (activitiesResult.error) throw normalizeError(activitiesResult.error, 'No se pudieron cargar las actividades.');
+      if (ownedLessonsResult.error) throw normalizeError(ownedLessonsResult.error, 'No se pudo cargar la biblioteca de clases.');
+      if (ownedActivitiesResult.error) throw normalizeError(ownedActivitiesResult.error, 'No se pudo cargar la biblioteca de actividades.');
       if (activityProgressResult.error) throw normalizeError(activityProgressResult.error, 'No se pudo calcular el avance de las actividades.');
       if (quizzesResult.error) throw normalizeError(quizzesResult.error, 'No se pudieron cargar los quizzes.');
       if (attendanceResult.error) throw normalizeError(attendanceResult.error, 'No se pudo cargar la asistencia.');
       if (rockstarResult.error) throw normalizeError(rockstarResult.error, 'No se pudieron cargar los puntos Rockstar.');
       lessonRows = (lessonsResult.data || []).filter((row) => !LEGACY_DEMO_LESSON_IDS.includes(nestedId(row, 'lesson')));
       activityRows = activitiesResult.data || [];
+      ownedLessonRows = (ownedLessonsResult.data || []).filter((lesson) => !LEGACY_DEMO_LESSON_IDS.includes(String(lesson?.id || ''))).map((lesson) => ({ lesson }));
+      ownedActivityRows = (ownedActivitiesResult.data || []).map((activity) => ({ activity }));
+      lessonRows.push(...ownedLessonRows);
+      activityRows.push(...ownedActivityRows);
       activityProgressRows = activityProgressResult.data || [];
       quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
       attendanceRows = attendanceResult.data || [];
@@ -957,9 +1000,7 @@
         uniqueLessons.set(lesson.id, lesson);
         return;
       }
-      const ids = new Set([...(existing.assignmentIds || []), ...(lesson.assignmentIds || [])]);
-      existing.assignmentIds = [...ids];
-      existing.sortOrder = Math.min(existing.sortOrder || 0, lesson.sortOrder || 0);
+      mergeMappedAssignmentMetadata(existing, lesson);
     });
 
     const uniqueActivities = new Map();
@@ -969,8 +1010,7 @@
         uniqueActivities.set(activity.id, activity);
         return;
       }
-      existing.assignmentIds = [...new Set([...(existing.assignmentIds || []), ...(activity.assignmentIds || [])])];
-      existing.sortOrder = Math.min(existing.sortOrder || 0, activity.sortOrder || 0);
+      mergeMappedAssignmentMetadata(existing, activity);
     });
 
     const progressByActivity = new Map();
@@ -1429,7 +1469,6 @@
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
-    if (!ids.length) throw new Error('La clase debe asignarse al menos a un curso.');
     const lessonId = String(requestedLessonId || '').trim() || newLessonId();
     const rootPath = `${activeSession.user.id}/lessons/${lessonId}`;
     const pdfExtension = String(pdfFile?.name || '').split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'pdf';
@@ -1499,8 +1538,10 @@
         sort_order: Math.floor(Date.now() / 1000) + index,
         visible: true
       }));
-      const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
-      if (linkResult.error) throw normalizeError(linkResult.error, 'El PDF subió, pero no se pudo asignar a los cursos.');
+      if (linkRows.length) {
+        const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
+        if (linkResult.error) throw normalizeError(linkResult.error, 'El PDF subió, pero no se pudo asignar a los cursos.');
+      }
 
       emitLessonUploadProgress(lessonId, 100, 'Clase guardada', 'complete');
       return {
@@ -1522,7 +1563,8 @@
         status: 'published',
         assignmentId: ids[0] || '',
         assignmentIds: ids,
-        sortOrder: linkRows[0]?.sort_order || 0
+        sortOrder: linkRows[0]?.sort_order || 0,
+        sortOrderByAssignment: Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
       };
     } catch (error) {
       try { await supabaseClient.from('lessons').delete().eq('id', lessonId); } catch (_) {}
@@ -1557,7 +1599,6 @@
     const safeLessonId = String(lessonId || '').trim();
     if (!safeLessonId) throw new Error('No se encontró la clase que deseas editar.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
-    if (!ids.length) throw new Error('La clase debe estar visible al menos en un curso.');
     const bucket = config.storageBucket || 'lms-public';
     const rootPath = `${activeSession.user.id}/lessons/${safeLessonId}`;
     const currentLessonResult = await supabaseClient
@@ -1662,8 +1703,10 @@
         sort_order: sortMap.get(String(assignmentId)) || baseSort + index,
         visible: true
       }));
-      const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
-      if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudo asignar la clase a los cursos seleccionados.');
+      if (linkRows.length) {
+        const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
+        if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudo asignar la clase a los cursos seleccionados.');
+      }
 
       if (obsoletePaths.length) await removeStorageFiles(obsoletePaths).catch(() => {});
       emitLessonUploadProgress(safeLessonId, 100, 'Cambios guardados', 'complete');
@@ -1686,7 +1729,8 @@
         status: 'published',
         assignmentId: ids[0] || '',
         assignmentIds: ids,
-        sortOrder: linkRows[0]?.sort_order || 0
+        sortOrder: linkRows[0]?.sort_order || 0,
+        sortOrderByAssignment: Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
       };
     } catch (error) {
       const cleanup = newlyUploaded.filter((path) => path && path !== existingStoragePdfPath && path !== existingStorageThumbnailPath);
@@ -1735,7 +1779,6 @@
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
-    if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
     const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
     if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
     const activityId = String(requestedActivityId || '').trim() || newActivityId();
@@ -1744,7 +1787,18 @@
       const assignmentUploads = await uploadActivityFiles({ activityId, section: 'assignment', files: contentFiles, mutationId: mutationId || clientMutationId });
       const reviewUploads = await uploadActivityFiles({ activityId, section: 'review', files: reviewFiles, mutationId: mutationId || clientMutationId });
       uploadedPaths.push(...assignmentUploads.map((item) => item.path), ...reviewUploads.map((item) => item.path));
-      const contentPayload = { text: contentText, html: contentHtml, css: contentCss, files: assignmentUploads };
+      const contentPayload = {
+        text: contentText,
+        html: contentHtml,
+        css: contentCss,
+        files: assignmentUploads,
+        library: {
+          assignmentId: String(currentAssignment?.id || ''),
+          subject: String(currentAssignment?.subject || ''),
+          area: String(currentAssignment?.area || ''),
+          grade: String(currentAssignment?.grade || '')
+        }
+      };
       const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads };
       const row = {
         id: activityId,
@@ -1770,8 +1824,10 @@
         sort_order: Math.floor(Date.now() / 1000) + index,
         visible: true
       }));
-      const linksResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
-      if (linksResult.error) throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
+      if (linkRows.length) {
+        const linksResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
+        if (linksResult.error) throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
+      }
       return {
         id: activityId,
         title: row.title,
@@ -1785,9 +1841,14 @@
         reviewPayload,
         rubric,
         status: row.status,
-        assignmentId: ids[0],
+        assignmentId: ids[0] || '',
         assignmentIds: ids,
         sortOrder: linkRows[0]?.sort_order || 0,
+        sortOrderByAssignment: Object.fromEntries(linkRows.map((link) => [String(link.assignment_id), Number(link.sort_order || 0)])),
+        libraryAssignmentId: String(contentPayload.library?.assignmentId || ''),
+        librarySubject: String(contentPayload.library?.subject || ''),
+        libraryArea: String(contentPayload.library?.area || ''),
+        libraryGrade: String(contentPayload.library?.grade || ''),
         createdAt: new Date().toISOString()
       };
     } catch (error) {
@@ -1812,14 +1873,13 @@
     if (result.error) console.warn('No se pudieron retirar algunos archivos de Storage.', result.error);
   }
 
-  async function updateActivity({ activityId, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [], mutationId = '', clientMutationId = '' }) {
+  async function updateActivity({ activityId, currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [], mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const safeActivityId = String(activityId || '').trim();
     if (!safeActivityId) throw new Error('No se encontró la actividad que deseas editar.');
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
-    if (!ids.length) throw new Error('La actividad debe asignarse al menos a un curso.');
     const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
     if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
 
@@ -1839,7 +1899,19 @@
       const keepReviewFiles = !reviewUploads.length && reviewType === existingReviewType
         ? (Array.isArray(existingReviewPayload?.files) ? existingReviewPayload.files : [])
         : [];
-      const contentPayload = { text: contentText, html: contentHtml, css: contentCss, files: contentUploads.length ? contentUploads : keepContentFiles };
+      const existingLibrary = existingContentPayload?.library && typeof existingContentPayload.library === 'object' ? existingContentPayload.library : {};
+      const contentPayload = {
+        text: contentText,
+        html: contentHtml,
+        css: contentCss,
+        files: contentUploads.length ? contentUploads : keepContentFiles,
+        library: {
+          assignmentId: String(existingLibrary.assignmentId || currentAssignment?.id || ''),
+          subject: String(existingLibrary.subject || currentAssignment?.subject || ''),
+          area: String(existingLibrary.area || currentAssignment?.area || ''),
+          grade: String(existingLibrary.grade || currentAssignment?.grade || '')
+        }
+      };
       const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads.length ? reviewUploads : keepReviewFiles };
 
       const updateResult = await supabaseClient
@@ -1862,7 +1934,7 @@
         .eq('owner_id', activeSession.user.id);
       if (updateResult.error) throw normalizeError(updateResult.error, 'No se pudo actualizar la actividad.');
 
-      const currentLinks = await supabaseClient.from('activity_assignments').select('assignment_id').eq('activity_id', safeActivityId);
+      const currentLinks = await supabaseClient.from('activity_assignments').select('assignment_id,sort_order').eq('activity_id', safeActivityId);
       if (currentLinks.error) throw normalizeError(currentLinks.error, 'No se pudieron revisar los cursos actuales de la actividad.');
       const currentIds = (currentLinks.data || []).map((row) => row.assignment_id);
       const removedIds = currentIds.filter((id) => !ids.includes(id));
@@ -1870,14 +1942,18 @@
         const removeResult = await supabaseClient.from('activity_assignments').delete().eq('activity_id', safeActivityId).in('assignment_id', removedIds);
         if (removeResult.error) throw normalizeError(removeResult.error, 'No se pudieron retirar los cursos anteriores.');
       }
+      const currentSortMap = new Map((currentLinks.data || []).map((row) => [String(row.assignment_id || ''), Number(row.sort_order || 0)]));
+      const activityBaseSort = Math.floor(Date.now() / 1000);
       const linkRows = ids.map((assignmentId, index) => ({
         activity_id: safeActivityId,
         assignment_id: assignmentId,
-        sort_order: Math.floor(Date.now() / 1000) + index,
+        sort_order: currentSortMap.get(String(assignmentId)) || activityBaseSort + index,
         visible: true
       }));
-      const linkResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
-      if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudieron actualizar los cursos de la actividad.');
+      if (linkRows.length) {
+        const linkResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
+        if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudieron actualizar los cursos de la actividad.');
+      }
 
       const oldPaths = [
         ...storedActivityFiles(existingContentPayload).map((item) => item.path),
@@ -1905,12 +1981,53 @@
         assignmentId: ids[0] || '',
         assignmentIds: ids,
         sortOrder: linkRows[0]?.sort_order || 0,
+        sortOrderByAssignment: Object.fromEntries(linkRows.map((link) => [String(link.assignment_id), Number(link.sort_order || 0)])),
+        libraryAssignmentId: String(contentPayload.library?.assignmentId || ''),
+        librarySubject: String(contentPayload.library?.subject || ''),
+        libraryArea: String(contentPayload.library?.area || ''),
+        libraryGrade: String(contentPayload.library?.grade || ''),
         createdAt: new Date().toISOString()
       };
     } catch (error) {
       if (uploadedPaths.length) await removeStorageFiles(uploadedPaths);
       throw error;
     }
+  }
+
+  async function reorderLessons({ assignmentId, lessonIds = [] }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const safeAssignmentId = String(assignmentId || '').trim();
+    const ids = [...new Set((lessonIds || []).map(String).filter(Boolean))];
+    if (!safeAssignmentId) throw new Error('No se encontró el curso para guardar el orden.');
+    if (!ids.length) return { assignmentId: safeAssignmentId, lessonIds: [] };
+    const rows = ids.map((lessonId, index) => ({
+      assignment_id: safeAssignmentId,
+      lesson_id: lessonId,
+      sort_order: index + 1,
+      visible: true
+    }));
+    const result = await supabaseClient.from('assignment_lessons').upsert(rows, { onConflict: 'assignment_id,lesson_id' });
+    if (result.error) throw normalizeError(result.error, 'No se pudo guardar el orden de las clases.');
+    return { assignmentId: safeAssignmentId, lessonIds: ids };
+  }
+
+  async function reorderActivities({ assignmentId, activityIds = [] }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const safeAssignmentId = String(assignmentId || '').trim();
+    const ids = [...new Set((activityIds || []).map(String).filter(Boolean))];
+    if (!safeAssignmentId) throw new Error('No se encontró el curso para guardar el orden.');
+    if (!ids.length) return { assignmentId: safeAssignmentId, activityIds: [] };
+    const rows = ids.map((activityId, index) => ({
+      activity_id: activityId,
+      assignment_id: safeAssignmentId,
+      sort_order: index + 1,
+      visible: true
+    }));
+    const result = await supabaseClient.from('activity_assignments').upsert(rows, { onConflict: 'activity_id,assignment_id' });
+    if (result.error) throw normalizeError(result.error, 'No se pudo guardar el orden de las actividades.');
+    return { assignmentId: safeAssignmentId, activityIds: ids };
   }
 
   async function getActivityGradebook({ activityId, assignmentId }) {
@@ -2188,7 +2305,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.016', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.017', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2230,7 +2347,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.016',
+          appVersion: '0.25.017',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2273,7 +2390,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.016',
+          appVersion: '0.25.017',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2331,6 +2448,8 @@
     updatePdfLesson,
     createActivity,
     updateActivity,
+    reorderLessons,
+    reorderActivities,
     getActivityGradebook,
     saveActivityGrades,
     deleteActivity,
