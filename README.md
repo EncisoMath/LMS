@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.024
+# EncisoMath LMS v0.25.026
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -41,6 +41,22 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
+
+## v0.25.026 — pantalla de instalación renovada
+
+- La instalación obligatoria reutiliza el fondo negro y el logo animado de la pantalla de carga.
+- Se elimina el resplandor de las figuras geométricas; permanecen sólidas y en movimiento suave.
+- Los cuatro pasos se presentan en tarjetas roja, azul, verde y amarilla.
+- La llamada principal incorpora el texto “Tócame”, brillo animado y efecto gelatina cada cinco segundos.
+- La composición se adapta a la altura disponible, bloquea el desplazamiento vertical y compacta contenido en pantallas pequeñas.
+- Se conserva el instalador nativo de Android, el método manual, las instrucciones de iOS y el botón “Ya la instalé”.
+
+## v0.25.025 — pantalla de actualización unificada
+
+- La actualización obligatoria reutiliza exactamente la pantalla de carga inicial de EncisoMath.
+- Se elimina el overlay blanco independiente, el icono cuadrado y los estilos inline anteriores.
+- Se mantienen el fondo negro, el logo animado, la barra multicolor, la frase de estado y el número de versión.
+- La lógica de actualización forzada, la protección contra bucles y la conservación de archivos offline no cambian.
 
 ## v0.25.024 — actualización obligatoria de la PWA
 

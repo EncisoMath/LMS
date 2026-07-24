@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.024';
+  const APP_VERSION = '0.25.026';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -671,30 +671,49 @@
     return isMobileDevice() && !isStandaloneAppMode();
   }
   function installGateMessageHTML(platform = detectInstallPlatform()) {
-    if (platform === 'ios') {
-      return `
-        <div class="em-install-gate-steps" aria-label="Pasos para instalar en iPhone o iPad">
-          <div class="em-install-gate-step"><b>1</b><span>Toca <strong>Compartir</strong> en Safari o Chrome.</span></div>
-          <div class="em-install-gate-step"><b>2</b><span>Elige <strong>Añadir a pantalla de inicio</strong>.</span></div>
-          <div class="em-install-gate-step"><b>3</b><span>Cuando termine, abre EncisoMath desde su icono.</span></div>
-        </div>
-      `;
-    }
-    if (platform === 'android') {
-      return `
-        <div class="em-install-gate-steps" aria-label="Pasos para instalar en Android">
-          <div class="em-install-gate-step"><b>1</b><span>Toca <strong>Instalar aplicación</strong>.</span></div>
-          <div class="em-install-gate-step"><b>2</b><span>Acepta el diálogo de Android.</span></div>
-          <div class="em-install-gate-step"><b>3</b><span>Después, entra a EncisoMath desde el icono instalado.</span></div>
-        </div>
-      `;
-    }
+    const steps = platform === 'ios'
+      ? [
+          ['Abre Compartir', 'Toca el icono de compartir del navegador.'],
+          ['Añade a inicio', 'Elige “Añadir a pantalla de inicio”.'],
+          ['Confirma', 'Toca “Añadir” para crear el icono.'],
+          ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMaths.']
+        ]
+      : platform === 'android'
+        ? [
+            ['Toca instalar', 'Usa el botón brillante de abajo.'],
+            ['Confirma', 'Acepta el aviso de instalación de Android.'],
+            ['Espera el icono', 'Android la añadirá a tu pantalla de inicio.'],
+            ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMaths.']
+          ]
+        : [
+            ['Abre el menú', 'Busca las opciones de este navegador.'],
+            ['Instala la app', 'Elige instalar o añadir a inicio.'],
+            ['Confirma', 'Acepta la instalación en el dispositivo.'],
+            ['Ábrela como app', 'Entra desde el icono de EncisoMaths.']
+          ];
+    const colors = ['is-red', 'is-blue', 'is-green', 'is-yellow'];
     return `
-      <div class="em-install-gate-steps" aria-label="Instalación requerida">
-        <div class="em-install-gate-step"><b>1</b><span>Instala EncisoMath en este dispositivo.</span></div>
-        <div class="em-install-gate-step"><b>2</b><span>Ábrela desde el icono de la pantalla de inicio.</span></div>
+      <div class="em-install-gate-steps" aria-label="Pasos para instalar EncisoMaths">
+        ${steps.map(([title, detail], index) => `
+          <article class="em-install-gate-step ${colors[index]}">
+            <b>${index + 1}</b>
+            <span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(detail)}</small></span>
+          </article>
+        `).join('')}
       </div>
     `;
+  }
+  function installGatePrimaryButtonHTML(platform) {
+    if (platform === 'android') {
+      return `<button class="primary-btn em-install-android-btn em-install-cta" id="installAppBtn" type="button">
+        <span class="em-install-btn-icon" aria-hidden="true">↓</span>
+        <span class="em-install-btn-copy"><strong class="em-install-btn-label">Instalar EncisoMaths</strong><small>Tócame</small></span>
+      </button>`;
+    }
+    return `<button class="primary-btn em-install-guide-btn em-install-cta" id="installGuideBtn" type="button">
+      <span class="em-install-btn-icon" aria-hidden="true">↗</span>
+      <span class="em-install-btn-copy"><strong>${platform === 'ios' ? 'Ver cómo instalar' : 'Abrir instrucciones'}</strong><small>Tócame</small></span>
+    </button>`;
   }
   function renderInstallGate() {
     const platform = detectInstallPlatform();
@@ -704,25 +723,27 @@
     const isAndroid = platform === 'android';
     const isIOS = platform === 'ios';
     return `
-      <main class="em-install-gate-screen">
+      <main class="loading-screen em-brand-loading-screen em-install-gate-screen">
         <div class="em-install-gate-backdrop">${animatedShapes('login')}</div>
-        <section class="em-install-gate-card">
-          <div class="em-install-gate-logo">${encisoAnimatedLogoHTML('login')}</div>
-          <p class="section-kicker">Instalación requerida</p>
-          <h1>Usa EncisoMath como app</h1>
-          <p class="em-install-gate-copy">En celulares y tablets, EncisoMath solo se puede usar desde la aplicación instalada. En computador puedes seguir entrando desde el navegador.</p>
+        <section class="loader-card em-brand-loading-card em-install-gate-card">
+          <div class="em-install-gate-logo">${encisoAnimatedLogoHTML('loading')}</div>
+          <header class="em-install-gate-heading">
+            <p class="section-kicker">Instalación requerida</p>
+            <h1>Usa EncisoMaths como app</h1>
+            <p class="em-install-gate-copy">Instálala una sola vez y entra siempre desde su icono. Es más rápida, estable y conserva tus archivos offline.</p>
+          </header>
           ${installGateMessageHTML(platform)}
           <div class="em-install-gate-actions">
-            ${isAndroid ? `<button class="primary-btn em-install-android-btn" id="installAppBtn" type="button">Instalar aplicación</button>
-              <div class="em-install-android-manual" id="installAndroidManual" hidden>
-                <strong>Instalación manual en Android</strong>
-                <span>Abre el menú <b>⋮</b> del navegador y toca <b>Instalar aplicación</b> o <b>Añadir a pantalla de inicio</b>.</span>
-              </div>` : ''}
-            ${isIOS ? `<div class="em-install-gate-ios-note" id="installIosNote">Después de añadirla, cierra el navegador y abre EncisoMath desde el icono de inicio.</div>` : ''}
-            ${!isAndroid && !isIOS ? `<div class="em-install-gate-ios-note">Instálala desde el menú del navegador y luego ábrela desde su icono.</div>` : ''}
-            <button class="ghost-btn" id="installGateRetryBtn" type="button">Ya la instalé</button>
+            ${installGatePrimaryButtonHTML(platform)}
+            ${isAndroid ? `<div class="em-install-android-manual" id="installAndroidManual" hidden>
+              <strong>Instalación manual</strong>
+              <span>Abre el menú <b>⋮</b> y toca <b>Instalar aplicación</b> o <b>Añadir a pantalla de inicio</b>.</span>
+            </div>` : ''}
+            ${isIOS ? `<div class="em-install-gate-ios-note" id="installIosNote">Compartir → Añadir a pantalla de inicio → Añadir.</div>` : ''}
+            ${!isAndroid && !isIOS ? `<div class="em-install-gate-ios-note">Usa el menú del navegador para instalarla y luego ábrela desde su icono.</div>` : ''}
+            <button class="ghost-btn em-install-retry-btn" id="installGateRetryBtn" type="button">Ya la instalé</button>
           </div>
-          <p class="em-install-gate-status" id="installGateStatus" aria-live="polite">${isAndroid ? (deferredInstallPrompt ? 'Lista para instalar.' : 'Toca Instalar aplicación. Si Android no abre el instalador, aparecerá el método manual.') : (isIOS ? 'La instalación se hace manualmente desde el menú Compartir.' : 'Instálala y luego entra desde su icono.')}</p>
+          <p class="em-install-gate-status" id="installGateStatus" aria-live="polite">${isAndroid ? (deferredInstallPrompt ? 'Todo listo: toca el botón para instalar.' : 'Toca instalar. Si Android no abre el diálogo, aparecerá el método manual.') : (isIOS ? 'Sigue las cuatro tarjetas y luego entra desde el icono.' : 'Instálala y vuelve a abrirla desde su icono.')}</p>
         </section>
       </main>
     `;
@@ -732,8 +753,11 @@
     const button = document.getElementById('installAppBtn');
     const status = document.getElementById('installGateStatus');
     if (button) {
-      button.disabled = false;
-      button.textContent = 'Instalar aplicación';
+      const label = button.querySelector('.em-install-btn-label');
+      const cue = button.querySelector('.em-install-btn-copy small');
+      button.disabled = Boolean(state.install.installedEventFired);
+      if (label) label.textContent = state.install.installedEventFired ? 'Instalada' : 'Instalar EncisoMaths';
+      if (cue) cue.textContent = state.install.installedEventFired ? 'Ábrela desde el icono' : 'Tócame';
       button.classList.toggle('has-native-prompt', Boolean(deferredInstallPrompt));
     }
     if (status) {
@@ -777,6 +801,11 @@
   }
   function bindInstallGateEvents() {
     document.getElementById('installAppBtn')?.addEventListener('click', () => { promptInstallApp(); });
+    document.getElementById('installGuideBtn')?.addEventListener('click', () => {
+      toast(state.install.platform === 'ios'
+        ? 'Toca Compartir y luego Añadir a pantalla de inicio.'
+        : 'Abre el menú del navegador y elige Instalar aplicación.');
+    });
     document.getElementById('installGateRetryBtn')?.addEventListener('click', () => {
       if (isStandaloneAppMode()) {
         location.reload();
@@ -1342,7 +1371,9 @@
     bindQuizSecurityGuards();
     bindAppBackNavigation();
     bindOfflineSyncEvents();
-    if (shouldForceInstalledApp()) {
+    const installRequired = shouldForceInstalledApp();
+    document.documentElement.classList.toggle('em-install-mode', installRequired);
+    if (installRequired) {
       mount(renderInstallGate(), bindInstallGateEvents, { instant: true });
       return;
     }
@@ -15808,25 +15839,31 @@
   }
   function showMandatoryUpdateScreen() {
     if (document.getElementById('emMandatoryUpdateScreen')) return;
-    const overlay = document.createElement('div');
+
+    // Reutiliza exactamente la pantalla de carga principal para que una
+    // actualización no cambie de lenguaje visual ni muestre un overlay blanco.
+    const template = document.createElement('template');
+    template.innerHTML = renderLoadingHTML('Actualizando EncisoMath...', 78).trim();
+    const overlay = template.content.firstElementChild;
+    if (!overlay) return;
+
     overlay.id = 'emMandatoryUpdateScreen';
     overlay.setAttribute('role', 'status');
     overlay.setAttribute('aria-live', 'assertive');
-    overlay.innerHTML = `
-      <div style="width:min(420px,calc(100vw - 40px));text-align:center">
-        <img src="./assets/app-icon-192.png" alt="" width="92" height="92" style="display:block;margin:0 auto 20px;border-radius:24px" />
-        <div style="font:900 clamp(25px,7vw,38px)/1.05 Montserrat,system-ui,sans-serif;letter-spacing:-.04em">Actualizando EncisoMath</div>
-        <div style="margin-top:12px;font:600 14px/1.45 Montserrat,system-ui,sans-serif;opacity:.68">Estamos instalando la versión más reciente. Tus archivos offline y cambios guardados se conservarán.</div>
-        <div style="width:100%;height:8px;margin-top:24px;border-radius:999px;background:rgba(0,0,0,.1);overflow:hidden">
-          <div style="width:42%;height:100%;border-radius:inherit;background:#e21b3c;animation:emMandatoryUpdateMove .9s ease-in-out infinite alternate"></div>
-        </div>
-      </div>`;
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:#fff;color:#111';
-    const style = document.createElement('style');
-    style.id = 'emMandatoryUpdateStyle';
-    style.textContent = '@keyframes emMandatoryUpdateMove{from{transform:translateX(-10%)}to{transform:translateX(150%)}}';
-    document.head.appendChild(style);
+    overlay.setAttribute('aria-label', 'Actualizando EncisoMath');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;width:100%;min-height:100dvh';
+
+    document.getElementById('emMandatoryUpdateStyle')?.remove();
     document.body.appendChild(overlay);
+    initEncisoAnimatedLogos(overlay);
+
+    // Completa visualmente la misma barra real de inicio mientras el nuevo
+    // Service Worker toma el control y ejecuta la recarga obligatoria.
+    window.requestAnimationFrame(() => {
+      const progress = overlay.querySelector('.em-app-loader-progress');
+      progress?.style.setProperty('--em-app-load-progress', '94%');
+      progress?.setAttribute('aria-valuenow', '94');
+    });
   }
 
   function clearServiceWorkerUpdateMarker() {
