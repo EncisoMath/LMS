@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.028
+# EncisoMath LMS v0.25.029
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -41,6 +41,16 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
+
+
+## v0.25.029 — compatibilidad del visor PDF con iPhone, Safari y WebView antiguos
+
+- Se carga una capa de compatibilidad antes de PDF.js 6.1.200 en la página y en su Web Worker.
+- Se corrigen las APIs modernas ausentes que producían errores como `Map.getOrInsertComputed is not a function` y `undefined is not a function`.
+- El visor conserva su interfaz normal cuando PDF.js puede renderizar el documento.
+- Si el motor PDF todavía falla en un dispositivo antiguo, la clase cambia automáticamente al visor PDF nativo del teléfono sin mostrar el error técnico al estudiante.
+- Se añadió un último botón `Abrir PDF` solo si fallan tanto PDF.js como el visor embebido.
+- Se mantienen la caché multimedia estable, el funcionamiento offline y la actualización forzada de la PWA.
 
 ## v0.25.028 — corrección global del nombre EncisoMath
 

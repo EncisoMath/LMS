@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-offline-v0.25.028';
+const SW_VERSION = 'encisomath-offline-v0.25.029';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -46,7 +46,9 @@ const PRECACHE_URLS = [
   './data/rockstars.json',
   './data/students.json',
   './data/users.json',
+  './vendor/pdfjs/pdf-compat.mjs',
   './vendor/pdfjs/pdf.min.mjs',
+  './vendor/pdfjs/pdf.worker.compat.mjs',
   './vendor/pdfjs/pdf.worker.min.mjs'
 ];
 

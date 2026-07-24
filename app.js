@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.028';
-  const PDFJS_VERSION = '6.1.200';
+  const APP_VERSION = '0.25.029';
+  const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
   let pdfJsModulePromise = null;
@@ -13673,10 +13673,22 @@
 
   async function loadPdfJs() {
     if (!pdfJsModulePromise) {
-      pdfJsModulePromise = import(`./vendor/pdfjs/pdf.min.mjs?v=${PDFJS_VERSION}`).then((pdfjs) => {
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(`./vendor/pdfjs/pdf.worker.min.mjs?v=${PDFJS_VERSION}`, document.baseURI).href;
-        return pdfjs;
-      });
+      // PDF.js 6 usa APIs JavaScript muy recientes. Safari/iOS y algunos
+      // WebView antiguos no las incluyen todavía, por eso el compat se carga
+      // antes tanto en la página como en el worker.
+      pdfJsModulePromise = import(`./vendor/pdfjs/pdf-compat.mjs?v=${PDFJS_VERSION}`)
+        .then(() => import(`./vendor/pdfjs/pdf.min.mjs?v=${PDFJS_VERSION}`))
+        .then((pdfjs) => {
+          pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+            `./vendor/pdfjs/pdf.worker.compat.mjs?v=${PDFJS_VERSION}`,
+            document.baseURI
+          ).href;
+          return pdfjs;
+        })
+        .catch((error) => {
+          pdfJsModulePromise = null;
+          throw error;
+        });
     }
     return pdfJsModulePromise;
   }
@@ -14127,20 +14139,98 @@
         renderSubjectDetail('classes');
       });
       emPlayLessonEntrance(document.querySelector('.class-screen'));
-      if (isPdf) initPdfNotebookViewer(lesson).catch((error) => showPdfViewerError(error));
+      if (isPdf) initPdfNotebookViewer(lesson).catch(async (error) => {
+        console.error('[EncisoMath] Falló el visor PDF.js; se activará el visor nativo compatible.', error);
+        cleanupActivePdfViewer();
+        try {
+          await initNativePdfFallback(lesson, error);
+        } catch (fallbackError) {
+          console.error('[EncisoMath] También falló el visor PDF nativo.', fallbackError);
+          showPdfViewerError(fallbackError, lesson);
+        }
+      });
     });
   }
 
-  function showPdfViewerError(error) {
+  function showPdfViewerError(error, lesson = null) {
     const loading = document.getElementById('pdfLoading');
     const notebook = document.getElementById('pdfNotebook');
     if (!loading) return;
+    console.error('[EncisoMath] Error final al abrir PDF.', error);
     notebook?.classList.remove('is-ready');
     notebook?.classList.add('is-preparing');
     loading.hidden = false;
     loading.style.removeProperty('display');
     loading.className = 'em-pdf-loading is-error';
-    loading.innerHTML = `<div class="em-pdf-loader-error"><strong>No se pudo abrir la clase.</strong><span>${escapeHTML(error?.message || 'Revisa el archivo PDF.')}</span></div>`;
+    loading.innerHTML = `
+      <div class="em-pdf-loader-error">
+        <strong>No se pudo abrir la clase.</strong>
+        <span>El visor del dispositivo no respondió. Puedes abrir el PDF directamente.</span>
+        ${lesson?.contentUrl ? '<button class="em-pdf-open-direct" id="pdfOpenDirectBtn" type="button">Abrir PDF</button>' : ''}
+      </div>
+    `;
+    document.getElementById('pdfOpenDirectBtn')?.addEventListener('click', () => {
+      const target = String(lesson?.contentUrl || '');
+      if (!target) return;
+      const opened = window.open(target, '_blank', 'noopener,noreferrer');
+      if (!opened) window.location.href = target;
+    });
+  }
+
+  async function initNativePdfFallback(lesson, originalError = null) {
+    const loading = document.getElementById('pdfLoading');
+    const loadingBar = document.getElementById('pdfLoadingBar');
+    const notebook = document.getElementById('pdfNotebook');
+    const viewportHost = document.getElementById('pdfPageViewport');
+    if (!loading || !notebook || !viewportHost || !lesson?.contentUrl) {
+      throw originalError || new Error('No se encontró el contenedor del visor PDF.');
+    }
+
+    loading.hidden = false;
+    loading.style.removeProperty('display');
+    loading.classList.remove('is-error', 'is-complete');
+    if (loadingBar) loadingBar.style.setProperty('--em-pdf-load-progress', '74%');
+    notebook.classList.add('is-preparing');
+    notebook.classList.remove('is-ready', 'is-native');
+
+    const response = await fetch(lesson.contentUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
+    const sourceBlob = await response.blob();
+    const pdfBlob = sourceBlob.type === 'application/pdf'
+      ? sourceBlob
+      : new Blob([sourceBlob], { type: 'application/pdf' });
+    const objectUrl = URL.createObjectURL(pdfBlob);
+
+    viewportHost.innerHTML = `
+      <iframe
+        class="em-pdf-native-frame"
+        id="pdfNativeFrame"
+        src="${escapeAttr(objectUrl)}"
+        title="${escapeAttr(lesson.title || 'Clase en PDF')}"
+      ></iframe>
+    `;
+    notebook.classList.add('is-native');
+    if (loadingBar) loadingBar.style.setProperty('--em-pdf-load-progress', '100%');
+
+    activePdfViewerCleanup = () => {
+      try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+    };
+
+    // WebKit no siempre emite load para PDFs embebidos. La pantalla se revela
+    // por evento o por temporizador, lo que ocurra primero.
+    let revealed = false;
+    const reveal = () => {
+      if (revealed || !document.getElementById('pdfNotebook')) return;
+      revealed = true;
+      notebook.classList.remove('is-preparing');
+      notebook.classList.add('is-ready', 'is-native');
+      loading.classList.add('is-complete');
+      setTimeout(() => {
+        if (loading.isConnected) loading.hidden = true;
+      }, 420);
+    };
+    document.getElementById('pdfNativeFrame')?.addEventListener('load', reveal, { once: true });
+    setTimeout(reveal, 700);
   }
 
   async function initPdfNotebookViewer(lesson) {
