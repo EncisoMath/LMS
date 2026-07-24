@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.026
+# EncisoMath LMS v0.25.027
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -41,6 +41,15 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
+
+## v0.25.027 — instalación vertical y botón plateado
+
+- Los cuatro pasos ahora aparecen como tarjetas horizontales en cuatro filas: roja, azul, verde y amarilla.
+- El botón principal dice únicamente “Instalar la App” y usa acabado plateado/blanco con texto gris oscuro.
+- El botón incorpora resplandor exterior respirando, barrido luminoso, destellos tipo escarcha y la misma gelatina periódica de los títulos ROCKSTARS, ACTIVIDADES y QUIZZES.
+- Se reutiliza exclusivamente el cohete animado del hero de Rockstars dentro del botón.
+- Se eliminan de la pantalla “Instalación manual” y “Ya la instalé”.
+- La composición sigue bloqueada al alto de la pantalla, sin desplazamiento vertical.
 
 ## v0.25.026 — pantalla de instalación renovada
 

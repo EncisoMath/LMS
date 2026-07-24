@@ -2307,7 +2307,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.026', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.027', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2349,7 +2349,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.026',
+          appVersion: '0.25.027',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2392,7 +2392,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.026',
+          appVersion: '0.25.027',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

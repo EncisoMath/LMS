@@ -32890,7 +32890,7 @@ html body #app .em-quiz-card-clean.is-student-quiz-card.is-graded .em-quiz-start
 }
 
 
-/* v0.25.026 · instalación compacta, dinámica y unificada con la carga */
+/* v0.25.027 · instalación vertical, cohete Rockstars y CTA plateada */
 html.em-install-mode,
 html.em-install-mode body,
 html.em-install-mode #app {
@@ -32910,9 +32910,9 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
   display: grid;
   place-items: center;
   padding:
-    max(8px, env(safe-area-inset-top))
-    clamp(10px, 3vw, 20px)
-    max(8px, env(safe-area-inset-bottom));
+    max(7px, env(safe-area-inset-top))
+    clamp(9px, 3vw, 18px)
+    max(7px, env(safe-area-inset-bottom));
   overflow: hidden !important;
   overscroll-behavior: none;
   background: #000 !important;
@@ -32975,10 +32975,10 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
   max-height: 900px;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto auto;
   align-content: center;
   justify-items: stretch;
-  gap: clamp(6px, 1.15vh, 11px);
+  gap: clamp(5px, 1vh, 9px);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -32992,27 +32992,27 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
   min-height: 0;
 }
 .em-install-gate-logo .em-enciso-logo-scene-loading {
-  width: min(88vw, 500px);
-  --em-logo-hex-w: clamp(42px, 9.5vw, 62px);
+  width: min(84vw, 470px);
+  --em-logo-hex-w: clamp(38px, 9vw, 58px);
 }
 .em-install-gate-logo .em-enciso-logo-brand {
   left: calc(5.5% + var(--em-logo-cluster-w) + 14px);
 }
 .em-install-gate-logo .em-enciso-logo-brand-name {
-  font-size: clamp(27px, 7.3vw, 46px);
+  font-size: clamp(25px, 7vw, 44px);
 }
 .em-install-gate-logo .em-enciso-logo-tagline {
-  margin-top: clamp(4px, .6vw, 7px);
-  font-size: clamp(10px, 2.55vw, 16px);
+  margin-top: clamp(3px, .55vw, 6px);
+  font-size: clamp(9px, 2.4vw, 15px);
 }
 .em-install-gate-heading {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 .em-install-gate-card .section-kicker {
   margin: 0;
   color: #ebb513;
-  font-size: clamp(.62rem, 2.4vw, .76rem);
+  font-size: clamp(.59rem, 2.25vw, .73rem);
   font-weight: 900;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -33020,40 +33020,40 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
 .em-install-gate-card h1 {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.25rem, 5.8vw, 1.85rem);
+  font-size: clamp(1.17rem, 5.4vw, 1.72rem);
   font-weight: 900;
   line-height: 1.02;
   letter-spacing: -.045em;
 }
 .em-install-gate-copy {
-  max-width: 48ch;
-  margin: 2px auto 0;
+  max-width: 50ch;
+  margin: 1px auto 0;
   color: rgba(255,255,255,.74);
-  font-size: clamp(.68rem, 2.65vw, .83rem);
+  font-size: clamp(.64rem, 2.4vw, .78rem);
   font-weight: 560;
-  line-height: 1.32;
+  line-height: 1.25;
 }
 .em-install-gate-steps {
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: clamp(7px, 1.2vh, 10px);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(4, auto);
+  gap: clamp(5px, .82vh, 8px);
   margin: 0;
   text-align: left;
 }
 .em-install-gate-step {
   position: relative;
   min-width: 0;
-  min-height: 0;
+  min-height: clamp(42px, 6.8vh, 54px);
   display: grid;
-  grid-template-columns: clamp(27px, 8vw, 34px) minmax(0, 1fr);
+  grid-template-columns: clamp(26px, 7vw, 32px) minmax(0, 1fr);
   align-items: center;
   gap: clamp(7px, 2vw, 10px);
-  padding: clamp(8px, 1.45vh, 12px) clamp(8px, 2.5vw, 12px);
+  padding: clamp(6px, 1vh, 9px) clamp(9px, 2.7vw, 13px);
   overflow: hidden;
   border: 0;
-  border-radius: clamp(14px, 4vw, 20px);
+  border-radius: clamp(12px, 3.3vw, 16px);
   color: #fff;
   isolation: isolate;
   box-shadow: none !important;
@@ -33065,12 +33065,12 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
 .em-install-gate-step::after {
   content: "";
   position: absolute;
-  width: 66px;
-  height: 66px;
-  right: -28px;
-  bottom: -30px;
+  width: 74px;
+  height: 74px;
+  right: -34px;
+  bottom: -42px;
   border-radius: 50%;
-  background: rgba(255,255,255,.13);
+  background: rgba(255,255,255,.12);
   z-index: -1;
 }
 .em-install-gate-step.is-red { background: #e21b3c; }
@@ -33078,128 +33078,161 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
 .em-install-gate-step.is-green { background: #54c600; }
 .em-install-gate-step.is-yellow { background: #ebb513; color: #171208; }
 .em-install-gate-step b {
-  width: clamp(27px, 8vw, 34px);
-  height: clamp(27px, 8vw, 34px);
+  width: clamp(26px, 7vw, 32px);
+  height: clamp(26px, 7vw, 32px);
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 10px;
   background: rgba(0,0,0,.22);
   color: inherit;
-  font-size: clamp(.78rem, 3vw, .98rem);
+  font-size: clamp(.73rem, 2.8vw, .92rem);
   font-weight: 950;
 }
 .em-install-gate-step.is-yellow b { background: rgba(255,255,255,.46); }
 .em-install-gate-step span {
   min-width: 0;
-  display: grid;
-  gap: 1px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 7px;
+  row-gap: 1px;
 }
 .em-install-gate-step strong {
   color: inherit;
-  font-size: clamp(.69rem, 2.7vw, .84rem);
+  font-size: clamp(.68rem, 2.65vw, .82rem);
   font-weight: 950;
-  line-height: 1.08;
+  line-height: 1.12;
+  white-space: nowrap;
 }
 .em-install-gate-step small {
   color: currentColor;
-  opacity: .82;
-  font-size: clamp(.57rem, 2.25vw, .7rem);
+  opacity: .86;
+  font-size: clamp(.58rem, 2.2vw, .69rem);
   font-weight: 650;
   line-height: 1.18;
 }
 @keyframes emInstallStepFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-3px) rotate(.25deg); }
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
 }
 
 .em-install-gate-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: clamp(7px, 2vw, 10px);
-  margin: 0;
+  gap: 0;
+  margin: 1px 0 0;
 }
 .em-install-gate-actions .em-install-cta {
   position: relative;
-  min-width: 0;
-  min-height: clamp(50px, 7.8vh, 64px);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  z-index: 1;
+  width: 100%;
+  min-height: clamp(52px, 8vh, 64px);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: clamp(7px, 2.2vw, 11px);
+  padding: 7px 22px;
   overflow: hidden;
-  border: 0;
+  border: 1px solid rgba(255,255,255,.96) !important;
   border-radius: 18px;
-  background: linear-gradient(135deg, #e21b3c 0%, #ff3b62 55%, #e21b3c 100%) !important;
-  color: #fff !important;
+  background:
+    linear-gradient(145deg, #ffffff 0%, #f7f8fa 20%, #d9dde2 43%, #ffffff 61%, #c8cdd3 82%, #fdfdfd 100%) !important;
+  background-size: 180% 180% !important;
+  color: #343940 !important;
   box-shadow:
-    0 0 0 0 rgba(226,27,60,.52),
-    0 12px 28px rgba(226,27,60,.28) !important;
+    0 0 11px rgba(255,255,255,.42),
+    0 0 25px rgba(225,232,241,.28),
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 0 -2px 4px rgba(89,96,106,.18) !important;
   cursor: pointer !important;
-  transform-origin: 50% 70%;
-  animation: emInstallCtaAttention 5s cubic-bezier(.22,.8,.28,1) infinite;
+  transform-origin: center center;
+  animation:
+    emInstallSilverBreath 2.65s ease-in-out infinite,
+    emActTitlePop 5s ease-in-out infinite;
 }
 .em-install-gate-actions .em-install-cta::before {
   content: "";
   position: absolute;
-  inset: -40% auto -40% -35%;
-  width: 34%;
-  transform: skewX(-22deg);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.52), transparent);
-  animation: emInstallCtaShine 2.3s ease-in-out infinite;
+  inset: -30% auto -30% -38%;
+  z-index: 0;
+  width: 28%;
+  transform: skewX(-23deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.96), transparent);
+  animation: emInstallSilverSweep 2.7s ease-in-out infinite;
 }
-.em-install-gate-actions .em-install-cta::after { content: none !important; }
-.em-install-btn-icon {
-  width: clamp(34px, 9vw, 42px);
-  height: clamp(34px, 9vw, 42px);
+.em-install-gate-actions .em-install-cta::after {
+  content: "" !important;
+  position: absolute;
+  inset: 4px 8px;
+  z-index: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 8% 26%, rgba(255,255,255,1) 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 18% 72%, rgba(255,255,255,.95) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 34% 18%, rgba(255,255,255,.9) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 63% 76%, rgba(255,255,255,1) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 79% 25%, rgba(255,255,255,.95) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 91% 62%, rgba(255,255,255,1) 0 1.2px, transparent 1.9px);
+  opacity: .56;
+  animation: emInstallSilverSparkles 1.9s ease-in-out infinite alternate;
+}
+.em-install-btn-label {
+  position: relative;
+  z-index: 2;
+  display: block;
+  color: #343940;
+  font-size: clamp(.88rem, 3.45vw, 1.08rem);
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -.025em;
+  white-space: nowrap;
+}
+.em-install-rocket-wrap {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border-radius: 13px;
-  background: rgba(255,255,255,.18);
-  font-size: clamp(1.05rem, 4.4vw, 1.42rem);
-  font-weight: 950;
+  transform: rotate(-30deg) scale(.54);
+  transform-origin: center;
+  pointer-events: none;
 }
-.em-install-btn-copy {
-  min-width: 0;
-  display: grid;
-  justify-items: start;
-  line-height: 1;
+.em-install-rocket-wrap .em-rs-rocket {
+  box-shadow: none !important;
+  filter: none !important;
 }
-.em-install-btn-copy strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(.84rem, 3.4vw, 1rem);
-  font-weight: 950;
-}
-.em-install-btn-copy small {
-  margin-top: 4px;
-  color: rgba(255,255,255,.86);
-  font-size: clamp(.62rem, 2.5vw, .75rem);
-  font-weight: 850;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-}
-@keyframes emInstallCtaAttention {
-  0%, 66%, 100% {
-    transform: scale3d(1,1,1) rotate(0deg);
-    box-shadow: 0 0 0 0 rgba(226,27,60,.48), 0 12px 28px rgba(226,27,60,.28);
+@keyframes emInstallSilverBreath {
+  0%, 100% {
+    box-shadow:
+      0 0 9px rgba(255,255,255,.36),
+      0 0 20px rgba(225,232,241,.22),
+      inset 0 1px 0 rgba(255,255,255,1),
+      inset 0 -2px 4px rgba(89,96,106,.18);
+    background-position: 0% 50%;
   }
-  8%, 48% {
-    box-shadow: 0 0 0 8px rgba(226,27,60,0), 0 15px 34px rgba(226,27,60,.42);
+  50% {
+    box-shadow:
+      0 0 17px rgba(255,255,255,.88),
+      0 0 38px rgba(220,229,241,.58),
+      0 0 60px rgba(255,255,255,.20),
+      inset 0 1px 0 rgba(255,255,255,1),
+      inset 0 -2px 4px rgba(89,96,106,.18);
+    background-position: 100% 50%;
   }
-  70% { transform: scale3d(1.08,.90,1) rotate(-1deg); }
-  76% { transform: scale3d(.94,1.08,1) rotate(1deg); }
-  82% { transform: scale3d(1.045,.96,1) rotate(-.6deg); }
-  88% { transform: scale3d(.985,1.025,1) rotate(.3deg); }
-  94% { transform: scale3d(1.01,.995,1) rotate(0deg); }
 }
-@keyframes emInstallCtaShine {
-  0%, 58% { left: -40%; opacity: 0; }
-  65% { opacity: 1; }
-  100% { left: 122%; opacity: 0; }
+@keyframes emInstallSilverSweep {
+  0%, 54% { left: -38%; opacity: 0; }
+  62% { opacity: .96; }
+  100% { left: 120%; opacity: 0; }
+}
+@keyframes emInstallSilverSparkles {
+  0% { opacity: .28; transform: translateX(-2px) scale(.98); }
+  42% { opacity: .82; }
+  100% { opacity: .48; transform: translateX(2px) scale(1.02); }
 }
 .em-install-gate-actions .em-install-cta:active {
   transform: scale(.97) !important;
@@ -33209,74 +33242,55 @@ html[data-bg-mode="black"] .em-install-gate-screen.loading-screen {
   cursor: default !important;
   animation: none;
 }
-.em-install-retry-btn {
-  min-width: max-content;
-  height: clamp(42px, 6.8vh, 52px);
-  padding: 0 clamp(11px, 3vw, 16px) !important;
-  border-radius: 16px !important;
-  border-color: rgba(255,255,255,.22) !important;
-  color: rgba(255,255,255,.88) !important;
-  background: rgba(255,255,255,.07) !important;
-  font-size: clamp(.68rem, 2.7vw, .82rem) !important;
-  font-weight: 850 !important;
-  white-space: nowrap;
-}
-.em-install-android-manual,
-.em-install-gate-ios-note {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 2px;
-  padding: 7px 10px;
-  border: 1px solid rgba(235,181,19,.34);
-  border-radius: 12px;
-  background: rgba(235,181,19,.11);
-  color: rgba(255,255,255,.92);
-  text-align: left;
-  font-size: clamp(.6rem, 2.25vw, .72rem);
-  line-height: 1.25;
-}
-.em-install-android-manual[hidden] { display: none !important; }
-.em-install-android-manual strong { color: #ffd95f; }
 .em-install-gate-status {
   min-height: 0;
   margin: 0;
   color: rgba(255,255,255,.62);
-  font-size: clamp(.58rem, 2.2vw, .7rem);
+  font-size: clamp(.56rem, 2.1vw, .68rem);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.18;
 }
 
 @media (max-height: 700px) {
-  .em-install-gate-card.em-brand-loading-card { gap: 5px; }
+  .em-install-gate-card.em-brand-loading-card { gap: 4px; }
   .em-install-gate-status { display: none; }
   .em-install-gate-logo .em-enciso-logo-scene-loading {
-    width: min(75vw, 400px);
-    --em-logo-hex-w: clamp(34px, 8vw, 48px);
+    width: min(72vw, 365px);
+    --em-logo-hex-w: clamp(31px, 7.5vw, 45px);
   }
-  .em-install-gate-logo .em-enciso-logo-brand-name { font-size: clamp(23px, 6.4vw, 36px); }
-  .em-install-gate-logo .em-enciso-logo-tagline { font-size: clamp(8px, 2.2vw, 12px); }
-  .em-install-gate-copy { font-size: clamp(.61rem, 2.25vw, .72rem); }
-  .em-install-gate-step { padding-block: 6px; border-radius: 13px; }
-  .em-install-gate-actions .em-install-cta { min-height: 47px; }
-  .em-install-retry-btn { height: 44px; }
+  .em-install-gate-logo .em-enciso-logo-brand-name { font-size: clamp(21px, 6vw, 34px); }
+  .em-install-gate-logo .em-enciso-logo-tagline { font-size: clamp(8px, 2vw, 11px); }
+  .em-install-gate-copy { font-size: clamp(.59rem, 2.15vw, .69rem); }
+  .em-install-gate-step { min-height: 40px; padding-block: 5px; }
+  .em-install-gate-actions .em-install-cta { min-height: 50px; }
 }
-@media (max-height: 590px) {
-  .em-install-gate-copy { display: none; }
+@media (max-height: 610px) {
+  .em-install-gate-copy,
   .em-install-gate-card .section-kicker { display: none; }
-  .em-install-gate-step small { display: none; }
-  .em-install-gate-logo .em-enciso-logo-scene-loading { width: min(68vw, 340px); }
+  .em-install-gate-logo .em-enciso-logo-scene-loading { width: min(64vw, 315px); }
+  .em-install-gate-card h1 { font-size: clamp(1.05rem, 5vw, 1.35rem); }
+  .em-install-gate-step { min-height: 38px; }
+  .em-install-gate-step small { font-size: clamp(.55rem, 2.05vw, .64rem); }
 }
 @media (max-width: 350px) {
   .em-install-gate-screen.loading-screen { padding-inline: 8px; }
-  .em-install-gate-step { grid-template-columns: 25px minmax(0,1fr); gap: 6px; padding-inline: 7px; }
+  .em-install-gate-step {
+    grid-template-columns: 25px minmax(0,1fr);
+    gap: 6px;
+    padding-inline: 8px;
+  }
   .em-install-gate-step b { width: 25px; height: 25px; border-radius: 9px; }
-  .em-install-gate-actions { grid-template-columns: minmax(0,1fr) auto; gap: 6px; }
-  .em-install-retry-btn { padding-inline: 8px !important; }
+  .em-install-gate-step span { column-gap: 5px; }
+  .em-install-btn-label { font-size: .86rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .em-install-gate-step,
   .em-install-gate-actions .em-install-cta,
-  .em-install-gate-actions .em-install-cta::before {
+  .em-install-gate-actions .em-install-cta::before,
+  .em-install-gate-actions .em-install-cta::after,
+  .em-install-rocket-wrap .em-rs-flame,
+  .em-install-rocket-wrap .em-rs-flame::before,
+  .em-install-rocket-wrap .em-rs-flame::after {
     animation: none !important;
   }
 }
