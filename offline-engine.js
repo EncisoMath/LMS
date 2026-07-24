@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.030';
+  const OFFLINE_VERSION = '0.25.031';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -11,6 +11,11 @@
     gradebooks: 'gradebooks'
   });
   const MEDIA_CACHE = 'encisomath-media-v1';
+  const CONTENT_PERIODIC_TAG = 'encisomath-content-periodic';
+  const CONTENT_SYNC_TAG = 'encisomath-content-sync';
+  const CONTENT_CONFIG_KEY = 'background-content-config';
+  const CONTENT_STATUS_KEY = 'background-content-status';
+  const CONTENT_MIN_INTERVAL = 60 * 60 * 1000;
   const STATIC_EXTERNAL_URLS = [
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js',
     'https://unpkg.com/@supabase/supabase-js@2.49.1/dist/umd/supabase.js',
@@ -27,6 +32,9 @@
   let syncPromise = null;
   let prefetchPromise = null;
   let statusUpdateTimer = null;
+  let backgroundContentPromise = null;
+  let lastBackgroundManifestDigest = '';
+  let lastBackgroundManifestAt = 0;
   const objectUrls = new Map();
 
   function openDb() {
@@ -101,6 +109,202 @@
 
   async function kvDelete(key) {
     return withStore(STORES.kv, 'readwrite', (store) => store.delete(key));
+  }
+
+
+  function backgroundContentIndexKey(userId) {
+    return `background-content-index:${String(userId || '')}`;
+  }
+
+  function backgroundContentPayloadKey(userId) {
+    return `background-content-payload:${String(userId || '')}`;
+  }
+
+  function manifestDigest(manifest = {}) {
+    const signatures = Object.fromEntries(Object.entries(manifest.entries || {}).map(([key, entry]) => [key, String(entry?.signature || '')]));
+    const text = window.EncisoContentSync?.stableStringify?.(signatures) || JSON.stringify(signatures);
+    return window.EncisoContentSync?.hashString?.(text) || hashString(text);
+  }
+
+  async function existingServiceWorkerRegistration(waitAfterLoad = false) {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+      const current = await navigator.serviceWorker.getRegistration?.();
+      if (current) return current;
+    } catch (_) {}
+    if (!waitAfterLoad || document.readyState !== 'complete') return null;
+    return Promise.race([
+      navigator.serviceWorker.ready.catch(() => null),
+      new Promise((resolve) => setTimeout(() => resolve(null), 5000))
+    ]);
+  }
+
+  async function serviceWorkerRequest(message, timeoutMs = 45000) {
+    if (!('serviceWorker' in navigator)) return null;
+    const registration = await existingServiceWorkerRegistration(true);
+    const worker = navigator.serviceWorker.controller || registration?.active || registration?.waiting || registration?.installing;
+    if (!worker) return null;
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value || null);
+      };
+      const timer = setTimeout(() => finish(null), timeoutMs);
+      channel.port1.onmessage = (event) => finish(event.data);
+      try { worker.postMessage(message, [channel.port2]); }
+      catch (_) { finish(null); }
+    });
+  }
+
+  async function registerPeriodicContentSync() {
+    if (!('serviceWorker' in navigator)) return { supported: false, registered: false };
+    const registration = await existingServiceWorkerRegistration(false);
+    if (!registration) return { supported: false, registered: false };
+    let registered = false;
+    let supported = Boolean(registration.periodicSync);
+    if (registration.periodicSync) {
+      try {
+        await registration.periodicSync.register(CONTENT_PERIODIC_TAG, { minInterval: CONTENT_MIN_INTERVAL });
+        registered = true;
+      } catch (_) {}
+    }
+    return { supported, registered };
+  }
+
+  async function unregisterPeriodicContentSync() {
+    if (!('serviceWorker' in navigator)) return;
+    const registration = await existingServiceWorkerRegistration(false);
+    try { await registration?.periodicSync?.unregister?.(CONTENT_PERIODIC_TAG); } catch (_) {}
+  }
+
+  async function disableBackgroundContentSync() {
+    const config = await kvGet(CONTENT_CONFIG_KEY).catch(() => null);
+    await unregisterPeriodicContentSync().catch(() => {});
+    if (config?.userId) {
+      await kvDelete(backgroundContentIndexKey(config.userId)).catch(() => {});
+      await kvDelete(backgroundContentPayloadKey(config.userId)).catch(() => {});
+    }
+    await kvDelete(CONTENT_CONFIG_KEY).catch(() => {});
+    await kvDelete(CONTENT_STATUS_KEY).catch(() => {});
+    lastBackgroundManifestDigest = '';
+    lastBackgroundManifestAt = 0;
+  }
+
+  async function configureBackgroundContentSync(snapshot = activeSnapshot, options = {}) {
+    if (!snapshot?.user || snapshot.user.role !== 'student') return null;
+    const helper = window.EncisoContentSync;
+    const publicConfig = window.ENCISOMATH_SUPABASE || {};
+    if (!helper?.manifestFromSnapshot || !publicConfig.url || !publicConfig.publishableKey) return null;
+
+    let portalSession = null;
+    try { portalSession = await cloud.getSession(); } catch (_) {}
+    if (portalSession?.encisomathStudentPortal && portalSession.encisomathRemember === false) {
+      await disableBackgroundContentSync();
+      return { enabled: false, reason: 'session-only' };
+    }
+
+    const studentCode = String(snapshot.user.id || portalSession?.studentCode || '').replace(/^student:/, '');
+    const userId = String(snapshot.user.authId || portalSession?.user?.id || `student:${studentCode}`);
+    if (!studentCode || !userId) return null;
+
+    const previousConfig = await kvGet(CONTENT_CONFIG_KEY).catch(() => null);
+    if (previousConfig?.userId && String(previousConfig.userId) !== userId) {
+      await kvDelete(backgroundContentIndexKey(previousConfig.userId)).catch(() => {});
+      await kvDelete(backgroundContentPayloadKey(previousConfig.userId)).catch(() => {});
+    }
+
+    const registrationState = await registerPeriodicContentSync();
+    const config = {
+      enabled: true,
+      version: OFFLINE_VERSION,
+      userId,
+      studentCode,
+      supabaseUrl: String(publicConfig.url || ''),
+      publishableKey: String(publicConfig.publishableKey || ''),
+      periodicSupported: registrationState.supported,
+      periodicRegistered: registrationState.registered,
+      minInterval: CONTENT_MIN_INTERVAL,
+      configuredAt: previousConfig?.configuredAt || nowIso(),
+      updatedAt: nowIso()
+    };
+    await kvSet(CONTENT_CONFIG_KEY, config);
+
+    const manifest = helper.manifestFromSnapshot(snapshot);
+    const indexKey = backgroundContentIndexKey(userId);
+    const existingIndex = await kvGet(indexKey).catch(() => null);
+    if (!existingIndex) {
+      await kvSet(indexKey, {
+        version: Number(manifest.version || 1),
+        studentCode,
+        entries: Object.fromEntries(Object.entries(manifest.entries || {}).map(([key, entry]) => [key, String(entry?.signature || '')])),
+        baselineAt: nowIso(),
+        updatedAt: nowIso()
+      });
+      await kvSet(CONTENT_STATUS_KEY, {
+        ok: true,
+        baseline: true,
+        userId,
+        changedCount: 0,
+        downloadedCount: 0,
+        completedAt: nowIso()
+      });
+      return { enabled: true, baseline: true, ...registrationState };
+    }
+
+    const digest = manifestDigest(manifest);
+    const now = Date.now();
+    if (!options.force && digest === lastBackgroundManifestDigest && now - lastBackgroundManifestAt < 5 * 60 * 1000) {
+      return { enabled: true, skipped: true, ...registrationState };
+    }
+    lastBackgroundManifestDigest = digest;
+    lastBackgroundManifestAt = now;
+    if (!backgroundContentPromise) {
+      backgroundContentPromise = serviceWorkerRequest({ type: 'ENCISOMATH_CONTENT_MANIFEST', manifest })
+        .finally(() => { backgroundContentPromise = null; });
+    }
+    if (options.awaitCompletion) {
+      const result = await backgroundContentPromise;
+      return { enabled: true, ...registrationState, ...(result || {}) };
+    }
+    backgroundContentPromise.catch(() => {});
+    return { enabled: true, queued: true, ...registrationState };
+  }
+
+  async function requestRemoteBackgroundContentSync(options = {}) {
+    if (backgroundContentPromise) return backgroundContentPromise;
+    backgroundContentPromise = serviceWorkerRequest({
+      type: 'ENCISOMATH_CONTENT_SYNC_NOW',
+      baseline: options.baseline === true
+    }).finally(() => { backgroundContentPromise = null; });
+    return backgroundContentPromise;
+  }
+
+  async function applyPendingBackgroundContent() {
+    const config = await kvGet(CONTENT_CONFIG_KEY).catch(() => null);
+    const userId = String(config?.userId || '');
+    if (!config?.enabled || !userId || typeof cloud.normalizeStudentContentPayload !== 'function') return null;
+    const pendingKey = backgroundContentPayloadKey(userId);
+    const pending = await kvGet(pendingKey).catch(() => null);
+    if (!pending?.payload) return null;
+    const normalized = cloud.normalizeStudentContentPayload(pending.payload, config.studentCode);
+    const snapshot = await loadSnapshot(userId);
+    if (!snapshot) return null;
+    snapshot.user = { ...(snapshot.user || {}), ...(normalized.user || {}) };
+    snapshot.data = snapshot.data && typeof snapshot.data === 'object' ? snapshot.data : {};
+    if (Array.isArray(normalized.assignments)) snapshot.data.assignments = normalized.assignments;
+    if (Array.isArray(normalized.students)) snapshot.data.students = normalized.students;
+    if (Array.isArray(normalized.classes)) snapshot.data.classes = normalized.classes;
+    if (Array.isArray(normalized.activities)) snapshot.data.activities = normalized.activities;
+    snapshot.preferences = { ...(snapshot.preferences || {}), ...(normalized.preferences || {}) };
+    snapshot._offline = snapshot._offline && typeof snapshot._offline === 'object' ? snapshot._offline : {};
+    snapshot._offline.backgroundContentSyncedAt = pending.receivedAt || nowIso();
+    await saveSnapshot(snapshot, { serverSyncedAt: pending.receivedAt || nowIso() });
+    await kvDelete(pendingKey);
+    return snapshot;
   }
 
   function safeClone(value) {
@@ -1890,6 +2094,7 @@
           const serverSyncedAt = await getServerNow();
           const fresh = await cloud.loadApplicationData();
           await saveSnapshot(fresh, { serverSyncedAt });
+          await configureBackgroundContentSync(fresh).catch(() => {});
           const hydrated = await hydrateSnapshot(fresh);
           dispatch('encisomath:sync-complete', { snapshot: hydrated, summary });
         } catch (_) {}
@@ -1994,6 +2199,7 @@
     try {
       return await cloud.signOut();
     } finally {
+      if (leavingStudentPortal) await disableBackgroundContentSync().catch(() => {});
       activeUserId = '';
       activeSnapshot = null;
       if (!leavingStudentPortal) await kvDelete(sessionKey()).catch(() => {});
@@ -2009,6 +2215,7 @@
   }
 
   async function wrappedLoadApplicationData(options = {}) {
+    await applyPendingBackgroundContent().catch(() => {});
     const report = (progress, label, detail = {}) => {
       if (typeof options?.onProgress !== 'function') return;
       try { options.onProgress({ progress, label, ...detail }); } catch (_) {}
@@ -2049,6 +2256,7 @@
         });
         report(89, 'Guardando una copia offline segura...');
         await saveSnapshot(fresh, { serverSyncedAt });
+        await configureBackgroundContentSync(fresh).catch(() => {});
         report(95, 'Preparando los datos de la aplicación...');
         const hydrated = await hydrateSnapshot(fresh);
         scheduleStatusUpdate();
@@ -2208,6 +2416,8 @@
 
     syncNow,
     prefetchEverything,
+    configureBackgroundContentSync,
+    requestRemoteBackgroundContentSync,
     getOfflineStatus: async () => {
       const rows = await allMutations();
       return {
@@ -2224,11 +2434,29 @@
     version: OFFLINE_VERSION,
     syncNow,
     prefetchEverything,
+    configureBackgroundContentSync,
+    requestRemoteBackgroundContentSync,
     loadSnapshot,
     saveSnapshot,
     getStatus: wrapped.getOfflineStatus,
     openSyncCenter
   });
+
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type !== 'ENCISOMATH_CONTENT_SYNC_COMPLETE') return;
+      if (document.visibilityState !== 'visible') return;
+      applyPendingBackgroundContent().then(async (snapshot) => {
+        if (!snapshot) return;
+        const hydrated = await hydrateSnapshot(snapshot);
+        dispatch('encisomath:sync-complete', {
+          snapshot: hydrated,
+          summary: { backgroundContent: true, ...event.data }
+        });
+      }).catch(() => {});
+    });
+  }
 
   window.addEventListener('online', () => {
     scheduleStatusUpdate();
@@ -2242,6 +2470,9 @@
     ensureStatusChip();
     scheduleStatusUpdate();
     prefetchExternalScripts().catch(() => {});
+    window.setTimeout(() => {
+      if (activeSnapshot?.user?.role === 'student') configureBackgroundContentSync(activeSnapshot, { force: true }).catch(() => {});
+    }, 1200);
     window.setInterval(() => {
       if (isOnline() && document.visibilityState === 'visible') syncNow({ automatic: true }).catch(() => {});
     }, 60000);

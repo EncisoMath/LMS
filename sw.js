@@ -1,8 +1,16 @@
-const SW_VERSION = 'encisomath-offline-v0.25.030';
+importScripts('./background-content-sync.js');
+
+const SW_VERSION = 'encisomath-offline-v0.25.031';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
 const MEDIA_CACHE = 'encisomath-media-v1';
+const CONTENT_SYNC_TAG = 'encisomath-content-sync';
+const CONTENT_PERIODIC_TAG = 'encisomath-content-periodic';
+const OFFLINE_DB_NAME = 'encisomath-offline-v1';
+const OFFLINE_KV_STORE = 'kv';
+const CONTENT_CONFIG_KEY = 'background-content-config';
+const CONTENT_STATUS_KEY = 'background-content-status';
 
 const PRECACHE_URLS = [
   './',
@@ -12,6 +20,7 @@ const PRECACHE_URLS = [
   './supabase-config.js',
   './supabase-adapter.js',
   './offline-engine.js',
+  './background-content-sync.js',
   './manifest.webmanifest',
   './assets/default-avatar.svg',
   './assets/default-profile.svg',
@@ -235,6 +244,248 @@ async function mediaCacheFirst(request) {
   catch (_) { return response; }
 }
 
+
+
+let offlineDbPromise = null;
+
+function openOfflineDb() {
+  if (offlineDbPromise) return offlineDbPromise;
+  offlineDbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(OFFLINE_DB_NAME);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('No se pudo abrir la copia offline.'));
+    request.onblocked = () => reject(new Error('La copia offline está bloqueada.'));
+  });
+  return offlineDbPromise;
+}
+
+async function offlineKvGet(key) {
+  const db = await openOfflineDb();
+  if (!db.objectStoreNames.contains(OFFLINE_KV_STORE)) return null;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_KV_STORE, 'readonly');
+    const request = tx.objectStore(OFFLINE_KV_STORE).get(key);
+    request.onsuccess = () => resolve(request.result?.value ?? null);
+    request.onerror = () => reject(request.error || new Error('No se pudo leer la configuración offline.'));
+  });
+}
+
+async function offlineKvSet(key, value) {
+  const db = await openOfflineDb();
+  if (!db.objectStoreNames.contains(OFFLINE_KV_STORE)) return;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_KV_STORE, 'readwrite');
+    tx.objectStore(OFFLINE_KV_STORE).put({ key, value, updatedAt: new Date().toISOString() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('No se pudo guardar la configuración offline.'));
+    tx.onabort = () => reject(tx.error || new Error('Se canceló la configuración offline.'));
+  });
+}
+
+function contentIndexKey(userId) {
+  return `background-content-index:${String(userId || '')}`;
+}
+
+function contentPayloadKey(userId) {
+  return `background-content-payload:${String(userId || '')}`;
+}
+
+async function notifyContentSyncClients(detail = {}) {
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  windows.forEach((client) => {
+    try { client.postMessage({ type: 'ENCISOMATH_CONTENT_SYNC_COMPLETE', ...detail }); } catch (_) {}
+  });
+}
+
+function backgroundConnectionShouldWait() {
+  const connection = self.navigator?.connection || self.navigator?.mozConnection || self.navigator?.webkitConnection;
+  if (connection?.saveData) return true;
+  return String(connection?.effectiveType || '').toLowerCase() === 'slow-2g';
+}
+
+async function hasReasonableStorageRoom() {
+  try {
+    const estimate = await self.navigator?.storage?.estimate?.();
+    const quota = Number(estimate?.quota || 0);
+    const usage = Number(estimate?.usage || 0);
+    if (!quota) return true;
+    return quota - usage >= 12 * 1024 * 1024;
+  } catch (_) {
+    return true;
+  }
+}
+
+async function cacheNewContentUrl(url) {
+  const href = String(url || '');
+  if (!/^https?:\/\//i.test(href)) return { ok: true, existing: true };
+  const cache = await caches.open(MEDIA_CACHE);
+  const request = new Request(href, { method: 'GET', credentials: 'omit' });
+  const existing = await cache.match(request, { ignoreSearch: false });
+  if (existing) return { ok: true, existing: true };
+  try {
+    const response = await fetch(request);
+    if (!response.ok && response.type !== 'opaque') return { ok: false, existing: false };
+    await cache.put(request, response.clone());
+    return { ok: true, existing: false };
+  } catch (_) {
+    return { ok: false, existing: false };
+  }
+}
+
+async function processContentManifest(manifest, options = {}) {
+  const config = options.config || await offlineKvGet(CONTENT_CONFIG_KEY);
+  const userId = String(config?.userId || '');
+  if (!config?.enabled || !userId || !manifest?.entries) {
+    return { ok: false, reason: 'not-configured', changedCount: 0, downloadedCount: 0 };
+  }
+
+  const indexKey = contentIndexKey(userId);
+  const previous = await offlineKvGet(indexKey);
+  const currentEntries = manifest.entries && typeof manifest.entries === 'object' ? manifest.entries : {};
+  if (!previous || options.baseline === true) {
+    const baselineEntries = Object.fromEntries(Object.entries(currentEntries).map(([key, entry]) => [key, String(entry?.signature || '')]));
+    const baseline = {
+      version: Number(manifest.version || 1),
+      studentCode: String(config.studentCode || ''),
+      entries: baselineEntries,
+      baselineAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await offlineKvSet(indexKey, baseline);
+    const result = { ok: true, baseline: true, changedCount: 0, downloadedCount: 0, existingCount: 0, failedCount: 0 };
+    await offlineKvSet(CONTENT_STATUS_KEY, { ...result, userId, completedAt: new Date().toISOString() });
+    return result;
+  }
+
+  if (backgroundConnectionShouldWait() || !(await hasReasonableStorageRoom())) {
+    const result = { ok: false, deferred: true, reason: 'device-conditions', changedCount: 0, downloadedCount: 0 };
+    await offlineKvSet(CONTENT_STATUS_KEY, { ...result, userId, completedAt: new Date().toISOString() });
+    return result;
+  }
+
+  const oldEntries = previous.entries && typeof previous.entries === 'object' ? previous.entries : {};
+  const changed = Object.values(currentEntries).filter((entry) => String(oldEntries[entry.key] || '') !== String(entry.signature || ''));
+  const removedKeys = Object.keys(oldEntries).filter((key) => !currentEntries[key]);
+  const nextEntries = {};
+  let downloadedCount = 0;
+  let existingCount = 0;
+  let failedCount = 0;
+  let failedEntries = 0;
+
+  for (const entry of Object.values(currentEntries)) {
+    const signature = String(entry?.signature || '');
+    const oldSignature = String(oldEntries[entry?.key] || '');
+    if (oldSignature === signature) {
+      nextEntries[entry.key] = signature;
+      continue;
+    }
+
+    let entryOk = true;
+    for (const url of Array.isArray(entry?.urls) ? entry.urls : []) {
+      const cached = await cacheNewContentUrl(url);
+      if (!cached.ok) {
+        entryOk = false;
+        failedCount += 1;
+      } else if (cached.existing) {
+        existingCount += 1;
+      } else {
+        downloadedCount += 1;
+      }
+    }
+    if (entryOk) nextEntries[entry.key] = signature;
+    else {
+      failedEntries += 1;
+      if (oldSignature) nextEntries[entry.key] = oldSignature;
+    }
+  }
+
+  const index = {
+    version: Number(manifest.version || 1),
+    studentCode: String(config.studentCode || ''),
+    entries: nextEntries,
+    updatedAt: new Date().toISOString(),
+    lastChangedCount: changed.length,
+    lastDownloadedCount: downloadedCount
+  };
+  await offlineKvSet(indexKey, index);
+
+  const allChangesReady = failedEntries === 0;
+  if (options.portalPayload && allChangesReady && (changed.length || removedKeys.length)) {
+    await offlineKvSet(contentPayloadKey(userId), {
+      payload: options.portalPayload,
+      studentCode: String(config.studentCode || ''),
+      receivedAt: new Date().toISOString()
+    });
+  }
+
+  const result = {
+    ok: allChangesReady,
+    baseline: false,
+    changedCount: changed.length,
+    removedCount: removedKeys.length,
+    downloadedCount,
+    existingCount,
+    failedCount,
+    failedEntries
+  };
+  await offlineKvSet(CONTENT_STATUS_KEY, { ...result, userId, completedAt: new Date().toISOString() });
+  await notifyContentSyncClients(result);
+  return result;
+}
+
+async function fetchStudentPortalPayload(config) {
+  const baseUrl = String(config?.supabaseUrl || '').replace(/\/+$/, '');
+  const key = String(config?.publishableKey || '');
+  const studentCode = String(config?.studentCode || '');
+  if (!baseUrl || !key || !studentCode) throw new Error('La descarga silenciosa no está configurada.');
+  const response = await fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_portal`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'omit',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'x-application-name': 'EncisoMath-LMS-Background'
+    },
+    body: JSON.stringify({ p_student_code: studentCode })
+  });
+  if (!response.ok) throw new Error(`Supabase respondió ${response.status}.`);
+  const payload = await response.json();
+  if (!payload || payload.ok === false) throw new Error(payload?.message || 'No se pudo consultar el contenido nuevo.');
+  return payload;
+}
+
+async function runRemoteContentSync(options = {}) {
+  const config = await offlineKvGet(CONTENT_CONFIG_KEY);
+  if (!config?.enabled) return { ok: false, reason: 'not-configured', changedCount: 0, downloadedCount: 0 };
+  try {
+    const payload = await fetchStudentPortalPayload(config);
+    const manifest = self.EncisoContentSync?.manifestFromPortalPayload?.(payload);
+    if (!manifest) throw new Error('No se pudo construir el manifiesto de contenido.');
+    return await processContentManifest(manifest, {
+      config,
+      baseline: options.baseline === true,
+      portalPayload: payload
+    });
+  } catch (error) {
+    const result = {
+      ok: false,
+      reason: 'network-or-server',
+      error: String(error?.message || error || 'Error de descarga silenciosa'),
+      changedCount: 0,
+      downloadedCount: 0
+    };
+    await offlineKvSet(CONTENT_STATUS_KEY, {
+      ...result,
+      userId: String(config?.userId || ''),
+      completedAt: new Date().toISOString()
+    }).catch(() => {});
+    return result;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -286,14 +537,31 @@ self.addEventListener('message', (event) => {
       }));
     })());
   }
+  if (event.data?.type === 'ENCISOMATH_CONTENT_MANIFEST' && event.data.manifest) {
+    event.waitUntil(processContentManifest(event.data.manifest, { baseline: event.data.baseline === true })
+      .then((result) => { try { event.ports?.[0]?.postMessage(result); } catch (_) {} }));
+  }
+  if (event.data?.type === 'ENCISOMATH_CONTENT_SYNC_NOW') {
+    event.waitUntil(runRemoteContentSync({ baseline: event.data.baseline === true })
+      .then((result) => { try { event.ports?.[0]?.postMessage(result); } catch (_) {} }));
+  }
 });
 
 self.addEventListener('sync', (event) => {
+  if (event.tag === CONTENT_SYNC_TAG) {
+    event.waitUntil(runRemoteContentSync());
+    return;
+  }
   if (event.tag !== 'encisomath-sync') return;
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     clients.forEach((client) => client.postMessage({ type: 'ENCISOMATH_SYNC_REQUEST' }));
   })());
+});
+
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag !== CONTENT_PERIODIC_TAG) return;
+  event.waitUntil(runRemoteContentSync());
 });
 
 self.addEventListener('push', (event) => {

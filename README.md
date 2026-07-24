@@ -1,4 +1,15 @@
-# EncisoMath LMS v0.25.030
+# EncisoMath LMS v0.25.031
+
+
+## v0.25.031 — descarga silenciosa e incremental de clases y actividades
+
+- En Android/Chromium instalado como PWA se registra `Periodic Background Sync` con un intervalo mínimo solicitado de una hora. El navegador decide el momento real según uso, batería, red y políticas del dispositivo.
+- En iPhone/Safari y navegadores sin esa API, el mismo proceso se ejecuta al abrir la aplicación y cuando la copia de datos se actualiza en primer plano.
+- La primera apertura crea una línea base de lo que el estudiante ya tenía y **no descarga de nuevo el contenido anterior**.
+- Cada ejecución compara un manifiesto local por contenido y solo procesa clases o actividades nuevas/cambiadas. Antes de solicitar cada PDF, portada, imagen o adjunto consulta `encisomath-media-v1`; si el URL ya está cacheado no vuelve a descargarlo.
+- Los metadatos recibidos en segundo plano se guardan para que el contenido nuevo aparezca incluso si la siguiente apertura ocurre sin conexión.
+- No usa notificaciones push ni muestra avisos al estudiante. Respeta ahorro de datos, conexiones extremadamente lentas y espacio local insuficiente, dejando el intento para otra oportunidad.
+- No incluye quizzes ni entregas estudiantiles en la precarga automática.
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -37,6 +48,7 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `styles.css`: diseño del LMS.
 - `supabase-adapter.js`: Auth, RPC, CRUD y Storage.
 - `offline-engine.js`: IndexedDB y sincronización offline.
+- `background-content-sync.js`: manifiesto incremental compartido entre la app y el Service Worker.
 - `sw.js`: Service Worker y caché.
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
