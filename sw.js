@@ -1,4 +1,4 @@
-const SW_VERSION = 'encisomath-offline-v0.25.023';
+const SW_VERSION = 'encisomath-offline-v0.25.024';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -84,10 +84,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keep = new Set([APP_CACHE, RUNTIME_CACHE, EXTERNAL_CACHE, MEDIA_CACHE]);
     const keys = await caches.keys();
+    const obsoleteCaches = keys.filter((name) => name.startsWith('encisomath-') && !keep.has(name));
+    const hadPreviousVersion = obsoleteCaches.some((name) => name !== MEDIA_CACHE);
     const media = await caches.open(MEDIA_CACHE);
     // Conserva los PDFs e imágenes que el usuario ya abrió en versiones
     // anteriores antes de eliminar las cachés runtime versionadas.
-    for (const key of keys.filter((name) => name.startsWith('encisomath-') && !keep.has(name))) {
+    for (const key of obsoleteCaches) {
       try {
         const oldCache = await caches.open(key);
         const requests = await oldCache.keys();
@@ -100,7 +102,24 @@ self.addEventListener('activate', (event) => {
       } catch (_) {}
       await caches.delete(key);
     }
+
     await self.clients.claim();
+
+    // La recarga se ordena desde el propio Service Worker para alcanzar incluso
+    // instalaciones que todavía ejecutan un app.js antiguo sin recarga automática.
+    if (hadPreviousVersion) {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      await Promise.allSettled(windows.map(async (client) => {
+        try { client.postMessage({ type: 'ENCISOMATH_UPDATE_ACTIVATED', version: SW_VERSION }); }
+        catch (_) {}
+        await new Promise((resolve) => setTimeout(resolve, 180));
+        try {
+          const target = new URL(client.url);
+          target.searchParams.set('__em_update', SW_VERSION.replace('encisomath-offline-v', ''));
+          await client.navigate(target.href);
+        } catch (_) {}
+      }));
+    }
   })());
 });
 
@@ -127,7 +146,7 @@ async function networkFirstNavigation(request) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4500);
   try {
-    const response = await fetch(request, { signal: controller.signal });
+    const response = await fetch(new Request(request, { cache: 'no-store' }), { signal: controller.signal });
     clearTimeout(timeout);
     if (response.ok) await cache.put('./index.html', response.clone());
     return response;
@@ -144,7 +163,7 @@ async function networkFirstNavigation(request) {
 async function staleWhileRevalidate(request) {
   const cached = await cacheMatchIgnoringSearch(APP_CACHE, request)
     || await cacheMatchIgnoringSearch(RUNTIME_CACHE, request);
-  const update = fetch(request).then(async (response) => {
+  const update = fetch(new Request(request, { cache: 'no-cache' })).then(async (response) => {
     if (response.ok) {
       const runtime = await caches.open(RUNTIME_CACHE);
       await runtime.put(request, response.clone());

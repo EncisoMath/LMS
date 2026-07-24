@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.023';
+  const APP_VERSION = '0.25.024';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -15806,21 +15806,103 @@
     if (window.CSS && typeof window.CSS.escape === 'function') return CSS.escape(String(value));
     return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   }
+  function showMandatoryUpdateScreen() {
+    if (document.getElementById('emMandatoryUpdateScreen')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'emMandatoryUpdateScreen';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'assertive');
+    overlay.innerHTML = `
+      <div style="width:min(420px,calc(100vw - 40px));text-align:center">
+        <img src="./assets/app-icon-192.png" alt="" width="92" height="92" style="display:block;margin:0 auto 20px;border-radius:24px" />
+        <div style="font:900 clamp(25px,7vw,38px)/1.05 Montserrat,system-ui,sans-serif;letter-spacing:-.04em">Actualizando EncisoMath</div>
+        <div style="margin-top:12px;font:600 14px/1.45 Montserrat,system-ui,sans-serif;opacity:.68">Estamos instalando la versión más reciente. Tus archivos offline y cambios guardados se conservarán.</div>
+        <div style="width:100%;height:8px;margin-top:24px;border-radius:999px;background:rgba(0,0,0,.1);overflow:hidden">
+          <div style="width:42%;height:100%;border-radius:inherit;background:#e21b3c;animation:emMandatoryUpdateMove .9s ease-in-out infinite alternate"></div>
+        </div>
+      </div>`;
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:#fff;color:#111';
+    const style = document.createElement('style');
+    style.id = 'emMandatoryUpdateStyle';
+    style.textContent = '@keyframes emMandatoryUpdateMove{from{transform:translateX(-10%)}to{transform:translateX(150%)}}';
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+  }
+
+  function clearServiceWorkerUpdateMarker() {
+    try {
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has('__em_update')) return;
+      url.searchParams.delete('__em_update');
+      const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState(window.history.state, '', cleanUrl);
+    } catch (_) {}
+  }
+
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
+    const reloadKey = `encisomath:sw-reload:${APP_VERSION}`;
+    let reloadingForUpdate = false;
+
+    const reloadWithNewWorker = () => {
+      if (reloadingForUpdate || !navigator.serviceWorker.controller) return;
+      reloadingForUpdate = true;
+      showMandatoryUpdateScreen();
+      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
+      if (lastReload && Date.now() - lastReload < 30000) {
+        console.warn('[EncisoMath] Se evitó una recarga repetida del Service Worker.');
+        document.getElementById('emMandatoryUpdateScreen')?.remove();
+        return;
+      }
+      sessionStorage.setItem(reloadKey, String(Date.now()));
+      window.setTimeout(() => window.location.reload(), 120);
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', reloadWithNewWorker);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'ENCISOMATH_UPDATE_ACTIVATED') showMandatoryUpdateScreen();
+    });
+
     window.addEventListener('load', async () => {
+      clearServiceWorkerUpdateMarker();
+      window.setTimeout(() => sessionStorage.removeItem(reloadKey), 30000);
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js?v=0.25.023', { updateViaCache: 'none' });
-        registration.update();
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // La actualización queda activa sin recargar la pantalla actual. Así,
-          // navegar a un curso no vuelve a disparar el splash de inicio.
-          console.info('[EncisoMath] Service worker actualizado; se usará plenamente en la próxima apertura.');
+        // URL estable: las instalaciones actuales y futuras consultan siempre el
+        // mismo sw.js. updateViaCache:none obliga al navegador a revalidarlo.
+        const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+
+        const activateWaitingWorker = () => {
+          if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        };
+        const checkForUpdate = async () => {
+          if (!navigator.onLine) return;
+          try {
+            await registration.update();
+            activateWaitingWorker();
+          } catch (error) {
+            console.warn('[EncisoMath] No se pudo comprobar la actualización:', error);
+          }
+        };
+
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) activateWaitingWorker();
+          });
         });
+
+        activateWaitingWorker();
+        await checkForUpdate();
+        window.addEventListener('online', checkForUpdate);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') checkForUpdate();
+        });
+        window.setInterval(checkForUpdate, 15 * 60 * 1000);
       } catch (error) {
         console.warn('Service worker no registrado:', error);
       }
-    });
+    }, { once: true });
   }
   function toast(message) {
     $toast.textContent = message;

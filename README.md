@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.022
+# EncisoMath LMS v0.25.024
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -41,6 +41,15 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
+
+## v0.25.024 — actualización obligatoria de la PWA
+
+- El Service Worker se registra desde la URL estable `./sw.js` con `updateViaCache: none`.
+- Se comprueba una versión nueva al abrir, recuperar conexión, volver a la app y cada 15 minutos.
+- Un worker nuevo activa `skipWaiting`, toma las pestañas con `clients.claim` y fuerza una navegación a la versión nueva incluso si la instalación seguía ejecutando JavaScript antiguo.
+- La recarga usa un marcador temporal y protección contra bucles.
+- Las navegaciones solicitan el HTML con `cache: no-store` y los recursos se revalidan sin depender de una copia HTTP vieja.
+- Se conservan `encisomath-media-v1`, IndexedDB, sesiones, preferencias y mutaciones offline pendientes.
 
 ## v0.25.023 — optimización de Storage
 
