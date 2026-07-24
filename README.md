@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.027
+# EncisoMath LMS v0.25.028
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -41,6 +41,12 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
+
+## v0.25.028 — corrección global del nombre EncisoMath
+
+- Se corrige el nombre visible anterior de la aplicación para usar únicamente “EncisoMath” en el logo animado, la pantalla de instalación, textos de accesibilidad, mensajes e instrucciones.
+- Se actualiza la referencia interna del comentario de estilos asociado al logo para mantener la nomenclatura uniforme.
+- No se modifican claves de almacenamiento, nombres de caché ni lógica funcional.
 
 ## v0.25.027 — instalación vertical y botón plateado
 

@@ -31336,7 +31336,7 @@ html body #app .em-pdf-loading {
   }
 }
 
-/* v0.25.000 - Logo EncisoMaths animado en carga/login y geometría sólida en login */
+/* v0.25.000 - Logo EncisoMath animado en carga/login y geometría sólida en login */
 .em-enciso-logo-scene {
   position: relative;
   width: min(96vw, 1200px);

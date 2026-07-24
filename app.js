@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.027';
+  const APP_VERSION = '0.25.028';
   const PDFJS_VERSION = '6.1.200';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -676,24 +676,24 @@
           ['Abre Compartir', 'Toca el icono de compartir del navegador.'],
           ['Añade a inicio', 'Elige “Añadir a pantalla de inicio”.'],
           ['Confirma', 'Toca “Añadir” para crear el icono.'],
-          ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMaths.']
+          ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMath.']
         ]
       : platform === 'android'
         ? [
             ['Toca instalar', 'Usa el botón brillante de abajo.'],
             ['Confirma', 'Acepta el aviso de instalación de Android.'],
             ['Espera el icono', 'Android la añadirá a tu pantalla de inicio.'],
-            ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMaths.']
+            ['Ábrela como app', 'Entra desde el nuevo icono de EncisoMath.']
           ]
         : [
             ['Abre el menú', 'Busca las opciones de este navegador.'],
             ['Instala la app', 'Elige instalar o añadir a inicio.'],
             ['Confirma', 'Acepta la instalación en el dispositivo.'],
-            ['Ábrela como app', 'Entra desde el icono de EncisoMaths.']
+            ['Ábrela como app', 'Entra desde el icono de EncisoMath.']
           ];
     const colors = ['is-red', 'is-blue', 'is-green', 'is-yellow'];
     return `
-      <div class="em-install-gate-steps" aria-label="Pasos para instalar EncisoMaths">
+      <div class="em-install-gate-steps" aria-label="Pasos para instalar EncisoMath">
         ${steps.map(([title, detail], index) => `
           <article class="em-install-gate-step ${colors[index]}">
             <b>${index + 1}</b>
@@ -729,7 +729,7 @@
           <div class="em-install-gate-logo">${encisoAnimatedLogoHTML('loading')}</div>
           <header class="em-install-gate-heading">
             <p class="section-kicker">Instalación requerida</p>
-            <h1>Usa EncisoMaths como app</h1>
+            <h1>Usa EncisoMath como app</h1>
             <p class="em-install-gate-copy">Instálala una sola vez y entra siempre desde su icono. Es más rápida, estable y conserva tus archivos offline.</p>
           </header>
           ${installGateMessageHTML(platform)}
@@ -1609,7 +1609,7 @@
   function encisoAnimatedLogoHTML(variant = 'default') {
     const safeVariant = String(variant || 'default').replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'default';
     return `
-      <div class="em-enciso-logo-scene em-enciso-logo-scene-${escapeAttr(safeVariant)}" data-em-animated-logo aria-label="Logo animado de EncisoMaths">
+      <div class="em-enciso-logo-scene em-enciso-logo-scene-${escapeAttr(safeVariant)}" data-em-animated-logo aria-label="Logo animado de EncisoMath">
         <div class="em-enciso-logo-hex-cluster" aria-hidden="true">
           <span class="em-enciso-logo-hex is-red"></span>
           <span class="em-enciso-logo-hex is-blue"></span>
@@ -1617,7 +1617,7 @@
           <span class="em-enciso-logo-hex is-yellow"></span>
         </div>
         <div class="em-enciso-logo-brand">
-          <div class="em-enciso-logo-brand-name">EncisoMaths</div>
+          <div class="em-enciso-logo-brand-name">EncisoMath</div>
           <div class="em-enciso-logo-tagline">Matematicas para dummies</div>
         </div>
       </div>
@@ -1715,7 +1715,7 @@
       <main class="login-screen">
         ${animatedShapes('login')}
         <section class="login-card">
-          <div class="logo-wrap em-login-logo-wrap" aria-label="EncisoMaths">
+          <div class="logo-wrap em-login-logo-wrap" aria-label="EncisoMath">
             ${encisoAnimatedLogoHTML('login')}
           </div>
 
