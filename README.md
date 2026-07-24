@@ -1,5 +1,15 @@
-# EncisoMath LMS v0.25.031
+# EncisoMath LMS v0.25.032
 
+
+
+## v0.25.032 — Planilla con asistencia por fecha y detalle de calificaciones
+
+- La sección docente **Notas** pasa a llamarse **Planilla** en el selector, encabezado y contexto de navegación.
+- Inmediatamente después de la columna **Estudiante** se muestran columnas verticales por cada fecha de asistencia del periodo.
+- Cada cruce estudiante/fecha muestra el estado real: `✅` asistió, `⚠️` excusa y `🔴` no asistió.
+- Estas columnas son solo visuales dentro de EncisoMath y **no se agregan al Excel de EducaCity**.
+- Las notas de actividades con registro guardado ahora son botones accesibles. Al tocarlas se consulta únicamente esa actividad y se muestra: calificación, fecha de asignación/publicación, fecha de calificación, historial de seguimientos/intentos con observaciones y comentario general.
+- No se modificó la ponderación, la definitiva, los quizzes, Rockstars, la asistencia consolidada ni la estructura del Excel exportado.
 
 ## v0.25.031 — descarga silenciosa e incremental de clases y actividades
 
@@ -11,7 +21,7 @@
 - No usa notificaciones push ni muestra avisos al estudiante. Respeta ahorro de datos, conexiones extremadamente lentas y espacio local insuficiente, dejando el intento para otra oportunidad.
 - No incluye quizzes ni entregas estudiantiles en la precarga automática.
 
-PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
+PWA estática para clases, actividades, asistencia, planilla, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
 ## Conexiones
 

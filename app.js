@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.031';
+  const APP_VERSION = '0.25.032';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1450,7 +1450,7 @@
       students: '👥 Estudiantes',
       classes: '📚 Clases',
       activities: '📝 Actividades',
-      notes: '📊 Notas',
+      notes: '📊 Planilla',
       rockstars: '🚀 Rockstars',
       quizzes: '🎮 Quizzes'
     }[normalizeSubjectTab(tab)] || (isStudentPortal() ? '📚 Clases' : '👥 Estudiantes');
@@ -1929,7 +1929,7 @@
     const tab = String(context?.tab || '');
     if (screen === 'subject') {
       const section = {
-        students: 'Estudiantes', classes: 'Clases', activities: 'Actividades', notes: 'Notas',
+        students: 'Estudiantes', classes: 'Clases', activities: 'Actividades', notes: 'Planilla',
         rockstars: 'Rockstars', quizzes: 'Quizzes'
       }[tab] || 'Asignatura';
       return [context.subject, section].filter(Boolean).join(' · ') || section;
@@ -2222,7 +2222,7 @@
                   <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
                   <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
                   <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
-                  <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Notas</option>
+                  <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Planilla</option>
                   <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
                   <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
                 `}
@@ -4144,12 +4144,52 @@
     return sessions.sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  function notesAttendanceDateLabel(value) {
+    const raw = String(value || '').trim();
+    const parsed = raw ? new Date(`${raw.slice(0, 10)}T12:00:00`) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) return `Asistencia ${raw || 'sin fecha'}`;
+    const day = parsed.toLocaleDateString('es-CO', { day: 'numeric' });
+    const monthRaw = parsed.toLocaleDateString('es-CO', { month: 'long' }).replace('.', '');
+    const month = monthRaw ? `${monthRaw.charAt(0).toUpperCase()}${monthRaw.slice(1)}` : '';
+    const year = parsed.toLocaleDateString('es-CO', { year: 'numeric' });
+    return `Asistencia ${day} ${month} ${year}`.replace(/\s+/g, ' ').trim();
+  }
+
+  function notesAttendanceStatus(session, studentCode) {
+    const raw = String(session?.attendance?.[studentCode] || 'absent').toLowerCase();
+    if (raw === 'present') return 'present';
+    if (raw === 'excused' || raw === 'excuse') return 'excused';
+    return 'absent';
+  }
+
+  function notesAttendanceStatusMeta(status) {
+    if (status === 'present') return { icon: '✅', label: 'Asistió' };
+    if (status === 'excused') return { icon: '⚠️', label: 'Excusa' };
+    return { icon: '🔴', label: 'No asistió' };
+  }
+
+  function notesAttendanceHeaderHTML(session) {
+    const label = notesAttendanceDateLabel(session?.date || '');
+    return `
+      <th class="em-notes-attendance-header" scope="col" title="${escapeAttr(label)}">
+        <div><span>${escapeHTML(label)}</span></div>
+      </th>
+    `;
+  }
+
+  function notesAttendanceCellHTML(student, session) {
+    const status = notesAttendanceStatus(session, student?.id || student?.studentCode || '');
+    const meta = notesAttendanceStatusMeta(status);
+    const label = `${notesAttendanceDateLabel(session?.date || '')}: ${meta.label}`;
+    return `<td class="em-notes-attendance-cell is-${status}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}"><span aria-hidden="true">${meta.icon}</span></td>`;
+  }
+
   function notesAttendanceSummary(studentCode, sessions = []) {
     const summary = { total: sessions.length, present: 0, absent: 0, excused: 0, score: null };
     sessions.forEach((session) => {
       const status = String(session.attendance?.[studentCode] || 'absent');
       if (status === 'present') summary.present += 1;
-      else if (status === 'excused') summary.excused += 1;
+      else if (status === 'excused' || status === 'excuse') summary.excused += 1;
       else summary.absent += 1;
     });
     if (!summary.total) return summary;
@@ -4215,7 +4255,9 @@
       return {
         score: Number(record?.score ?? 40),
         pending: !record?.gradedAt,
-        title: record?.gradedAt ? 'Calificación registrada' : 'Pendiente de calificar'
+        title: record?.gradedAt ? 'Calificación registrada · toca para ver el detalle' : 'Pendiente de calificar · toca para ver el detalle',
+        record: record || null,
+        interactive: true
       };
     }
     if (column.type === 'quiz') {
@@ -4533,7 +4575,7 @@
 
   function notesHeroHTML(assignment) {
     return `
-      <section class="activity-hero em-act-hero-host em-notes-hero-host" data-em-notes-hero aria-label="Notas del periodo">
+      <section class="activity-hero em-act-hero-host em-notes-hero-host" data-em-notes-hero aria-label="Planilla del periodo">
         <div class="em-act-shapes" aria-hidden="true">
           <span class="em-act-shape em-act-shape-circle"></span>
           <span class="em-act-shape em-act-shape-square"></span>
@@ -4548,7 +4590,7 @@
         </div>
         <div class="em-act-content em-notes-hero-content">
           <span class="em-act-eyebrow">${escapeHTML(assignment.subject || 'Asignatura')} • ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}</span>
-          <h1 class="em-act-title">NOTAS</h1>
+          <h1 class="em-act-title">PLANILLA</h1>
           <p class="em-act-subtitle">Actividades, quizzes, asistencia y Rockstars.</p>
         </div>
       </section>
@@ -4579,16 +4621,22 @@
     `;
   }
 
-  function notesStudentRowHTML(student, columns, context) {
+  function notesStudentRowHTML(student, columns, attendanceSessions, context) {
     let weighted = 0;
+    const name = notesStudentNameParts(student);
+    const attendanceCells = (attendanceSessions || []).map((session) => notesAttendanceCellHTML(student, session)).join('');
     const cells = columns.map((column) => {
       const cell = notesCellScore(column, student, context);
       const score = cell.score === null ? null : Math.max(0, Math.min(100, Number(cell.score || 0)));
       if (score !== null) weighted += score * (Number(column.weight || 0) / 100);
-      return `<td class="em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''}" title="${escapeAttr(cell.title || '')}">${score === null ? '—' : Math.round(score)}</td>`;
+      const value = score === null ? '—' : Math.round(score);
+      const classes = `em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''} ${column.type === 'activity' && cell.interactive ? 'has-detail' : ''}`;
+      if (column.type === 'activity' && cell.interactive) {
+        return `<td class="${classes}" title="${escapeAttr(cell.title || '')}"><button class="em-notes-grade-detail-trigger" type="button" data-notes-activity-grade="${escapeAttr(column.activityId)}" data-notes-student-code="${escapeAttr(student.id)}" aria-label="Ver detalle de ${escapeAttr(column.title)} para ${escapeAttr(student.fullName || name.lastName || student.id)}">${value}</button></td>`;
+      }
+      return `<td class="${classes}" title="${escapeAttr(cell.title || '')}">${value}</td>`;
     }).join('');
     const finalScore = Math.max(0, Math.min(100, Math.floor(weighted + 1e-9)));
-    const name = notesStudentNameParts(student);
     return `
       <tr>
         <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
@@ -4596,10 +4644,94 @@
           <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
           <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
         </th>
+        ${attendanceCells}
         ${cells}
         <td class="em-notes-final-cell ${notesScoreClass(finalScore)}"><strong>${finalScore}</strong></td>
       </tr>
     `;
+  }
+
+  function notesDetailDateTime(value, fallback = 'No registrado') {
+    if (!value) return fallback;
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return formatActivityTrackingDateTime(date);
+  }
+
+  function notesActivityGradeDetailHTML(activity, student, record) {
+    const events = Array.isArray(record?.deliveryEvents) ? record.deliveryEvents : [];
+    const score = Number(record?.score ?? 0);
+    const assignedAt = activity?.startsAt || activity?.createdAt || '';
+    const observation = String(record?.observations || '').trim();
+    return `
+      <section class="modal-card em-notes-grade-detail-modal" role="dialog" aria-modal="true" aria-labelledby="notesGradeDetailTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Detalle de la calificación</p>
+        <h2 id="notesGradeDetailTitle">${escapeHTML(activity?.title || 'Actividad')}</h2>
+        <p class="em-notes-grade-detail-student">${escapeHTML(student?.fullName || record?.fullName || record?.studentCode || '')}</p>
+        <div class="em-notes-grade-detail-summary">
+          <article class="is-score"><span>Calificación</span><strong>${Math.round(Math.max(0, Math.min(100, score)) * 10) / 10}</strong><small>/100</small></article>
+          <article><span>Actividad asignada</span><strong>${escapeHTML(notesDetailDateTime(assignedAt))}</strong></article>
+          <article><span>Calificada</span><strong>${escapeHTML(notesDetailDateTime(record?.gradedAt, 'Pendiente de calificar'))}</strong></article>
+        </div>
+        <section class="em-notes-grade-detail-section">
+          <div class="em-notes-grade-detail-heading"><h3>Seguimiento de entregas</h3><span>${events.length} registro${events.length === 1 ? '' : 's'}</span></div>
+          <div class="em-notes-grade-detail-timeline">
+            ${events.length ? events.slice().reverse().map((event, index) => `
+              <article>
+                <b>${events.length - index}</b>
+                <div>
+                  <strong>${escapeHTML(activityDeliveryLabel(event?.status))}</strong>
+                  <time datetime="${escapeAttr(event?.occurredAt || '')}">${escapeHTML(notesDetailDateTime(event?.occurredAt))}</time>
+                  <p>${escapeHTML(String(event?.note || '').trim() || 'Sin observación en este seguimiento.')}</p>
+                </div>
+              </article>
+            `).join('') : '<p class="em-notes-grade-detail-empty">No existen intentos o seguimientos registrados para esta entrega.</p>'}
+          </div>
+        </section>
+        <section class="em-notes-grade-detail-section">
+          <div class="em-notes-grade-detail-heading"><h3>Observación general</h3></div>
+          <p class="em-notes-grade-detail-observation">${escapeHTML(observation || 'No se registró una observación general al calificar.')}</p>
+        </section>
+      </section>
+    `;
+  }
+
+  async function openNotesActivityGradeDetail(activityId, studentCode) {
+    const assignmentId = String(state.assignment?.id || '');
+    const activity = (state.data.activities || []).find((item) => String(item.id || '') === String(activityId || ''));
+    const student = getStudentsForAssignment(state.assignment).find((item) => String(item.id || '') === String(studentCode || ''));
+    if (!activity || !assignmentId) return;
+    openModal(`
+      <section class="modal-card em-notes-grade-detail-modal is-loading" role="dialog" aria-modal="true" aria-label="Cargando detalle de la calificación">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-notes-grade-detail-loading"><span></span><strong>Cargando detalle…</strong><small>Consultando únicamente esta actividad.</small></div>
+      </section>
+    `);
+    try {
+      const rows = await cloudAPI().getActivityGradebook({ activityId: activity.id, assignmentId });
+      const basicRecord = notesActivityGradeMap(assignmentId).get(`${activity.id}|${studentCode}`) || null;
+      const record = (rows || []).find((item) => String(item.studentCode || '') === String(studentCode || '')) || {
+        studentCode,
+        fullName: student?.fullName || '',
+        score: Number(basicRecord?.score ?? 40),
+        gradedAt: basicRecord?.gradedAt || '',
+        observations: '',
+        deliveryEvents: []
+      };
+      syncActivityGradesFromGradebook(activity.id, assignmentId, rows || []);
+      openModal(notesActivityGradeDetailHTML(activity, student, record));
+    } catch (error) {
+      openModal(`
+        <section class="modal-card em-notes-grade-detail-modal" role="dialog" aria-modal="true" aria-labelledby="notesGradeDetailErrorTitle">
+          <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+          <p class="section-kicker">Detalle de la calificación</p>
+          <h2 id="notesGradeDetailErrorTitle">No se pudo abrir</h2>
+          <p class="em-notes-grade-detail-observation">${escapeHTML(error?.message || 'No se pudo consultar el detalle de esta nota.')}</p>
+        </section>
+      `);
+      reportCloudError('No se pudo cargar el detalle de la calificación', error, { silent: true });
+    }
   }
 
   function renderNotesTab(options = {}) {
@@ -4624,7 +4756,7 @@
       <section class="em-notes-toolbar">
         <div>
           <p class="section-kicker">Periodo ${Number(state.activePeriod || 1)}</p>
-          <h2>Hoja de calificaciones</h2>
+          <h2>Planilla de calificaciones</h2>
           <span>${students.length} estudiantes · ${columns.length} componentes · ${sessions.length} registros de clase</span>
         </div>
         <div class="em-notes-toolbar-actions">
@@ -4643,20 +4775,27 @@
             <thead>
               <tr>
                 <th class="em-notes-student-header" scope="col"><span>Estudiante</span></th>
+                ${sessions.map(notesAttendanceHeaderHTML).join('')}
                 ${columns.map(notesColumnHeaderHTML).join('')}
                 <th class="em-notes-final-header" scope="col"><div class="em-notes-final-header-copy"><span>Definitiva</span><small>Periodo</small></div></th>
               </tr>
             </thead>
             <tbody>
-              ${students.length ? students.map((student) => notesStudentRowHTML(student, columns, context)).join('') : '<tr><td class="em-notes-empty" colspan="99">Aún no hay estudiantes en este curso.</td></tr>'}
+              ${students.length ? students.map((student) => notesStudentRowHTML(student, columns, sessions, context)).join('') : '<tr><td class="em-notes-empty" colspan="99">Aún no hay estudiantes en este curso.</td></tr>'}
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">Toca el encabezado de una actividad, quiz, Asistencia o Rockstars para configurar su código, color y peso.</p>
+        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca una nota de actividad para ver su detalle, o un encabezado calificable para configurar código, color y peso.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
       button.addEventListener('click', () => openNotesColumnModal(button.dataset.notesColumnKey || ''));
+    });
+    content.querySelectorAll('[data-notes-activity-grade]').forEach((button) => {
+      button.addEventListener('click', () => openNotesActivityGradeDetail(
+        button.dataset.notesActivityGrade || '',
+        button.dataset.notesStudentCode || ''
+      ));
     });
     document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
       downloadNotesForEducaCity(event.currentTarget);
