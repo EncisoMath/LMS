@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.029';
+  const OFFLINE_VERSION = '0.25.030';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -1292,6 +1292,10 @@
       assignmentIds: ids,
       sortOrder: Math.floor(Date.now() / 1000),
       sortOrderByAssignment: Object.fromEntries(ids.map((id, index) => [String(id), Math.floor(Date.now() / 1000) + index])),
+      libraryAssignmentId: ids.length ? '' : String(payload.currentAssignment?.id || ''),
+      libraryGrade: ids.length ? '' : String(payload.currentAssignment?.grade || ''),
+      librarySubject: ids.length ? '' : String(payload.currentAssignment?.subject || ''),
+      libraryArea: ids.length ? '' : String(payload.currentAssignment?.area || ''),
       pendingSync: true
     };
     await updateSnapshot(async (snapshot) => {
@@ -1328,6 +1332,10 @@
         pageCount: Math.max(1, Number(payload.pageCount || current?.pageCount || 1)),
         assignmentIds: [...new Set((payload.targetAssignmentIds || []).filter(Boolean))],
         sortOrderByAssignment: Object.fromEntries([...new Set((payload.targetAssignmentIds || []).filter(Boolean))].map((id, index) => [String(id), Number(current?.sortOrderByAssignment?.[id] || current?.sortOrder || Math.floor(Date.now() / 1000) + index)])),
+        libraryAssignmentId: (payload.targetAssignmentIds || []).filter(Boolean).length ? '' : String(payload.currentAssignment?.id || current?.libraryAssignmentId || ''),
+        libraryGrade: (payload.targetAssignmentIds || []).filter(Boolean).length ? '' : String(payload.currentAssignment?.grade || current?.libraryGrade || ''),
+        librarySubject: (payload.targetAssignmentIds || []).filter(Boolean).length ? '' : String(payload.currentAssignment?.subject || current?.librarySubject || ''),
+        libraryArea: (payload.targetAssignmentIds || []).filter(Boolean).length ? '' : String(payload.currentAssignment?.area || current?.libraryArea || ''),
         status: 'published',
         pendingSync: true
       };

@@ -540,7 +540,12 @@
   function mapLesson(row) {
     const lesson = Array.isArray(row?.lesson) ? row.lesson[0] : row?.lesson;
     if (!lesson) return null;
-    const assignmentId = String(row?.assignment_id || '');
+    const linkedAssignmentId = String(row?.assignment_id || '');
+    const linkVisible = row?.visible !== false;
+    const assignmentId = linkVisible ? linkedAssignmentId : '';
+    const libraryAssignment = !linkVisible && linkedAssignmentId
+      ? assignments.find((item) => String(item?.id || '') === linkedAssignmentId)
+      : null;
     const sortOrder = Number(row?.sort_order || 0);
     return {
       id: String(lesson.id || ''),
@@ -563,8 +568,12 @@
       createdBy: lesson.created_by || '',
       assignmentId,
       assignmentIds: assignmentId ? [assignmentId] : [],
-      sortOrder,
-      sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {}
+      sortOrder: assignmentId ? sortOrder : 0,
+      sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {},
+      libraryAssignmentId: !linkVisible ? linkedAssignmentId : '',
+      libraryGrade: !linkVisible ? String(libraryAssignment?.grade || '') : '',
+      librarySubject: !linkVisible ? String(libraryAssignment?.subject || lesson.subject_name || '') : '',
+      libraryArea: !linkVisible ? String(libraryAssignment?.area || lesson.area || '') : ''
     };
   }
 
@@ -612,6 +621,10 @@
     const values = Object.values(existing.sortOrderByAssignment).map(Number).filter(Number.isFinite);
     existing.sortOrder = values.length ? Math.min(...values) : Number(existing.sortOrder || incoming.sortOrder || 0);
     if (!existing.createdAt && incoming.createdAt) existing.createdAt = incoming.createdAt;
+    if (!existing.libraryAssignmentId && incoming.libraryAssignmentId) existing.libraryAssignmentId = incoming.libraryAssignmentId;
+    if (!existing.libraryGrade && incoming.libraryGrade) existing.libraryGrade = incoming.libraryGrade;
+    if (!existing.librarySubject && incoming.librarySubject) existing.librarySubject = incoming.librarySubject;
+    if (!existing.libraryArea && incoming.libraryArea) existing.libraryArea = incoming.libraryArea;
     return existing;
   }
 
@@ -926,8 +939,7 @@
         trackAcademicQuery(supabaseClient
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
-          .in('assignment_id', assignmentIds)
-          .eq('visible', true), 'Clases cargadas...'),
+          .in('assignment_id', assignmentIds), 'Clases cargadas...'),
         trackAcademicQuery(supabaseClient
           .from('activity_assignments')
           .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
@@ -1532,11 +1544,13 @@
       const lessonResult = await supabaseClient.from('lessons').upsert(lessonRow, { onConflict: 'id' });
       if (lessonResult.error) throw normalizeError(lessonResult.error, 'No se pudo crear el registro de la clase.');
 
-      const linkRows = ids.map((assignmentId, index) => ({
+      const scopedLibraryAssignmentId = ids.length ? '' : String(currentAssignment?.id || '');
+      const targetLinkIds = ids.length ? ids : (scopedLibraryAssignmentId ? [scopedLibraryAssignmentId] : []);
+      const linkRows = targetLinkIds.map((assignmentId, index) => ({
         assignment_id: assignmentId,
         lesson_id: lessonId,
         sort_order: Math.floor(Date.now() / 1000) + index,
-        visible: true
+        visible: ids.length > 0
       }));
       if (linkRows.length) {
         const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
@@ -1563,8 +1577,14 @@
         status: 'published',
         assignmentId: ids[0] || '',
         assignmentIds: ids,
-        sortOrder: linkRows[0]?.sort_order || 0,
-        sortOrderByAssignment: Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
+        sortOrder: ids.length ? (linkRows[0]?.sort_order || 0) : 0,
+        sortOrderByAssignment: ids.length
+          ? Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
+          : {},
+        libraryAssignmentId: scopedLibraryAssignmentId,
+        libraryGrade: scopedLibraryAssignmentId ? String(currentAssignment?.grade || '') : '',
+        librarySubject: scopedLibraryAssignmentId ? String(currentAssignment?.subject || '') : '',
+        libraryArea: scopedLibraryAssignmentId ? String(currentAssignment?.area || '') : ''
       };
     } catch (error) {
       try { await supabaseClient.from('lessons').delete().eq('id', lessonId); } catch (_) {}
@@ -1687,11 +1707,13 @@
 
       const currentLinksResult = await supabaseClient
         .from('assignment_lessons')
-        .select('assignment_id,sort_order')
+        .select('assignment_id,sort_order,visible')
         .eq('lesson_id', safeLessonId);
       if (currentLinksResult.error) throw normalizeError(currentLinksResult.error, 'No se pudo consultar la visibilidad actual de la clase.');
       const currentLinks = currentLinksResult.data || [];
-      const selectedSet = new Set(ids.map(String));
+      const scopedLibraryAssignmentId = ids.length ? '' : String(currentAssignment?.id || '');
+      const targetLinkIds = ids.length ? ids : (scopedLibraryAssignmentId ? [scopedLibraryAssignmentId] : []);
+      const selectedSet = new Set(targetLinkIds.map(String));
       const removeIds = currentLinks.map((row) => String(row.assignment_id || '')).filter((id) => id && !selectedSet.has(id));
       if (removeIds.length) {
         const removeResult = await supabaseClient.from('assignment_lessons').delete().eq('lesson_id', safeLessonId).in('assignment_id', removeIds);
@@ -1699,11 +1721,11 @@
       }
       const sortMap = new Map(currentLinks.map((row) => [String(row.assignment_id || ''), Number(row.sort_order || 0)]));
       const baseSort = Math.floor(Date.now() / 1000);
-      const linkRows = ids.map((assignmentId, index) => ({
+      const linkRows = targetLinkIds.map((assignmentId, index) => ({
         assignment_id: assignmentId,
         lesson_id: safeLessonId,
         sort_order: sortMap.get(String(assignmentId)) || baseSort + index,
-        visible: true
+        visible: ids.length > 0
       }));
       if (linkRows.length) {
         const linkResult = await supabaseClient.from('assignment_lessons').upsert(linkRows, { onConflict: 'assignment_id,lesson_id' });
@@ -1731,8 +1753,14 @@
         status: 'published',
         assignmentId: ids[0] || '',
         assignmentIds: ids,
-        sortOrder: linkRows[0]?.sort_order || 0,
-        sortOrderByAssignment: Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
+        sortOrder: ids.length ? (linkRows[0]?.sort_order || 0) : 0,
+        sortOrderByAssignment: ids.length
+          ? Object.fromEntries(linkRows.map((row) => [String(row.assignment_id), Number(row.sort_order || 0)]))
+          : {},
+        libraryAssignmentId: scopedLibraryAssignmentId,
+        libraryGrade: scopedLibraryAssignmentId ? String(currentAssignment?.grade || '') : '',
+        librarySubject: scopedLibraryAssignmentId ? String(currentAssignment?.subject || '') : '',
+        libraryArea: scopedLibraryAssignmentId ? String(currentAssignment?.area || '') : ''
       };
     } catch (error) {
       const cleanup = newlyUploaded.filter((path) => path && path !== existingStoragePdfPath && path !== existingStorageThumbnailPath);
@@ -2307,7 +2335,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.029', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.030', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2349,7 +2377,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.029',
+          appVersion: '0.25.030',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2392,7 +2420,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.029',
+          appVersion: '0.25.030',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.029';
+  const APP_VERSION = '0.25.030';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -11896,7 +11896,16 @@
   }
 
   function contentAssignmentIds(item) {
-    return [...new Set((Array.isArray(item?.assignmentIds) ? item.assignmentIds : [item?.assignmentId]).map(String).filter(Boolean))];
+    const mappedIds = item?.sortOrderByAssignment && typeof item.sortOrderByAssignment === 'object'
+      ? Object.keys(item.sortOrderByAssignment)
+      : [];
+    return [...new Set([
+      ...(Array.isArray(item?.assignmentIds) ? item.assignmentIds : []),
+      ...(Array.isArray(item?.targetAssignmentIds) ? item.targetAssignmentIds : []),
+      item?.assignmentId,
+      item?.assignment_id,
+      ...mappedIds
+    ].map((value) => String(value || '').trim()).filter(Boolean))];
   }
 
   function contentIsAssignedTo(item, assignmentId = state.assignment?.id || '') {
@@ -11928,6 +11937,20 @@
     const bCreated = String(b?.createdAt || '');
     if (aCreated !== bCreated) return aCreated.localeCompare(bCreated);
     return String(a?.title || '').localeCompare(String(b?.title || ''), 'es');
+  }
+
+  function classMatchesCurrentLibrary(item, assignment = state.assignment) {
+    if (!assignment || contentAssignmentIds(item).length) return false;
+    const assignmentId = String(assignment.id || '');
+    const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
+    if (libraryAssignmentId) return libraryAssignmentId === assignmentId;
+
+    // Compatibilidad con snapshots anteriores que conservan el grado de
+    // origen, pero no el identificador de la asignación.
+    const libraryGrade = String(item?.libraryGrade || item?.grade || '');
+    if (!libraryGrade || libraryGrade !== String(assignment.grade || '')) return false;
+    return String(item?.librarySubject || item?.subject || '') === String(assignment.subject || '')
+      && String(item?.libraryArea || item?.area || '') === String(assignment.area || '');
   }
 
   function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {
@@ -13652,9 +13675,8 @@
     return (state.data.classes || [])
       .filter((item) => {
         if (contentIsAssignedTo(item, assignmentId)) return true;
-        if (studentMode || contentAssignmentIds(item).length) return false;
-        return String(item.subject || '') === String(assignment.subject || '')
-          && String(item.area || '') === String(assignment.area || '');
+        if (studentMode) return false;
+        return classMatchesCurrentLibrary(item, assignment);
       })
       .sort(compareContentForCurrentAssignment);
   }

@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.029
+# EncisoMath LMS v0.25.030
 
 PWA estática para clases, actividades, asistencia, notas, Rockstars, quizzes y portal estudiantil, con Supabase y funcionamiento offline-first.
 
@@ -42,6 +42,14 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 
 
+
+## v0.25.030 — clases aisladas correctamente por grado y curso
+
+- Las clases PDF dejan de aparecer como `Sin asignar` dentro de otros grados que comparten la misma asignatura o área.
+- El filtro recupera vínculos de curso conservados en `assignmentId`, `assignmentIds`, `targetAssignmentIds` y `sortOrderByAssignment`, incluyendo snapshots offline de versiones anteriores.
+- Una clase guardada sin seleccionar cursos queda asociada a la biblioteca del grado/asignatura desde donde se creó, mediante un vínculo invisible en `assignment_lessons`; no requiere una migración SQL nueva.
+- Los vínculos invisibles solo se cargan en el panel docente. El portal estudiantil continúa recibiendo exclusivamente clases visibles mediante sus RPC.
+- Al editar una clase, marcar cursos la publica en ellos; dejar todos desmarcados la devuelve únicamente a la biblioteca del grado actual.
 
 ## v0.25.029 — compatibilidad del visor PDF con iPhone, Safari y WebView antiguos
 
