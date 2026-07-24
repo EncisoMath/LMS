@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.032';
+  const OFFLINE_VERSION = '0.25.033';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -2295,6 +2295,10 @@
 
     saveAttendanceStatus(payload) {
       return executeMutation('saveAttendanceStatus', payload, cloud.saveAttendanceStatus, optimisticAttendance);
+    },
+    getAttendanceRecordDetail(payload) {
+      if (!isOnline()) return Promise.resolve(null);
+      return cloud.getAttendanceRecordDetail(payload);
     },
     addRockstarEvent(event) {
       return executeMutation('addRockstarEvent', { event }, ({ event: safeEvent, clientMutationId }) => cloud.addRockstarEvent({ ...safeEvent, clientMutationId }), ({ event: safeEvent }, mutationId) => optimisticRockstar(safeEvent, mutationId), {

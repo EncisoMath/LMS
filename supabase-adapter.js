@@ -1158,6 +1158,46 @@
     return data;
   }
 
+  async function getAttendanceRecordDetail({ assignmentId, studentCode, attendanceDate }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const studentId = resolveStudentDbId(studentCode);
+    if (!studentId) throw new Error(`No se encontro el estudiante ${studentCode} en Supabase.`);
+
+    const runQuery = (columns) => supabaseClient
+      .from('attendance_records')
+      .select(columns)
+      .eq('assignment_id', assignmentId)
+      .eq('student_id', studentId)
+      .eq('attendance_date', attendanceDate)
+      .maybeSingle();
+
+    let result = await runQuery('id,assignment_id,student_id,attendance_date,status,created_at,updated_at');
+    if (result.error) {
+      const message = String(result.error?.message || '').toLowerCase();
+      if (message.includes('created_at') || message.includes('column')) {
+        result = await runQuery('id,assignment_id,student_id,attendance_date,status,updated_at');
+      }
+    }
+    if (result.error) {
+      const message = String(result.error?.message || '').toLowerCase();
+      if (message.includes('updated_at') || message.includes('column')) {
+        result = await runQuery('id,assignment_id,student_id,attendance_date,status');
+      }
+    }
+    if (result.error) throw normalizeError(result.error, 'No se pudo consultar el detalle de la asistencia.');
+    if (!result.data) return null;
+    return {
+      id: result.data.id || '',
+      assignmentId: result.data.assignment_id || assignmentId,
+      studentCode: String(studentCode || ''),
+      attendanceDate: result.data.attendance_date || attendanceDate,
+      status: result.data.status || '',
+      recordedAt: result.data.created_at || result.data.updated_at || '',
+      updatedAt: result.data.updated_at || ''
+    };
+  }
+
   async function addRockstarEvent(event) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
@@ -2348,7 +2388,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.032', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.033', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2390,7 +2430,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.032',
+          appVersion: '0.25.033',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2433,7 +2473,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.032',
+          appVersion: '0.25.033',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2551,6 +2591,7 @@
     loadApplicationData,
     normalizeStudentContentPayload,
     saveAttendanceStatus,
+    getAttendanceRecordDetail,
     addRockstarEvent,
     createStudentAndEnroll,
     updateStudent,

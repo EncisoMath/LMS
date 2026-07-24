@@ -1,6 +1,15 @@
-# EncisoMath LMS v0.25.032
+# EncisoMath LMS v0.25.033
 
 
+
+## v0.25.033 — detalle y edición de asistencia desde la Planilla
+
+- Cada icono de asistencia de la Planilla ahora es interactivo.
+- Al tocar ✅, ⚠️ o 🔴 se abre una ventana con el estudiante, la fecha, el estado actual y la hora del registro cuando Supabase la conserva.
+- Si existe una modificación posterior, también se muestra su fecha y hora.
+- Desde la misma ventana se puede cambiar entre Asistió, Excusa y No asistió.
+- El cambio actualiza el registro real de asistencia, funciona con la cola offline existente y refresca la Planilla sin alterar notas, definitivas ni la exportación EducaCity.
+- La consulta de la hora es puntual: solo se solicita el registro tocado, no toda la asistencia nuevamente.
 
 ## v0.25.032 — Planilla con asistencia por fecha y detalle de calificaciones
 

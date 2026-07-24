@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.032';
+  const APP_VERSION = '0.25.033';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4178,10 +4178,171 @@
   }
 
   function notesAttendanceCellHTML(student, session) {
-    const status = notesAttendanceStatus(session, student?.id || student?.studentCode || '');
+    const studentCode = String(student?.id || student?.studentCode || '');
+    const status = notesAttendanceStatus(session, studentCode);
     const meta = notesAttendanceStatusMeta(status);
-    const label = `${notesAttendanceDateLabel(session?.date || '')}: ${meta.label}`;
-    return `<td class="em-notes-attendance-cell is-${status}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}"><span aria-hidden="true">${meta.icon}</span></td>`;
+    const label = `${notesAttendanceDateLabel(session?.date || '')}: ${meta.label}. Toca para ver o cambiar.`;
+    return `
+      <td class="em-notes-attendance-cell is-${status}" title="${escapeAttr(label)}">
+        <button
+          class="em-notes-attendance-trigger"
+          type="button"
+          data-notes-attendance-detail="${escapeAttr(session?.date || '')}"
+          data-notes-attendance-student="${escapeAttr(studentCode)}"
+          aria-label="${escapeAttr(label)}"
+        ><span aria-hidden="true">${meta.icon}</span></button>
+      </td>
+    `;
+  }
+
+  function notesAttendanceDetailDate(value) {
+    const raw = String(value || '').trim();
+    const parsed = raw ? new Date(`${raw.slice(0, 10)}T12:00:00`) : null;
+    if (!parsed || Number.isNaN(parsed.getTime())) return raw || 'Fecha no disponible';
+    return parsed.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function notesAttendanceTimestampInfo(detail) {
+    const createdAt = String(detail?.recordedAt || detail?.createdAt || '').trim();
+    const updatedAt = String(detail?.updatedAt || '').trim();
+    const primary = createdAt || updatedAt;
+    const primaryLabel = createdAt ? 'Hora en que se registró' : (updatedAt ? 'Última hora registrada' : 'Hora en que se registró');
+    return {
+      primaryLabel,
+      primaryText: primary ? notesDetailDateTime(primary) : 'No disponible para este registro.',
+      updatedText: createdAt && updatedAt && updatedAt !== createdAt ? notesDetailDateTime(updatedAt) : ''
+    };
+  }
+
+  function notesAttendanceDetailModalHTML(student, session, status, detail = null) {
+    const meta = notesAttendanceStatusMeta(status);
+    const timestamp = notesAttendanceTimestampInfo(detail);
+    const name = student?.fullName || notesStudentNameParts(student).lastName || String(student?.id || 'Estudiante');
+    const dateLabel = notesAttendanceDetailDate(session?.date || '');
+    const options = [
+      { value: 'present', icon: '✅', label: 'Asistió' },
+      { value: 'excused', icon: '⚠️', label: 'Excusa' },
+      { value: 'absent', icon: '🔴', label: 'No asistió' }
+    ];
+    return `
+      <section class="modal-card em-notes-grade-detail-modal em-notes-attendance-detail-modal" role="dialog" aria-modal="true" aria-labelledby="notesAttendanceDetailTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Detalle de asistencia</p>
+        <h2 id="notesAttendanceDetailTitle">${escapeHTML(name)}</h2>
+        <p class="em-notes-grade-detail-student">${escapeHTML(dateLabel)}</p>
+
+        <div class="em-notes-attendance-detail-summary">
+          <article class="is-status is-${escapeAttr(status)}">
+            <span>Estado actual</span>
+            <strong><b aria-hidden="true">${meta.icon}</b>${escapeHTML(meta.label)}</strong>
+          </article>
+          <article>
+            <span>${escapeHTML(timestamp.primaryLabel)}</span>
+            <strong>${escapeHTML(timestamp.primaryText)}</strong>
+            ${timestamp.updatedText ? `<small>Última modificación: ${escapeHTML(timestamp.updatedText)}</small>` : ''}
+          </article>
+        </div>
+
+        <form id="notesAttendanceDetailForm" class="em-notes-attendance-detail-form">
+          <fieldset>
+            <legend>Cambiar asistencia</legend>
+            <div class="em-notes-attendance-status-options">
+              ${options.map((option) => `
+                <label class="is-${option.value} ${status === option.value ? 'is-selected' : ''}">
+                  <input type="radio" name="notesAttendanceStatus" value="${option.value}" ${status === option.value ? 'checked' : ''} />
+                  <span aria-hidden="true">${option.icon}</span>
+                  <strong>${escapeHTML(option.label)}</strong>
+                </label>
+              `).join('')}
+            </div>
+          </fieldset>
+          <p class="em-class-create-error" id="notesAttendanceDetailError" role="alert"></p>
+          <div class="em-activity-modal-actions">
+            <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+            <button class="primary-btn" id="saveNotesAttendanceBtn" type="submit">Guardar cambio</button>
+          </div>
+        </form>
+      </section>
+    `;
+  }
+
+  async function updateNotesAttendanceStatus(assignmentId, attendanceDate, studentCode, status) {
+    const normalized = status === 'present' ? 'present' : (status === 'excused' ? 'excused' : 'absent');
+    if (!isCloudReady()) {
+      const attendance = getAttendance(assignmentId, attendanceDate);
+      attendance[studentCode] = normalized;
+      localStorage.setItem(`encisomath:attendance:${assignmentId}:${attendanceDate}`, JSON.stringify(attendance));
+      return { status: normalized, offline: true };
+    }
+    const key = cloudAttendanceKey(assignmentId, attendanceDate);
+    const previous = { ...(state.cloud.attendance[key] || {}) };
+    state.cloud.attendance[key] = { ...previous, [studentCode]: normalized };
+    try {
+      return await cloudAPI().saveAttendanceStatus({ assignmentId, studentCode, attendanceDate, status: normalized });
+    } catch (error) {
+      state.cloud.attendance[key] = previous;
+      throw error;
+    }
+  }
+
+  function initNotesAttendanceDetailModal(student, session, currentStatus) {
+    const form = document.getElementById('notesAttendanceDetailForm');
+    const saveButton = document.getElementById('saveNotesAttendanceBtn');
+    const errorBox = document.getElementById('notesAttendanceDetailError');
+    const refreshSelection = () => {
+      document.querySelectorAll('.em-notes-attendance-status-options label').forEach((label) => {
+        const input = label.querySelector('input[type="radio"]');
+        label.classList.toggle('is-selected', Boolean(input?.checked));
+      });
+    };
+    document.querySelectorAll('input[name="notesAttendanceStatus"]').forEach((input) => input.addEventListener('change', refreshSelection));
+    refreshSelection();
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const selected = form.querySelector('input[name="notesAttendanceStatus"]:checked')?.value || currentStatus;
+      if (errorBox) errorBox.textContent = '';
+      if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = 'Guardando…';
+      }
+      try {
+        await updateNotesAttendanceStatus(String(state.assignment?.id || ''), String(session?.date || ''), String(student?.id || ''), selected);
+        closeModal();
+        renderNotesTab();
+        toast('Asistencia actualizada.');
+      } catch (error) {
+        if (errorBox) errorBox.textContent = error?.message || 'No se pudo actualizar la asistencia.';
+        if (saveButton) {
+          saveButton.disabled = false;
+          saveButton.textContent = 'Guardar cambio';
+        }
+      }
+    });
+  }
+
+  async function openNotesAttendanceDetail(studentCode, attendanceDate) {
+    const assignmentId = String(state.assignment?.id || '');
+    const student = getStudentsForAssignment(state.assignment).find((item) => String(item.id || '') === String(studentCode || ''));
+    const session = notesAttendanceSessions(assignmentId, state.activePeriod).find((item) => String(item.date || '') === String(attendanceDate || ''));
+    if (!assignmentId || !student || !session) return;
+    const currentStatus = notesAttendanceStatus(session, studentCode);
+    openModal(`
+      <section class="modal-card em-notes-grade-detail-modal em-notes-attendance-detail-modal is-loading" role="dialog" aria-modal="true" aria-label="Cargando detalle de asistencia">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-notes-grade-detail-loading"><span></span><strong>Cargando asistencia…</strong><small>Consultando la hora de este registro.</small></div>
+      </section>
+    `);
+    let detail = null;
+    try {
+      if (isCloudReady() && typeof cloudAPI()?.getAttendanceRecordDetail === 'function') {
+        detail = await cloudAPI().getAttendanceRecordDetail({ assignmentId, studentCode, attendanceDate });
+      }
+    } catch (error) {
+      reportCloudError('No se pudo consultar la hora de la asistencia', error, { silent: true });
+    }
+    openModal(notesAttendanceDetailModalHTML(student, session, currentStatus, detail), () => {
+      initNotesAttendanceDetailModal(student, session, currentStatus);
+    });
   }
 
   function notesAttendanceSummary(studentCode, sessions = []) {
@@ -4785,7 +4946,7 @@
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca una nota de actividad para ver su detalle, o un encabezado calificable para configurar código, color y peso.</p>
+        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca un icono de asistencia para ver la hora o cambiarlo; toca una nota de actividad para consultar su detalle.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
@@ -4795,6 +4956,12 @@
       button.addEventListener('click', () => openNotesActivityGradeDetail(
         button.dataset.notesActivityGrade || '',
         button.dataset.notesStudentCode || ''
+      ));
+    });
+    content.querySelectorAll('[data-notes-attendance-detail]').forEach((button) => {
+      button.addEventListener('click', () => openNotesAttendanceDetail(
+        button.dataset.notesAttendanceStudent || '',
+        button.dataset.notesAttendanceDetail || ''
       ));
     });
     document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {

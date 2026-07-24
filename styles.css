@@ -34030,7 +34030,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-pdf-open-direct:active { transform: scale(.96); }
 
 /* =========================================================
-   ENCISOMATH v0.25.032 - PLANILLA, ASISTENCIA POR FECHA Y
+   ENCISOMATH v0.25.033 - PLANILLA, ASISTENCIA EDITABLE Y
    DETALLE DE CALIFICACIONES
    ========================================================= */
 .em-notes-attendance-header {
@@ -34086,6 +34086,131 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-notes-attendance-cell.is-present { background: color-mix(in srgb, #22c55e 8%, #050b13 92%) !important; }
 .em-notes-attendance-cell.is-excused { background: color-mix(in srgb, #ebb513 10%, #050b13 90%) !important; }
 .em-notes-attendance-cell.is-absent { background: color-mix(in srgb, #e21b3c 9%, #050b13 91%) !important; }
+.em-notes-attendance-trigger {
+  width: 100%;
+  height: 100%;
+  min-height: 54px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.em-notes-attendance-trigger:hover { background: rgba(255,255,255,.07); }
+.em-notes-attendance-trigger:active { transform: scale(.91); }
+.em-notes-attendance-trigger:focus-visible {
+  outline: 2px solid #24b49a;
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+}
+.em-notes-attendance-trigger span {
+  pointer-events: none;
+}
+
+.em-notes-attendance-detail-modal {
+  width: min(620px, calc(100vw - 28px));
+}
+.em-notes-attendance-detail-summary {
+  display: grid;
+  grid-template-columns: .9fr 1.45fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.em-notes-attendance-detail-summary article {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 9px;
+  background: #0c1522;
+}
+.em-notes-attendance-detail-summary article > span {
+  color: #8fa0b7;
+  font-size: .62rem;
+  font-weight: 850;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.em-notes-attendance-detail-summary article > strong {
+  color: #f8fafc;
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.em-notes-attendance-detail-summary article > small {
+  color: #93a5bb;
+  font-size: .63rem;
+  line-height: 1.4;
+}
+.em-notes-attendance-detail-summary article.is-status {
+  align-items: center;
+  text-align: center;
+}
+.em-notes-attendance-detail-summary article.is-status > strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: .86rem;
+}
+.em-notes-attendance-detail-summary article.is-status > strong b { font-size: 1.45rem; }
+.em-notes-attendance-detail-summary article.is-status.is-present { background: color-mix(in srgb, #22c55e 14%, #0c1522 86%); border-color: color-mix(in srgb, #22c55e 42%, rgba(255,255,255,.08)); }
+.em-notes-attendance-detail-summary article.is-status.is-excused { background: color-mix(in srgb, #ebb513 15%, #0c1522 85%); border-color: color-mix(in srgb, #ebb513 42%, rgba(255,255,255,.08)); }
+.em-notes-attendance-detail-summary article.is-status.is-absent { background: color-mix(in srgb, #e21b3c 14%, #0c1522 86%); border-color: color-mix(in srgb, #e21b3c 42%, rgba(255,255,255,.08)); }
+.em-notes-attendance-detail-form fieldset {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.085);
+  border-radius: 9px;
+  background: #0a121e;
+}
+.em-notes-attendance-detail-form legend {
+  padding: 0 7px;
+  color: #f8fafc;
+  font-size: .78rem;
+  font-weight: 850;
+}
+.em-notes-attendance-status-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.em-notes-attendance-status-options label {
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 6px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+  color: #dce6f2;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+.em-notes-attendance-status-options label:active { transform: scale(.96); }
+.em-notes-attendance-status-options label > input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.em-notes-attendance-status-options label > span { font-size: 1.5rem; }
+.em-notes-attendance-status-options label > strong { font-size: .68rem; text-align: center; }
+.em-notes-attendance-status-options label.is-selected {
+  border-color: rgba(255,255,255,.34);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.08), inset 0 0 24px rgba(255,255,255,.055);
+}
+.em-notes-attendance-status-options label.is-present.is-selected { background: color-mix(in srgb, #22c55e 18%, #0a121e 82%); border-color: #22c55e; }
+.em-notes-attendance-status-options label.is-excused.is-selected { background: color-mix(in srgb, #ebb513 18%, #0a121e 82%); border-color: #ebb513; }
+.em-notes-attendance-status-options label.is-absent.is-selected { background: color-mix(in srgb, #e21b3c 18%, #0a121e 82%); border-color: #e21b3c; }
+.em-notes-attendance-detail-form .em-activity-modal-actions { margin-top: 13px; }
 
 .em-notes-score-cell.has-detail {
   padding: 0;
@@ -34298,5 +34423,18 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-notes-grade-detail-summary article:last-child {
     grid-column: 1 / -1;
     min-height: 74px;
+  }
+  .em-notes-attendance-detail-summary {
+    grid-template-columns: 1fr;
+  }
+  .em-notes-attendance-detail-summary article {
+    min-height: 82px;
+  }
+  .em-notes-attendance-status-options {
+    gap: 6px;
+  }
+  .em-notes-attendance-status-options label {
+    min-height: 78px;
+    padding-inline: 4px;
   }
 }
