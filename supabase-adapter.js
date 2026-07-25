@@ -760,6 +760,13 @@
         observations: String(row?.observations || ''),
         stickerUrl: String(row?.sticker_url || row?.stickerUrl || ''),
         gradedAt,
+        riskAttempts: Number(row?.risk_attempts ?? row?.riskAttempts ?? 0),
+        riskBanned: row?.risk_banned === true || row?.riskBanned === true,
+        riskBannedAt: row?.risk_banned_at || row?.riskBannedAt || '',
+        riskLastReason: String(row?.risk_last_reason || row?.riskLastReason || ''),
+        riskLastEventAt: row?.risk_last_event_at || row?.riskLastEventAt || '',
+        riskReactivatedAt: row?.risk_reactivated_at || row?.riskReactivatedAt || '',
+        riskAutoGraded: row?.risk_auto_graded === true || row?.riskAutoGraded === true,
         allGraded: row?.all_graded === true || row?.allGraded === true,
         totalStudents: Number(row?.total_students ?? row?.totalStudents ?? 0),
         gradedStudents: Number(row?.graded_students ?? row?.gradedStudents ?? 0)
@@ -2191,13 +2198,48 @@
 
   async function getActivityGradebook({ activityId, assignmentId }) {
     const supabaseClient = getClient();
-    const recordsResult = await supabaseClient
+    let recordsResult = await supabaseClient
       .from('activity_student_records')
-      .select('id,activity_id,assignment_id,student_id,score,observations,sticker_url,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
+      .select('id,activity_id,assignment_id,student_id,score,observations,sticker_url,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,risk_attempts,risk_banned,risk_banned_at,risk_last_reason,risk_last_event_at,risk_reactivated_at,risk_auto_graded,student:students(id,student_code,display_name,first_name,last_name)')
       .eq('activity_id', activityId)
       .eq('assignment_id', assignmentId);
+    if (recordsResult.error) {
+      const riskColumnsMissing = String(recordsResult.error.message || '').toLowerCase().includes('risk_') || recordsResult.error.code === '42703';
+      if (riskColumnsMissing) {
+        recordsResult = await supabaseClient
+          .from('activity_student_records')
+          .select('id,activity_id,assignment_id,student_id,score,observations,sticker_url,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
+          .eq('activity_id', activityId)
+          .eq('assignment_id', assignmentId);
+      }
+    }
     if (recordsResult.error) throw normalizeError(recordsResult.error, 'No se pudo cargar la lista de calificaciones.');
     const records = recordsResult.data || [];
+    const riskResult = await supabaseClient.rpc('encisomath_teacher_activity_risks', {
+      p_activity_id: activityId,
+      p_assignment_id: assignmentId
+    });
+    let riskRows = [];
+    if (riskResult.error) {
+      const message = String(riskResult.error.message || '').toLowerCase();
+      const missing = riskResult.error.code === 'PGRST202' || message.includes('encisomath_teacher_activity_risks');
+      if (!missing) throw normalizeError(riskResult.error, 'No se pudo cargar el registro de riesgo de la actividad.');
+    } else {
+      riskRows = Array.isArray(riskResult.data) ? riskResult.data : [];
+    }
+    const riskMap = new Map();
+    riskRows.forEach((event) => {
+      const recordId = String(event?.record_id || event?.recordId || '');
+      if (!recordId) return;
+      if (!riskMap.has(recordId)) riskMap.set(recordId, []);
+      riskMap.get(recordId).push({
+        id: event?.id || '',
+        attemptNumber: Number(event?.attempt_number ?? event?.attemptNumber ?? 0),
+        reason: String(event?.reason || ''),
+        actionTaken: String(event?.action_taken || event?.actionTaken || 'warning'),
+        occurredAt: event?.occurred_at || event?.occurredAt || ''
+      });
+    });
     const recordIds = records.map((row) => row.id);
     let events = [];
     if (recordIds.length) {
@@ -2242,6 +2284,14 @@
         rubricScores: row.rubric_scores && typeof row.rubric_scores === 'object' ? row.rubric_scores : {},
         gradedAt: row.graded_at || '',
         updatedAt: row.updated_at || '',
+        riskAttempts: Number(row.risk_attempts || 0),
+        riskBanned: row.risk_banned === true,
+        riskBannedAt: row.risk_banned_at || '',
+        riskLastReason: row.risk_last_reason || '',
+        riskLastEventAt: row.risk_last_event_at || '',
+        riskReactivatedAt: row.risk_reactivated_at || '',
+        riskAutoGraded: row.risk_auto_graded === true,
+        riskEvents: riskMap.get(String(row.id)) || [],
         deliveryEvents,
         latestDeliveryStatus: deliveryEvents.length ? deliveryEvents[deliveryEvents.length - 1].status : ''
       };
@@ -2341,6 +2391,41 @@
       await removeStorageFiles([existingSubmissionFile.path]);
     }
     return getActivityGradebook({ activityId, assignmentId });
+  }
+
+  async function reportActivityRiskEvent({ studentCode = '', activityId = '', assignmentId = '', reason = '', clientEventId = '', occurredAt = '' }) {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('No se encontró el código del estudiante.');
+    const { data, error } = await getStudentClient().rpc('encisomath_report_activity_risk', {
+      p_student_code: code,
+      p_activity_id: activityId,
+      p_assignment_id: assignmentId,
+      p_reason: String(reason || 'actividad sospechosa'),
+      p_client_event_id: String(clientEventId || globalThis.crypto?.randomUUID?.() || Date.now()),
+      p_occurred_at: occurredAt || new Date().toISOString()
+    });
+    if (error) {
+      const message = String(error.message || '').toLowerCase();
+      if (error.code === 'PGRST202' || message.includes('encisomath_report_activity_risk')) throw new Error('Falta ejecutar SUPABASE_ACTIVITY_RISK_v0.25.050.sql en Supabase.');
+      throw normalizeError(error, 'No se pudo registrar la actividad sospechosa.');
+    }
+    return data || {};
+  }
+
+  async function reactivateActivityRisk({ activityId = '', assignmentId = '', studentCode = '' }) {
+    const activeSession = await requireAuthenticatedSession();
+    if (!activeSession?.user?.id) throw new Error('Necesitas una sesión docente activa.');
+    const { data, error } = await getClient().rpc('encisomath_reactivate_activity_risk', {
+      p_activity_id: activityId,
+      p_assignment_id: assignmentId,
+      p_student_code: String(studentCode || '')
+    });
+    if (error) {
+      const message = String(error.message || '').toLowerCase();
+      if (error.code === 'PGRST202' || message.includes('encisomath_reactivate_activity_risk')) throw new Error('Falta ejecutar SUPABASE_ACTIVITY_RISK_v0.25.050.sql en Supabase.');
+      throw normalizeError(error, 'No se pudo reactivar la actividad.');
+    }
+    return data || {};
   }
 
   function bytesToBase64(bytes) {
@@ -2720,6 +2805,8 @@
     reorderActivities,
     getActivityGradebook,
     saveActivityGrades,
+    reportActivityRiskEvent,
+    reactivateActivityRisk,
     uploadActivityStickerToGithub,
     deleteActivity,
     deletePdfLesson,

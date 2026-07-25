@@ -2374,6 +2374,14 @@
     saveActivityGrades(payload) {
       return executeMutation('saveActivityGrades', payload, cloud.saveActivityGrades, optimisticSaveGrades);
     },
+    async reportActivityRiskEvent(payload) {
+      if (!isOnline()) throw new Error('Sin conexión: el evento de riesgo quedará pendiente en este dispositivo.');
+      return cloud.reportActivityRiskEvent(payload);
+    },
+    async reactivateActivityRisk(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para reactivar la actividad.');
+      return cloud.reactivateActivityRisk(payload);
+    },
     deleteActivity(payload) {
       return executeMutation('deleteActivity', payload, cloud.deleteActivity, optimisticDeleteActivity, { fallbackResult: { mode: payload.mode || 'all' } });
     },

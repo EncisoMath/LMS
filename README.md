@@ -1,15 +1,16 @@
-# EncisoMath LMS v0.25.049
+# EncisoMath LMS v0.25.050
 
-## Stickers opcionales por calificación
-- Nueva pestaña **STICKER** en el modal con CALIFICACIÓN, ENTREGA, GRUPO y SEGUIMIENTO.
-- Grid de stickers con opción **Sin sticker**.
-- El sticker seleccionado se guarda por estudiante junto a la calificación y aparece en su mini-hero.
-- Los PNG, WebP, GIF y JPG deben ser cuadrados 1:1 y pesar máximo 6 MB.
-- Botón **Añadir Stickers**: envía los archivos a GitHub mediante la Edge Function `encisomath-github-stickers`; no usa Supabase Storage.
-- La URL del sticker se conserva en `activity_student_records.sticker_url`.
-- La descarga silenciosa incremental incluye únicamente el sticker nuevo seleccionado y no vuelve a descargar los anteriores.
-- Los GIF permanecen animados y la silueta blanca se genera duplicando el PNG/GIF detrás, por lo que también funciona con animación.
+## Riesgo y bloqueo de actividades
+- Se reutiliza el modal visual de seguridad de quizzes para advertir al estudiante.
+- Primer evento sospechoso: advertencia. Segundo evento: calificación automática **2.0**, observación automática y bloqueo de la actividad.
+- Al intentar volver a abrir una actividad bloqueada, el estudiante recibe un warning y no accede al contenido.
+- Nueva pestaña **RIESGO** en el modal docente de calificación, con historial, motivos, horas y botón **Reactivar actividad**.
+- La reactivación restaura la calificación previa cuando existía; si la nota 2.0 fue creada desde un registro pendiente, vuelve a quedar sin calificar.
+- El profesor recibe un aviso al cargar la actividad cuando aparece un bloqueo nuevo.
+- Los eventos se registran con identificadores idempotentes y también quedan pendientes localmente si el estudiante pierde internet.
 
-## Instalación requerida
-1. Ejecutar `SUPABASE_ACTIVITY_STICKERS_v0.25.049.sql`.
-2. Configurar y desplegar la Edge Function siguiendo `GITHUB_STICKERS_SETUP_v0.25.049.md`.
+## Limitación técnica importante
+Una PWA no puede confirmar de manera infalible una captura del sistema. EncisoMath registra señales sospechosas disponibles en el navegador: pérdida de foco, cambio de app/pestaña, menú contextual, copiar, PrintScreen/F12 y atajos de guardado o impresión.
+
+## Instalación obligatoria
+Ejecutar una sola vez `SUPABASE_ACTIVITY_RISK_v0.25.050.sql` en Supabase → SQL Editor.
