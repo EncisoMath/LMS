@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.040';
+  const APP_VERSION = '0.25.041';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12985,13 +12985,10 @@
       if (!Number.isFinite(finalScore)) return;
       scoreNode.dataset.counterStarted = 'true';
 
-      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      // Igual que los heroes de EncisoMath: esta animación se ejecuta siempre
+      // y no depende de prefers-reduced-motion ni de effectsMotion.
       const decimals = Math.abs(finalScore - Math.round(finalScore)) > 0.001 ? 1 : 0;
       const formatScore = (value) => Number(value).toFixed(decimals);
-      if (reducedMotion) {
-        scoreNode.textContent = formatScore(finalScore);
-        return;
-      }
 
       const pauseScore = Math.max(0, Math.min(finalScore, Math.round(finalScore * 0.68)));
       const animateScore = (from, to, duration, onDone) => {

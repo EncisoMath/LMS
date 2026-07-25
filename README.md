@@ -1,4 +1,11 @@
-# EncisoMath LMS v0.25.040
+# EncisoMath LMS v0.25.041
+
+
+## v0.25.041 — animaciones de resultado consistentes en PC y móvil
+
+- Se eliminó el bloqueo específico por `prefers-reduced-motion` que se había añadido solo a la tarjeta estudiantil de calificación.
+- Se eliminó la dependencia de `effectsMotion` y `heroAnimations` para sus shapes, contador y gelatina.
+- La tarjeta ahora se comporta igual que los heroes del LMS: anima en Chrome de escritorio y en móviles.
 
 ## Corrección visible de tarjeta estudiantil
 

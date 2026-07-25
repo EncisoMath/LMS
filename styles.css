@@ -35272,20 +35272,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   100% { transform: scale3d(1, 1, 1) rotate(0deg); }
 }
 
-:root[data-effects-motion="off"] .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
-:root[data-hero-animations="off"] .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
-:root[data-effects-motion="off"] .em-student-activity-score-line > strong.is-score-arrived,
-:root[data-hero-animations="off"] .em-student-activity-score-line > strong.is-score-arrived {
-  animation: none !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
-  .em-student-activity-score-line > strong.is-score-arrived {
-    animation: none !important;
-  }
-}
-
 
 /* ================================================================
    ENCISOMATH v0.25.039 · FIX VISIBLE TARJETA DE RESULTADO
@@ -35431,13 +35417,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   100% { transform: scale3d(1,1,1) rotate(0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
-  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-line > strong.is-score-arrived {
-    animation: none !important;
-  }
-}
-
 
 /* ================================================================
    ENCISOMATH v0.25.040 · AJUSTE ESTABLE DE CALIFICACION ESTUDIANTIL
@@ -35571,8 +35550,11 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack > strong.is-score-arrived {
-    animation: none !important;
-  }
-}
+
+
+/* ================================================================
+   ENCISOMATH v0.25.041 · ANIMACIONES DE RESULTADO IGUALES A LOS HEROES
+   La tarjeta de calificación no se apaga por prefers-reduced-motion ni
+   por la preferencia effectsMotion; contador, gelatina y shapes se
+   ejecutan igual en Chrome de escritorio y en móviles.
+   ================================================================ */
