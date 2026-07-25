@@ -10,9 +10,6 @@
   let excelJsLoaderPromise = null;
   let usernameDuplicateCheckShown = false;
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
-  const ACTIVITY_SECURITY_ENABLED = true;
-  const ACTIVITY_SECURITY_MAX_EVENTS = 2;
-  const ACTIVITY_SECURITY_AUTOGRADE = 2.0;
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -531,7 +528,6 @@
     quizQuestionIndex: 0,
     quizFullscreenActive: false,
     quizSession: { phase: 'idle', answers: [], locked: false, selectedAnswerId: '', securityEvents: [], securityWarningOpen: false, securityTerminated: false },
-    activitySecurity: { active: false, activityId: '', assignmentId: '', studentCode: '', warningOpen: false, hiddenPending: false, focusPending: false, lastEventAt: 0, graceUntil: 0 },
     quizTimers: [],
     quizCountdown: null,
     attendanceDate: todayISO(),
@@ -1342,7 +1338,6 @@
     applyQuizFeedbackTune();
     registerServiceWorker();
     bindQuizSecurityGuards();
-    bindActivitySecurityGuards();
     bindAppBackNavigation();
     bindOfflineSyncEvents();
     const installRequired = shouldForceInstalledApp();
@@ -1393,7 +1388,6 @@
   function mount(markup, afterRender = null, options = {}) {
     const optimizedRoute = prefEnabled('visualOptimized') || !prefEnabled('effectsMotion') || !prefEnabled('tabTransitions');
     const paint = () => {
-      deactivateActivitySecurity();
       $app.innerHTML = markup;
       initEncisoAnimatedLogos($app);
       $app.classList.remove('is-leaving');
@@ -4402,16 +4396,8 @@
         assignmentId: String(assignmentId || row.assignmentId || ''),
         studentCode: String(row.studentCode || ''),
         score: Number(row.score ?? 40),
-        observations: row.observations || '',
         gradedAt: row.gradedAt || '',
-        gradingGroupId: row.gradingGroupId || '',
-        riskAttempts: Number(row.riskAttempts || 0),
-        riskBanned: row.riskBanned === true,
-        riskBannedAt: row.riskBannedAt || '',
-        riskLastReason: row.riskLastReason || '',
-        riskLastEventAt: row.riskLastEventAt || '',
-        riskReactivatedAt: row.riskReactivatedAt || '',
-        riskAutoGraded: row.riskAutoGraded === true
+        gradingGroupId: row.gradingGroupId || ''
       });
     });
   }
@@ -9330,294 +9316,6 @@
     bindQuizAnswerLayoutFixResize();
     scheduleQuizAnswerLayoutFixes();
   }
-  function activityRiskStorageKey(activityId = '', assignmentId = '', studentCode = '') {
-    return `encisomath:activityRisk:${studentCode || state.user?.id || 'student'}:${assignmentId}:${activityId}`;
-  }
-  function activityRiskPendingKey() {
-    return `encisomath:activityRiskPending:${state.user?.id || 'student'}`;
-  }
-  function readLocalActivityRisk(activityId = '', assignmentId = '', studentCode = '') {
-    try {
-      const value = readJSON(activityRiskStorageKey(activityId, assignmentId, studentCode));
-      return value && typeof value === 'object' ? value : { attempts: 0, banned: false, updatedAt: '', bannedAt: '', lastReason: '' };
-    } catch (_) {
-      return { attempts: 0, banned: false, updatedAt: '', bannedAt: '', lastReason: '' };
-    }
-  }
-  function writeLocalActivityRisk(activityId = '', assignmentId = '', studentCode = '', value = {}) {
-    try {
-      localStorage.setItem(activityRiskStorageKey(activityId, assignmentId, studentCode), JSON.stringify({
-        attempts: Math.max(0, Number(value.attempts || 0)),
-        banned: value.banned === true,
-        updatedAt: value.updatedAt || new Date().toISOString(),
-        bannedAt: value.bannedAt || '',
-        reactivatedAt: value.reactivatedAt || '',
-        lastReason: String(value.lastReason || '')
-      }));
-    } catch (_) {}
-  }
-  function clearLocalActivityRisk(activityId = '', assignmentId = '', studentCode = '') {
-    try { localStorage.removeItem(activityRiskStorageKey(activityId, assignmentId, studentCode)); } catch (_) {}
-  }
-  function readPendingActivityRiskEvents() {
-    try {
-      const value = readJSON(activityRiskPendingKey());
-      return Array.isArray(value) ? value : [];
-    } catch (_) { return []; }
-  }
-  function writePendingActivityRiskEvents(events = []) {
-    try { localStorage.setItem(activityRiskPendingKey(), JSON.stringify((events || []).slice(-40))); } catch (_) {}
-  }
-  function queuePendingActivityRiskEvent(event) {
-    const current = readPendingActivityRiskEvents();
-    if (!current.some((item) => item.clientEventId === event.clientEventId)) current.push(event);
-    writePendingActivityRiskEvents(current);
-  }
-  function removePendingActivityRiskEvent(clientEventId = '') {
-    writePendingActivityRiskEvents(readPendingActivityRiskEvents().filter((item) => item.clientEventId !== clientEventId));
-  }
-  function updateStudentActivityRiskGrade(activityId, assignmentId, patch = {}) {
-    if (!Array.isArray(state.data.activityGrades)) state.data.activityGrades = [];
-    const studentCode = String(state.user?.id || '');
-    let record = state.data.activityGrades.find((row) => String(row.activityId || '') === String(activityId) && String(row.assignmentId || '') === String(assignmentId) && (!row.studentCode || String(row.studentCode) === studentCode));
-    if (!record) {
-      record = { activityId: String(activityId), assignmentId: String(assignmentId), studentCode };
-      state.data.activityGrades.push(record);
-    }
-    Object.assign(record, patch);
-    return record;
-  }
-  function activitySecurityContext() {
-    const security = state.activitySecurity || {};
-    const activity = (state.data.activities || []).find((item) => String(item.id) === String(security.activityId || '')) || null;
-    return { security, activity };
-  }
-  function activateActivitySecurity(activity, status = {}) {
-    if (!ACTIVITY_SECURITY_ENABLED || !isStudentPortal() || !activity || status?.riskBanned) return;
-    state.activitySecurity = {
-      active: true,
-      activityId: String(activity.id || ''),
-      assignmentId: String(state.assignment?.id || ''),
-      studentCode: String(state.user?.id || ''),
-      warningOpen: false,
-      hiddenPending: false,
-      focusPending: false,
-      lastEventAt: 0,
-      graceUntil: Date.now() + 2600
-    };
-    flushPendingActivityRiskEvents().catch(() => {});
-  }
-  function deactivateActivitySecurity() {
-    if (!state.activitySecurity) return;
-    state.activitySecurity.active = false;
-    state.activitySecurity.hiddenPending = false;
-    state.activitySecurity.focusPending = false;
-  }
-  function isActivitySecurityActive() {
-    const security = state.activitySecurity || {};
-    return ACTIVITY_SECURITY_ENABLED && isStudentPortal() && security.active === true && Boolean(security.activityId && security.assignmentId) && !security.warningOpen;
-  }
-  function bindActivitySecurityGuards() {
-    if (state.activitySecurityGuardsBound) return;
-    state.activitySecurityGuardsBound = true;
-    document.addEventListener('visibilitychange', () => {
-      if (!isActivitySecurityActive()) return;
-      if (document.visibilityState === 'hidden') {
-        state.activitySecurity.hiddenPending = true;
-        return;
-      }
-      if (state.activitySecurity.hiddenPending) {
-        state.activitySecurity.hiddenPending = false;
-        handleActivitySuspiciousAction('cambio de pantalla, app o pestaña');
-      }
-    });
-    window.addEventListener('blur', () => {
-      if (!isActivitySecurityActive()) return;
-      state.activitySecurity.focusPending = true;
-    });
-    window.addEventListener('focus', () => {
-      if (!isActivitySecurityActive() || !state.activitySecurity.focusPending) return;
-      state.activitySecurity.focusPending = false;
-      handleActivitySuspiciousAction('pérdida de foco de la ventana');
-    });
-    document.addEventListener('contextmenu', (event) => {
-      if (!isActivitySecurityActive()) return;
-      event.preventDefault();
-      handleActivitySuspiciousAction('menú contextual o intento de copiar');
-    });
-    ['copy', 'cut'].forEach((type) => document.addEventListener(type, (event) => {
-      if (!isActivitySecurityActive()) return;
-      event.preventDefault();
-      handleActivitySuspiciousAction('intento de copiar contenido');
-    }));
-    document.addEventListener('keydown', (event) => {
-      if (!isActivitySecurityActive()) return;
-      const key = String(event.key || '').toLowerCase();
-      const suspiciousCombo = (event.ctrlKey || event.metaKey) && ['c', 'x', 's', 'p', 'u'].includes(key);
-      const suspiciousKey = key === 'printscreen' || key === 'f12';
-      if (!suspiciousCombo && !suspiciousKey) return;
-      event.preventDefault();
-      handleActivitySuspiciousAction(suspiciousKey ? 'captura o inspección de pantalla' : 'atajo de copia o guardado');
-    }, true);
-    window.addEventListener('online', () => flushPendingActivityRiskEvents().catch(() => {}));
-  }
-  async function submitActivityRiskEvent(event) {
-    const response = await cloudAPI().reportActivityRiskEvent({
-      studentCode: event.studentCode,
-      activityId: event.activityId,
-      assignmentId: event.assignmentId,
-      reason: event.reason,
-      clientEventId: event.clientEventId,
-      occurredAt: event.occurredAt
-    });
-    removePendingActivityRiskEvent(event.clientEventId);
-    const local = {
-      attempts: Number(response?.risk_attempts ?? response?.riskAttempts ?? event.attempts ?? 0),
-      banned: response?.risk_banned === true || response?.riskBanned === true,
-      updatedAt: response?.risk_last_event_at || response?.riskLastEventAt || new Date().toISOString(),
-      bannedAt: response?.risk_banned_at || response?.riskBannedAt || '',
-      reactivatedAt: response?.risk_reactivated_at || response?.riskReactivatedAt || '',
-      lastReason: response?.risk_last_reason || response?.riskLastReason || event.reason
-    };
-    writeLocalActivityRisk(event.activityId, event.assignmentId, event.studentCode, local);
-    updateStudentActivityRiskGrade(event.activityId, event.assignmentId, {
-      riskAttempts: local.attempts,
-      riskBanned: local.banned,
-      riskBannedAt: local.bannedAt,
-      riskLastReason: local.lastReason,
-      riskLastEventAt: local.updatedAt,
-      riskAutoGraded: response?.risk_auto_graded === true || response?.riskAutoGraded === true,
-      ...(local.banned ? {
-        score: Number(response?.score ?? ACTIVITY_SECURITY_AUTOGRADE),
-        observations: String(response?.observations || activityRiskAutomaticObservation(event.reason)),
-        gradedAt: response?.graded_at || response?.gradedAt || local.bannedAt || new Date().toISOString()
-      } : {})
-    });
-    if (local.banned && !document.getElementById('activityRiskBannedModal')) {
-      deactivateActivitySecurity();
-      showActivityRiskBannedModal(activitySecurityContext().activity, { ...local, reason: local.lastReason });
-    }
-    return response;
-  }
-  async function flushPendingActivityRiskEvents() {
-    if (!navigator.onLine || !isStudentPortal()) return;
-    const pending = readPendingActivityRiskEvents();
-    for (const event of pending) {
-      try { await submitActivityRiskEvent(event); } catch (_) { break; }
-    }
-  }
-  function activityRiskAutomaticObservation(reason = '') {
-    return `Calificación automática 2.0: actividad bloqueada tras un segundo evento de actividad sospechosa${reason ? ` (${reason})` : ''}.`;
-  }
-  function handleActivitySuspiciousAction(reason = 'actividad sospechosa') {
-    if (!isActivitySecurityActive()) return;
-    const security = state.activitySecurity;
-    const now = Date.now();
-    if (now < Number(security.graceUntil || 0)) return;
-    if (now - Number(security.lastEventAt || 0) < 1200) return;
-    security.lastEventAt = now;
-    const local = readLocalActivityRisk(security.activityId, security.assignmentId, security.studentCode);
-    const status = activityStudentGradeStatus(activitySecurityContext().activity || {});
-    const currentAttempts = Math.max(Number(local.attempts || 0), Number(status?.riskAttempts || 0));
-    const attempts = Math.min(ACTIVITY_SECURITY_MAX_EVENTS, currentAttempts + 1);
-    const banned = attempts >= ACTIVITY_SECURITY_MAX_EVENTS;
-    const occurredAt = new Date().toISOString();
-    const event = {
-      clientEventId: globalThis.crypto?.randomUUID?.() || `risk-${now}-${Math.random().toString(36).slice(2)}`,
-      studentCode: security.studentCode,
-      activityId: security.activityId,
-      assignmentId: security.assignmentId,
-      reason,
-      occurredAt,
-      attempts
-    };
-    queuePendingActivityRiskEvent(event);
-    writeLocalActivityRisk(security.activityId, security.assignmentId, security.studentCode, {
-      attempts,
-      banned,
-      updatedAt: occurredAt,
-      bannedAt: banned ? occurredAt : '',
-      lastReason: reason
-    });
-    updateStudentActivityRiskGrade(security.activityId, security.assignmentId, {
-      riskAttempts: attempts,
-      riskBanned: banned,
-      riskBannedAt: banned ? occurredAt : '',
-      riskLastReason: reason,
-      riskLastEventAt: occurredAt,
-      riskAutoGraded: banned,
-      ...(banned ? { score: ACTIVITY_SECURITY_AUTOGRADE, observations: activityRiskAutomaticObservation(reason), gradedAt: occurredAt } : {})
-    });
-    submitActivityRiskEvent(event).catch(() => {});
-    if (banned) {
-      deactivateActivitySecurity();
-      showActivityRiskBannedModal(activitySecurityContext().activity, { attempts, banned, bannedAt: occurredAt, reason });
-      return;
-    }
-    security.warningOpen = true;
-    showActivityRiskWarningModal(reason);
-  }
-  function showActivityRiskWarningModal(reason = '') {
-    document.getElementById('activityRiskWarningModal')?.remove();
-    const wrapper = document.createElement('div');
-    wrapper.id = 'activityRiskWarningModal';
-    wrapper.className = 'modal-layer quiz-security-layer activity-security-layer';
-    wrapper.innerHTML = `
-      <div class="modal-card danger-modal quiz-security-modal activity-security-modal" role="dialog" aria-modal="true" aria-label="Advertencia de seguridad de la actividad">
-        <div class="danger-head quiz-security-flat-head" data-em-flat-bg>
-          <div class="warning-tune-stack"><div class="warning-icon quiz-security-emoji" aria-hidden="true">😡</div></div>
-          <div class="danger-copy"><h2>LAS CAPTURAS ESTÁN PROHIBIDAS</h2><p>Un intento más y esta actividad se calificará automáticamente en 2.0.</p></div>
-        </div>
-        <div class="danger-body">
-          <div class="delete-target quiz-security-target"><strong>Actividad sospechosa detectada</strong><span>${escapeHTML(reason || 'EncisoMath detectó una salida, pérdida de foco o intento de captura.')}</span></div>
-          <div class="danger-actions quiz-security-actions"><button class="danger-confirm" type="button" data-activity-risk-continue>Entendido, continuar</button></div>
-        </div>
-      </div>`;
-    document.body.appendChild(wrapper);
-    emFlatApplyBackgrounds(wrapper);
-    document.body.classList.add('modal-open', 'quiz-security-warning-open');
-    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
-    wrapper.querySelector('[data-activity-risk-continue]')?.addEventListener('click', () => {
-      state.activitySecurity.warningOpen = false;
-      state.activitySecurity.graceUntil = Date.now() + 1800;
-      document.body.classList.remove('quiz-security-warning-open');
-      if (!document.getElementById('modalLayer')) document.body.classList.remove('modal-open');
-      wrapper.classList.remove('show');
-      window.setTimeout(() => wrapper.remove(), 160);
-    });
-    startDeleteWarningMotion();
-  }
-  function showActivityRiskBannedModal(activity = null, status = {}) {
-    document.getElementById('activityRiskWarningModal')?.remove();
-    document.getElementById('activityRiskBannedModal')?.remove();
-    const wrapper = document.createElement('div');
-    wrapper.id = 'activityRiskBannedModal';
-    wrapper.className = 'modal-layer quiz-security-layer activity-security-layer';
-    wrapper.innerHTML = `
-      <div class="modal-card danger-modal quiz-security-modal activity-security-modal is-banned" role="dialog" aria-modal="true" aria-label="Actividad bloqueada">
-        <div class="danger-head quiz-security-flat-head" data-em-flat-bg>
-          <div class="warning-tune-stack"><div class="warning-icon quiz-security-emoji" aria-hidden="true">🚫</div></div>
-          <div class="danger-copy"><h2>ESTÁS BANEADO DE ESTA ACTIVIDAD</h2><p>EncisoMath bloqueó el acceso por actividad sospechosa repetida.</p></div>
-        </div>
-        <div class="danger-body">
-          <div class="delete-target quiz-security-target"><strong>${escapeHTML(activity?.title || 'Actividad bloqueada')}</strong><span>La actividad fue calificada automáticamente en 2.0. El docente debe reactivarla para permitirte entrar nuevamente.</span></div>
-          ${status?.reason ? `<p class="activity-security-reason">Último evento: ${escapeHTML(status.reason)}</p>` : ''}
-          <div class="danger-actions quiz-security-actions"><button class="danger-confirm" type="button" data-activity-risk-back>Volver a actividades</button></div>
-        </div>
-      </div>`;
-    document.body.appendChild(wrapper);
-    emFlatApplyBackgrounds(wrapper);
-    document.body.classList.add('modal-open', 'quiz-security-warning-open');
-    requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.add('show')));
-    wrapper.querySelector('[data-activity-risk-back]')?.addEventListener('click', () => {
-      document.body.classList.remove('quiz-security-warning-open', 'modal-open');
-      wrapper.remove();
-      state.activeActivityId = '';
-      renderSubjectDetail('activities', { replaceHistory: true });
-    });
-    startDeleteWarningMotion();
-  }
-
   function bindQuizSecurityGuards() {
     if (!QUIZ_SECURITY_ENABLED) return;
     if (state.quizSecurityGuardsBound) return;
@@ -13179,30 +12877,7 @@
     const reviewAvailable = hasAssignmentAvailability
       ? availabilityMap[assignmentId] === true
       : (releaseEnabled && allGraded && hasReview);
-    const localRisk = readLocalActivityRisk(activity.id || '', assignmentId, studentCode);
-    const serverReactivatedAt = record?.riskReactivatedAt || '';
-    if (serverReactivatedAt && localRisk.updatedAt && String(serverReactivatedAt) >= String(localRisk.updatedAt) && readPendingActivityRiskEvents().length === 0) {
-      clearLocalActivityRisk(activity.id || '', assignmentId, studentCode);
-    }
-    const reconciledLocal = readLocalActivityRisk(activity.id || '', assignmentId, studentCode);
-    const riskAttempts = Math.max(Number(record?.riskAttempts || 0), Number(reconciledLocal.attempts || 0));
-    const riskBanned = record?.riskBanned === true || reconciledLocal.banned === true;
-    return {
-      record,
-      graded: riskBanned ? true : graded,
-      score: riskBanned ? Number(record?.score ?? ACTIVITY_SECURITY_AUTOGRADE) : score,
-      releaseEnabled,
-      hasReview,
-      allGraded,
-      reviewAvailable,
-      riskAttempts,
-      riskBanned,
-      riskBannedAt: record?.riskBannedAt || reconciledLocal.bannedAt || '',
-      riskLastReason: record?.riskLastReason || reconciledLocal.lastReason || '',
-      riskLastEventAt: record?.riskLastEventAt || reconciledLocal.updatedAt || '',
-      riskReactivatedAt: record?.riskReactivatedAt || reconciledLocal.reactivatedAt || '',
-      riskAutoGraded: record?.riskAutoGraded === true || riskBanned
-    };
+    return { record, graded, score, releaseEnabled, hasReview, allGraded, reviewAvailable };
   }
 
   function activityStudentDateLabel(value, includeTime = false) {
@@ -13317,7 +12992,7 @@
   function studentActivityStatusCardHTML(activity, status) {
     const scoreClass = status.graded ? notesScoreClass(status.score) : 'is-pending';
     const scoreLabel = status.graded
-      ? (status.riskAutoGraded ? Number(status.score).toFixed(1) : Number(status.score).toFixed(Number(status.score) % 1 ? 1 : 0))
+      ? Number(status.score).toFixed(Number(status.score) % 1 ? 1 : 0)
       : '—';
     const performance = status.graded
       ? activitySemaphore(status.score)
@@ -13486,15 +13161,15 @@
       const group = groupMap.get(String(row.gradingGroupId || ''));
       const name = notesStudentNameParts(row);
       return `
-        <tr class="em-activity-grade-row ${row.riskBanned ? 'is-risk-banned' : ''}" data-activity-record-id="${escapeAttr(row.recordId)}" tabindex="0" role="button" aria-label="Calificar a ${escapeAttr(row.fullName || `${name.lastName} ${name.firstName}`)}">
+        <tr class="em-activity-grade-row" data-activity-record-id="${escapeAttr(row.recordId)}" tabindex="0" role="button" aria-label="Calificar a ${escapeAttr(row.fullName || `${name.lastName} ${name.firstName}`)}">
           <td class="em-activity-grade-group-cell">${group ? `<i style="--em-grade-group-color:${group.color}">${group.number}</i>` : '<i class="is-empty">—</i>'}</td>
           <th class="em-activity-grade-student-cell" scope="row" title="${escapeAttr(row.fullName || '')}">
             <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
             <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
             <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
           </th>
-          <td class="em-activity-grade-score-cell"><strong class="${notesScoreClass(row.score)}">${row.riskAutoGraded ? Number(row.score ?? ACTIVITY_SECURITY_AUTOGRADE).toFixed(1) : Number(row.score ?? 40)}</strong></td>
-          <td class="em-activity-grade-performance-cell"><span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span>${row.riskBanned ? '<span class="em-activity-risk-badge">RIESGO</span>' : ''}</td>
+          <td class="em-activity-grade-score-cell"><strong class="${notesScoreClass(row.score)}">${Number(row.score ?? 40)}</strong></td>
+          <td class="em-activity-grade-performance-cell"><span class="em-grade-light ${semaphore.className}"><b>${semaphore.emoji}</b><small>${semaphore.label}</small></span></td>
         </tr>
       `;
     }).join('');
@@ -13550,18 +13225,6 @@
     });
   }
 
-  function notifyTeacherActivityRisks(activity, rows = []) {
-    const assignmentId = String(state.assignment?.id || '');
-    const key = `encisomath:activityRiskSeen:${assignmentId}:${activity?.id || ''}`;
-    const seen = readJSON(key) || {};
-    const fresh = (rows || []).filter((row) => row.riskBanned && row.riskBannedAt && seen[row.studentCode] !== row.riskBannedAt);
-    if (!fresh.length) return;
-    fresh.forEach((row) => { seen[row.studentCode] = row.riskBannedAt; });
-    try { localStorage.setItem(key, JSON.stringify(seen)); } catch (_) {}
-    if (fresh.length === 1) toast(`${fresh[0].fullName || fresh[0].studentCode} fue calificado automáticamente con 2.0 por actividad sospechosa.`);
-    else toast(`${fresh.length} estudiantes fueron calificados automáticamente con 2.0 por actividad sospechosa.`);
-  }
-
   async function loadActivityGradebook(activity) {
     const list = document.getElementById('activityGradebookList');
     if (!list) return;
@@ -13573,7 +13236,6 @@
       });
       syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
       updateActivityProgressFromGradebook(activity, state.activityGradebook);
-      notifyTeacherActivityRisks(activity, state.activityGradebook);
       refreshActivityGradebookList();
     } catch (error) {
       list.innerHTML = `<tr><td class="em-activity-grade-empty" colspan="4">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</td></tr>`;
@@ -13585,11 +13247,6 @@
     if (!activity || !state.assignment) return renderSubjectDetail('activities', options);
     const studentMode = isStudentPortal();
     const assignedToCurrentCourse = contentIsAssignedTo(activity, state.assignment.id);
-    const studentGradeStatus = studentMode ? activityStudentGradeStatus(activity) : null;
-    if (studentMode && studentGradeStatus?.riskBanned) {
-      showActivityRiskBannedModal(activity, { reason: studentGradeStatus.riskLastReason || '', bannedAt: studentGradeStatus.riskBannedAt || '' });
-      return;
-    }
     state.activeActivityId = activity.id;
     commitAppRoute({ screen: 'activity', assignmentId: state.assignment.id, activityId: activity.id }, options);
     emSetCurrentSubjectColor(emGetSubjectColorForAssignment(state.assignment));
@@ -13597,6 +13254,7 @@
     const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
     const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
+    const studentGradeStatus = studentMode ? activityStudentGradeStatus(activity) : null;
     const reviewHasContent = studentMode ? studentGradeStatus.hasReview : activityReviewHasContent(activity);
     const reviewEnabled = !studentMode || studentGradeStatus.reviewAvailable;
     const activityStudentColumnWidth = studentMode || !assignedToCurrentCourse ? 0 : notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
@@ -13701,7 +13359,6 @@
         if (window.history?.length > 1) window.history.back();
         else renderSubjectDetail('activities');
       });
-      if (studentMode) activateActivitySecurity(activity, studentGradeStatus);
       if (!studentMode) {
         document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
         document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
@@ -14200,8 +13857,6 @@
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
     const trackingCount = eventHistory.length;
-    const riskEvents = Array.isArray(record.riskEvents) ? record.riskEvents : [];
-    const riskCount = riskEvents.filter((event) => event.actionTaken !== 'reactivated').length;
     const selectedStickerUrl = normalizeActivityStickerUrl(record.stickerUrl || record.sticker_url || '');
     const rubricCriteria = Array.isArray(activity?.rubric)
       ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
@@ -14224,7 +13879,6 @@
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="sticker">Sticker</button>
-          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="risk" class="${record.riskBanned ? 'has-risk' : ''}">Riesgo${riskCount ? `<span class="em-grade-tab-count">${riskCount}</span>` : ''}</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="tracking">Seguimiento${trackingCount ? `<span class="em-grade-tab-count">${trackingCount}</span>` : ''}</button>
         </div>
         <form id="activityGradeForm" class="em-activity-grade-form">
@@ -14292,19 +13946,6 @@
             </div>
           </section>
 
-          <section class="em-grade-form-section em-activity-risk-panel" data-grade-modal-panel="risk" hidden>
-            <div class="em-grade-form-heading"><h3>Riesgo</h3><p>Registro de pérdidas de foco, salidas de pantalla, intentos de copia o captura detectados mientras el estudiante tenía abierta esta actividad.</p></div>
-            <div class="em-activity-risk-summary ${record.riskBanned ? 'is-banned' : (Number(record.riskAttempts || 0) ? 'has-warning' : 'is-clear')}">
-              <span aria-hidden="true">${record.riskBanned ? '🚫' : (Number(record.riskAttempts || 0) ? '⚠️' : '✅')}</span>
-              <div><strong>${record.riskBanned ? 'Actividad bloqueada' : (Number(record.riskAttempts || 0) ? 'Advertencia registrada' : 'Sin actividad sospechosa')}</strong><p>${record.riskBanned ? `Autocalificada en 2.0 · ${escapeHTML(formatActivityTrackingDateTime(record.riskBannedAt))}` : `${Number(record.riskAttempts || 0)} de ${ACTIVITY_SECURITY_MAX_EVENTS} eventos registrados.`}</p></div>
-            </div>
-            <div class="em-activity-risk-history">
-              ${riskEvents.length ? riskEvents.slice().reverse().map((event) => `<article class="is-${escapeAttr(event.actionTaken || 'warning')}"><b>${event.actionTaken === 'reactivated' ? '↻' : Number(event.attemptNumber || 0)}</b><div><strong>${event.actionTaken === 'reactivated' ? 'Actividad reactivada' : (event.actionTaken === 'banned_autograded' ? 'Bloqueo y calificación automática' : 'Advertencia')}</strong><time>${escapeHTML(formatActivityTrackingDateTime(event.occurredAt))}</time><p>${escapeHTML(event.reason || 'Sin detalle adicional.')}</p></div></article>`).join('') : '<div class="em-tracking-empty">No hay eventos de riesgo registrados.</div>'}
-            </div>
-            ${record.riskBanned ? '<button class="primary-btn em-activity-reactivate-btn" id="reactivateActivityRiskBtn" type="button">Reactivar actividad</button>' : ''}
-            <p class="em-activity-risk-note">La detección web no puede confirmar una captura del sistema con certeza; registra señales de salida, pérdida de foco o atajos sospechosos.</p>
-          </section>
-
           <section class="em-grade-form-section em-tracking-panel" data-grade-modal-panel="tracking" hidden>
             <div class="em-grade-form-heading"><h3>Seguimiento</h3><p>Registra cada solicitud, novedad o intento de entrega de manera cronológica.</p></div>
             <div class="em-tracking-compose">
@@ -14320,7 +13961,7 @@
           </section>
 
           <p class="em-class-create-error" id="activityGradeError" role="alert"></p>
-          <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit" ${record.riskBanned ? 'disabled title="Reactiva la actividad desde la pestaña RIESGO"' : ''}>${record.riskBanned ? 'Actividad bloqueada' : 'Enviar calificación'}</button></div>
+          <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Enviar calificación</button></div>
         </form>
       </section>
     `, () => initActivityGradeModal(activity, record, currentGroup));
@@ -14568,32 +14209,6 @@
       }
     });
 
-    document.getElementById('reactivateActivityRiskBtn')?.addEventListener('click', async (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      button.textContent = 'Reactivando…';
-      const errorBox = document.getElementById('activityGradeError');
-      if (errorBox) errorBox.textContent = '';
-      try {
-        await cloudAPI().reactivateActivityRisk({
-          activityId: activity.id,
-          assignmentId: state.assignment?.id || '',
-          studentCode: record.studentCode
-        });
-        clearLocalActivityRisk(activity.id, state.assignment?.id || '', record.studentCode);
-        state.activityGradebook = await cloudAPI().getActivityGradebook({ activityId: activity.id, assignmentId: state.assignment?.id || '' });
-        syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
-        updateActivityProgressFromGradebook(activity, state.activityGradebook);
-        closeModal(false);
-        refreshActivityGradebookList();
-        toast('Actividad reactivada. El estudiante puede abrirla nuevamente.');
-      } catch (error) {
-        button.disabled = false;
-        button.textContent = 'Reactivar actividad';
-        if (errorBox) errorBox.textContent = error?.message || 'No se pudo reactivar la actividad.';
-      }
-    });
-
     gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
     gradeModal?.querySelectorAll('[data-grade-score-mode]').forEach((button) => button.addEventListener('click', () => setScoreMode(button.dataset.gradeScoreMode || 'normal')));
     gradeModal?.querySelectorAll('[data-rubric-grade-score]').forEach((input) => input.addEventListener('input', () => {
@@ -14624,10 +14239,6 @@
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const errorBox = document.getElementById('activityGradeError');
-      if (record.riskBanned) {
-        if (errorBox) errorBox.textContent = 'Reactiva la actividad desde la pestaña RIESGO antes de modificar la calificación.';
-        return;
-      }
       const save = document.getElementById('saveActivityGradeBtn');
       const primaryScore = gradingMode === 'rubric' ? updateRubricCalculation() : Number(mainScore?.value || 0);
       const rubricScores = gradingMode === 'rubric'

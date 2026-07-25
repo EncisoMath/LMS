@@ -1,12 +1,10 @@
-# EncisoMath LMS v0.25.051
+# EncisoMath LMS v0.25.052
 
-## v0.25.051 — biblioteca adicional de stickers WebP
-- Se importaron 33 stickers WebP únicos desde `WEBP_CONVERTIDOS.zip`.
-- El ZIP original contenía 34 archivos; uno era un duplicado binario exacto y se omitió.
-- 32 stickers son animados y 1 es estático.
-- Los archivos no cuadrados se normalizaron a un lienzo transparente 1:1 sin recortar el contenido.
-- Se conservaron la animación y la transparencia.
-- `assets/stickers/catalog.json` incluye ahora el sticker original y los 33 nuevos.
-- Los nuevos archivos se guardaron en `assets/stickers/library/`.
-- Para proteger el egress, la biblioteca completa no está en el precache global: cada sticker se descarga y cachea únicamente cuando se muestra o cuando se asigna a un estudiante.
-- No se modificaron la calificación, el sistema de riesgo ni la subida de stickers a GitHub.
+## v0.25.052 — eliminación completa del sistema RIESGO
+- Se retiró la pestaña RIESGO del modal de calificación.
+- Se eliminaron los detectores de pérdida de foco, cambio de aplicación, copia, captura e inspección.
+- Se eliminaron las advertencias, baneos y la autocalificación automática en 2.0.
+- Se eliminaron las etiquetas de riesgo y el botón Reactivar actividad.
+- Se retiraron las llamadas RPC y la cola offline relacionadas con riesgo.
+- Se conservan intactos STICKER, CALIFICACIÓN, ENTREGA, GRUPO y SEGUIMIENTO.
+- Se incluye un SQL idempotente para limpiar cualquier tabla, función o columna de riesgo creada en Supabase y restaurar calificaciones autogeneradas si existieran.
