@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.045';
+  const APP_VERSION = '0.25.055';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12922,6 +12922,10 @@
     return '';
   }
 
+  function activityStickerUsesWhiteOutline(url) {
+    return /\.png(?:$|[?#])/i.test(String(url || '').trim());
+  }
+
   function activityStickerGridHTML(items = [], selectedUrl = '') {
     const selected = normalizeActivityStickerUrl(selectedUrl);
     const unique = [];
@@ -13002,6 +13006,9 @@
       : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
     const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
     const stickerUrl = status.graded ? normalizeActivityStickerUrl(status.record?.stickerUrl || status.record?.sticker_url || '') : '';
+    const stickerOutlineHTML = stickerUrl && activityStickerUsesWhiteOutline(stickerUrl)
+      ? `<img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" />`
+      : '';
     const statusShapeTypes = ['circle', 'square', 'triangle', 'x'];
     const statusShapesHTML = Array.from({ length: 4 }, () => {
       const type = statusShapeTypes[Math.floor(Math.random() * statusShapeTypes.length)];
@@ -13028,7 +13035,7 @@
             <span>Observación</span>
             <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
           </article>
-          ${stickerUrl ? `<article class="is-sticker em-student-activity-meta" aria-label="Sticker de la calificación"><div class="em-student-activity-status-sticker" aria-hidden="true"><img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /><img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div></article>` : ''}
+          ${stickerUrl ? `<article class="is-sticker em-student-activity-meta" aria-label="Sticker de la calificación"><div class="em-student-activity-status-sticker" aria-hidden="true">${stickerOutlineHTML}<img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div></article>` : ''}
         </div>
         <article class="is-graded-at em-student-activity-meta">
           <span>Fecha de calificación</span>
