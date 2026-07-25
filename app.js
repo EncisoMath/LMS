@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.034';
+  const APP_VERSION = '0.25.035';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12895,27 +12895,52 @@
       .replace(' p. m.', ' p.m.');
   }
 
+  function activityStudentGradedDateLabel(value) {
+    if (!value) return 'Pendiente';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const monthRaw = date.toLocaleString('es-CO', { month: 'long' });
+    const month = monthRaw ? `${monthRaw.charAt(0).toUpperCase()}${monthRaw.slice(1)}` : '';
+    const hour = date.getHours() % 12 || 12;
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const period = date.getHours() >= 12 ? 'p.m.' : 'a.m.';
+    return `${month} ${date.getDate()} de ${date.getFullYear()}, ${hour}:${minute}${period}`;
+  }
+
   function studentActivityStatusCardHTML(activity, status) {
     const scoreClass = status.graded ? notesScoreClass(status.score) : 'is-pending';
-    const scoreLabel = status.graded ? `${Number(status.score).toFixed(Number(status.score) % 1 ? 1 : 0)}/100` : 'Pendiente';
+    const scoreLabel = status.graded
+      ? Number(status.score).toFixed(Number(status.score) % 1 ? 1 : 0)
+      : '—';
+    const performance = status.graded
+      ? activitySemaphore(status.score)
+      : { emoji: '◷', label: 'Pendiente' };
     const observation = status.graded && String(status.record?.observations || '').trim()
       ? String(status.record.observations).trim()
       : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
-    const gradedAt = status.graded ? activityStudentDateLabel(status.record?.gradedAt, true) : 'Pendiente';
-    const assignedAt = activityStudentDateLabel(activity.startsAt || activity.createdAt || '', false);
-    const dueAt = activityStudentDateLabel(activity.dueAt || '', false);
+    const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
     return `
       <section class="em-student-activity-status ${scoreClass}" aria-label="Estado de la actividad">
-        <div class="em-student-activity-status-primary">
-          <article><span>Calificación</span><strong>${escapeHTML(scoreLabel)}</strong></article>
-          <article class="is-observation"><span>Observación</span><strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong></article>
-          <article><span>Fecha de calificación</span><strong>${escapeHTML(gradedAt)}</strong></article>
+        <div class="em-student-activity-status-art" aria-hidden="true">
+          <i class="is-circle"></i><i class="is-diamond"></i><i class="is-stroke"></i>
         </div>
-        <div class="em-student-activity-status-divider" aria-hidden="true"></div>
-        <div class="em-student-activity-status-dates">
-          <article><span>Fecha de asignación</span><strong>${escapeHTML(assignedAt)}</strong></article>
-          <article><span>Fecha de entrega</span><strong>${escapeHTML(dueAt)}</strong></article>
+        <div class="em-student-activity-status-top">
+          <article class="is-score">
+            <span>Calificación</span>
+            <div class="em-student-activity-score-line">
+              <strong>${escapeHTML(scoreLabel)}</strong>
+              <em><b aria-hidden="true">${escapeHTML(performance.emoji)}</b>${escapeHTML(performance.label)}</em>
+            </div>
+          </article>
+          <article class="is-graded-at">
+            <span>Fecha de calificación</span>
+            <strong>${escapeHTML(gradedAt)}</strong>
+          </article>
         </div>
+        <article class="is-observation">
+          <span>Observación</span>
+          <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
+        </article>
       </section>
     `;
   }

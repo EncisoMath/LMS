@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.034
+# EncisoMath LMS v0.25.035
+
+## v0.25.035 — recuadro estudiantil de calificación rediseñado
+
+- El resumen de la actividad en la vista estudiante adopta una tarjeta más llamativa y compacta, con fondo, borde, figuras y acentos que cambian según el desempeño obtenido.
+- La primera fila queda organizada como **Calificación** y **Fecha de calificación**; la observación ocupa una fila completa debajo.
+- La calificación se muestra como número limpio, sin `/100`, acompañada por su nivel visual: Superior, Alto, Básico o Bajo.
+- La fecha de calificación usa el formato `Julio 20 de 2026, 3:14p.m.` cuando el dato está disponible.
+- Se eliminan del recuadro la fecha de asignación y la fecha de entrega para concentrarlo en la información de calificación.
+- No se modifica la publicación de RESULTADO, la calificación, las entregas, el modo offline ni la descarga silenciosa.
 
 ## v0.25.034 — estado de actividades y publicación controlada de RESULTADO
 

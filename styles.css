@@ -34440,74 +34440,222 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* ================================================================
-   ENCISOMATH v0.25.034 · ESTADO ESTUDIANTIL Y PUBLICACION DE RESULTADO
+   ENCISOMATH v0.25.035 · TARJETA ESTUDIANTIL DE CALIFICACION
    ================================================================ */
 .em-student-activity-status {
-  --em-result-accent: #7f8a9b;
-  --em-result-soft: rgba(127,138,155,.14);
+  --em-result-accent: #8794a6;
+  --em-result-soft: rgba(135,148,166,.16);
+  --em-result-border: rgba(166,177,192,.34);
+  --em-result-ink: #dce3eb;
+  position: relative;
+  isolation: isolate;
   display: grid;
   gap: 9px;
   margin: 0 0 12px;
-  padding: 12px 14px;
+  padding: 13px 14px 12px 17px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.14);
-  border-color: color-mix(in srgb, var(--em-result-accent) 48%, rgba(255,255,255,.11));
-  border-left: 5px solid var(--em-result-accent);
-  border-radius: 8px;
-  background: #0a111d;
+  border: 1px solid var(--em-result-border);
+  border-radius: 14px;
   background:
-    linear-gradient(115deg, color-mix(in srgb, var(--em-result-accent) 12%, transparent), transparent 48%),
-    #0a111d;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+    linear-gradient(132deg, var(--em-result-soft) 0%, rgba(10,17,29,0) 49%),
+    linear-gradient(180deg, #111b2a 0%, #08101b 100%);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.24),
+    inset 0 1px 0 rgba(255,255,255,.065);
 }
-.em-student-activity-status.is-pending { --em-result-accent: #7f8a9b; }
-.em-student-activity-status.is-superior { --em-result-accent: #f6c453; }
-.em-student-activity-status.is-high { --em-result-accent: #64da8b; }
-.em-student-activity-status.is-basic-yellow { --em-result-accent: #f5d94e; }
-.em-student-activity-status.is-basic-orange { --em-result-accent: #ff9b50; }
-.em-student-activity-status.is-low { --em-result-accent: #ff6b6b; }
-.em-student-activity-status-primary {
+.em-student-activity-status::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--em-result-accent);
+}
+.em-student-activity-status::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: -72px;
+  right: -48px;
+  width: 158px;
+  height: 158px;
+  border: 24px solid var(--em-result-soft);
+  border-radius: 38px;
+  transform: rotate(25deg);
+  opacity: .92;
+}
+.em-student-activity-status.is-pending {
+  --em-result-accent: #8794a6;
+  --em-result-soft: rgba(135,148,166,.16);
+  --em-result-border: rgba(166,177,192,.34);
+  --em-result-ink: #dce3eb;
+}
+.em-student-activity-status.is-superior {
+  --em-result-accent: #f6c453;
+  --em-result-soft: rgba(246,196,83,.19);
+  --em-result-border: rgba(246,196,83,.48);
+  --em-result-ink: #ffe6a2;
+}
+.em-student-activity-status.is-high {
+  --em-result-accent: #64da8b;
+  --em-result-soft: rgba(100,218,139,.18);
+  --em-result-border: rgba(100,218,139,.46);
+  --em-result-ink: #b9f7ce;
+}
+.em-student-activity-status.is-basic-yellow {
+  --em-result-accent: #f5d94e;
+  --em-result-soft: rgba(245,217,78,.18);
+  --em-result-border: rgba(245,217,78,.46);
+  --em-result-ink: #fff2a5;
+}
+.em-student-activity-status.is-basic-orange {
+  --em-result-accent: #ff9b50;
+  --em-result-soft: rgba(255,155,80,.18);
+  --em-result-border: rgba(255,155,80,.48);
+  --em-result-ink: #ffd0ad;
+}
+.em-student-activity-status.is-low {
+  --em-result-accent: #ff6b6b;
+  --em-result-soft: rgba(255,107,107,.18);
+  --em-result-border: rgba(255,107,107,.48);
+  --em-result-ink: #ffc0c0;
+}
+.em-student-activity-status-art {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.em-student-activity-status-art i {
+  position: absolute;
+  display: block;
+  border-color: var(--em-result-accent);
+  opacity: .24;
+}
+.em-student-activity-status-art .is-circle {
+  top: 12px;
+  right: 19px;
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--em-result-accent);
+  border-radius: 50%;
+}
+.em-student-activity-status-art .is-diamond {
+  top: 42px;
+  right: 49px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--em-result-accent);
+  transform: rotate(45deg);
+}
+.em-student-activity-status-art .is-stroke {
+  top: 67px;
+  right: 13px;
+  width: 34px;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--em-result-accent);
+  transform: rotate(-17deg);
+}
+.em-student-activity-status-top {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: minmax(96px,.72fr) minmax(150px,1.65fr) minmax(130px,1fr);
+  grid-template-columns: minmax(112px,.72fr) minmax(0,1.35fr);
   gap: 10px;
-  align-items: start;
-}
-.em-student-activity-status-dates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 12px;
+  align-items: stretch;
 }
 .em-student-activity-status article {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 4px;
+}
+.em-student-activity-status-top article {
+  min-height: 58px;
+  align-content: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(4,10,18,.44);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+.em-student-activity-status-top .is-score {
+  border-color: var(--em-result-border);
+  background:
+    linear-gradient(135deg, var(--em-result-soft), rgba(4,10,18,.33) 72%),
+    rgba(4,10,18,.44);
 }
 .em-student-activity-status article span {
-  color: #8796aa;
-  font: 800 .57rem/1.1 "Montserrat", Arial, sans-serif;
-  letter-spacing: .045em;
+  color: #91a0b4;
+  font: 800 .56rem/1.1 "Montserrat", Arial, sans-serif;
+  letter-spacing: .055em;
   text-transform: uppercase;
 }
 .em-student-activity-status article strong {
   min-width: 0;
-  color: #f4f7fb;
-  font: 720 .72rem/1.3 "Montserrat", Arial, sans-serif;
+  color: #f5f8fc;
+  font: 720 .71rem/1.35 "Montserrat", Arial, sans-serif;
 }
-.em-student-activity-status-primary article:first-child strong {
-  color: var(--em-result-accent);
-  font-size: .92rem;
-  font-weight: 900;
+.em-student-activity-score-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
 }
-.em-student-activity-status .is-observation strong {
+.em-student-activity-score-line > strong {
+  color: var(--em-result-accent) !important;
+  font: 950 1.72rem/.92 "Montserrat", Arial, sans-serif !important;
+  letter-spacing: -.055em;
+  text-shadow: 0 2px 0 rgba(0,0,0,.18);
+}
+.em-student-activity-status.is-pending .em-student-activity-score-line > strong {
+  font-size: 1.5rem !important;
+}
+.em-student-activity-score-line em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 7px;
+  overflow: hidden;
+  border: 1px solid var(--em-result-border);
+  border-radius: 999px;
+  color: var(--em-result-ink);
+  background: var(--em-result-soft);
+  font: 850 .52rem/1 "Montserrat", Arial, sans-serif;
+  font-style: normal;
+  letter-spacing: .035em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.em-student-activity-score-line em b {
+  font-size: .68rem;
+  line-height: 1;
+}
+.em-student-activity-status .is-graded-at strong {
+  max-width: calc(100% - 30px);
+  color: #f2f5fa;
+  font-weight: 780;
+}
+.em-student-activity-status > .is-observation {
+  position: relative;
+  z-index: 1;
+  gap: 4px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-left: 3px solid var(--em-result-accent);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+}
+.em-student-activity-status > .is-observation strong {
   display: -webkit-box;
   overflow: hidden;
+  color: #e9eef6;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-}
-.em-student-activity-status-divider {
-  height: 1px;
-  background: linear-gradient(90deg, var(--em-result-accent), rgba(255,255,255,.08) 34%, transparent);
-  opacity: .48;
 }
 .em-activity-detail-content-tabs.has-single-tab {
   grid-template-columns: 1fr;
@@ -34590,21 +34738,37 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 @media (max-width: 620px) {
   .em-student-activity-status {
-    padding: 10px 11px;
+    padding: 11px 10px 10px 14px;
+    border-radius: 12px;
   }
-  .em-student-activity-status-primary {
-    grid-template-columns: minmax(82px,.7fr) minmax(0,1.3fr);
+  .em-student-activity-status-top {
+    grid-template-columns: minmax(104px,.72fr) minmax(0,1.28fr);
+    gap: 7px;
   }
-  .em-student-activity-status-primary article:last-child {
-    grid-column: 1 / -1;
-  }
-  .em-student-activity-status-dates {
-    gap: 8px;
+  .em-student-activity-status-top article {
+    min-height: 55px;
+    padding: 7px 8px;
   }
   .em-student-activity-status article span {
-    font-size: .52rem;
+    font-size: .49rem;
   }
   .em-student-activity-status article strong {
-    font-size: .66rem;
+    font-size: .63rem;
+  }
+  .em-student-activity-score-line {
+    gap: 5px;
+  }
+  .em-student-activity-score-line > strong {
+    font-size: 1.48rem !important;
+  }
+  .em-student-activity-score-line em {
+    padding: 3px 5px;
+    font-size: .45rem;
+  }
+  .em-student-activity-status .is-graded-at strong {
+    max-width: calc(100% - 18px);
+  }
+  .em-student-activity-status > .is-observation {
+    padding: 7px 8px 7px 10px;
   }
 }
