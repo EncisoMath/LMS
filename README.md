@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.036
+# EncisoMath LMS v0.25.037
+
+## v0.25.037 — margen horizontal en detalle estudiantil
+
+- Corrige la pérdida de separación lateral ocasionada al sacar `em-student-activity-status`, `em-activity-detail-content-tabs` y `em-activity-content-stage` de `em-activity-detail-main`.
+- En celulares, los tres bloques mantienen un gutter de 10 px a izquierda y derecha sin volver a anidarse.
+- Se restauran bordes laterales y radio máximo de 4 px.
+- El escenario conserva padding interno horizontal para que PDF, imágenes, HTML y texto enriquecido no queden pegados al borde.
+- No se modifica la lógica de actividades, calificaciones, RESULTADO ni EncisoFlow.
 
 ## v0.25.036 — detalle estudiantil separado y resultado tipo hero
 

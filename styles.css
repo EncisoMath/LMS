@@ -35107,3 +35107,34 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     animation: none !important;
   }
 }
+
+/* ================================================================
+   ENCISOMATH v0.25.037 · GUTTER HORIZONTAL EN DETALLE ESTUDIANTIL
+   ================================================================ */
+
+/* Al separar los bloques del contenedor principal, conservan un gutter
+   lateral propio en móviles sin volver a anidarlos ni perder amplitud. */
+@media (max-width: 720px) {
+  .em-activity-detail-screen.is-student-readonly .em-student-activity-status,
+  .em-activity-detail-screen.is-student-readonly .em-activity-detail-content-tabs,
+  .em-activity-detail-screen.is-student-readonly .em-activity-content-stage {
+    width: calc(100% - 20px) !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+    border-left-width: 1px !important;
+    border-right-width: 1px !important;
+    border-radius: 4px !important;
+  }
+
+  .em-activity-detail-screen.is-student-readonly .em-student-activity-status {
+    border-left-width: 2px !important;
+    border-right-width: 2px !important;
+    box-shadow: 5px 6px 0 rgba(0,0,0,.22);
+  }
+
+  .em-activity-detail-screen.is-student-readonly .em-activity-content-stage {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
