@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.037';
+  const APP_VERSION = '0.25.038';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12921,32 +12921,104 @@
     const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
     return `
       <section class="em-student-activity-status ${scoreClass}" aria-label="Estado de la actividad">
-        <div class="em-student-activity-status-art" aria-hidden="true">
-          <i class="is-circle"></i><i class="is-diamond"></i><i class="is-stroke"></i><i class="is-plus">+</i><i class="is-dot"></i>
+        <div class="em-act-shapes em-student-activity-status-shapes" aria-hidden="true">
+          <span class="em-act-shape em-act-shape-circle"></span>
+          <span class="em-act-shape em-act-shape-square"></span>
+          <span class="em-act-shape em-act-shape-triangle"></span>
+          <span class="em-act-shape em-act-shape-x"></span>
+          <span class="em-act-shape em-act-shape-circle"></span>
+          <span class="em-act-shape em-act-shape-square"></span>
+          <span class="em-act-shape em-act-shape-triangle"></span>
+          <span class="em-act-shape em-act-shape-x"></span>
         </div>
         <div class="em-student-activity-status-heading">
           <span>Mi resultado</span>
           <strong>${status.graded ? 'Actividad calificada' : 'Esperando calificación'}</strong>
         </div>
         <div class="em-student-activity-status-top">
-          <article class="is-score">
+          <article class="is-score em-student-activity-meta">
             <span>Calificación</span>
             <div class="em-student-activity-score-line">
-              <strong>${escapeHTML(scoreLabel)}</strong>
+              <strong${status.graded ? ` data-student-score-counter data-final-score="${escapeAttr(scoreLabel)}"` : ''}>${escapeHTML(scoreLabel)}</strong>
               <em><b aria-hidden="true">${escapeHTML(performance.emoji)}</b>${escapeHTML(performance.label)}</em>
             </div>
           </article>
-          <article class="is-graded-at">
+          <article class="is-graded-at em-student-activity-meta">
             <span>Fecha de calificación</span>
             <strong>${escapeHTML(gradedAt)}</strong>
           </article>
         </div>
-        <article class="is-observation">
+        <article class="is-observation em-student-activity-meta">
           <span>Observación</span>
           <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
         </article>
       </section>
     `;
+  }
+
+  function emInitStudentActivityStatus(root = document) {
+    const card = root.querySelector?.('.em-student-activity-status');
+    if (!card) return;
+
+    const shapes = [...card.querySelectorAll('.em-student-activity-status-shapes .em-act-shape')];
+    shapes.forEach((shape, index) => {
+      const size = 13 + Math.round(Math.random() * 25);
+      shape.style.setProperty('--em-status-shape-left', `${4 + Math.round(Math.random() * 88)}%`);
+      shape.style.setProperty('--em-status-shape-top', `${-8 + Math.round(Math.random() * 96)}%`);
+      shape.style.setProperty('--em-status-shape-size', `${size}px`);
+      shape.style.setProperty('--em-status-shape-opacity', `${(0.10 + Math.random() * 0.18).toFixed(2)}`);
+      shape.style.setProperty('--em-status-shape-delay', `${(-1.1 * (index + 1) - Math.random() * 2.2).toFixed(2)}s`);
+      shape.style.setProperty('--em-status-shape-duration', `${(5.8 + Math.random() * 4.6).toFixed(2)}s`);
+      shape.style.setProperty('--em-status-shape-rotate', `${Math.round(-30 + Math.random() * 60)}deg`);
+      shape.style.setProperty('--em-status-shape-x', `${Math.round(-18 + Math.random() * 36)}px`);
+      shape.style.setProperty('--em-status-shape-y', `${Math.round(-14 + Math.random() * 28)}px`);
+    });
+    card.classList.remove('is-shapes-live');
+    void card.offsetWidth;
+    card.classList.add('is-shapes-live');
+
+    const scoreNode = card.querySelector('[data-student-score-counter]');
+    if (!scoreNode) return;
+    const finalScore = Number(scoreNode.dataset.finalScore);
+    if (!Number.isFinite(finalScore)) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const motionDisabled = document.documentElement?.dataset?.effectsMotion === 'off'
+      || document.documentElement?.dataset?.heroAnimations === 'off';
+    const decimals = Math.abs(finalScore - Math.round(finalScore)) > 0.001 ? 1 : 0;
+    const formatScore = (value) => Number(value).toFixed(decimals);
+    if (reducedMotion || motionDisabled) {
+      scoreNode.textContent = formatScore(finalScore);
+      return;
+    }
+
+    const pauseScore = Math.max(0, Math.min(finalScore, finalScore >= 20 ? Math.round(finalScore * 0.68) : finalScore * 0.6));
+    const animateScore = (from, to, duration, onDone) => {
+      const startedAt = performance.now();
+      const tick = (now) => {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        scoreNode.textContent = formatScore(from + ((to - from) * eased));
+        if (progress < 1) requestAnimationFrame(tick);
+        else onDone?.();
+      };
+      requestAnimationFrame(tick);
+    };
+
+    scoreNode.classList.remove('is-score-arrived');
+    scoreNode.textContent = formatScore(0);
+    window.setTimeout(() => {
+      animateScore(0, pauseScore, 680, () => {
+        scoreNode.textContent = formatScore(pauseScore);
+        window.setTimeout(() => {
+          animateScore(pauseScore, finalScore, 330, () => {
+            scoreNode.textContent = formatScore(finalScore);
+            scoreNode.classList.remove('is-score-arrived');
+            void scoreNode.offsetWidth;
+            scoreNode.classList.add('is-score-arrived');
+          });
+        }, 190);
+      });
+    }, 30);
   }
 
   function activityGroupMetaMap(rows = []) {
@@ -13277,6 +13349,7 @@
       setActivityDetailTab('content', false);
       if (!studentMode && assignedToCurrentCourse) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
+      if (studentMode) emInitStudentActivityStatus(document);
       const entranceSelectors = studentMode
         ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-detail-content-tabs', '.em-activity-content-stage > *']
         : assignedToCurrentCourse

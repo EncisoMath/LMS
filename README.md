@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.037
+# EncisoMath LMS v0.25.038
+
+## v0.25.038 — figuras aleatorias y contador animado de calificación
+
+- `em-student-activity-status` incorpora `em-act-shapes` con círculos, cuadrados, triángulos y equis distribuidos aleatoriamente en cada apertura.
+- Calificación, fecha de calificación y observación reutilizan exactamente el lenguaje visual de `em-activity-detail-dates`: borde translúcido, fondo blanco translúcido, tipografía Montserrat y padding compacto; el radio queda limitado a 4 px.
+- La nota ejecuta una secuencia de máximo dos segundos: cuenta hasta un valor intermedio, hace una pausa breve, acelera hasta la nota definitiva y termina con una gelatina grande.
+- Con reducción de movimiento activada, la nota final aparece inmediatamente y las animaciones se desactivan.
+- No se modifica la nota almacenada, la publicación de RESULTADO, las entregas, Supabase ni el modo offline.
 
 ## v0.25.037 — margen horizontal en detalle estudiantil
 

@@ -35138,3 +35138,150 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   }
 }
 
+
+
+/* ================================================================
+   ENCISOMATH v0.25.038 · FIGURAS, METADATOS Y CONTADOR DE NOTA
+   ================================================================ */
+
+/* El mini hero reutiliza las figuras em-act-shapes y las distribuye de
+   forma distinta en cada apertura, sin degradados ni resplandores. */
+.em-student-activity-status .em-student-activity-status-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape {
+  left: var(--em-status-shape-left, 50%) !important;
+  top: var(--em-status-shape-top, 50%) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--em-status-shape-size, 24px);
+  height: var(--em-status-shape-size, 24px);
+  margin: 0;
+  opacity: var(--em-status-shape-opacity, .16);
+  border-color: var(--em-result-accent);
+  border-radius: 4px;
+  background: var(--em-result-accent);
+  transform: translate(-50%, -50%) rotate(var(--em-status-shape-rotate, 0deg));
+  animation: none !important;
+}
+.em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape {
+  animation: emStudentStatusRandomShape var(--em-status-shape-duration, 8s) var(--em-status-shape-delay, 0s) ease-in-out infinite !important;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-circle {
+  border-radius: 50%;
+  background: transparent;
+  border-width: 4px;
+  border-style: solid;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-square {
+  border-radius: 4px;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-triangle {
+  width: 0;
+  height: 0;
+  border-left: calc(var(--em-status-shape-size, 24px) * .52) solid transparent;
+  border-right: calc(var(--em-status-shape-size, 24px) * .52) solid transparent;
+  border-bottom: var(--em-status-shape-size, 24px) solid var(--em-result-accent);
+  border-radius: 0;
+  background: transparent;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-x {
+  width: var(--em-status-shape-size, 24px);
+  height: var(--em-status-shape-size, 24px);
+  background: transparent;
+}
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-x::before,
+.em-student-activity-status .em-student-activity-status-shapes .em-act-shape-x::after {
+  width: var(--em-status-shape-size, 24px);
+  height: max(4px, calc(var(--em-status-shape-size, 24px) * .18));
+  border-radius: 4px;
+  background: var(--em-result-accent);
+}
+
+/* Calificación, fecha y observación heredan el lenguaje exacto de las
+   etiquetas de em-activity-detail-dates; solo cambia el radio a 4 px. */
+.em-student-activity-status .em-student-activity-meta {
+  min-width: 0;
+  padding: 5px 8px !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  border-radius: 4px !important;
+  background: rgba(255,255,255,.14) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #fff;
+  font: 700 clamp(8px, 1.8vw, 10px)/1.15 "Montserrat", Arial, sans-serif;
+  overflow: hidden;
+}
+.em-student-activity-status .em-student-activity-meta > span {
+  color: rgba(255,255,255,.78) !important;
+  font: 800 clamp(8px, 1.8vw, 10px)/1.15 "Montserrat", Arial, sans-serif !important;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+.em-student-activity-status .em-student-activity-meta > strong,
+.em-student-activity-status .em-student-activity-meta .em-student-activity-score-line {
+  position: relative;
+  z-index: 2;
+}
+.em-student-activity-status .em-student-activity-meta.is-observation {
+  padding: 7px 8px !important;
+  border-left-width: 1px !important;
+}
+.em-student-activity-status .em-student-activity-meta.is-observation strong {
+  white-space: normal;
+}
+.em-student-activity-status .em-student-activity-status-top article {
+  min-height: 58px;
+}
+
+/* Contador en dos tiempos y llegada con gelatina grande; toda la secuencia
+   termina antes de dos segundos. */
+.em-student-activity-score-line > strong[data-student-score-counter] {
+  display: inline-block;
+  min-width: 1.5ch;
+  transform-origin: 50% 62%;
+  will-change: transform;
+}
+.em-student-activity-score-line > strong.is-score-arrived {
+  animation: emStudentScoreArrivalJelly 650ms cubic-bezier(.12, 1.72, .24, 1) both !important;
+}
+
+@keyframes emStudentStatusRandomShape {
+  0%, 100% {
+    transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(var(--em-status-shape-rotate, 0deg)) scale(.88);
+  }
+  38% {
+    transform: translate(-50%, -50%) translate3d(var(--em-status-shape-x, 12px), var(--em-status-shape-y, -8px), 0) rotate(calc(var(--em-status-shape-rotate, 0deg) + 22deg)) scale(1.12);
+  }
+  72% {
+    transform: translate(-50%, -50%) translate3d(-7px, 5px, 0) rotate(calc(var(--em-status-shape-rotate, 0deg) - 13deg)) scale(.96);
+  }
+}
+@keyframes emStudentScoreArrivalJelly {
+  0% { transform: scale3d(1, 1, 1) rotate(0deg); }
+  18% { transform: scale3d(1.48, .68, 1) rotate(-2deg); }
+  36% { transform: scale3d(.76, 1.42, 1) rotate(2deg); }
+  54% { transform: scale3d(1.25, .84, 1) rotate(-1deg); }
+  70% { transform: scale3d(.91, 1.14, 1) rotate(.6deg); }
+  84% { transform: scale3d(1.07, .95, 1) rotate(-.3deg); }
+  100% { transform: scale3d(1, 1, 1) rotate(0deg); }
+}
+
+:root[data-effects-motion="off"] .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
+:root[data-hero-animations="off"] .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
+:root[data-effects-motion="off"] .em-student-activity-score-line > strong.is-score-arrived,
+:root[data-hero-animations="off"] .em-student-activity-score-line > strong.is-score-arrived {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-student-activity-status.is-shapes-live .em-student-activity-status-shapes .em-act-shape,
+  .em-student-activity-score-line > strong.is-score-arrived {
+    animation: none !important;
+  }
+}
