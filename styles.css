@@ -35858,6 +35858,10 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   z-index: 1;
 }
 
+.em-student-activity-status-v39 .em-student-activity-status-sticker > img.is-art.has-rounded-corners {
+  border-radius: 4px;
+}
+
 @media (max-width: 520px) {
   .em-activity-sticker-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -36022,4 +36026,15 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   box-shadow: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
+/* ================================================================
+   ENCISOMATH v0.25.059 · ESPACIADO INFERIOR DE TARJETAS ESTUDIANTILES
+   ================================================================ */
+.em-activity-card.is-student-readonly .em-activity-card-copy {
+  padding-bottom: 0 !important;
+}
+
+.em-activity-card.is-student-readonly .em-activity-card-progress {
+  margin-bottom: 0 !important;
 }

@@ -1,4 +1,11 @@
-# EncisoMath LMS v0.25.058
+# EncisoMath LMS v0.25.059
+
+
+## v0.25.059 — tarjetas estudiantiles más compactas
+
+- Se eliminó el espacio inferior adicional que quedaba debajo de la barra de calificación en las tarjetas de actividades del estudiante.
+- La barra conserva el mismo diseño, pero ahora termina con un margen inferior equilibrado respecto al padding general de la tarjeta.
+- El ajuste se limita a la vista estudiantil y no modifica las tarjetas ni la barra de progreso del docente.
 
 
 ## v0.25.058 — calificación visible en las tarjetas del estudiante
