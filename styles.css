@@ -35663,3 +35663,31 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     width: 76px;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.047 · AJUSTE DE STICKER Y SHAPE CUADRADO
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-sticker {
+  bottom: -8px !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39::after {
+  top: 6px !important;
+  right: 8px !important;
+  width: 92px !important;
+  height: 92px !important;
+  border-width: 12px !important;
+  opacity: .12 !important;
+}
+
+@media (max-width: 380px) {
+  .em-activity-detail-screen.is-student-readonly
+  .em-student-activity-status-v39
+  .em-student-activity-status-sticker {
+    bottom: -6px !important;
+  }
+}

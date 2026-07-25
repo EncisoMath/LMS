@@ -1,8 +1,6 @@
-# EncisoMath LMS v0.25.046
+# EncisoMath LMS v0.25.047
 
-## v0.25.046 — sticker PNG 1:1 en la tarjeta estudiantil de actividades
-- Se añadió un sticker en la esquina inferior derecha de `em-student-activity-status`.
-- El sticker usa una imagen PNG cuadrada 1:1 y se sale del contenedor, como un sticker real.
-- Se aplicó un borde/silueta blanca de 3 px siguiendo la transparencia del PNG.
-- Se habilitó `overflow: visible` únicamente para esta tarjeta, para que el sticker pueda sobresalir.
-- Se añadió el archivo nuevo `assets/stickers/activity-status-cat.png` y se precachea en `sw.js`.
+## v0.25.047 — ajuste del sticker y del shape cuadrado
+- El sticker de la esquina inferior derecha se subió un poco más para que no quede tan abajo.
+- El shape cuadrado que se salía del contenedor fue identificado como el pseudo-elemento `::after` de `em-student-activity-status`.
+- Ese shape se reubicó y se redujo para que permanezca dentro del contenedor aunque el sticker sobresalga.
