@@ -1,4 +1,4 @@
-# EncisoMath LMS v0.25.039
+# EncisoMath LMS v0.25.040
 
 ## Corrección visible de tarjeta estudiantil
 
@@ -183,3 +183,10 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 ## v0.25.023 — optimización de Storage
 
 Los archivos de Supabase Storage ya no se precargan en cada inicio o sincronización. Se descargan al abrirlos y se conservan en una caché multimedia estable. La preparación offline manual se limita al curso y periodo abiertos. No requiere SQL.
+
+## v0.25.040 — ajuste de tarjeta de calificación
+
+- Calificación apilada: número arriba y desempeño debajo, con ancho fijo estable durante el contador.
+- Observación intercambiada con Fecha de calificación.
+- Shapes claros.
+- Eliminada la franja/borde claro del extremo izquierdo.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.039';
+  const APP_VERSION = '0.25.040';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12942,19 +12942,19 @@
         <div class="em-student-activity-status-top">
           <article class="is-score em-student-activity-meta">
             <span>Calificación</span>
-            <div class="em-student-activity-score-line">
+            <div class="em-student-activity-score-stack">
               <strong${status.graded ? ` data-student-score-counter data-final-score="${escapeAttr(scoreLabel)}"` : ''}>${escapeHTML(scoreLabel)}</strong>
               <em><b aria-hidden="true">${escapeHTML(performance.emoji)}</b>${escapeHTML(performance.label)}</em>
             </div>
           </article>
-          <article class="is-graded-at em-student-activity-meta">
-            <span>Fecha de calificación</span>
-            <strong>${escapeHTML(gradedAt)}</strong>
+          <article class="is-observation em-student-activity-meta">
+            <span>Observación</span>
+            <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
           </article>
         </div>
-        <article class="is-observation em-student-activity-meta">
-          <span>Observación</span>
-          <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
+        <article class="is-graded-at em-student-activity-meta">
+          <span>Fecha de calificación</span>
+          <strong>${escapeHTML(gradedAt)}</strong>
         </article>
       </section>
     `;

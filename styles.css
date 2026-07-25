@@ -35437,3 +35437,142 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     animation: none !important;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.040 · AJUSTE ESTABLE DE CALIFICACION ESTUDIANTIL
+   ================================================================ */
+
+/* Elimina la franja/borde de acento del extremo izquierdo. */
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39::before {
+  content: none !important;
+  display: none !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 {
+  padding-left: 14px !important;
+}
+
+/* Shapes claros sobre el color solido de la nota. */
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape {
+  background: #fff !important;
+  border-color: #fff !important;
+  opacity: var(--em-status-shape-opacity, .18) !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape-circle {
+  border-color: #fff !important;
+  background: transparent !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape-triangle {
+  background: transparent !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: #fff !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape-x {
+  background: transparent !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape-x::before,
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-shapes .em-act-shape-x::after {
+  background: #fff !important;
+}
+
+/* Columna de nota compacta y estable: numero arriba, nivel debajo. */
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-top {
+  grid-template-columns: minmax(92px, 108px) minmax(0, 1fr) !important;
+  align-items: stretch !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .is-score {
+  width: 100% !important;
+  min-width: 0 !important;
+  align-content: center !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: start !important;
+  align-content: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack > strong {
+  display: block !important;
+  width: 3.2ch !important;
+  min-width: 3.2ch !important;
+  max-width: 3.2ch !important;
+  overflow: visible !important;
+  color: #fff !important;
+  font-size: clamp(1.8rem, 7.6vw, 2.65rem) !important;
+  line-height: .9 !important;
+  text-align: left !important;
+  transform-origin: 48% 65%;
+  will-change: transform;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack em {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 3px 5px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 4px !important;
+  background: rgba(255,255,255,.18) !important;
+  color: #fff !important;
+  font: 900 clamp(7px, 1.65vw, 9px)/1 "Montserrat", Arial, sans-serif !important;
+  font-style: normal !important;
+  letter-spacing: .01em !important;
+  text-overflow: ellipsis !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack em b {
+  flex: 0 0 auto !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+}
+
+/* Observacion ocupa ahora la caja derecha; fecha pasa a la fila inferior. */
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-top .is-observation {
+  min-height: 58px !important;
+  align-content: center !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-top .is-observation strong {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 > .is-graded-at {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 > .is-graded-at strong {
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack > strong.is-score-arrived {
+  animation: emStudentScoreArrivalJellyV39 600ms cubic-bezier(.12,1.72,.24,1) both !important;
+}
+
+@media (max-width: 380px) {
+  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-status-top {
+    grid-template-columns: 94px minmax(0, 1fr) !important;
+  }
+  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack em {
+    padding-inline: 4px !important;
+    font-size: 7px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-activity-detail-screen.is-student-readonly .em-student-activity-status-v39 .em-student-activity-score-stack > strong.is-score-arrived {
+    animation: none !important;
+  }
+}
