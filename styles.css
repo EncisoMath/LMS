@@ -35873,3 +35873,136 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.053 · STICKER DENTRO DEL GRID DE RESULTADO
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status.em-student-activity-status-v39 {
+  overflow: hidden !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top {
+  grid-template-columns: minmax(82px, 96px) minmax(0, 1fr) !important;
+  grid-auto-rows: 92px !important;
+  align-items: stretch !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39.has-sticker
+.em-student-activity-status-top {
+  grid-template-columns: minmax(82px, 96px) minmax(0, 1fr) 92px !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .em-student-activity-meta {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-score.em-student-activity-meta {
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-score.em-student-activity-meta > span {
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-score.em-student-activity-meta
+.em-student-activity-score-stack {
+  justify-items: center !important;
+  width: 100% !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-score.em-student-activity-meta
+.em-student-activity-score-stack > strong {
+  text-align: center !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-sticker.em-student-activity-meta {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 92px !important;
+  min-width: 92px !important;
+  height: 92px !important;
+  min-height: 92px !important;
+  padding: 6px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,.28) !important;
+  border-radius: 4px !important;
+  background: rgba(5,8,13,.10) !important;
+  -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
+  backdrop-filter: blur(7px) brightness(.94) !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-sticker
+.em-student-activity-status-sticker {
+  position: relative !important;
+  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 1 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  pointer-events: none !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-sticker
+.em-student-activity-status-sticker > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+@media (max-width: 380px) {
+  .em-activity-detail-screen.is-student-readonly
+  .em-student-activity-status-v39
+  .em-student-activity-status-top {
+    grid-template-columns: 76px minmax(0, 1fr) !important;
+    grid-auto-rows: 76px !important;
+  }
+
+  .em-activity-detail-screen.is-student-readonly
+  .em-student-activity-status-v39.has-sticker
+  .em-student-activity-status-top {
+    grid-template-columns: 76px minmax(0, 1fr) 76px !important;
+  }
+
+  .em-activity-detail-screen.is-student-readonly
+  .em-student-activity-status-v39
+  .em-student-activity-status-top > .is-sticker.em-student-activity-meta {
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 76px !important;
+    min-height: 76px !important;
+    padding: 4px !important;
+  }
+}

@@ -13008,7 +13008,7 @@
       return `<span class="em-act-shape em-act-shape-${type}"></span>`;
     }).join('');
     return `
-      <section class="em-student-activity-status em-student-activity-status-v39 ${scoreClass}" aria-label="Estado de la actividad">
+      <section class="em-student-activity-status em-student-activity-status-v39 ${scoreClass} ${stickerUrl ? 'has-sticker' : ''}" aria-label="Estado de la actividad">
         <div class="em-act-shapes em-student-activity-status-shapes" aria-hidden="true">
           ${statusShapesHTML}
         </div>
@@ -13028,12 +13028,12 @@
             <span>Observación</span>
             <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
           </article>
+          ${stickerUrl ? `<article class="is-sticker em-student-activity-meta" aria-label="Sticker de la calificación"><div class="em-student-activity-status-sticker" aria-hidden="true"><img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /><img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div></article>` : ''}
         </div>
         <article class="is-graded-at em-student-activity-meta">
           <span>Fecha de calificación</span>
           <strong>${escapeHTML(gradedAt)}</strong>
         </article>
-        ${stickerUrl ? `<div class="em-student-activity-status-sticker" aria-hidden="true"><img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /><img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div>` : ''}
       </section>
     `;
   }

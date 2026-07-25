@@ -1,10 +1,8 @@
-# EncisoMath LMS v0.25.052
+# EncisoMath LMS v0.25.053
 
-## v0.25.052 — eliminación completa del sistema RIESGO
-- Se retiró la pestaña RIESGO del modal de calificación.
-- Se eliminaron los detectores de pérdida de foco, cambio de aplicación, copia, captura e inspección.
-- Se eliminaron las advertencias, baneos y la autocalificación automática en 2.0.
-- Se eliminaron las etiquetas de riesgo y el botón Reactivar actividad.
-- Se retiraron las llamadas RPC y la cola offline relacionadas con riesgo.
-- Se conservan intactos STICKER, CALIFICACIÓN, ENTREGA, GRUPO y SEGUIMIENTO.
-- Se incluye un SQL idempotente para limpiar cualquier tabla, función o columna de riesgo creada en Supabase y restaurar calificaciones autogeneradas si existieran.
+## v0.25.053 — sticker integrado en la fila de calificación
+- El sticker dejó de sobresalir de la tarjeta y ahora ocupa un tercer contenedor cuadrado 1:1 al lado de Observación.
+- Calificación, Observación y Sticker comparten exactamente la misma altura.
+- Si no se asigna sticker, el layout conserva únicamente Calificación y Observación.
+- El bloque de Calificación quedó centrado horizontal y verticalmente para evitar que se vea pegado a la esquina superior izquierda.
+- Se mantienen el borde blanco del sticker, los WebP animados, los shapes y el contador.
