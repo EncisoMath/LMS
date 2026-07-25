@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.057';
+  const APP_VERSION = '0.25.058';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12400,8 +12400,16 @@
     const assignedItems = getActivitiesForCurrentAssignment().filter((item) => Number(item.period) === Number(state.activitiesPeriod) && contentIsAssignedTo(item, assignmentId));
     const orderPosition = Math.max(1, assignedItems.findIndex((item) => String(item.id) === String(activity.id)) + 1);
     const progress = studentMode ? null : (assigned ? activityProgressForCurrentAssignment(activity) : { total: 0, delivered: 0, graded: 0, percentage: 0, average: null, pending: 0 });
+    const studentGradeStatus = studentMode ? activityStudentGradeStatus(activity) : null;
+    const studentScore = studentGradeStatus?.graded && Number.isFinite(Number(studentGradeStatus.score))
+      ? Math.max(0, Math.min(100, Number(studentGradeStatus.score)))
+      : 0;
+    const studentScoreLabel = studentGradeStatus?.graded
+      ? studentScore.toFixed(studentScore % 1 ? 1 : 0)
+      : '—';
+    const activityProgress = studentMode ? studentScore : (progress?.percentage || 0);
     return `
-      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''} ${assigned ? '' : 'is-unassigned'}" data-activity-id="${escapeAttr(activity.id)}" data-sort-content-id="${escapeAttr(activity.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" tabindex="0" style="--activity-index:${index};--activity-progress:${progress?.percentage || 0}%">
+      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''} ${assigned ? '' : 'is-unassigned'}" data-activity-id="${escapeAttr(activity.id)}" data-sort-content-id="${escapeAttr(activity.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" tabindex="0" style="--activity-index:${index};--activity-progress:${activityProgress}%">
         ${studentMode ? '' : assigned ? `
           <div class="em-content-sort-controls" aria-label="Posición de la actividad">
             <span data-sort-position>${orderPosition}</span>
@@ -12419,7 +12427,12 @@
             <span><small>Asignada</small><strong>${escapeHTML(start)}</strong></span>
             <span><small>Finaliza</small><strong>${escapeHTML(due)}</strong></span>
           </div>
-          ${studentMode || !assigned ? '' : `
+          ${studentMode ? `
+            <div class="em-activity-card-progress is-student-grade-progress" aria-label="${studentGradeStatus?.graded ? `Calificación ${studentScoreLabel} de 100` : 'Calificación pendiente'}">
+              <div><span>Calificación</span><strong>${studentScoreLabel}/100</strong></div>
+              <i><b></b></i>
+            </div>
+          ` : !assigned ? '' : `
             <div class="em-activity-card-progress" aria-label="${progress.percentage}% calificado">
               <div><span>Avance de calificación</span><strong>${progress.graded}/${progress.total}</strong></div>
               <i><b></b></i>

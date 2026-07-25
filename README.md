@@ -1,5 +1,11 @@
-# EncisoMath LMS v0.25.057
+# EncisoMath LMS v0.25.058
 
+
+## v0.25.058 — calificación visible en las tarjetas del estudiante
+
+- Las tarjetas de actividades del portal estudiantil reutilizan la misma barra de progreso de la vista docente.
+- La barra representa la calificación individual obtenida sobre 100.
+- El encabezado muestra `Calificación` y el valor `nota/100`; mientras no exista una calificación, muestra `—/100` con la barra vacía.
 
 ## v0.25.057 — sticker compartido en calificaciones grupales
 
