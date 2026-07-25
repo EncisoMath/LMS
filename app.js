@@ -12907,6 +12907,88 @@
     return `${month} ${date.getDate()} de ${date.getFullYear()}, ${hour}:${minute}${period}`;
   }
 
+  const ACTIVITY_STICKER_CATALOG_URL = './assets/stickers/catalog.json';
+  const ACTIVITY_STICKER_BUILTINS = Object.freeze([
+    { id: 'activity-status-cat', name: 'Gato amable', url: './assets/stickers/activity-status-cat.png', type: 'image' }
+  ]);
+  let activityStickerCatalogCache = null;
+
+  function normalizeActivityStickerUrl(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    if (/^https:\/\//i.test(text)) return text;
+    if (/^\.\/assets\/stickers\//i.test(text)) return text;
+    if (/^assets\/stickers\//i.test(text)) return `./${text}`;
+    return '';
+  }
+
+  function activityStickerGridHTML(items = [], selectedUrl = '') {
+    const selected = normalizeActivityStickerUrl(selectedUrl);
+    const unique = [];
+    const seen = new Set();
+    [...ACTIVITY_STICKER_BUILTINS, ...(Array.isArray(items) ? items : [])].forEach((item) => {
+      const url = normalizeActivityStickerUrl(item?.url || item?.path);
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      unique.push({
+        id: String(item?.id || `sticker-${unique.length + 1}`),
+        name: String(item?.name || 'Sticker'),
+        url,
+        type: String(item?.type || (/\.gif(?:$|[?#])/i.test(url) ? 'gif' : 'image'))
+      });
+    });
+    return `
+      <button class="em-activity-sticker-option is-none ${selected ? '' : 'is-selected'}" type="button" data-activity-sticker-url="" aria-pressed="${selected ? 'false' : 'true'}">
+        <span aria-hidden="true">×</span><strong>Sin sticker</strong>
+      </button>
+      ${unique.map((item) => `<button class="em-activity-sticker-option ${selected === item.url ? 'is-selected' : ''}" type="button" data-activity-sticker-url="${escapeAttr(item.url)}" aria-pressed="${selected === item.url ? 'true' : 'false'}" title="${escapeAttr(item.name)}"><span class="em-activity-sticker-preview"><img src="${escapeAttr(item.url)}" alt="" loading="lazy" decoding="async" /></span><strong>${escapeHTML(item.name)}</strong>${item.type === 'gif' ? '<small>GIF</small>' : ''}</button>`).join('')}
+    `;
+  }
+
+  async function loadActivityStickerCatalog(force = false) {
+    if (activityStickerCatalogCache && !force) return activityStickerCatalogCache;
+    try {
+      const response = await fetch(`${ACTIVITY_STICKER_CATALOG_URL}?v=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      activityStickerCatalogCache = Array.isArray(payload?.stickers) ? payload.stickers : [];
+    } catch (_) {
+      activityStickerCatalogCache = [];
+    }
+    return activityStickerCatalogCache;
+  }
+
+  function setActivityStickerSelection(grid, hiddenInput, url = '') {
+    const selected = normalizeActivityStickerUrl(url);
+    if (hiddenInput) hiddenInput.value = selected;
+    grid?.querySelectorAll('[data-activity-sticker-url]').forEach((button) => {
+      const active = normalizeActivityStickerUrl(button.dataset.activityStickerUrl || '') === selected;
+      button.classList.toggle('is-selected', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  async function validateActivityStickerFile(file) {
+    if (!(file instanceof Blob)) throw new Error('Selecciona una imagen o GIF válido.');
+    const allowed = new Set(['image/png', 'image/webp', 'image/gif', 'image/jpeg']);
+    if (!allowed.has(String(file.type || '').toLowerCase())) throw new Error('Solo se permiten PNG, WebP, GIF o JPG.');
+    if (file.size > 6 * 1024 * 1024) throw new Error('Cada sticker puede pesar máximo 6 MB.');
+    const url = URL.createObjectURL(file);
+    try {
+      const dimensions = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+        image.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
+        image.src = url;
+      });
+      if (!dimensions.width || !dimensions.height || Math.abs(dimensions.width - dimensions.height) > 1) {
+        throw new Error('El sticker debe tener relación 1:1, es decir, una imagen cuadrada.');
+      }
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   function studentActivityStatusCardHTML(activity, status) {
     const scoreClass = status.graded ? notesScoreClass(status.score) : 'is-pending';
     const scoreLabel = status.graded
@@ -12919,6 +13001,7 @@
       ? String(status.record.observations).trim()
       : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
     const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
+    const stickerUrl = status.graded ? normalizeActivityStickerUrl(status.record?.stickerUrl || status.record?.sticker_url || '') : '';
     const statusShapeTypes = ['circle', 'square', 'triangle', 'x'];
     const statusShapesHTML = Array.from({ length: 4 }, () => {
       const type = statusShapeTypes[Math.floor(Math.random() * statusShapeTypes.length)];
@@ -12950,9 +13033,7 @@
           <span>Fecha de calificación</span>
           <strong>${escapeHTML(gradedAt)}</strong>
         </article>
-        <div class="em-student-activity-status-sticker" aria-hidden="true">
-          <img src="./assets/stickers/activity-status-cat.png" alt="" width="360" height="360" decoding="async" loading="lazy" />
-        </div>
+        ${stickerUrl ? `<div class="em-student-activity-status-sticker" aria-hidden="true"><img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /><img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div>` : ''}
       </section>
     `;
   }
@@ -13776,6 +13857,7 @@
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
     const trackingCount = eventHistory.length;
+    const selectedStickerUrl = normalizeActivityStickerUrl(record.stickerUrl || record.sticker_url || '');
     const rubricCriteria = Array.isArray(activity?.rubric)
       ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
       : [];
@@ -13796,6 +13878,7 @@
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="sticker">Sticker</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="tracking">Seguimiento${trackingCount ? `<span class="em-grade-tab-count">${trackingCount}</span>` : ''}</button>
         </div>
         <form id="activityGradeForm" class="em-activity-grade-form">
@@ -13850,6 +13933,19 @@
             <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
           </section>
 
+          <section class="em-grade-form-section em-activity-sticker-panel" data-grade-modal-panel="sticker" hidden>
+            <div class="em-grade-form-heading"><h3>Sticker</h3><p>El sticker es opcional. El que selecciones aparecerá en la tarjeta de calificación del estudiante.</p></div>
+            <input id="activityStickerUrlInput" type="hidden" value="${escapeAttr(selectedStickerUrl)}" />
+            <div class="em-activity-sticker-grid" id="activityStickerGrid" role="listbox" aria-label="Stickers disponibles">
+              ${activityStickerGridHTML(ACTIVITY_STICKER_BUILTINS, selectedStickerUrl)}
+            </div>
+            <div class="em-activity-sticker-add-row">
+              <button class="ghost-btn em-activity-add-sticker-btn" id="addActivityStickersBtn" type="button"><span aria-hidden="true">＋</span>Añadir Stickers</button>
+              <input class="em-hidden-file" id="activityStickerFilesInput" type="file" accept="image/png,image/webp,image/gif,image/jpeg" multiple />
+              <p id="activityStickerUploadStatus" aria-live="polite">PNG, WebP, GIF o JPG cuadrados · máximo 6 MB cada uno.</p>
+            </div>
+          </section>
+
           <section class="em-grade-form-section em-tracking-panel" data-grade-modal-panel="tracking" hidden>
             <div class="em-grade-form-heading"><h3>Seguimiento</h3><p>Registra cada solicitud, novedad o intento de entrega de manera cronológica.</p></div>
             <div class="em-tracking-compose">
@@ -13876,6 +13972,10 @@
     const groupOptions = document.getElementById('activityGroupOptions');
     const mainScore = document.getElementById('activityScoreInput');
     const gradeModal = document.querySelector('.em-activity-grade-modal');
+    const stickerGrid = document.getElementById('activityStickerGrid');
+    const stickerInput = document.getElementById('activityStickerUrlInput');
+    const stickerFileInput = document.getElementById('activityStickerFilesInput');
+    const stickerUploadStatus = document.getElementById('activityStickerUploadStatus');
     gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
     const rubricCriteria = Array.isArray(activity?.rubric)
@@ -14065,6 +14165,50 @@
       }).join('')}` : '<p>Si no seleccionas compañeros, la calificación será individual.</p>';
     };
 
+    const renderStickerGrid = (items, selected = stickerInput?.value || '') => {
+      if (!stickerGrid) return;
+      stickerGrid.innerHTML = activityStickerGridHTML(items, selected);
+      setActivityStickerSelection(stickerGrid, stickerInput, selected);
+    };
+
+    stickerGrid?.addEventListener('click', (event) => {
+      const option = event.target.closest('[data-activity-sticker-url]');
+      if (!option) return;
+      setActivityStickerSelection(stickerGrid, stickerInput, option.dataset.activityStickerUrl || '');
+    });
+
+    loadActivityStickerCatalog().then((items) => renderStickerGrid(items, stickerInput?.value || '')).catch(() => {});
+
+    document.getElementById('addActivityStickersBtn')?.addEventListener('click', () => stickerFileInput?.click());
+    stickerFileInput?.addEventListener('change', async () => {
+      const files = [...(stickerFileInput.files || [])];
+      if (!files.length) return;
+      const addButton = document.getElementById('addActivityStickersBtn');
+      if (addButton) addButton.disabled = true;
+      if (stickerUploadStatus) stickerUploadStatus.textContent = `Subiendo ${files.length} sticker${files.length === 1 ? '' : 's'} a GitHub…`;
+      let lastSticker = null;
+      const uploadedStickers = [];
+      try {
+        for (let index = 0; index < files.length; index += 1) {
+          const file = files[index];
+          if (stickerUploadStatus) stickerUploadStatus.textContent = `Validando y subiendo ${index + 1} de ${files.length}: ${file.name}`;
+          await validateActivityStickerFile(file);
+          lastSticker = await cloudAPI().uploadActivityStickerToGithub({ file });
+          if (lastSticker?.url) uploadedStickers.push(lastSticker);
+        }
+        const catalog = await loadActivityStickerCatalog(true);
+        const merged = [...(catalog || []), ...uploadedStickers];
+        activityStickerCatalogCache = merged;
+        renderStickerGrid(merged, lastSticker?.url || stickerInput?.value || '');
+        if (stickerUploadStatus) stickerUploadStatus.textContent = `${files.length} sticker${files.length === 1 ? '' : 's'} guardado${files.length === 1 ? '' : 's'} en GitHub.`;
+      } catch (error) {
+        if (stickerUploadStatus) stickerUploadStatus.textContent = error?.message || 'No se pudieron guardar los stickers en GitHub.';
+      } finally {
+        if (addButton) addButton.disabled = false;
+        stickerFileInput.value = '';
+      }
+    });
+
     gradeModal?.querySelectorAll('[data-grade-modal-tab]').forEach((button) => button.addEventListener('click', () => setActiveTab(button.dataset.gradeModalTab || 'score')));
     gradeModal?.querySelectorAll('[data-grade-score-mode]').forEach((button) => button.addEventListener('click', () => setScoreMode(button.dataset.gradeScoreMode || 'normal')));
     gradeModal?.querySelectorAll('[data-rubric-grade-score]').forEach((input) => input.addEventListener('input', () => {
@@ -14138,6 +14282,7 @@
           gradingGroupId: record.gradingGroupId || '',
           scores,
           rubricScores,
+          stickerUrl: normalizeActivityStickerUrl(document.getElementById('activityStickerUrlInput')?.value || ''),
           observations: document.getElementById('activityObservationsInput')?.value.trim() || '',
           existingSubmissionFile: record.submissionFile || {},
           submissionFile: file,

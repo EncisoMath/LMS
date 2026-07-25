@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "stickers": [
+    {
+      "id": "activity-status-cat",
+      "name": "Gato amable",
+      "url": "./assets/stickers/activity-status-cat.png",
+      "path": "./assets/stickers/activity-status-cat.png",
+      "type": "image"
+    }
+  ]
+}

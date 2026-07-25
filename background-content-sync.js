@@ -1,7 +1,7 @@
 ((root) => {
   'use strict';
 
-  const MANIFEST_VERSION = 2;
+  const MANIFEST_VERSION = 3;
   const FILE_EXTENSION_RE = /\.(?:pdf|png|jpe?g|webp|gif|svg|avif|bmp|txt|csv|docx?|xlsx?|pptx?|zip|mp3|m4a|ogg|wav|mp4|webm)(?:$|[?#])/i;
   const OMIT_KEYS = new Set([
     'progressByAssignment', 'sortOrderByAssignment', 'objectUrl', 'localBlobKey',
@@ -106,6 +106,33 @@
 
   function statusAllGraded(row = {}) {
     return row.allGraded === true || row.all_graded === true;
+  }
+
+  function statusStickerUrl(row = {}) {
+    return stringValue(row.stickerUrl || row.sticker_url);
+  }
+
+  function appendActivityStatusEntries(entries, statuses = []) {
+    statuses.forEach((row) => {
+      const activityId = statusActivityId(row);
+      const assignmentId = statusAssignmentId(row);
+      if (!activityId || !assignmentId) return;
+      const studentCode = stringValue(row.studentCode || row.student_code || 'student');
+      const stickerUrl = statusStickerUrl(row);
+      const id = `${activityId}:${assignmentId}:${studentCode}`;
+      const canonical = {
+        activityId,
+        assignmentId,
+        studentCode,
+        score: row.score == null ? null : Number(row.score),
+        observations: stringValue(row.observations),
+        stickerUrl,
+        gradedAt: stringValue(row.gradedAt || row.graded_at),
+        allGraded: statusAllGraded(row)
+      };
+      const entry = makeEntry('activity-status', id, canonical, collectDownloadableUrls({ stickerUrl }));
+      if (entry) entries[entry.key] = entry;
+    });
   }
 
   function reviewPayloadHasContent(type, payload = {}) {
@@ -219,6 +246,7 @@
       if (entry) entries[entry.key] = entry;
     });
 
+    appendActivityStatusEntries(entries, statuses);
     return { version: MANIFEST_VERSION, entries };
   }
 
@@ -305,6 +333,7 @@
       if (entry) entries[entry.key] = entry;
     });
 
+    appendActivityStatusEntries(entries, statuses);
     return { version: MANIFEST_VERSION, entries };
   }
 

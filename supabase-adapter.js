@@ -758,6 +758,7 @@
         studentCode: String(row?.student_code || row?.studentCode || fallbackStudentCode || ''),
         score: gradedAt ? Number(scoreValue ?? 40) : null,
         observations: String(row?.observations || ''),
+        stickerUrl: String(row?.sticker_url || row?.stickerUrl || ''),
         gradedAt,
         allGraded: row?.all_graded === true || row?.allGraded === true,
         totalStudents: Number(row?.total_students ?? row?.totalStudents ?? 0),
@@ -2192,7 +2193,7 @@
     const supabaseClient = getClient();
     const recordsResult = await supabaseClient
       .from('activity_student_records')
-      .select('id,activity_id,assignment_id,student_id,score,observations,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
+      .select('id,activity_id,assignment_id,student_id,score,observations,sticker_url,submission_file,grading_group_id,rubric_scores,graded_at,updated_at,student:students(id,student_code,display_name,first_name,last_name)')
       .eq('activity_id', activityId)
       .eq('assignment_id', assignmentId);
     if (recordsResult.error) throw normalizeError(recordsResult.error, 'No se pudo cargar la lista de calificaciones.');
@@ -2235,6 +2236,7 @@
         fullName,
         score: Number(row.score ?? 40),
         observations: row.observations || '',
+        stickerUrl: row.sticker_url || '',
         submissionFile: row.submission_file && typeof row.submission_file === 'object' ? row.submission_file : {},
         gradingGroupId: row.grading_group_id || '',
         rubricScores: row.rubric_scores && typeof row.rubric_scores === 'object' ? row.rubric_scores : {},
@@ -2266,7 +2268,7 @@
     };
   }
 
-  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, stickerUrl = '', observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -2284,6 +2286,7 @@
       student_id: studentId,
       score: Math.max(0, Math.min(100, Number(scores[code] ?? scores[primaryStudentCode] ?? 40))),
       observations: String(observations || ''),
+      sticker_url: String(stickerUrl || ''),
       submission_file: submissionPayload,
       grading_group_id: groupId,
       rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
@@ -2338,6 +2341,40 @@
       await removeStorageFiles([existingSubmissionFile.path]);
     }
     return getActivityGradebook({ activityId, assignmentId });
+  }
+
+  function bytesToBase64(bytes) {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(index, Math.min(index + chunkSize, bytes.length)));
+    }
+    return btoa(binary);
+  }
+
+  async function uploadActivityStickerToGithub({ file }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    if (!(file instanceof Blob)) throw new Error('Selecciona una imagen o GIF válido.');
+    if (file.size > 6 * 1024 * 1024) throw new Error('Cada sticker puede pesar máximo 6 MB.');
+    const contentBase64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
+    const result = await supabaseClient.functions.invoke('encisomath-github-stickers', {
+      body: {
+        fileName: String(file.name || 'sticker'),
+        contentType: String(file.type || 'application/octet-stream'),
+        contentBase64
+      }
+    });
+    if (result.error) {
+      let message = result.error.message || 'No se pudo subir el sticker a GitHub.';
+      try {
+        const detail = await result.error.context?.json?.();
+        if (detail?.error) message = detail.error;
+      } catch (_) {}
+      throw new Error(message);
+    }
+    if (!result.data?.sticker?.url) throw new Error('GitHub no devolvió la dirección del sticker.');
+    return result.data.sticker;
   }
 
   async function deleteActivity({ activityId, assignmentId, mode = 'all' }) {
@@ -2683,6 +2720,7 @@
     reorderActivities,
     getActivityGradebook,
     saveActivityGrades,
+    uploadActivityStickerToGithub,
     deleteActivity,
     deletePdfLesson,
     recordLessonView,

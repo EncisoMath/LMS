@@ -1737,6 +1737,7 @@
       fullName: student.fullName || `${student.lastName || ''}, ${student.firstName || ''}`,
       score: 40,
       observations: '',
+      stickerUrl: '',
       submissionFile: {},
       gradingGroupId: '',
       rubricScores: {},
@@ -1763,6 +1764,7 @@
       if (!codes.includes(String(row.studentCode))) return;
       row.score = Math.max(0, Math.min(100, Number(payload.scores?.[row.studentCode] ?? payload.scores?.[payload.primaryStudentCode] ?? 40)));
       row.observations = String(payload.observations || '');
+      row.stickerUrl = String(payload.stickerUrl || '');
       row.submissionFile = submission;
       row.gradingGroupId = groupId;
       row.rubricScores = payload.rubricScores && typeof payload.rubricScores === 'object' ? safeClone(payload.rubricScores) : {};
@@ -1793,6 +1795,7 @@
           assignmentId: payload.assignmentId,
           studentCode: row.studentCode,
           score: Number(row.score ?? 40),
+          stickerUrl: row.stickerUrl || '',
           gradedAt: row.gradedAt || '',
           gradingGroupId: row.gradingGroupId || ''
         });
@@ -2363,6 +2366,10 @@
       const seeded = seedOfflineGradebook(payload.activityId, payload.assignmentId);
       await gradebookPut(payload.activityId, payload.assignmentId, seeded);
       return seeded;
+    },
+    async uploadActivityStickerToGithub(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para guardar un sticker nuevo en GitHub.');
+      return cloud.uploadActivityStickerToGithub(payload);
     },
     saveActivityGrades(payload) {
       return executeMutation('saveActivityGrades', payload, cloud.saveActivityGrades, optimisticSaveGrades);
