@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.055';
+  const APP_VERSION = '0.25.057';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12926,6 +12926,10 @@
     return /\.png(?:$|[?#])/i.test(String(url || '').trim());
   }
 
+  function activityStickerUsesRoundedCorners(url) {
+    return /\.webp(?:$|[?#])/i.test(String(url || '').trim());
+  }
+
   function activityStickerGridHTML(items = [], selectedUrl = '') {
     const selected = normalizeActivityStickerUrl(selectedUrl);
     const unique = [];
@@ -13009,6 +13013,9 @@
     const stickerOutlineHTML = stickerUrl && activityStickerUsesWhiteOutline(stickerUrl)
       ? `<img class="is-outline" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" />`
       : '';
+    const stickerArtClass = activityStickerUsesRoundedCorners(stickerUrl)
+      ? 'is-art has-rounded-corners'
+      : 'is-art';
     const statusShapeTypes = ['circle', 'square', 'triangle', 'x'];
     const statusShapesHTML = Array.from({ length: 4 }, () => {
       const type = statusShapeTypes[Math.floor(Math.random() * statusShapeTypes.length)];
@@ -13035,7 +13042,7 @@
             <span>Observación</span>
             <strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong>
           </article>
-          ${stickerUrl ? `<article class="is-sticker em-student-activity-meta" aria-label="Sticker de la calificación"><div class="em-student-activity-status-sticker" aria-hidden="true">${stickerOutlineHTML}<img class="is-art" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div></article>` : ''}
+          ${stickerUrl ? `<article class="is-sticker em-student-activity-meta" aria-label="Sticker de la calificación"><div class="em-student-activity-status-sticker" aria-hidden="true">${stickerOutlineHTML}<img class="${stickerArtClass}" src="${escapeAttr(stickerUrl)}" alt="" width="360" height="360" decoding="async" /></div></article>` : ''}
         </div>
         <article class="is-graded-at em-student-activity-meta">
           <span>Fecha de calificación</span>
@@ -13941,7 +13948,7 @@
           </section>
 
           <section class="em-grade-form-section em-activity-sticker-panel" data-grade-modal-panel="sticker" hidden>
-            <div class="em-grade-form-heading"><h3>Sticker</h3><p>El sticker es opcional. El que selecciones aparecerá en la tarjeta de calificación del estudiante.</p></div>
+            <div class="em-grade-form-heading"><h3>Sticker</h3><p>El sticker es opcional. Si calificas en grupo, se asignará automáticamente a todos sus integrantes.</p></div>
             <input id="activityStickerUrlInput" type="hidden" value="${escapeAttr(selectedStickerUrl)}" />
             <div class="em-activity-sticker-grid" id="activityStickerGrid" role="listbox" aria-label="Stickers disponibles">
               ${activityStickerGridHTML(ACTIVITY_STICKER_BUILTINS, selectedStickerUrl)}
@@ -14263,7 +14270,11 @@
             })
           }
         : { mode: 'normal', calculatedScore: primaryScore, criteria: [] };
-      const selectedCodes = [...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent);
+      const selectedCodes = [...new Set([
+        record.studentCode,
+        ...[...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent)
+      ].filter(Boolean))];
+      const selectedStickerUrl = normalizeActivityStickerUrl(document.getElementById('activityStickerUrlInput')?.value || '');
       const scores = { [record.studentCode]: primaryScore };
       gradeModal.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
       if (Object.values(scores).some((score) => !Number.isFinite(score) || score < 0 || score > 100)) {
@@ -14289,7 +14300,7 @@
           gradingGroupId: record.gradingGroupId || '',
           scores,
           rubricScores,
-          stickerUrl: normalizeActivityStickerUrl(document.getElementById('activityStickerUrlInput')?.value || ''),
+          stickerUrl: selectedStickerUrl,
           observations: document.getElementById('activityObservationsInput')?.value.trim() || '',
           existingSubmissionFile: record.submissionFile || {},
           submissionFile: file,
@@ -14300,7 +14311,9 @@
         updateActivityProgressFromGradebook(activity, state.activityGradebook);
         closeModal(false);
         refreshActivityGradebookList();
-        toast(selectedCodes.length > 1 ? `Calificación guardada para ${selectedCodes.length} estudiantes.` : 'Calificación guardada.');
+        toast(selectedCodes.length > 1
+          ? `${selectedStickerUrl ? 'Calificación y sticker guardados' : 'Calificación guardada'} para los ${selectedCodes.length} integrantes del grupo.`
+          : 'Calificación guardada.');
       } catch (error) {
         if (errorBox) errorBox.textContent = error?.message || 'No se pudo guardar la calificación.';
         reportCloudError('No se pudo guardar la calificación', error, { silent: true });

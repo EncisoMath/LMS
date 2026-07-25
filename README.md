@@ -1,4 +1,17 @@
-# EncisoMath LMS v0.25.055
+# EncisoMath LMS v0.25.057
+
+
+## v0.25.057 — sticker compartido en calificaciones grupales
+
+- Al guardar una calificación grupal, el sticker seleccionado se asigna a todos los integrantes marcados del grupo.
+- El estudiante principal se incluye siempre en el guardado, incluso si su selector está deshabilitado en la interfaz.
+- El mensaje de confirmación indica cuándo la calificación y el sticker se aplicaron al grupo completo.
+
+## v0.25.056 — esquinas redondeadas para stickers WebP
+
+- Los stickers `.webp` se muestran sin contorno blanco y con `border-radius: 4px` en la tarjeta de calificación del estudiante.
+- Los PNG conservan su contorno blanco y los demás formatos mantienen su visualización anterior.
+- La detección admite URLs con parámetros de consulta o fragmentos.
 
 ## v0.25.055 — contorno blanco exclusivo para stickers PNG
 - Los stickers PNG conservan el contorno blanco que sigue la silueta de la imagen.
