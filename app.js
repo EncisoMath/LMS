@@ -12950,6 +12950,9 @@
           <span>Fecha de calificación</span>
           <strong>${escapeHTML(gradedAt)}</strong>
         </article>
+        <div class="em-student-activity-status-sticker" aria-hidden="true">
+          <img src="./assets/stickers/activity-status-cat.png" alt="" width="360" height="360" decoding="async" loading="lazy" />
+        </div>
       </section>
     `;
   }

@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.045';
+const SW_VERSION = 'encisomath-offline-v0.25.046';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -28,6 +28,7 @@ const PRECACHE_URLS = [
   './assets/app-icon-512.png',
   './assets/apple-touch-icon-180.png',
   './assets/notification-icon-96.png',
+  './assets/stickers/activity-status-cat.png',
   './assets/subject-statistics.svg',
   './assets/warn-exp1.png',
   './assets/warn-exp2.png',

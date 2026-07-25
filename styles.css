@@ -35606,3 +35606,60 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   border: 0 !important;
   box-shadow: none !important;
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.046 · STICKER PNG 1:1 EN LA ESQUINA INFERIOR
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status.em-student-activity-status-v39 {
+  overflow: visible !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-sticker {
+  --em-sticker-url: url('./assets/stickers/activity-status-cat.png');
+  position: absolute;
+  right: -12px;
+  bottom: -20px;
+  z-index: 4;
+  width: clamp(74px, 18vw, 96px);
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-sticker::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  -webkit-mask: var(--em-sticker-url) center / contain no-repeat;
+  mask: var(--em-sticker-url) center / contain no-repeat;
+  transform: scale(1.07);
+  transform-origin: center;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-sticker > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+@media (max-width: 380px) {
+  .em-activity-detail-screen.is-student-readonly
+  .em-student-activity-status-v39
+  .em-student-activity-status-sticker {
+    right: -10px;
+    bottom: -16px;
+    width: 76px;
+  }
+}
