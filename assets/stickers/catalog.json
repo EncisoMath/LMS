@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "stickers": [
     {
       "id": "activity-status-cat",
@@ -7,6 +7,270 @@
       "url": "./assets/stickers/activity-status-cat.png",
       "path": "./assets/stickers/activity-status-cat.png",
       "type": "image"
+    },
+    {
+      "id": "encisomath-sticker-001",
+      "name": "Sticker 01",
+      "url": "./assets/stickers/library/sticker-001.webp",
+      "path": "./assets/stickers/library/sticker-001.webp",
+      "type": "webp",
+      "animated": false
+    },
+    {
+      "id": "encisomath-sticker-002",
+      "name": "Sticker 02",
+      "url": "./assets/stickers/library/sticker-002.webp",
+      "path": "./assets/stickers/library/sticker-002.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-003",
+      "name": "Sticker 03",
+      "url": "./assets/stickers/library/sticker-003.webp",
+      "path": "./assets/stickers/library/sticker-003.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-004",
+      "name": "Sticker 04",
+      "url": "./assets/stickers/library/sticker-004.webp",
+      "path": "./assets/stickers/library/sticker-004.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-005",
+      "name": "Sticker 05",
+      "url": "./assets/stickers/library/sticker-005.webp",
+      "path": "./assets/stickers/library/sticker-005.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-006",
+      "name": "Sticker 06",
+      "url": "./assets/stickers/library/sticker-006.webp",
+      "path": "./assets/stickers/library/sticker-006.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-007",
+      "name": "Sticker 07",
+      "url": "./assets/stickers/library/sticker-007.webp",
+      "path": "./assets/stickers/library/sticker-007.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-008",
+      "name": "Sticker 08",
+      "url": "./assets/stickers/library/sticker-008.webp",
+      "path": "./assets/stickers/library/sticker-008.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-009",
+      "name": "Sticker 09",
+      "url": "./assets/stickers/library/sticker-009.webp",
+      "path": "./assets/stickers/library/sticker-009.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-010",
+      "name": "Sticker 10",
+      "url": "./assets/stickers/library/sticker-010.webp",
+      "path": "./assets/stickers/library/sticker-010.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-011",
+      "name": "Sticker 11",
+      "url": "./assets/stickers/library/sticker-011.webp",
+      "path": "./assets/stickers/library/sticker-011.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-012",
+      "name": "Sticker 12",
+      "url": "./assets/stickers/library/sticker-012.webp",
+      "path": "./assets/stickers/library/sticker-012.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-013",
+      "name": "Sticker 13",
+      "url": "./assets/stickers/library/sticker-013.webp",
+      "path": "./assets/stickers/library/sticker-013.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-014",
+      "name": "Sticker 14",
+      "url": "./assets/stickers/library/sticker-014.webp",
+      "path": "./assets/stickers/library/sticker-014.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-015",
+      "name": "Sticker 15",
+      "url": "./assets/stickers/library/sticker-015.webp",
+      "path": "./assets/stickers/library/sticker-015.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-016",
+      "name": "Sticker 16",
+      "url": "./assets/stickers/library/sticker-016.webp",
+      "path": "./assets/stickers/library/sticker-016.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-017",
+      "name": "Sticker 17",
+      "url": "./assets/stickers/library/sticker-017.webp",
+      "path": "./assets/stickers/library/sticker-017.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-018",
+      "name": "Sticker 18",
+      "url": "./assets/stickers/library/sticker-018.webp",
+      "path": "./assets/stickers/library/sticker-018.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-019",
+      "name": "Sticker 19",
+      "url": "./assets/stickers/library/sticker-019.webp",
+      "path": "./assets/stickers/library/sticker-019.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-020",
+      "name": "Sticker 20",
+      "url": "./assets/stickers/library/sticker-020.webp",
+      "path": "./assets/stickers/library/sticker-020.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-021",
+      "name": "Sticker 21",
+      "url": "./assets/stickers/library/sticker-021.webp",
+      "path": "./assets/stickers/library/sticker-021.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-022",
+      "name": "Sticker 22",
+      "url": "./assets/stickers/library/sticker-022.webp",
+      "path": "./assets/stickers/library/sticker-022.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-023",
+      "name": "Sticker 23",
+      "url": "./assets/stickers/library/sticker-023.webp",
+      "path": "./assets/stickers/library/sticker-023.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-024",
+      "name": "Sticker 24",
+      "url": "./assets/stickers/library/sticker-024.webp",
+      "path": "./assets/stickers/library/sticker-024.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-025",
+      "name": "Sticker 25",
+      "url": "./assets/stickers/library/sticker-025.webp",
+      "path": "./assets/stickers/library/sticker-025.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-026",
+      "name": "Sticker 26",
+      "url": "./assets/stickers/library/sticker-026.webp",
+      "path": "./assets/stickers/library/sticker-026.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-027",
+      "name": "Sticker 27",
+      "url": "./assets/stickers/library/sticker-027.webp",
+      "path": "./assets/stickers/library/sticker-027.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-028",
+      "name": "Sticker 28",
+      "url": "./assets/stickers/library/sticker-028.webp",
+      "path": "./assets/stickers/library/sticker-028.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-029",
+      "name": "Sticker 29",
+      "url": "./assets/stickers/library/sticker-029.webp",
+      "path": "./assets/stickers/library/sticker-029.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-030",
+      "name": "Sticker 30",
+      "url": "./assets/stickers/library/sticker-030.webp",
+      "path": "./assets/stickers/library/sticker-030.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-031",
+      "name": "Sticker 31",
+      "url": "./assets/stickers/library/sticker-031.webp",
+      "path": "./assets/stickers/library/sticker-031.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-032",
+      "name": "Sticker 32",
+      "url": "./assets/stickers/library/sticker-032.webp",
+      "path": "./assets/stickers/library/sticker-032.webp",
+      "type": "webp",
+      "animated": true
+    },
+    {
+      "id": "encisomath-sticker-033",
+      "name": "Sticker 33",
+      "url": "./assets/stickers/library/sticker-033.webp",
+      "path": "./assets/stickers/library/sticker-033.webp",
+      "type": "webp",
+      "animated": true
     }
   ]
 }
