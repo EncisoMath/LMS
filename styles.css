@@ -36006,3 +36006,20 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     padding: 4px !important;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.054 · STICKER SIN CONTENEDOR VISIBLE
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-sticker.em-student-activity-meta {
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
