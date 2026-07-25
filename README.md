@@ -1,6 +1,13 @@
-# EncisoMath LMS v0.25.033
+# EncisoMath LMS v0.25.034
 
+## v0.25.034 — estado de actividades y publicación controlada de RESULTADO
 
+- En la vista estudiante, cada actividad muestra un rectángulo compacto con calificación, observación, fecha de calificación, fecha de asignación y fecha máxima de entrega.
+- El recuadro permanece gris mientras no exista calificación y adopta los colores de desempeño de la Planilla cuando la nota ya fue registrada.
+- La pestaña **RESULTADO** solo queda disponible para estudiantes cuando el docente activa el nuevo switch, existe contenido de resultado y todos los estudiantes activos del curso están calificados.
+- Si RESULTADO está bloqueado, su contenido y archivos no se guardan en el snapshot estudiantil ni entran en la descarga silenciosa.
+- Crear una actividad ya no exige añadir contenido en RESULTADO; puede agregarse después al editar.
+- Requiere ejecutar una vez `SUPABASE_STUDENT_ACTIVITY_RESULTS_v0.25.034.sql` para que el portal conozca la calificación del estudiante y si todo el curso ya fue calificado. Antes de ejecutar la migración, la aplicación sigue funcionando, pero RESULTADO permanece bloqueado en el portal estudiantil.
 
 ## v0.25.033 — detalle y edición de asistencia desde la Planilla
 
@@ -69,6 +76,7 @@ No se registra ubicación ni dirección IP. La duración es aproximada porque de
 - `offline-engine.js`: IndexedDB y sincronización offline.
 - `background-content-sync.js`: manifiesto incremental compartido entre la app y el Service Worker.
 - `sw.js`: Service Worker y caché.
+- `SUPABASE_STUDENT_ACTIVITY_RESULTS_v0.25.034.sql`: RPC de estado de calificaciones para el portal estudiantil.
 - `SUPABASE_CONNECTIONS_v0.25.022.sql`: migración necesaria.
 - `INSTALACION_CONEXIONES_v0.25.022.txt`: pasos rápidos.
 

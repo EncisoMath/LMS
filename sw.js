@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.033';
+const SW_VERSION = 'encisomath-offline-v0.25.034';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -438,23 +438,32 @@ async function fetchStudentPortalPayload(config) {
   const key = String(config?.publishableKey || '');
   const studentCode = String(config?.studentCode || '');
   if (!baseUrl || !key || !studentCode) throw new Error('La descarga silenciosa no está configurada.');
-  const response = await fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_portal`, {
-    method: 'POST',
-    cache: 'no-store',
-    credentials: 'omit',
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'x-application-name': 'EncisoMath-LMS-Background'
-    },
-    body: JSON.stringify({ p_student_code: studentCode })
-  });
-  if (!response.ok) throw new Error(`Supabase respondió ${response.status}.`);
-  const payload = await response.json();
+  const headers = {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'x-application-name': 'EncisoMath-LMS-Background'
+  };
+  const [portalResponse, statusResponse] = await Promise.all([
+    fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_portal`, {
+      method: 'POST', cache: 'no-store', credentials: 'omit', headers,
+      body: JSON.stringify({ p_student_code: studentCode })
+    }),
+    fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_activity_statuses`, {
+      method: 'POST', cache: 'no-store', credentials: 'omit', headers,
+      body: JSON.stringify({ p_student_code: studentCode })
+    }).catch(() => null)
+  ]);
+  if (!portalResponse.ok) throw new Error(`Supabase respondió ${portalResponse.status}.`);
+  const payload = await portalResponse.json();
   if (!payload || payload.ok === false) throw new Error(payload?.message || 'No se pudo consultar el contenido nuevo.');
-  return payload;
+  let activityStatuses = [];
+  if (statusResponse?.ok) {
+    try { activityStatuses = await statusResponse.json(); } catch (_) { activityStatuses = []; }
+  }
+  const combined = { ...payload, activity_statuses: Array.isArray(activityStatuses) ? activityStatuses : [] };
+  return self.EncisoContentSync?.sanitizePortalPayload?.(combined) || combined;
 }
 
 async function runRemoteContentSync(options = {}) {

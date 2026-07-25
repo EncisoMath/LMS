@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.033';
+  const APP_VERSION = '0.25.034';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12847,6 +12847,79 @@
     return { emoji: '🔴', label: 'Bajo', className: 'is-red', rank: 1 };
   }
 
+  function activityReviewHasContent(activity = {}) {
+    if (activity?.reviewHasContent === true) return true;
+    const type = String(activity?.reviewType || 'rich_text');
+    const payload = activity?.reviewPayload && typeof activity.reviewPayload === 'object' ? activity.reviewPayload : {};
+    const files = Array.isArray(payload.files) ? payload.files : [];
+    if (type === 'pdf' || type === 'image') return files.some((file) => file?.url || file?.path || file?.sourceUrl || file?.objectUrl);
+    if (type === 'html_css') return Boolean(String(payload.html || '').trim());
+    return Boolean(String(payload.text || '').replace(/<[^>]*>/g, '').trim());
+  }
+
+  function activityStudentGradeStatus(activity = {}) {
+    const assignmentId = String(state.assignment?.id || '');
+    const studentCode = String(state.user?.id || '');
+    const record = (state.data.activityGrades || []).find((row) => (
+      String(row.activityId || '') === String(activity.id || '') &&
+      String(row.assignmentId || '') === assignmentId &&
+      (!row.studentCode || String(row.studentCode || '') === studentCode)
+    )) || null;
+    const graded = Boolean(record?.gradedAt);
+    const score = graded ? Number(record?.score ?? 40) : null;
+    const releaseEnabled = activity?.reviewPayload?.releaseEnabled === true || activity?.reviewReleaseEnabled === true;
+    const hasReview = activityReviewHasContent(activity);
+    const allGraded = record?.allGraded === true;
+    const availabilityMap = activity?.reviewAvailabilityByAssignment && typeof activity.reviewAvailabilityByAssignment === 'object'
+      ? activity.reviewAvailabilityByAssignment
+      : null;
+    const hasAssignmentAvailability = Boolean(availabilityMap && Object.prototype.hasOwnProperty.call(availabilityMap, assignmentId));
+    const reviewAvailable = hasAssignmentAvailability
+      ? availabilityMap[assignmentId] === true
+      : (releaseEnabled && allGraded && hasReview);
+    return { record, graded, score, releaseEnabled, hasReview, allGraded, reviewAvailable };
+  }
+
+  function activityStudentDateLabel(value, includeTime = false) {
+    if (!value) return 'Pendiente';
+    const text = String(value);
+    if (!includeTime && /^\d{4}-\d{2}-\d{2}/.test(text)) return formatAcademicDate(text.slice(0, 10));
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return text;
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    if (includeTime) Object.assign(options, { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleString('es-CO', options)
+      .replace(' a. m.', ' a.m.')
+      .replace(' p. m.', ' p.m.')
+      .replace(' a. m.', ' a.m.')
+      .replace(' p. m.', ' p.m.');
+  }
+
+  function studentActivityStatusCardHTML(activity, status) {
+    const scoreClass = status.graded ? notesScoreClass(status.score) : 'is-pending';
+    const scoreLabel = status.graded ? `${Number(status.score).toFixed(Number(status.score) % 1 ? 1 : 0)}/100` : 'Pendiente';
+    const observation = status.graded && String(status.record?.observations || '').trim()
+      ? String(status.record.observations).trim()
+      : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
+    const gradedAt = status.graded ? activityStudentDateLabel(status.record?.gradedAt, true) : 'Pendiente';
+    const assignedAt = activityStudentDateLabel(activity.startsAt || activity.createdAt || '', false);
+    const dueAt = activityStudentDateLabel(activity.dueAt || '', false);
+    return `
+      <section class="em-student-activity-status ${scoreClass}" aria-label="Estado de la actividad">
+        <div class="em-student-activity-status-primary">
+          <article><span>Calificación</span><strong>${escapeHTML(scoreLabel)}</strong></article>
+          <article class="is-observation"><span>Observación</span><strong title="${escapeAttr(observation)}">${escapeHTML(observation)}</strong></article>
+          <article><span>Fecha de calificación</span><strong>${escapeHTML(gradedAt)}</strong></article>
+        </div>
+        <div class="em-student-activity-status-divider" aria-hidden="true"></div>
+        <div class="em-student-activity-status-dates">
+          <article><span>Fecha de asignación</span><strong>${escapeHTML(assignedAt)}</strong></article>
+          <article><span>Fecha de entrega</span><strong>${escapeHTML(dueAt)}</strong></article>
+        </div>
+      </section>
+    `;
+  }
+
   function activityGroupMetaMap(rows = []) {
     const groups = new Map();
     (rows || []).forEach((row) => {
@@ -12992,6 +13065,9 @@
     const due = activity.dueAt ? formatAcademicDate(String(activity.dueAt).slice(0, 10)) : 'Sin fecha';
     const start = activity.startsAt ? formatAcademicDate(String(activity.startsAt).slice(0, 10)) : 'Sin fecha';
     const progress = studentMode ? null : activityProgressForCurrentAssignment(activity);
+    const studentGradeStatus = studentMode ? activityStudentGradeStatus(activity) : null;
+    const reviewHasContent = studentMode ? studentGradeStatus.hasReview : activityReviewHasContent(activity);
+    const reviewEnabled = !studentMode || studentGradeStatus.reviewAvailable;
     const activityStudentColumnWidth = studentMode || !assignedToCurrentCourse ? 0 : notesStudentColumnWidth(getStudentsForAssignment(state.assignment));
     mount(`
       <main class="screen em-activity-detail-screen ${studentMode ? 'is-student-readonly' : ''}">
@@ -13036,16 +13112,17 @@
                 ${activityOverviewHTML(progress)}
               </div>
             ` : '<div class="em-library-only-notice"><strong>Actividad sin asignar</strong><span>Está guardada en tu biblioteca. Ningún estudiante puede verla hasta que selecciones un curso al editarla.</span></div>'}
-            <div class="em-activity-detail-content-tabs" role="tablist" aria-label="Contenido de la actividad">
+            ${studentMode ? studentActivityStatusCardHTML(activity, studentGradeStatus) : ''}
+            <div class="em-activity-detail-content-tabs ${reviewHasContent ? '' : 'has-single-tab'}" role="tablist" aria-label="Contenido de la actividad">
               <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
-              <button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review">Resultado</button>
+              ${reviewHasContent ? `<button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review" ${reviewEnabled ? '' : 'disabled'} title="${reviewEnabled ? 'Ver resultado' : 'El resultado se habilitará cuando el docente lo publique y todos estén calificados.'}">${reviewEnabled ? 'Resultado' : '🔒 Resultado'}</button>` : ''}
             </div>
             <section class="em-activity-content-stage" data-activity-detail-panel="content" aria-label="Contenido de la actividad">
               ${activityContentShellHTML(activity, 'content')}
             </section>
-            <section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
+            ${reviewHasContent && reviewEnabled ? `<section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
               ${activityContentShellHTML(activity, 'review')}
-            </section>
+            </section>` : ''}
             ${studentMode ? '' : `
               <div class="em-activity-detail-actions">
                 <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
@@ -13091,6 +13168,8 @@
         }
       }
       const setActivityDetailTab = (tabName = 'content') => {
+        const requestedButton = document.querySelector(`[data-activity-detail-tab="${tabName}"]`);
+        if (tabName === 'review' && (!requestedButton || requestedButton.disabled || !document.querySelector('[data-activity-detail-panel="review"]'))) tabName = 'content';
         document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
           const active = button.dataset.activityDetailTab === tabName;
           button.classList.toggle('is-active', active);
@@ -13102,13 +13181,14 @@
         initActivityDetailContent(activity, tabName);
       };
       document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
+        if (button.disabled) return;
         button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content'));
       });
       setActivityDetailTab('content');
       if (!studentMode && assignedToCurrentCourse) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
       const entranceSelectors = studentMode
-        ? ['.em-activity-detail-hero', '.em-activity-content-stage > *']
+        ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-content-stage > *']
         : assignedToCurrentCourse
           ? ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook']
           : ['.em-activity-detail-hero', '.em-library-only-notice', '.em-activity-content-stage > *', '.em-activity-detail-actions > *'];
@@ -13232,7 +13312,12 @@
 
           <section class="em-activity-tab-page" data-activity-tab-panel="review" hidden>
             <div class="em-activity-form-block">
-              <div class="em-activity-block-head"><span class="em-activity-step-badge">4</span><div><h3>Respuesta o guía de revisión</h3><p>Añade la solución, respuesta esperada o material que usarás para revisar.</p></div></div>
+              <div class="em-activity-block-head"><span class="em-activity-step-badge">4</span><div><h3>Respuesta o guía de revisión</h3><p>Es opcional. Puedes crear la actividad ahora y añadir el resultado después.</p></div></div>
+              <label class="em-activity-result-release" for="activityReviewReleaseInput">
+                <input id="activityReviewReleaseInput" type="checkbox" ${activity?.reviewPayload?.releaseEnabled === true || activity?.reviewReleaseEnabled === true ? 'checked' : ''} />
+                <span class="em-activity-result-release-switch" aria-hidden="true"><i></i></span>
+                <span><strong>Permitir que los estudiantes vean RESULTADO</strong><small>Solo se habilitará cuando exista contenido y todos los estudiantes estén calificados.</small></span>
+              </label>
               ${activityContentEditorHTML('activityReview', activity?.reviewType || 'rich_text', activity?.reviewPayload || {})}
             </div>
             <div class="em-activity-form-block em-activity-rubric-block">
@@ -13360,6 +13445,13 @@
     };
   }
 
+  function activityEditorHasContent(editor, existingPayload = {}, existingType = '') {
+    const existingFiles = existingType === editor.type ? activityPayloadFiles(existingPayload) : [];
+    if (editor.type === 'pdf' || editor.type === 'image') return editor.files.length > 0 || existingFiles.length > 0;
+    if (editor.type === 'html_css') return Boolean(String(editor.html || '').trim());
+    return Boolean(String(editor.text || '').replace(/<[^>]*>/g, '').trim());
+  }
+
   function validateActivityEditor(editor, label, existingPayload = {}, existingType = '') {
     const existingFiles = existingType === editor.type ? activityPayloadFiles(existingPayload) : [];
     if (editor.type === 'pdf') {
@@ -13397,7 +13489,8 @@
     if (scope !== 'none' && !targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
     const contentError = validateActivityEditor(content, 'Actividad', existingActivity?.contentPayload, existingActivity?.contentType);
     if (contentError) return fail(contentError);
-    const reviewError = validateActivityEditor(review, 'Revisión', existingActivity?.reviewPayload, existingActivity?.reviewType);
+    const reviewHasContent = activityEditorHasContent(review, existingActivity?.reviewPayload, existingActivity?.reviewType);
+    const reviewError = reviewHasContent ? validateActivityEditor(review, 'Resultado', existingActivity?.reviewPayload, existingActivity?.reviewType) : '';
     if (reviewError) return fail(reviewError);
     if (total !== 100 || !criteria.length || criteria.some((item) => !item.name)) return fail('Los criterios completos deben sumar exactamente 100%.');
     if (!isCloudReady()) return fail('Necesitas una sesión activa de Supabase.');
@@ -13427,6 +13520,7 @@
         reviewFiles: review.files,
         existingReviewPayload: existingActivity?.reviewPayload || {},
         existingReviewType: existingActivity?.reviewType || '',
+        reviewReleaseEnabled: document.getElementById('activityReviewReleaseInput')?.checked === true,
         rubric: criteria
       };
       const activity = existingActivity

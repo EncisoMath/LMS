@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.033';
+  const OFFLINE_VERSION = '0.25.034';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -299,6 +299,7 @@
     if (Array.isArray(normalized.students)) snapshot.data.students = normalized.students;
     if (Array.isArray(normalized.classes)) snapshot.data.classes = normalized.classes;
     if (Array.isArray(normalized.activities)) snapshot.data.activities = normalized.activities;
+    if (Array.isArray(normalized.activityGrades)) snapshot.data.activityGrades = normalized.activityGrades;
     snapshot.preferences = { ...(snapshot.preferences || {}), ...(normalized.preferences || {}) };
     snapshot._offline = snapshot._offline && typeof snapshot._offline === 'object' ? snapshot._offline : {};
     snapshot._offline.backgroundContentSyncedAt = pending.receivedAt || nowIso();
@@ -1591,7 +1592,8 @@
         }
       },
       reviewType: payload.reviewType || 'rich_text',
-      reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles },
+      reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles, releaseEnabled: payload.reviewReleaseEnabled === true },
+      reviewReleaseEnabled: payload.reviewReleaseEnabled === true,
       rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
       status: 'published',
       assignmentId: ids[0] || '',
@@ -1643,7 +1645,8 @@
           }
         },
         reviewType: payload.reviewType,
-        reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles },
+        reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles, releaseEnabled: payload.reviewReleaseEnabled === true },
+        reviewReleaseEnabled: payload.reviewReleaseEnabled === true,
         rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
         assignmentIds: [...new Set((payload.targetAssignmentIds || []).filter(Boolean))],
         sortOrderByAssignment: Object.fromEntries([...new Set((payload.targetAssignmentIds || []).filter(Boolean))].map((id, index) => [String(id), Number(activity.sortOrderByAssignment?.[id] || activity.sortOrder || Math.floor(Date.now() / 1000) + index)])),

@@ -34030,7 +34030,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-pdf-open-direct:active { transform: scale(.96); }
 
 /* =========================================================
-   ENCISOMATH v0.25.033 - PLANILLA, ASISTENCIA EDITABLE Y
+   ENCISOMATH v0.25.034 - PLANILLA, ASISTENCIA EDITABLE Y
    DETALLE DE CALIFICACIONES
    ========================================================= */
 .em-notes-attendance-header {
@@ -34436,5 +34436,175 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-notes-attendance-status-options label {
     min-height: 78px;
     padding-inline: 4px;
+  }
+}
+
+/* ================================================================
+   ENCISOMATH v0.25.034 · ESTADO ESTUDIANTIL Y PUBLICACION DE RESULTADO
+   ================================================================ */
+.em-student-activity-status {
+  --em-result-accent: #7f8a9b;
+  --em-result-soft: rgba(127,138,155,.14);
+  display: grid;
+  gap: 9px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  border-color: color-mix(in srgb, var(--em-result-accent) 48%, rgba(255,255,255,.11));
+  border-left: 5px solid var(--em-result-accent);
+  border-radius: 8px;
+  background: #0a111d;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--em-result-accent) 12%, transparent), transparent 48%),
+    #0a111d;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+}
+.em-student-activity-status.is-pending { --em-result-accent: #7f8a9b; }
+.em-student-activity-status.is-superior { --em-result-accent: #f6c453; }
+.em-student-activity-status.is-high { --em-result-accent: #64da8b; }
+.em-student-activity-status.is-basic-yellow { --em-result-accent: #f5d94e; }
+.em-student-activity-status.is-basic-orange { --em-result-accent: #ff9b50; }
+.em-student-activity-status.is-low { --em-result-accent: #ff6b6b; }
+.em-student-activity-status-primary {
+  display: grid;
+  grid-template-columns: minmax(96px,.72fr) minmax(150px,1.65fr) minmax(130px,1fr);
+  gap: 10px;
+  align-items: start;
+}
+.em-student-activity-status-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+.em-student-activity-status article {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.em-student-activity-status article span {
+  color: #8796aa;
+  font: 800 .57rem/1.1 "Montserrat", Arial, sans-serif;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.em-student-activity-status article strong {
+  min-width: 0;
+  color: #f4f7fb;
+  font: 720 .72rem/1.3 "Montserrat", Arial, sans-serif;
+}
+.em-student-activity-status-primary article:first-child strong {
+  color: var(--em-result-accent);
+  font-size: .92rem;
+  font-weight: 900;
+}
+.em-student-activity-status .is-observation strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.em-student-activity-status-divider {
+  height: 1px;
+  background: linear-gradient(90deg, var(--em-result-accent), rgba(255,255,255,.08) 34%, transparent);
+  opacity: .48;
+}
+.em-activity-detail-content-tabs.has-single-tab {
+  grid-template-columns: 1fr;
+}
+.em-activity-detail-content-tabs button:disabled {
+  color: #6f7b8e;
+  background: rgba(255,255,255,.025);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: .78;
+}
+
+.em-activity-result-release {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  grid-template-areas: "switch copy";
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 15px;
+  padding: 12px 13px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  background: rgba(255,255,255,.035);
+  cursor: pointer;
+}
+.em-activity-result-release > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.em-activity-result-release-switch {
+  grid-area: switch;
+  position: relative;
+  width: 46px;
+  height: 25px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  background: #202a38;
+  box-shadow: inset 0 2px 7px rgba(0,0,0,.35);
+  transition: background .2s ease, border-color .2s ease;
+}
+.em-activity-result-release-switch i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #c8d0dc;
+  box-shadow: 0 2px 7px rgba(0,0,0,.42);
+  transition: transform .22s cubic-bezier(.2,.8,.2,1), background .2s ease;
+}
+.em-activity-result-release > span:last-child {
+  grid-area: copy;
+  display: grid;
+  gap: 3px;
+}
+.em-activity-result-release strong {
+  color: #f5f7fb;
+  font: 820 .72rem/1.25 "Montserrat", Arial, sans-serif;
+}
+.em-activity-result-release small {
+  color: #8998ab;
+  font: 600 .62rem/1.35 "Montserrat", Arial, sans-serif;
+}
+.em-activity-result-release > input:checked + .em-activity-result-release-switch {
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, #fff 28%);
+  background: var(--em-current-subject-color, #1368ce);
+}
+.em-activity-result-release > input:checked + .em-activity-result-release-switch i {
+  transform: translateX(21px);
+  background: #fff;
+}
+.em-activity-result-release > input:focus-visible + .em-activity-result-release-switch {
+  outline: 3px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 35%, transparent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 620px) {
+  .em-student-activity-status {
+    padding: 10px 11px;
+  }
+  .em-student-activity-status-primary {
+    grid-template-columns: minmax(82px,.7fr) minmax(0,1.3fr);
+  }
+  .em-student-activity-status-primary article:last-child {
+    grid-column: 1 / -1;
+  }
+  .em-student-activity-status-dates {
+    gap: 8px;
+  }
+  .em-student-activity-status article span {
+    font-size: .52rem;
+  }
+  .em-student-activity-status article strong {
+    font-size: .66rem;
   }
 }

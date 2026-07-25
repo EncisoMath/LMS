@@ -1,7 +1,7 @@
 ((root) => {
   'use strict';
 
-  const MANIFEST_VERSION = 1;
+  const MANIFEST_VERSION = 2;
   const FILE_EXTENSION_RE = /\.(?:pdf|png|jpe?g|webp|gif|svg|avif|bmp|txt|csv|docx?|xlsx?|pptx?|zip|mp3|m4a|ogg|wav|mp4|webm)(?:$|[?#])/i;
   const OMIT_KEYS = new Set([
     'progressByAssignment', 'sortOrderByAssignment', 'objectUrl', 'localBlobKey',
@@ -91,6 +91,48 @@
     return output;
   }
 
+  function activityStatusRows(source = {}) {
+    const value = source?.activityGrades || source?.activity_grades || source?.activity_statuses || source?.activityStatuses || [];
+    return Array.isArray(value) ? value : (Array.isArray(value?.records) ? value.records : []);
+  }
+
+  function statusActivityId(row = {}) {
+    return stringValue(row.activityId || row.activity_id);
+  }
+
+  function statusAssignmentId(row = {}) {
+    return stringValue(row.assignmentId || row.assignment_id);
+  }
+
+  function statusAllGraded(row = {}) {
+    return row.allGraded === true || row.all_graded === true;
+  }
+
+  function reviewPayloadHasContent(type, payload = {}) {
+    if (payload?.hasContent === true) return true;
+    const safeType = stringValue(type || 'rich_text');
+    const files = asArray(payload?.files);
+    if (safeType === 'pdf' || safeType === 'image') return files.some((file) => file?.url || file?.path || file?.sourceUrl);
+    if (safeType === 'html_css') return Boolean(stringValue(payload?.html));
+    return Boolean(stringValue(payload?.text).replace(/<[^>]*>/g, '').trim());
+  }
+
+  function safeActivityReview(activityId, assignmentIds, type, payload, statuses) {
+    const releaseEnabled = payload?.releaseEnabled === true;
+    const hasContent = reviewPayloadHasContent(type, payload);
+    const allGraded = assignmentIds.some((assignmentId) => statuses.some((row) => (
+      statusActivityId(row) === activityId && statusAssignmentId(row) === assignmentId && statusAllGraded(row)
+    )));
+    const available = releaseEnabled && hasContent && allGraded;
+    return {
+      releaseEnabled,
+      hasContent,
+      allGraded,
+      available,
+      payload: available ? payload : { releaseEnabled, hasContent }
+    };
+  }
+
   function makeEntry(kind, id, canonical, urls) {
     const safeId = stringValue(id);
     if (!safeId) return null;
@@ -116,6 +158,7 @@
   function manifestFromSnapshot(snapshot = {}) {
     const entries = {};
     const data = snapshot?.data && typeof snapshot.data === 'object' ? snapshot.data : {};
+    const statuses = activityStatusRows(data);
 
     asArray(data.classes).forEach((lesson) => {
       const id = stringValue(lesson?.id);
@@ -147,6 +190,9 @@
     asArray(data.activities).forEach((activity) => {
       const id = stringValue(activity?.id);
       if (!id) return;
+      const assignmentIds = assignmentIdsFromNormalized(activity);
+      const reviewType = stringValue(activity.reviewType || 'rich_text');
+      const review = safeActivityReview(id, assignmentIds, reviewType, activity.reviewPayload || {}, statuses);
       const canonical = {
         id,
         title: stringValue(activity.title),
@@ -156,16 +202,18 @@
         createdAt: stringValue(activity.createdAt),
         startsAt: stringValue(activity.startsAt),
         dueAt: stringValue(activity.dueAt),
-        assignmentIds: assignmentIdsFromNormalized(activity),
+        assignmentIds,
         contentType: stringValue(activity.contentType || 'rich_text'),
         contentPayload: portableValue(activity.contentPayload || {}),
-        reviewType: stringValue(activity.reviewType || 'rich_text'),
-        reviewPayload: portableValue(activity.reviewPayload || {}),
+        reviewType,
+        reviewPayload: portableValue(review.payload),
+        reviewHasContent: review.hasContent,
+        reviewAvailable: review.available,
         rubric: portableValue(activity.rubric || [])
       };
       const urls = collectDownloadableUrls({
         contentPayload: activity.contentPayload || {},
-        reviewPayload: activity.reviewPayload || {}
+        reviewPayload: review.payload
       });
       const entry = makeEntry('activity', id, canonical, urls);
       if (entry) entries[entry.key] = entry;
@@ -181,6 +229,7 @@
   }
 
   function manifestFromPortalPayload(payload = {}) {
+    const statuses = activityStatusRows(payload);
     const lessonGroups = new Map();
     asArray(payload.lessons).forEach((row) => {
       const lesson = nestedRecord(row, 'lesson');
@@ -230,7 +279,10 @@
 
     activityGroups.forEach(({ activity, assignmentIds }, id) => {
       const contentPayload = activity.content_payload || activity.contentPayload || {};
-      const reviewPayload = activity.review_payload || activity.reviewPayload || {};
+      const rawReviewPayload = activity.review_payload || activity.reviewPayload || {};
+      const safeAssignmentIds = uniqueStrings([...assignmentIds]);
+      const reviewType = stringValue(activity.review_type || activity.reviewType || 'rich_text');
+      const review = safeActivityReview(id, safeAssignmentIds, reviewType, rawReviewPayload, statuses);
       const canonical = {
         id,
         title: stringValue(activity.title),
@@ -240,18 +292,49 @@
         createdAt: stringValue(activity.created_at || activity.createdAt),
         startsAt: stringValue(activity.starts_at || activity.startsAt),
         dueAt: stringValue(activity.due_at || activity.dueAt),
-        assignmentIds: uniqueStrings([...assignmentIds]),
+        assignmentIds: safeAssignmentIds,
         contentType: stringValue(activity.content_type || activity.contentType || 'rich_text'),
         contentPayload: portableValue(contentPayload),
-        reviewType: stringValue(activity.review_type || activity.reviewType || 'rich_text'),
-        reviewPayload: portableValue(reviewPayload),
+        reviewType,
+        reviewPayload: portableValue(review.payload),
+        reviewHasContent: review.hasContent,
+        reviewAvailable: review.available,
         rubric: portableValue(activity.rubric || [])
       };
-      const entry = makeEntry('activity', id, canonical, collectDownloadableUrls({ contentPayload, reviewPayload }));
+      const entry = makeEntry('activity', id, canonical, collectDownloadableUrls({ contentPayload, reviewPayload: review.payload }));
       if (entry) entries[entry.key] = entry;
     });
 
     return { version: MANIFEST_VERSION, entries };
+  }
+
+  function sanitizePortalPayload(payload = {}) {
+    let clone;
+    try { clone = JSON.parse(JSON.stringify(payload || {})); }
+    catch (_) { clone = { ...(payload || {}) }; }
+    const statuses = activityStatusRows(clone);
+    const groupedAssignments = new Map();
+    asArray(clone.activities).forEach((row) => {
+      const activity = nestedRecord(row, 'activity');
+      const id = stringValue(activity?.id);
+      if (!id) return;
+      if (!groupedAssignments.has(id)) groupedAssignments.set(id, new Set());
+      const assignmentId = stringValue(row?.assignment_id || row?.assignmentId);
+      if (assignmentId) groupedAssignments.get(id).add(assignmentId);
+    });
+    asArray(clone.activities).forEach((row) => {
+      const activity = nestedRecord(row, 'activity');
+      const id = stringValue(activity?.id);
+      if (!id) return;
+      const reviewType = stringValue(activity.review_type || activity.reviewType || 'rich_text');
+      const rawPayload = activity.review_payload || activity.reviewPayload || {};
+      const review = safeActivityReview(id, uniqueStrings([...(groupedAssignments.get(id) || [])]), reviewType, rawPayload, statuses);
+      if (review.available) return;
+      const lockedPayload = { releaseEnabled: review.releaseEnabled, hasContent: review.hasContent };
+      if ('review_payload' in activity) activity.review_payload = lockedPayload;
+      if ('reviewPayload' in activity) activity.reviewPayload = lockedPayload;
+    });
+    return clone;
   }
 
   root.EncisoContentSync = Object.freeze({
@@ -260,6 +343,7 @@
     stableStringify,
     collectDownloadableUrls,
     manifestFromSnapshot,
-    manifestFromPortalPayload
+    manifestFromPortalPayload,
+    sanitizePortalPayload
   });
 })(globalThis);

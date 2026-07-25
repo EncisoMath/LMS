@@ -581,6 +581,7 @@
     const activity = Array.isArray(row?.activity) ? row.activity[0] : row?.activity;
     if (!activity) return null;
     const contentPayload = activity.content_payload && typeof activity.content_payload === 'object' ? activity.content_payload : {};
+    const reviewPayload = activity.review_payload && typeof activity.review_payload === 'object' ? activity.review_payload : {};
     const library = contentPayload.library && typeof contentPayload.library === 'object' ? contentPayload.library : {};
     const assignmentId = String(row?.assignment_id || '');
     const sortOrder = Number(row?.sort_order || 0);
@@ -595,7 +596,8 @@
       contentType: activity.content_type || 'rich_text',
       contentPayload,
       reviewType: activity.review_type || 'rich_text',
-      reviewPayload: activity.review_payload && typeof activity.review_payload === 'object' ? activity.review_payload : {},
+      reviewPayload,
+      reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
       rubric: Array.isArray(activity.rubric) ? activity.rubric : [],
       status: activity.status || 'published',
       libraryAssignmentId: String(library.assignmentId || ''),
@@ -743,6 +745,59 @@
     return quizzes;
   }
 
+  function normalizeStudentActivityStatuses(value, fallbackStudentCode = '') {
+    const rows = Array.isArray(value)
+      ? value
+      : (Array.isArray(value?.records) ? value.records : (Array.isArray(value?.activityStatuses) ? value.activityStatuses : []));
+    return rows.map((row) => {
+      const gradedAt = row?.graded_at || row?.gradedAt || '';
+      const scoreValue = row?.score;
+      return {
+        activityId: String(row?.activity_id || row?.activityId || ''),
+        assignmentId: String(row?.assignment_id || row?.assignmentId || ''),
+        studentCode: String(row?.student_code || row?.studentCode || fallbackStudentCode || ''),
+        score: gradedAt ? Number(scoreValue ?? 40) : null,
+        observations: String(row?.observations || ''),
+        gradedAt,
+        allGraded: row?.all_graded === true || row?.allGraded === true,
+        totalStudents: Number(row?.total_students ?? row?.totalStudents ?? 0),
+        gradedStudents: Number(row?.graded_students ?? row?.gradedStudents ?? 0)
+      };
+    }).filter((row) => row.activityId && row.assignmentId);
+  }
+
+  function activityReviewHasPortableContent(activity = {}) {
+    if (activity?.reviewPayload?.hasContent === true || activity?.review_payload?.hasContent === true) return true;
+    const type = String(activity.reviewType || activity.review_type || 'rich_text');
+    const payload = activity.reviewPayload || activity.review_payload || {};
+    const files = Array.isArray(payload?.files) ? payload.files : [];
+    if (type === 'pdf' || type === 'image') return files.some((file) => file?.url || file?.path || file?.sourceUrl);
+    if (type === 'html_css') return Boolean(String(payload?.html || '').trim());
+    return Boolean(String(payload?.text || '').replace(/<[^>]*>/g, '').trim());
+  }
+
+  function applyStudentActivityResultVisibility(activities = [], statuses = []) {
+    const byActivityAssignment = new Map(statuses.map((row) => [`${row.activityId}|${row.assignmentId}`, row]));
+    activities.forEach((activity) => {
+      const releaseEnabled = activity?.reviewPayload?.releaseEnabled === true;
+      const assignmentIds = Array.isArray(activity?.assignmentIds) ? activity.assignmentIds : [activity?.assignmentId].filter(Boolean);
+      const hasContent = activityReviewHasPortableContent(activity);
+      const availabilityByAssignment = Object.fromEntries(assignmentIds.map((assignmentId) => {
+        const allGraded = byActivityAssignment.get(`${activity.id}|${assignmentId}`)?.allGraded === true;
+        return [String(assignmentId), releaseEnabled && allGraded && hasContent];
+      }));
+      const available = Object.values(availabilityByAssignment).some(Boolean);
+      activity.reviewReleaseEnabled = releaseEnabled;
+      activity.reviewHasContent = hasContent;
+      activity.reviewAvailabilityByAssignment = availabilityByAssignment;
+      activity.reviewAvailableToStudent = available;
+      if (!available) {
+        activity.reviewPayload = { releaseEnabled };
+      }
+    });
+    return activities;
+  }
+
   function normalizeStudentPortalData(payload, requestedCode = '') {
     const source = payload && typeof payload === 'object' ? payload : {};
     if (source.ok === false) throw new Error(source.message || 'No encontramos un estudiante activo con ese usuario o código.');
@@ -796,6 +851,11 @@
       mergeMappedAssignmentMetadata(existing, activity);
     });
 
+    const activityGrades = normalizeStudentActivityStatuses(
+      source.activity_statuses || source.activityStatuses || source.activity_grades || source.activityGrades,
+      studentCode
+    );
+    const studentActivities = applyStudentActivityResultVisibility([...uniqueActivities.values()], activityGrades);
     const quizzes = mapStudentPortalQuizzes(source).filter((quiz) => String(quiz.status || 'published') === 'published');
     const periodStartsByAssignment = normalizeStudentPeriodStartsByAssignment(
       source.academic_period_starts_by_assignment || source.academicPeriodStartsByAssignment || source.preferences?.academicPeriodStartsByAssignment
@@ -808,8 +868,8 @@
         assignments,
         students: [mappedStudent],
         classes: [...uniqueLessons.values()],
-        activities: [...uniqueActivities.values()],
-        activityGrades: [],
+        activities: studentActivities,
+        activityGrades,
         quizGrades: [],
         rockstars: [],
         quizzes
@@ -831,6 +891,7 @@
       students: snapshot.data.students || [],
       classes: snapshot.data.classes || [],
       activities: snapshot.data.activities || [],
+      activityGrades: snapshot.data.activityGrades || [],
       preferences: snapshot.preferences || {}
     };
   }
@@ -858,7 +919,11 @@
       payload = data;
     }
     reportApplicationLoadProgress(options, 62, 'Cargando quizzes y calendario académico...');
-    const { data: academicContext, error: academicContextError } = await getStudentClient().rpc('encisomath_student_academic_context', { p_student_code: code });
+    const [academicContextResult, activityStatusResult] = await Promise.all([
+      getStudentClient().rpc('encisomath_student_academic_context', { p_student_code: code }),
+      getStudentClient().rpc('encisomath_student_activity_statuses', { p_student_code: code })
+    ]);
+    const { data: academicContext, error: academicContextError } = academicContextResult;
     if (academicContextError) {
       const message = String(academicContextError.message || '').toLowerCase();
       const missingFunction = academicContextError.code === 'PGRST202' || message.includes('encisomath_student_academic_context');
@@ -868,7 +933,15 @@
     if (!academicContext || academicContext.ok === false) {
       throw new Error(academicContext?.message || 'No se pudo cargar el contexto académico del estudiante.');
     }
-    payload = { ...payload, ...academicContext };
+    let activityStatuses = [];
+    if (activityStatusResult?.error) {
+      const statusMessage = String(activityStatusResult.error.message || '').toLowerCase();
+      const missingStatusRpc = activityStatusResult.error.code === 'PGRST202' || statusMessage.includes('encisomath_student_activity_statuses');
+      if (!missingStatusRpc) console.warn('No se pudo cargar el estado de las actividades del estudiante.', activityStatusResult.error);
+    } else {
+      activityStatuses = Array.isArray(activityStatusResult?.data) ? activityStatusResult.data : [];
+    }
+    payload = { ...payload, ...academicContext, activity_statuses: activityStatuses };
     reportApplicationLoadProgress(options, 78, 'Organizando el portal del estudiante...');
     const snapshot = normalizeStudentPortalData(payload, code);
     const remembered = studentPortalSession?.encisomathRemember ?? readStoredStudentPortalState().remember;
@@ -1857,7 +1930,7 @@
     return uploaded;
   }
 
-  async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], rubric = [], activityId: requestedActivityId = '', mutationId = '', clientMutationId = '' }) {
+  async function createActivity({ currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], reviewReleaseEnabled = false, rubric = [], activityId: requestedActivityId = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -1882,7 +1955,7 @@
           grade: String(currentAssignment?.grade || '')
         }
       };
-      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads };
+      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads, releaseEnabled: reviewReleaseEnabled === true };
       const row = {
         id: activityId,
         owner_id: activeSession.user.id,
@@ -1922,6 +1995,7 @@
         contentPayload,
         reviewType: row.review_type,
         reviewPayload,
+        reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
         rubric,
         status: row.status,
         assignmentId: ids[0] || '',
@@ -1956,7 +2030,7 @@
     if (result.error) console.warn('No se pudieron retirar algunos archivos de Storage.', result.error);
   }
 
-  async function updateActivity({ activityId, currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', rubric = [], mutationId = '', clientMutationId = '' }) {
+  async function updateActivity({ activityId, currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', reviewReleaseEnabled = false, rubric = [], mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -1995,7 +2069,7 @@
           grade: String(existingLibrary.grade || currentAssignment?.grade || '')
         }
       };
-      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads.length ? reviewUploads : keepReviewFiles };
+      const reviewPayload = { text: reviewText, html: reviewHtml, css: reviewCss, files: reviewUploads.length ? reviewUploads : keepReviewFiles, releaseEnabled: reviewReleaseEnabled === true };
 
       const updateResult = await supabaseClient
         .from('activities')
@@ -2059,6 +2133,7 @@
         contentPayload,
         reviewType,
         reviewPayload,
+        reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
         rubric,
         status: 'published',
         assignmentId: ids[0] || '',
@@ -2388,7 +2463,7 @@
       user_id: activeSession.user.id,
       student_id: profile?.student_id || null,
       status: 'in_progress',
-      result: { appVersion: '0.25.033', assignmentId, quizId: quiz.id },
+      result: { appVersion: '0.25.034', assignmentId, quizId: quiz.id },
       client_mutation_id: clientMutationId || null
     };
     if (clientMutationId) {
@@ -2430,7 +2505,7 @@
         p_score: score,
         p_max_score: maxScore,
         p_result: {
-          appVersion: '0.25.033',
+          appVersion: '0.25.034',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
@@ -2473,7 +2548,7 @@
         max_score: maxScore,
         submitted_at: submittedAt,
         result: {
-          appVersion: '0.25.033',
+          appVersion: '0.25.034',
           assignmentId,
           quizId: quiz?.id || '',
           answerCount: safeAnswers.length,
