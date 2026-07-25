@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.035';
+  const APP_VERSION = '0.25.036';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12922,7 +12922,11 @@
     return `
       <section class="em-student-activity-status ${scoreClass}" aria-label="Estado de la actividad">
         <div class="em-student-activity-status-art" aria-hidden="true">
-          <i class="is-circle"></i><i class="is-diamond"></i><i class="is-stroke"></i>
+          <i class="is-circle"></i><i class="is-diamond"></i><i class="is-stroke"></i><i class="is-plus">+</i><i class="is-dot"></i>
+        </div>
+        <div class="em-student-activity-status-heading">
+          <span>Mi resultado</span>
+          <strong>${status.graded ? 'Actividad calificada' : 'Esperando calificación'}</strong>
         </div>
         <div class="em-student-activity-status-top">
           <article class="is-score">
@@ -13131,13 +13135,8 @@
             </div>
           </section>
 
-          <section class="em-activity-detail-main">
-            ${studentMode ? '' : assignedToCurrentCourse ? `
-              <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
-                ${activityOverviewHTML(progress)}
-              </div>
-            ` : '<div class="em-library-only-notice"><strong>Actividad sin asignar</strong><span>Está guardada en tu biblioteca. Ningún estudiante puede verla hasta que selecciones un curso al editarla.</span></div>'}
-            ${studentMode ? studentActivityStatusCardHTML(activity, studentGradeStatus) : ''}
+          ${studentMode ? `
+            ${studentActivityStatusCardHTML(activity, studentGradeStatus)}
             <div class="em-activity-detail-content-tabs ${reviewHasContent ? '' : 'has-single-tab'}" role="tablist" aria-label="Contenido de la actividad">
               <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
               ${reviewHasContent ? `<button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review" ${reviewEnabled ? '' : 'disabled'} title="${reviewEnabled ? 'Ver resultado' : 'El resultado se habilitará cuando el docente lo publique y todos estén calificados.'}">${reviewEnabled ? 'Resultado' : '🔒 Resultado'}</button>` : ''}
@@ -13148,13 +13147,29 @@
             ${reviewHasContent && reviewEnabled ? `<section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
               ${activityContentShellHTML(activity, 'review')}
             </section>` : ''}
-            ${studentMode ? '' : `
+          ` : `
+            <section class="em-activity-detail-main">
+              ${assignedToCurrentCourse ? `
+                <div class="em-activity-overview-grid" id="activityOverviewGrid" aria-label="Resumen de la actividad">
+                  ${activityOverviewHTML(progress)}
+                </div>
+              ` : '<div class="em-library-only-notice"><strong>Actividad sin asignar</strong><span>Está guardada en tu biblioteca. Ningún estudiante puede verla hasta que selecciones un curso al editarla.</span></div>'}
+              <div class="em-activity-detail-content-tabs ${reviewHasContent ? '' : 'has-single-tab'}" role="tablist" aria-label="Contenido de la actividad">
+                <button class="is-active" type="button" role="tab" aria-selected="true" data-activity-detail-tab="content">Actividad</button>
+                ${reviewHasContent ? '<button type="button" role="tab" aria-selected="false" data-activity-detail-tab="review">Resultado</button>' : ''}
+              </div>
+              <section class="em-activity-content-stage" data-activity-detail-panel="content" aria-label="Contenido de la actividad">
+                ${activityContentShellHTML(activity, 'content')}
+              </section>
+              ${reviewHasContent ? `<section class="em-activity-content-stage" data-activity-detail-panel="review" aria-label="Resultado o guía de revisión" hidden>
+                ${activityContentShellHTML(activity, 'review')}
+              </section>` : ''}
               <div class="em-activity-detail-actions">
                 <button class="primary-btn" id="editActivityBtn" type="button">Editar actividad</button>
                 <button class="ghost-btn em-activity-delete-btn" id="deleteActivityBtn" type="button">Eliminar actividad</button>
               </div>
-            `}
-          </section>
+            </section>
+          `}
 
           ${studentMode || !assignedToCurrentCourse ? '' : `
             <section class="em-activity-gradebook" style="--em-activity-student-width:${activityStudentColumnWidth}px">
@@ -13192,28 +13207,78 @@
           bindActivityGradeSortButtons();
         }
       }
-      const setActivityDetailTab = (tabName = 'content') => {
-        const requestedButton = document.querySelector(`[data-activity-detail-tab="${tabName}"]`);
-        if (tabName === 'review' && (!requestedButton || requestedButton.disabled || !document.querySelector('[data-activity-detail-panel="review"]'))) tabName = 'content';
-        document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
-          const active = button.dataset.activityDetailTab === tabName;
+      const activityDetailRoot = document.querySelector('.em-activity-detail-screen');
+      const activityTabButtons = [...(activityDetailRoot?.querySelectorAll('[data-activity-detail-tab]') || [])];
+      const activityTabPanels = [...(activityDetailRoot?.querySelectorAll('[data-activity-detail-panel]') || [])];
+      const ACTIVITY_FLOW_OUT_MS = 170;
+      const ACTIVITY_FLOW_IN_MS = 260;
+      let activityTabAnimating = false;
+
+      const resetActivityTabFlow = (panel) => {
+        if (!panel) return;
+        panel.classList.remove('em-enciso-flow-in', 'em-enciso-flow-out');
+      };
+
+      const playActivityTabFlow = (panel, direction = 'in') => {
+        if (!panel) return;
+        resetActivityTabFlow(panel);
+        void panel.offsetWidth;
+        panel.classList.add(direction === 'out' ? 'em-enciso-flow-out' : 'em-enciso-flow-in');
+      };
+
+      const setActivityDetailTab = (tabName = 'content', animate = true) => {
+        let requestedButton = activityTabButtons.find((button) => button.dataset.activityDetailTab === tabName);
+        let incomingPanel = activityTabPanels.find((panel) => panel.dataset.activityDetailPanel === tabName);
+        if (tabName === 'review' && (!requestedButton || requestedButton.disabled || !incomingPanel)) {
+          tabName = 'content';
+          requestedButton = activityTabButtons.find((button) => button.dataset.activityDetailTab === tabName);
+          incomingPanel = activityTabPanels.find((panel) => panel.dataset.activityDetailPanel === tabName);
+        }
+        if (!requestedButton || !incomingPanel || activityTabAnimating) return;
+
+        const outgoingPanel = activityTabPanels.find((panel) => !panel.hidden) || null;
+        activityTabButtons.forEach((button) => {
+          const active = button === requestedButton;
           button.classList.toggle('is-active', active);
           button.setAttribute('aria-selected', active ? 'true' : 'false');
+          button.tabIndex = active ? 0 : -1;
         });
-        document.querySelectorAll('[data-activity-detail-panel]').forEach((panel) => {
-          panel.hidden = panel.dataset.activityDetailPanel !== tabName;
-        });
-        initActivityDetailContent(activity, tabName);
+
+        if (!animate || !outgoingPanel || outgoingPanel === incomingPanel) {
+          activityTabPanels.forEach((panel) => {
+            resetActivityTabFlow(panel);
+            panel.hidden = panel !== incomingPanel;
+          });
+          initActivityDetailContent(activity, tabName);
+          return;
+        }
+
+        activityTabAnimating = true;
+        playActivityTabFlow(outgoingPanel, 'out');
+        window.setTimeout(() => {
+          resetActivityTabFlow(outgoingPanel);
+          outgoingPanel.hidden = true;
+          activityTabPanels.forEach((panel) => {
+            if (panel !== incomingPanel) panel.hidden = true;
+          });
+          incomingPanel.hidden = false;
+          initActivityDetailContent(activity, tabName);
+          playActivityTabFlow(incomingPanel, 'in');
+          window.setTimeout(() => {
+            resetActivityTabFlow(incomingPanel);
+            activityTabAnimating = false;
+          }, ACTIVITY_FLOW_IN_MS);
+        }, ACTIVITY_FLOW_OUT_MS);
       };
-      document.querySelectorAll('[data-activity-detail-tab]').forEach((button) => {
+      activityTabButtons.forEach((button) => {
         if (button.disabled) return;
-        button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content'));
+        button.addEventListener('click', () => setActivityDetailTab(button.dataset.activityDetailTab || 'content', true));
       });
-      setActivityDetailTab('content');
+      setActivityDetailTab('content', false);
       if (!studentMode && assignedToCurrentCourse) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
       const entranceSelectors = studentMode
-        ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-content-stage > *']
+        ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-detail-content-tabs', '.em-activity-content-stage > *']
         : assignedToCurrentCourse
           ? ['.em-activity-detail-hero', '.em-activity-overview-grid > *', '.em-activity-content-stage > *', '.em-activity-detail-actions > *', '.em-activity-gradebook']
           : ['.em-activity-detail-hero', '.em-library-only-notice', '.em-activity-content-stage > *', '.em-activity-detail-actions > *'];

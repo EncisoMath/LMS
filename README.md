@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.035
+# EncisoMath LMS v0.25.036
+
+## v0.25.036 — detalle estudiantil separado y resultado tipo hero
+
+- En la vista estudiante, `em-student-activity-status`, `em-activity-detail-content-tabs` y cada `em-activity-content-stage` dejan de estar dentro de `em-activity-detail-main`; ahora son bloques hermanos de ancho completo para aprovechar más espacio horizontal.
+- Al cambiar entre **ACTIVIDAD** y **RESULTADO**, el escenario completo ejecuta `encisoFlowOut` antes de ocultarse y `encisoFlowIn` al mostrar el nuevo contenido.
+- La tarjeta de calificación se rediseña como un mini hero dinámico con colores sólidos según la nota, figuras geométricas animadas y una cabecera de estado.
+- Todos los contenedores y controles de la tarjeta usan bordes de máximo 4 px; las figuras circulares conservan su forma geométrica.
+- No se altera la calificación, publicación de RESULTADO, descargas offline, actividades ni datos de Supabase.
 
 ## v0.25.035 — recuadro estudiantil de calificación rediseñado
 
