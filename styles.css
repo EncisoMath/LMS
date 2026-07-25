@@ -35596,3 +35596,13 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
   backdrop-filter: blur(7px) brightness(.94) !important;
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.045 · TARJETA DE RESULTADO SIN BORDE NI SOMBRA
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status.em-student-activity-status-v39 {
+  border: 0 !important;
+  box-shadow: none !important;
+}
