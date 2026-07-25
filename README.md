@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.038
+# EncisoMath LMS v0.25.039
+
+## Corrección visible de tarjeta estudiantil
+
+- Corrige la v0.25.038, cuyos efectos podían terminar antes de que la tarjeta fuera visible o quedar desactivados por preferencias globales.
+- Añade una clase exclusiva `em-student-activity-status-v39` y selectores finales para impedir anulaciones por reglas antiguas.
+- Las figuras `em-act-shapes` son ahora oscuras, sólidas, más numerosas y verdaderamente aleatorias.
+- Calificación, fecha y observación copian el estilo de `em-activity-detail-dates`, con radio de 4 px.
+- El contador empieza cuando la tarjeta ya está visible, hace pausa intermedia, acelera y termina con gelatina grande en menos de 2 segundos.
 
 ## v0.25.038 — figuras aleatorias y contador animado de calificación
 

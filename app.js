@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.038';
+  const APP_VERSION = '0.25.039';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12920,8 +12920,12 @@
       : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
     const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
     return `
-      <section class="em-student-activity-status ${scoreClass}" aria-label="Estado de la actividad">
+      <section class="em-student-activity-status em-student-activity-status-v39 ${scoreClass}" aria-label="Estado de la actividad">
         <div class="em-act-shapes em-student-activity-status-shapes" aria-hidden="true">
+          <span class="em-act-shape em-act-shape-circle"></span>
+          <span class="em-act-shape em-act-shape-square"></span>
+          <span class="em-act-shape em-act-shape-triangle"></span>
+          <span class="em-act-shape em-act-shape-x"></span>
           <span class="em-act-shape em-act-shape-circle"></span>
           <span class="em-act-shape em-act-shape-square"></span>
           <span class="em-act-shape em-act-shape-triangle"></span>
@@ -12957,68 +12961,69 @@
   }
 
   function emInitStudentActivityStatus(root = document) {
-    const card = root.querySelector?.('.em-student-activity-status');
-    if (!card) return;
-
-    const shapes = [...card.querySelectorAll('.em-student-activity-status-shapes .em-act-shape')];
-    shapes.forEach((shape, index) => {
-      const size = 13 + Math.round(Math.random() * 25);
-      shape.style.setProperty('--em-status-shape-left', `${4 + Math.round(Math.random() * 88)}%`);
-      shape.style.setProperty('--em-status-shape-top', `${-8 + Math.round(Math.random() * 96)}%`);
-      shape.style.setProperty('--em-status-shape-size', `${size}px`);
-      shape.style.setProperty('--em-status-shape-opacity', `${(0.10 + Math.random() * 0.18).toFixed(2)}`);
-      shape.style.setProperty('--em-status-shape-delay', `${(-1.1 * (index + 1) - Math.random() * 2.2).toFixed(2)}s`);
-      shape.style.setProperty('--em-status-shape-duration', `${(5.8 + Math.random() * 4.6).toFixed(2)}s`);
-      shape.style.setProperty('--em-status-shape-rotate', `${Math.round(-30 + Math.random() * 60)}deg`);
-      shape.style.setProperty('--em-status-shape-x', `${Math.round(-18 + Math.random() * 36)}px`);
-      shape.style.setProperty('--em-status-shape-y', `${Math.round(-14 + Math.random() * 28)}px`);
-    });
-    card.classList.remove('is-shapes-live');
-    void card.offsetWidth;
-    card.classList.add('is-shapes-live');
-
-    const scoreNode = card.querySelector('[data-student-score-counter]');
-    if (!scoreNode) return;
-    const finalScore = Number(scoreNode.dataset.finalScore);
-    if (!Number.isFinite(finalScore)) return;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    const motionDisabled = document.documentElement?.dataset?.effectsMotion === 'off'
-      || document.documentElement?.dataset?.heroAnimations === 'off';
-    const decimals = Math.abs(finalScore - Math.round(finalScore)) > 0.001 ? 1 : 0;
-    const formatScore = (value) => Number(value).toFixed(decimals);
-    if (reducedMotion || motionDisabled) {
-      scoreNode.textContent = formatScore(finalScore);
-      return;
-    }
-
-    const pauseScore = Math.max(0, Math.min(finalScore, finalScore >= 20 ? Math.round(finalScore * 0.68) : finalScore * 0.6));
-    const animateScore = (from, to, duration, onDone) => {
-      const startedAt = performance.now();
-      const tick = (now) => {
-        const progress = Math.min(1, (now - startedAt) / duration);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        scoreNode.textContent = formatScore(from + ((to - from) * eased));
-        if (progress < 1) requestAnimationFrame(tick);
-        else onDone?.();
-      };
-      requestAnimationFrame(tick);
-    };
-
-    scoreNode.classList.remove('is-score-arrived');
-    scoreNode.textContent = formatScore(0);
-    window.setTimeout(() => {
-      animateScore(0, pauseScore, 680, () => {
-        scoreNode.textContent = formatScore(pauseScore);
-        window.setTimeout(() => {
-          animateScore(pauseScore, finalScore, 330, () => {
-            scoreNode.textContent = formatScore(finalScore);
-            scoreNode.classList.remove('is-score-arrived');
-            void scoreNode.offsetWidth;
-            scoreNode.classList.add('is-score-arrived');
-          });
-        }, 190);
+    const cards = [...(root.querySelectorAll?.('.em-student-activity-status-v39') || [])];
+    cards.forEach((card) => {
+      const shapes = [...card.querySelectorAll('.em-student-activity-status-shapes .em-act-shape')];
+      shapes.forEach((shape, index) => {
+        const size = 18 + Math.round(Math.random() * 34);
+        shape.style.setProperty('--em-status-shape-left', `${2 + Math.round(Math.random() * 96)}%`);
+        shape.style.setProperty('--em-status-shape-top', `${-5 + Math.round(Math.random() * 110)}%`);
+        shape.style.setProperty('--em-status-shape-size', `${size}px`);
+        shape.style.setProperty('--em-status-shape-opacity', `${(0.13 + Math.random() * 0.15).toFixed(2)}`);
+        shape.style.setProperty('--em-status-shape-delay', `${(-0.55 * (index + 1) - Math.random() * 2.4).toFixed(2)}s`);
+        shape.style.setProperty('--em-status-shape-duration', `${(5.2 + Math.random() * 4.2).toFixed(2)}s`);
+        shape.style.setProperty('--em-status-shape-rotate', `${Math.round(-35 + Math.random() * 70)}deg`);
+        shape.style.setProperty('--em-status-shape-x', `${Math.round(-24 + Math.random() * 48)}px`);
+        shape.style.setProperty('--em-status-shape-y', `${Math.round(-18 + Math.random() * 36)}px`);
       });
-    }, 30);
+      card.classList.remove('is-shapes-live');
+      requestAnimationFrame(() => card.classList.add('is-shapes-live'));
+
+      const scoreNode = card.querySelector('[data-student-score-counter]');
+      if (!scoreNode || scoreNode.dataset.counterStarted === 'true') return;
+      const finalScore = Number(scoreNode.dataset.finalScore);
+      if (!Number.isFinite(finalScore)) return;
+      scoreNode.dataset.counterStarted = 'true';
+
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      const decimals = Math.abs(finalScore - Math.round(finalScore)) > 0.001 ? 1 : 0;
+      const formatScore = (value) => Number(value).toFixed(decimals);
+      if (reducedMotion) {
+        scoreNode.textContent = formatScore(finalScore);
+        return;
+      }
+
+      const pauseScore = Math.max(0, Math.min(finalScore, Math.round(finalScore * 0.68)));
+      const animateScore = (from, to, duration, onDone) => {
+        const startedAt = performance.now();
+        const tick = (now) => {
+          const progress = Math.min(1, (now - startedAt) / duration);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          scoreNode.textContent = formatScore(from + ((to - from) * eased));
+          if (progress < 1) requestAnimationFrame(tick);
+          else onDone?.();
+        };
+        requestAnimationFrame(tick);
+      };
+
+      scoreNode.classList.remove('is-score-arrived');
+      scoreNode.textContent = formatScore(0);
+      // Se espera a que la tarjeta ya esté visible después de EncisoFlow/entrada.
+      window.setTimeout(() => {
+        animateScore(0, pauseScore, 520, () => {
+          scoreNode.textContent = formatScore(pauseScore);
+          window.setTimeout(() => {
+            animateScore(pauseScore, finalScore, 260, () => {
+              scoreNode.textContent = formatScore(finalScore);
+              scoreNode.classList.remove('is-score-arrived');
+              void scoreNode.offsetWidth;
+              scoreNode.classList.add('is-score-arrived');
+              scoreNode.addEventListener('animationend', () => scoreNode.classList.remove('is-score-arrived'), { once: true });
+            });
+          }, 150);
+        });
+      }, 300);
+    });
   }
 
   function activityGroupMetaMap(rows = []) {
