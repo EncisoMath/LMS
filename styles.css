@@ -35561,7 +35561,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* ================================================================
-   ENCISOMATH v0.25.042 · 4 SHAPES GRANDES + CRISTAL SUAVE EN DATOS
+   ENCISOMATH v0.25.044 · CRISTAL EN CALIFICACION, OBSERVACION Y FECHA
    ================================================================ */
 
 /* Solo cuatro figuras por tarjeta. El tipo, tamaño, posición, rotación,
@@ -35572,21 +35572,27 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   filter: none !important;
 }
 
-/* Capa de cristal levemente oscura: desenfoca únicamente las figuras que
-   pasan por detrás, sin apagar el color sólido del mini hero. */
+/* El contenedor exterior y la fecha quedan completamente transparentes.
+   El cristal suave se aplica exclusivamente a Calificación y Observación. */
 .em-activity-detail-screen.is-student-readonly
 .em-student-activity-status-v39
 .em-student-activity-status-top {
-  padding: 4px !important;
-  border-radius: 4px !important;
-  background: rgba(5, 8, 13, .09) !important;
-  -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
-  backdrop-filter: blur(7px) brightness(.94) !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
 .em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-score.em-student-activity-meta,
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top > .is-observation.em-student-activity-meta,
+.em-activity-detail-screen.is-student-readonly
 .em-student-activity-status-v39 > .is-graded-at.em-student-activity-meta {
-  background: rgba(5, 8, 13, .11) !important;
+  background: rgba(5, 8, 13, .10) !important;
   -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
   backdrop-filter: blur(7px) brightness(.94) !important;
 }
