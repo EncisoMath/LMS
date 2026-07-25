@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.041
+# EncisoMath LMS v0.25.042
+
+
+## v0.25.042 — cuatro shapes grandes y cristal suave
+
+- La tarjeta estudiantil usa exactamente cuatro figuras por apertura. Su tipo puede repetirse y se elige aleatoriamente entre círculo, cuadrado, triángulo y equis.
+- Las cuatro figuras son más grandes y se distribuyen en zonas aleatorias equilibradas para conservar armonía sin saturar el mini hero.
+- `em-student-activity-status-top` y `is-graded-at em-student-activity-meta` incorporan un desenfoque gaussiano de fondo con oscurecimiento muy leve.
+- El blur afecta visualmente a los shapes que pasan detrás, manteniendo legibles Calificación, Observación y Fecha de calificación.
+- No se modifica el contador, la gelatina, la nota almacenada, RESULTADO ni la lógica de actividades.
 
 
 ## v0.25.041 — animaciones de resultado consistentes en PC y móvil

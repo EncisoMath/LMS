@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.041';
+  const APP_VERSION = '0.25.042';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12919,21 +12919,15 @@
       ? String(status.record.observations).trim()
       : (status.graded ? 'Sin observación registrada.' : 'Aún no ha sido calificada.');
     const gradedAt = status.graded ? activityStudentGradedDateLabel(status.record?.gradedAt) : 'Pendiente';
+    const statusShapeTypes = ['circle', 'square', 'triangle', 'x'];
+    const statusShapesHTML = Array.from({ length: 4 }, () => {
+      const type = statusShapeTypes[Math.floor(Math.random() * statusShapeTypes.length)];
+      return `<span class="em-act-shape em-act-shape-${type}"></span>`;
+    }).join('');
     return `
       <section class="em-student-activity-status em-student-activity-status-v39 ${scoreClass}" aria-label="Estado de la actividad">
         <div class="em-act-shapes em-student-activity-status-shapes" aria-hidden="true">
-          <span class="em-act-shape em-act-shape-circle"></span>
-          <span class="em-act-shape em-act-shape-square"></span>
-          <span class="em-act-shape em-act-shape-triangle"></span>
-          <span class="em-act-shape em-act-shape-x"></span>
-          <span class="em-act-shape em-act-shape-circle"></span>
-          <span class="em-act-shape em-act-shape-square"></span>
-          <span class="em-act-shape em-act-shape-triangle"></span>
-          <span class="em-act-shape em-act-shape-x"></span>
-          <span class="em-act-shape em-act-shape-circle"></span>
-          <span class="em-act-shape em-act-shape-square"></span>
-          <span class="em-act-shape em-act-shape-triangle"></span>
-          <span class="em-act-shape em-act-shape-x"></span>
+          ${statusShapesHTML}
         </div>
         <div class="em-student-activity-status-heading">
           <span>Mi resultado</span>
@@ -12964,17 +12958,25 @@
     const cards = [...(root.querySelectorAll?.('.em-student-activity-status-v39') || [])];
     cards.forEach((card) => {
       const shapes = [...card.querySelectorAll('.em-student-activity-status-shapes .em-act-shape')];
+      const shapeZones = [
+        { left: [5, 36], top: [2, 45] },
+        { left: [64, 95], top: [2, 45] },
+        { left: [5, 36], top: [55, 98] },
+        { left: [64, 95], top: [55, 98] }
+      ].sort(() => Math.random() - 0.5);
       shapes.forEach((shape, index) => {
-        const size = 18 + Math.round(Math.random() * 34);
-        shape.style.setProperty('--em-status-shape-left', `${2 + Math.round(Math.random() * 96)}%`);
-        shape.style.setProperty('--em-status-shape-top', `${-5 + Math.round(Math.random() * 110)}%`);
+        const zone = shapeZones[index] || { left: [4, 96], top: [2, 98] };
+        const randomBetween = ([min, max]) => min + Math.random() * (max - min);
+        const size = 42 + Math.round(Math.random() * 40);
+        shape.style.setProperty('--em-status-shape-left', `${randomBetween(zone.left).toFixed(1)}%`);
+        shape.style.setProperty('--em-status-shape-top', `${randomBetween(zone.top).toFixed(1)}%`);
         shape.style.setProperty('--em-status-shape-size', `${size}px`);
-        shape.style.setProperty('--em-status-shape-opacity', `${(0.13 + Math.random() * 0.15).toFixed(2)}`);
-        shape.style.setProperty('--em-status-shape-delay', `${(-0.55 * (index + 1) - Math.random() * 2.4).toFixed(2)}s`);
-        shape.style.setProperty('--em-status-shape-duration', `${(5.2 + Math.random() * 4.2).toFixed(2)}s`);
-        shape.style.setProperty('--em-status-shape-rotate', `${Math.round(-35 + Math.random() * 70)}deg`);
-        shape.style.setProperty('--em-status-shape-x', `${Math.round(-24 + Math.random() * 48)}px`);
-        shape.style.setProperty('--em-status-shape-y', `${Math.round(-18 + Math.random() * 36)}px`);
+        shape.style.setProperty('--em-status-shape-opacity', `${(0.16 + Math.random() * 0.10).toFixed(2)}`);
+        shape.style.setProperty('--em-status-shape-delay', `${(-0.7 * (index + 1) - Math.random() * 2.6).toFixed(2)}s`);
+        shape.style.setProperty('--em-status-shape-duration', `${(6.2 + Math.random() * 4.6).toFixed(2)}s`);
+        shape.style.setProperty('--em-status-shape-rotate', `${Math.round(-45 + Math.random() * 90)}deg`);
+        shape.style.setProperty('--em-status-shape-x', `${Math.round(-34 + Math.random() * 68)}px`);
+        shape.style.setProperty('--em-status-shape-y', `${Math.round(-26 + Math.random() * 52)}px`);
       });
       card.classList.remove('is-shapes-live');
       requestAnimationFrame(() => card.classList.add('is-shapes-live'));

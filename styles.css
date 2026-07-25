@@ -35558,3 +35558,35 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
    por la preferencia effectsMotion; contador, gelatina y shapes se
    ejecutan igual en Chrome de escritorio y en móviles.
    ================================================================ */
+
+
+/* ================================================================
+   ENCISOMATH v0.25.042 · 4 SHAPES GRANDES + CRISTAL SUAVE EN DATOS
+   ================================================================ */
+
+/* Solo cuatro figuras por tarjeta. El tipo, tamaño, posición, rotación,
+   recorrido y velocidad se generan de nuevo en cada apertura. */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-shapes .em-act-shape {
+  filter: none !important;
+}
+
+/* Capa de cristal levemente oscura: desenfoca únicamente las figuras que
+   pasan por detrás, sin apagar el color sólido del mini hero. */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39
+.em-student-activity-status-top {
+  padding: 4px !important;
+  border-radius: 4px !important;
+  background: rgba(5, 8, 13, .09) !important;
+  -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
+  backdrop-filter: blur(7px) brightness(.94) !important;
+}
+
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39 > .is-graded-at.em-student-activity-meta {
+  background: rgba(5, 8, 13, .11) !important;
+  -webkit-backdrop-filter: blur(7px) brightness(.94) !important;
+  backdrop-filter: blur(7px) brightness(.94) !important;
+}
