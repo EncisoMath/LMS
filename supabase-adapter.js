@@ -105,17 +105,52 @@
   function getStudentClient() {
     if (publicStudentClient) return publicStudentClient;
     assertConfigured();
-    publicStudentClient = window.supabase.createClient(config.url, config.publishableKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storageKey: `${config.authStorageKey || 'encisomath.supabase.auth.v1'}.student-public`
-      },
-      global: {
-        headers: { 'x-application-name': 'EncisoMath-LMS-Student' }
+
+    // El portal por código solo necesita RPC anónimas. Usar fetch evita crear
+    // una segunda instancia de GoTrueClient y mantiene intacta la sesión docente.
+    const rpc = async (functionName, params = {}) => {
+      const safeName = String(functionName || '').trim();
+      if (!/^[a-z0-9_]+$/i.test(safeName)) {
+        return { data: null, error: { code: 'INVALID_RPC', message: 'Nombre de RPC pública inválido.' } };
       }
-    });
+      try {
+        const baseUrl = String(config.url || '').replace(/\/+$/, '');
+        const response = await fetch(`${baseUrl}/rest/v1/rpc/${safeName}`, {
+          method: 'POST',
+          headers: {
+            apikey: config.publishableKey,
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(params && typeof params === 'object' ? params : {})
+        });
+
+        const text = await response.text();
+        let payload = null;
+        if (text) {
+          try { payload = JSON.parse(text); }
+          catch (_) { payload = text; }
+        }
+
+        if (!response.ok) {
+          const details = payload && typeof payload === 'object' ? payload : {};
+          return {
+            data: null,
+            error: {
+              ...details,
+              message: details.message || (typeof payload === 'string' ? payload : `Supabase respondió ${response.status}.`),
+              status: response.status,
+              statusCode: response.status
+            }
+          };
+        }
+        return { data: payload, error: null };
+      } catch (error) {
+        return { data: null, error: normalizeError(error, 'No se pudo conectar con Supabase.') };
+      }
+    };
+
+    publicStudentClient = Object.freeze({ rpc });
     return publicStudentClient;
   }
 
@@ -413,8 +448,8 @@
     if (!code) throw new Error('Escribe el usuario o código del estudiante.');
     const remember = options.remember !== false;
 
-    // El portal estudiantil usa un cliente público separado. La sesión docente
-    // permanece intacta y continúa renovándose en segundo plano.
+    // El portal estudiantil usa RPC públicas sin crear otra sesión Auth.
+    // La sesión docente permanece intacta y continúa renovándose en segundo plano.
     const { data, error } = await getStudentClient().rpc('encisomath_student_portal', { p_student_code: code });
     if (error) {
       const message = String(error.message || '').toLowerCase();

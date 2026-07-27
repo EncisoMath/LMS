@@ -36038,3 +36038,12 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-activity-card.is-student-readonly .em-activity-card-progress {
   margin-bottom: 0 !important;
 }
+
+
+/* ================================================================
+   v0.25.060 · CORRECCIÓN DE PRESENCIA Y ENCABEZADO DE CONEXIONES
+   ================================================================ */
+.em-connections-screen {
+  padding-top: calc(56px + var(--safe-top)) !important;
+  scroll-padding-top: calc(56px + var(--safe-top));
+}

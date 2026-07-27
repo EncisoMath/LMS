@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.034';
+  const OFFLINE_VERSION = '0.25.060';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -2289,6 +2289,9 @@
   }
 
   const wrapped = {
+    // Conserva automáticamente cualquier método nuevo del adaptador cloud.
+    // Las implementaciones siguientes reemplazan solo lo que necesita soporte offline.
+    ...cloud,
     init: cloud.init,
     isConfigured: cloud.isConfigured,
     getClient: cloud.getClient,

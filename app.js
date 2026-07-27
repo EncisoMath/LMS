@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.058';
+  const APP_VERSION = '0.25.060';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2046,7 +2046,12 @@
   }
 
   async function loadConnectionsDashboard(options = {}) {
-    if (!isTeacherPortal() || !cloudAPI()?.loadConnectionReport) return;
+    if (!isTeacherPortal()) return;
+    if (!cloudAPI()?.loadConnectionReport) {
+      state.connections.trackingError = 'La versión cargada no incluye la consulta de conexiones.';
+      renderConnectionsDashboardData();
+      return;
+    }
     if (state.connections.loading) return;
     state.connections.loading = true;
     const list = document.getElementById('connectionsList');
