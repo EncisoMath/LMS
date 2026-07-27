@@ -36176,3 +36176,50 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     height: 30px;
   }
 }
+
+
+/* =========================================================
+   ENCISOMATH v0.25.063 · INDICADOR DE VISIBILIDAD EN TARJETAS
+========================================================= */
+.em-class-card-actions .em-content-lock-indicator,
+.em-activity-card-actions .em-content-lock-indicator {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.20);
+  border-radius: 4px !important;
+  color: #fff;
+  font: 800 .94rem/1 "Montserrat", Arial, sans-serif;
+  opacity: .96;
+  user-select: none;
+  pointer-events: none;
+  cursor: default;
+  backdrop-filter: blur(8px);
+}
+.em-class-card-actions .em-content-lock-indicator.is-visible,
+.em-activity-card-actions .em-content-lock-indicator.is-visible {
+  border-color: rgba(104,225,60,.52);
+  background: rgba(45,132,20,.94) !important;
+}
+.em-class-card-actions .em-content-lock-indicator.is-hidden,
+.em-activity-card-actions .em-content-lock-indicator.is-hidden {
+  border-color: rgba(255,217,90,.55);
+  background: rgba(214,155,18,.96) !important;
+}
+.em-content-list.is-list .em-class-card.em-notebook-card {
+  grid-template-columns: 70px minmax(0, 1fr) 111px;
+}
+@media (max-width: 520px) {
+  .em-content-visibility-badge {
+    max-width: calc(100% - 128px);
+  }
+  .em-class-card-actions .em-content-lock-indicator,
+  .em-activity-card-actions .em-content-lock-indicator {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+}
