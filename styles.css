@@ -36081,36 +36081,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 /* =========================================================
    ENCISOMATH v0.25.062 · BIBLIOTECA Y VISIBILIDAD DE CONTENIDO
 ========================================================= */
-.em-content-visibility-badge {
-  position: absolute;
-  z-index: 32;
-  top: 9px;
-  left: 9px;
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 10px;
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 999px !important;
-  color: #fff;
-  font: 900 .59rem/1 "Montserrat", Arial, sans-serif;
-  letter-spacing: .035em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  box-shadow: 0 6px 16px rgba(0,0,0,.22);
-  backdrop-filter: blur(8px);
-}
-.em-content-visibility-badge.is-visible {
-  border-color: rgba(84,198,0,.42);
-  background: rgba(33,92,16,.92) !important;
-  color: #ddffcc;
-}
-.em-content-visibility-badge.is-hidden {
-  border-color: rgba(248,200,95,.34);
-  background: rgba(72,52,15,.94) !important;
-  color: #ffe19a;
-}
-
 .em-activity-card.has-management {
   padding-top: 58px !important;
 }
@@ -36158,18 +36128,12 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-activity-visibility {
   margin-top: 12px;
 }
-.em-content-list.is-sorting .em-content-visibility-badge,
 .em-content-list.is-sorting .em-activity-card-actions {
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
 @media (max-width: 520px) {
-  .em-content-visibility-badge {
-    max-width: calc(100% - 92px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .em-activity-card-actions .em-activity-edit-btn,
   .em-activity-card-actions .em-activity-delete-card-btn {
     width: 30px;
@@ -36179,7 +36143,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* =========================================================
-   ENCISOMATH v0.25.063 · INDICADOR DE VISIBILIDAD EN TARJETAS
+   ENCISOMATH v0.25.064 · INDICADOR DE VISIBILIDAD SIN ETIQUETA SUPERIOR
 ========================================================= */
 .em-class-card-actions .em-content-lock-indicator,
 .em-activity-card-actions .em-content-lock-indicator {
@@ -36213,9 +36177,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   grid-template-columns: 70px minmax(0, 1fr) 111px;
 }
 @media (max-width: 520px) {
-  .em-content-visibility-badge {
-    max-width: calc(100% - 128px);
-  }
   .em-class-card-actions .em-content-lock-indicator,
   .em-activity-card-actions .em-content-lock-indicator {
     width: 30px;

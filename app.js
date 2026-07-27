@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.063';
+  const APP_VERSION = '0.25.064';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12324,13 +12324,6 @@
       .sort(compareContentForCurrentAssignment);
   }
 
-  function contentVisibilityLabel(item, assignmentId = state.assignment?.id || '') {
-    const assigned = contentIsAssignedTo(item, assignmentId);
-    if (!assigned) return 'Oculta';
-    const count = contentAssignmentIds(item).length;
-    return count > 1 ? `Visible · ${count} cursos` : 'Visible';
-  }
-
   function activityTypeLabel(type) {
     return ({ pdf: 'PDF', image: 'Imágenes', rich_text: 'Texto enriquecido', html_css: 'HTML + CSS' })[type] || 'Contenido';
   }
@@ -12466,7 +12459,6 @@
               <button type="button" data-sort-move="1">Bajar</button>
             </div>
           ` : ''}
-          <span class="em-content-visibility-badge ${assigned ? 'is-visible' : 'is-hidden'}">${escapeHTML(contentVisibilityLabel(activity, assignmentId))}</span>
           <div class="em-activity-card-actions">
             <span class="em-content-lock-indicator ${assigned ? 'is-visible' : 'is-hidden'}" aria-label="${assigned ? 'Visible' : 'Oculta'}" title="${assigned ? 'Visible' : 'Oculta'}">${assigned ? '🔓' : '🔒'}</span>
             <button class="em-activity-edit-btn" type="button" data-edit-activity-id="${escapeAttr(activity.id)}" aria-label="Editar ${escapeAttr(activity.title || 'actividad')}" title="Editar actividad">✎</button>
@@ -15994,7 +15986,6 @@
       <article class="em-class-card em-notebook-card ${assigned ? '' : 'is-unassigned'}" data-class-id="${escapeAttr(item.id)}" data-sort-content-id="${escapeAttr(item.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
         ${studentMode ? '' : `
           ${assigned ? `<div class="em-content-sort-controls" aria-label="Posición de la clase"><span data-sort-position>${orderPosition}</span><button type="button" data-sort-move="-1">Subir</button><button type="button" data-sort-move="1">Bajar</button></div>` : ''}
-          <span class="em-content-visibility-badge ${assigned ? 'is-visible' : 'is-hidden'}">${escapeHTML(contentVisibilityLabel(item, assignmentId))}</span>
           <div class="em-class-card-actions">
             <span class="em-content-lock-indicator ${assigned ? 'is-visible' : 'is-hidden'}" aria-label="${assigned ? 'Visible' : 'Oculta'}" title="${assigned ? 'Visible' : 'Oculta'}">${assigned ? '🔓' : '🔒'}</span>
             <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
