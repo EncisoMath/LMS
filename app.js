@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.060';
+  const APP_VERSION = '0.25.061';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1985,7 +1985,7 @@
     `;
   }
 
-  function connectionCardsHTML() {
+  function connectionTableHTML() {
     const sessions = filteredConnectionSessions();
     if (!sessions.length) {
       return `
@@ -1995,31 +1995,66 @@
         </div>
       `;
     }
-    return sessions.map((session) => {
+    const rows = sessions.map((session) => {
       const online = Boolean(session.online);
       const device = session.deviceLabel || [session.deviceType, session.osName, session.browserName].filter(Boolean).join(' · ') || 'Dispositivo desconocido';
       return `
-        <article class="em-connection-card ${online ? 'is-online' : 'is-offline'}">
-          <header>
-            <div class="em-connection-person">
+        <tr class="${online ? 'is-online' : 'is-offline'}">
+          <td>
+            <span class="em-connection-status-badge ${online ? 'is-online' : 'is-offline'}">${online ? '• En línea' : '• Desconectado'}</span>
+          </td>
+          <td>
+            <div class="em-connection-user-cell">
               <span class="em-connection-avatar">${escapeHTML(String(session.displayName || 'U').trim().charAt(0).toUpperCase() || 'U')}</span>
               <div>
                 <strong>${escapeHTML(session.displayName || 'Usuario')}</strong>
                 <span>${escapeHTML(session.username ? `@${session.username}` : connectionRoleLabel(session))}</span>
               </div>
             </div>
-            <span class="em-connection-status"><i></i>${online ? 'En línea' : 'Desconectado'}</span>
-          </header>
-          <div class="em-connection-meta-grid">
-            <div><small>Rol y grupo</small><strong>${escapeHTML(connectionRoleLabel(session))}</strong><span>${escapeHTML(connectionGroupsLabel(session))}</span></div>
-            <div><small>Se conectó</small><strong>${escapeHTML(formatConnectionDate(session.connectedAt, { compact: true }))}</strong><span>${online ? 'Sesión activa' : `Última actividad: ${escapeHTML(formatConnectionDate(session.lastSeenAt, { compact: true }))}`}</span></div>
-            <div><small>Tiempo conectado</small><strong>${escapeHTML(formatConnectionDuration(session.durationSeconds))}</strong><span>${online ? 'Contando actualmente' : 'Duración aproximada'}</span></div>
-            <div><small>Dispositivo</small><strong>${escapeHTML(device)}</strong><span>${session.isPwa ? 'PWA instalada' : 'Navegador web'} · v${escapeHTML(session.appVersion || '—')}</span></div>
-            <div class="em-connection-context"><small>Última vista</small><strong>${escapeHTML(connectionContextLabel(session.context))}</strong><span>${escapeHTML(formatConnectionDate(session.lastSeenAt))}</span></div>
-          </div>
-        </article>
+          </td>
+          <td>
+            <strong>${escapeHTML(connectionRoleLabel(session))}</strong>
+            <span>${escapeHTML(connectionGroupsLabel(session))}</span>
+          </td>
+          <td>
+            <strong>${escapeHTML(formatConnectionDate(session.connectedAt, { compact: true }))}</strong>
+            <span>${online ? 'Sesión activa' : `Última actividad: ${escapeHTML(formatConnectionDate(session.lastSeenAt, { compact: true }))}`}</span>
+          </td>
+          <td>
+            <strong>${escapeHTML(formatConnectionDuration(session.durationSeconds))}</strong>
+            <span>${online ? 'Contando actualmente' : 'Duración aproximada'}</span>
+          </td>
+          <td>
+            <strong>${escapeHTML(device)}</strong>
+            <span>${session.isPwa ? 'PWA instalada' : 'Navegador web'} · v${escapeHTML(session.appVersion || '—')}</span>
+          </td>
+          <td>
+            <strong>${escapeHTML(connectionContextLabel(session.context))}</strong>
+            <span>${escapeHTML(formatConnectionDate(session.lastSeenAt))}</span>
+          </td>
+        </tr>
       `;
     }).join('');
+    return `
+      <div class="em-connections-table-shell">
+        <div class="em-connections-table-wrap">
+          <table class="em-connections-table">
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Usuario</th>
+                <th>Rol / grupo</th>
+                <th>Se conectó</th>
+                <th>Tiempo</th>
+                <th>Dispositivo</th>
+                <th>Última vista</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
   }
 
   function renderConnectionsDashboardData() {
@@ -2028,7 +2063,7 @@
     const count = document.getElementById('connectionsResultCount');
     const notice = document.getElementById('connectionTrackingNotice');
     if (summary) summary.innerHTML = connectionsSummaryHTML();
-    if (list) list.innerHTML = connectionCardsHTML();
+    if (list) list.innerHTML = connectionTableHTML();
     if (count) count.textContent = `${filteredConnectionSessions().length} registro(s)`;
     if (notice) {
       notice.innerHTML = connectionTrackingNoticeHTML();
