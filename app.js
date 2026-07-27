@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.066';
+  const APP_VERSION = '0.25.067';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12937,14 +12937,8 @@
     return Array.isArray(payload?.files) ? payload.files.filter((file) => file?.url) : [];
   }
 
-  function activityMediaZoomControlsHTML() {
-    return `
-      <div class="em-activity-media-zoom-controls" aria-label="Controles de zoom">
-        <button type="button" data-activity-media-zoom-out aria-label="Alejar">−</button>
-        <button type="button" class="em-activity-media-zoom-reset" data-activity-media-zoom-reset aria-label="Restablecer zoom">100%</button>
-        <button type="button" data-activity-media-zoom-in aria-label="Acercar">＋</button>
-      </div>
-    `;
+  function activityMediaFullscreenButtonHTML() {
+    return `<button type="button" class="em-activity-media-fullscreen-btn" data-activity-media-fullscreen aria-label="Ver en pantalla completa" title="Pantalla completa"><span aria-hidden="true">⛶</span></button>`;
   }
 
   function activityContentShellHTML(activity, source = 'content') {
@@ -12958,7 +12952,7 @@
       const file = files[0];
       return file
         ? `<div class="em-activity-media-viewer" data-activity-media-viewer data-activity-media-type="pdf">
-            ${activityMediaZoomControlsHTML()}
+            ${activityMediaFullscreenButtonHTML()}
             <div class="em-activity-media-viewport" data-activity-media-viewport>
               <div class="em-activity-media-zoom-content em-activity-pdf-viewer" id="${prefix}PdfViewer" data-activity-media-zoom-content data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando ${label}…</p></div></div>
             </div>
@@ -12968,7 +12962,7 @@
     if (type === 'image') {
       return files.length
         ? `<div class="em-activity-media-viewer" data-activity-media-viewer data-activity-media-type="image">
-            ${activityMediaZoomControlsHTML()}
+            ${activityMediaFullscreenButtonHTML()}
             <div class="em-activity-media-viewport" data-activity-media-viewport>
               <div class="em-activity-media-zoom-content" data-activity-media-zoom-content>
                 <div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de ${label}" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>
@@ -13006,9 +13000,7 @@
       if (viewer.dataset.zoomReady === 'true') return;
       const viewport = viewer.querySelector('[data-activity-media-viewport]');
       const content = viewer.querySelector('[data-activity-media-zoom-content]');
-      const zoomOut = viewer.querySelector('[data-activity-media-zoom-out]');
-      const zoomReset = viewer.querySelector('[data-activity-media-zoom-reset]');
-      const zoomIn = viewer.querySelector('[data-activity-media-zoom-in]');
+      const fullscreenButton = viewer.querySelector('[data-activity-media-fullscreen]');
       if (!viewport || !content) return;
 
       viewer.dataset.zoomReady = 'true';
@@ -13021,14 +13013,17 @@
       const maxScale = 4;
 
       const clampScale = (value) => Math.max(minScale, Math.min(maxScale, Number(value) || 1));
+      const isViewerFullscreen = () => (document.fullscreenElement || document.webkitFullscreenElement) === viewer || viewer.classList.contains('is-pseudo-fullscreen');
+      const updateFullscreenButton = () => {
+        if (!fullscreenButton) return;
+        const active = isViewerFullscreen();
+        fullscreenButton.classList.toggle('is-active', active);
+        fullscreenButton.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Ver en pantalla completa');
+        fullscreenButton.setAttribute('title', active ? 'Salir de pantalla completa' : 'Pantalla completa');
+      };
       const updateControls = () => {
-        if (zoomOut) zoomOut.disabled = scale <= minScale + .01;
-        if (zoomIn) zoomIn.disabled = scale >= maxScale - .01;
-        if (zoomReset) {
-          zoomReset.disabled = Math.abs(scale - 1) < .01;
-          zoomReset.textContent = `${Math.round(scale * 100)}%`;
-        }
         viewport.classList.toggle('is-zoomed', scale > 1.01);
+        updateFullscreenButton();
       };
       const applyScale = (nextScale, options = {}) => {
         const previousScale = scale;
@@ -13058,9 +13053,37 @@
 
       content.style.width = '100%';
       updateControls();
-      zoomOut?.addEventListener('click', () => applyScale(scale - .25));
-      zoomIn?.addEventListener('click', () => applyScale(scale + .25));
-      zoomReset?.addEventListener('click', resetScale);
+      const exitPseudoFullscreen = () => {
+        if (!viewer.classList.contains('is-pseudo-fullscreen')) return false;
+        viewer.classList.remove('is-pseudo-fullscreen');
+        updateFullscreenButton();
+        return true;
+      };
+      fullscreenButton?.addEventListener('click', async () => {
+        const activeFullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+        if (activeFullscreenElement === viewer) {
+          const exitFullscreen = document.exitFullscreen?.bind(document) || document.webkitExitFullscreen?.bind(document);
+          try { await exitFullscreen?.(); } catch (_) {}
+          updateFullscreenButton();
+          return;
+        }
+        if (exitPseudoFullscreen()) return;
+        const requestFullscreen = viewer.requestFullscreen?.bind(viewer) || viewer.webkitRequestFullscreen?.bind(viewer);
+        if (requestFullscreen) {
+          try {
+            await requestFullscreen();
+            updateFullscreenButton();
+            return;
+          } catch (_) {}
+        }
+        viewer.classList.add('is-pseudo-fullscreen');
+        updateFullscreenButton();
+      });
+      viewer.addEventListener('fullscreenchange', updateFullscreenButton);
+      viewer.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+      viewer.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') exitPseudoFullscreen();
+      });
       viewport.addEventListener('dblclick', (event) => {
         applyScale(scale > 1.01 ? 1 : 2, { clientX: event.clientX, clientY: event.clientY });
       });
