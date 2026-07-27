@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.061';
+  const APP_VERSION = '0.25.062';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12291,10 +12291,11 @@
     const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
     if (libraryAssignmentId) return libraryAssignmentId === assignmentId;
 
-    // Compatibilidad con snapshots anteriores que conservan el grado de
-    // origen, pero no el identificador de la asignación.
+    // Algunas clases antiguas o cargadas directamente desde la biblioteca no
+    // conservan el grado de origen. En ese caso siguen perteneciendo a la
+    // biblioteca de la misma asignatura por materia y área.
     const libraryGrade = String(item?.libraryGrade || item?.grade || '');
-    if (!libraryGrade || libraryGrade !== String(assignment.grade || '')) return false;
+    if (libraryGrade && libraryGrade !== String(assignment.grade || '')) return false;
     return String(item?.librarySubject || item?.subject || '') === String(assignment.subject || '')
       && String(item?.libraryArea || item?.area || '') === String(assignment.area || '');
   }
@@ -12321,6 +12322,13 @@
         return !studentMode && activityMatchesCurrentLibrary(item, state.assignment);
       })
       .sort(compareContentForCurrentAssignment);
+  }
+
+  function contentVisibilityLabel(item, assignmentId = state.assignment?.id || '') {
+    const assigned = contentIsAssignedTo(item, assignmentId);
+    if (!assigned) return 'Oculta';
+    const count = contentAssignmentIds(item).length;
+    return count > 1 ? `Visible · ${count} cursos` : 'Visible';
   }
 
   function activityTypeLabel(type) {
@@ -12449,14 +12457,21 @@
       : '—';
     const activityProgress = studentMode ? studentScore : (progress?.percentage || 0);
     return `
-      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : ''} ${assigned ? '' : 'is-unassigned'}" data-activity-id="${escapeAttr(activity.id)}" data-sort-content-id="${escapeAttr(activity.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" tabindex="0" style="--activity-index:${index};--activity-progress:${activityProgress}%">
-        ${studentMode ? '' : assigned ? `
-          <div class="em-content-sort-controls" aria-label="Posición de la actividad">
-            <span data-sort-position>${orderPosition}</span>
-            <button type="button" data-sort-move="-1">Subir</button>
-            <button type="button" data-sort-move="1">Bajar</button>
+      <article class="em-activity-card ${studentMode ? 'is-student-readonly' : 'has-management'} ${assigned ? '' : 'is-unassigned'}" data-activity-id="${escapeAttr(activity.id)}" data-sort-content-id="${escapeAttr(activity.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" tabindex="0" style="--activity-index:${index};--activity-progress:${activityProgress}%">
+        ${studentMode ? '' : `
+          ${assigned ? `
+            <div class="em-content-sort-controls" aria-label="Posición de la actividad">
+              <span data-sort-position>${orderPosition}</span>
+              <button type="button" data-sort-move="-1">Subir</button>
+              <button type="button" data-sort-move="1">Bajar</button>
+            </div>
+          ` : ''}
+          <span class="em-content-visibility-badge ${assigned ? 'is-visible' : 'is-hidden'}">${escapeHTML(contentVisibilityLabel(activity, assignmentId))}</span>
+          <div class="em-activity-card-actions">
+            <button class="em-activity-edit-btn" type="button" data-edit-activity-id="${escapeAttr(activity.id)}" aria-label="Editar ${escapeAttr(activity.title || 'actividad')}" title="Editar actividad">✎</button>
+            <button class="em-activity-delete-card-btn" type="button" data-delete-activity-id="${escapeAttr(activity.id)}" aria-label="Eliminar ${escapeAttr(activity.title || 'actividad')}" title="Eliminar actividad">🗑</button>
           </div>
-        ` : '<span class="em-unassigned-badge">Sin asignar</span>'}
+        `}
         <div class="em-activity-card-title-row">
           <h3>${escapeHTML(activity.title || 'Actividad')}</h3>
           ${studentMode || !assigned ? '' : `<span class="em-activity-card-percent">${progress.percentage}%</span>`}
@@ -12527,13 +12542,37 @@
   }
 
   function bindActivityCards() {
+    document.querySelectorAll('[data-edit-activity-id]').forEach((button) => {
+      if (button.dataset.boundActivityEdit === 'true') return;
+      button.dataset.boundActivityEdit = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const activity = (state.data.activities || []).find((item) => item.id === button.dataset.editActivityId);
+        if (activity) openEditActivityModal(activity);
+      });
+    });
+    document.querySelectorAll('[data-delete-activity-id]').forEach((button) => {
+      if (button.dataset.boundActivityDelete === 'true') return;
+      button.dataset.boundActivityDelete = 'true';
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const activity = (state.data.activities || []).find((item) => item.id === button.dataset.deleteActivityId);
+        if (activity) openDeleteActivityModal(activity);
+      });
+    });
     document.querySelectorAll('[data-activity-id]').forEach((card) => {
       const open = () => {
         const activity = (state.data.activities || []).find((item) => item.id === card.dataset.activityId);
         if (activity) renderActivityDetail(activity);
       };
-      card.addEventListener('click', open);
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('[data-edit-activity-id], [data-delete-activity-id]')) return;
+        open();
+      });
       card.addEventListener('keydown', (event) => {
+        if (event.target.closest('[data-edit-activity-id], [data-delete-activity-id]')) return;
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         open();
@@ -13574,12 +13613,11 @@
     const lessons = getClassesForCurrentAssignment();
     const automaticPeriod = getAutomaticAcademicPeriod();
     const today = todayISO();
-    const gradeTargets = getClassTargetAssignments('grade');
-    const gradeCourses = gradeTargets.map((item) => `${item.grade}-${item.course}`).join(', ');
-    const activityIds = Array.isArray(activity?.assignmentIds) ? activity.assignmentIds.filter(Boolean) : [];
-    const unassignedScope = editing && activityIds.length === 0;
-    const gradeScope = activityIds.length > 1;
-    const courseScope = !unassignedScope && !gradeScope;
+    const targets = classVisibilityTargets();
+    const existingAssignmentIds = editing
+      ? (Array.isArray(activity?.assignmentIds) ? activity.assignmentIds : [activity?.assignmentId]).map(String).filter(Boolean)
+      : [String(assignment.id)];
+    const selectedIds = new Set(existingAssignmentIds);
     openModal(`
       <section class="modal-card em-activity-create-modal" role="dialog" aria-modal="true" aria-labelledby="addActivityTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -13614,11 +13652,15 @@
                 <label><span>Fecha de inicio</span><input class="input" id="activityStartInput" type="date" value="${escapeAttr(String(activity?.startsAt || today).slice(0, 10))}" required /></label>
                 <label><span>Fecha de entrega máxima</span><input class="input" id="activityDueInput" type="date" value="${escapeAttr(String(activity?.dueAt || today).slice(0, 10))}" required /></label>
               </div>
-              <fieldset class="em-class-scope em-activity-scope">
-                <legend>¿Dónde estará disponible?</legend>
-                <label><input type="radio" name="activityScope" value="course" ${courseScope ? 'checked' : ''} /><span><strong>Solo este curso</strong><small>${escapeHTML(assignment.grade)}-${escapeHTML(assignment.course)}</small></span></label>
-                <label><input type="radio" name="activityScope" value="grade" ${gradeScope ? 'checked' : ''} /><span><strong>Todo el grado ${escapeHTML(assignment.grade)}</strong><small>${escapeHTML(gradeCourses || `${assignment.grade}-${assignment.course}`)}</small></span></label>
-                <label><input type="radio" name="activityScope" value="none" ${unassignedScope ? 'checked' : ''} /><span><strong>Guardar sin asignar</strong><small>Solo en tu biblioteca; ningún estudiante la verá.</small></span></label>
+              <fieldset class="em-class-visibility em-activity-visibility">
+                <legend>Visibilidad de la actividad</legend>
+                <p>Marca los cursos que podrán verla. Puedes dejar todos sin marcar para conservarla oculta únicamente en tu biblioteca.</p>
+                <div class="em-class-visibility-row">
+                  ${targets.map((target) => {
+                    const label = `${target.grade}-${target.course}`;
+                    return `<label><input type="checkbox" data-activity-target value="${escapeAttr(target.id)}" ${selectedIds.has(String(target.id)) ? 'checked' : ''}/><span>${escapeHTML(label)}</span></label>`;
+                  }).join('')}
+                </div>
               </fieldset>
             </div>
 
@@ -13797,14 +13839,13 @@
     const period = Number(document.getElementById('activityPeriodInput')?.value || getAutomaticAcademicPeriod());
     const startsAt = document.getElementById('activityStartInput')?.value || '';
     const dueAt = document.getElementById('activityDueInput')?.value || '';
-    const scope = document.querySelector('input[name="activityScope"]:checked')?.value || 'course';
-    const targets = scope === 'none' ? [] : getClassTargetAssignments(scope);
+    const targetAssignmentIds = [...document.querySelectorAll('[data-activity-target]:checked')].map((input) => input.value).filter(Boolean);
+    const targets = targetAssignmentIds.map((id) => (state.data.assignments || []).find((item) => String(item.id) === String(id))).filter(Boolean);
     const content = collectActivityEditor('activityContent');
     const review = collectActivityEditor('activityReview');
     const { criteria, total } = updateRubricTotal();
     if (!title) return fail('Escribe el nombre de la actividad.');
     if (!startsAt || !dueAt || dueAt < startsAt) return fail('Revisa las fechas de inicio y entrega.');
-    if (scope !== 'none' && !targets.length) return fail('No se encontraron cursos compatibles para esta actividad.');
     const contentError = validateActivityEditor(content, 'Actividad', existingActivity?.contentPayload, existingActivity?.contentType);
     if (contentError) return fail(contentError);
     const reviewHasContent = activityEditorHasContent(review, existingActivity?.reviewPayload, existingActivity?.reviewType);
@@ -13818,7 +13859,7 @@
       const payload = {
         activityId: existingActivity?.id || '',
         currentAssignment: state.assignment,
-        targetAssignmentIds: targets.map((item) => item.id),
+        targetAssignmentIds,
         title,
         lessonId,
         period,
@@ -13845,10 +13886,11 @@
         ? await cloudAPI().updateActivity(payload)
         : await cloudAPI().createActivity(payload);
       activity.progressByAssignment = { ...(existingActivity?.progressByAssignment || activity.progressByAssignment || {}) };
-      targets.forEach((target) => {
-        if (!activity.progressByAssignment[target.id]) {
-          activity.progressByAssignment[target.id] = {
-            total: getStudentsForAssignment(target).length,
+      targetAssignmentIds.forEach((targetId) => {
+        const target = targets.find((item) => String(item.id) === String(targetId));
+        if (!activity.progressByAssignment[targetId]) {
+          activity.progressByAssignment[targetId] = {
+            total: target ? getStudentsForAssignment(target).length : 0,
             delivered: 0,
             graded: 0
           };
@@ -13865,8 +13907,8 @@
       syncAcademicPeriodState(period);
       if (existingActivity) renderActivityDetail(activity, { replaceHistory: true });
       else renderActivitiesTab({ animate: true });
-      toast(targets.length
-        ? (existingActivity ? 'Actividad actualizada en Supabase.' : `Actividad guardada para ${targets.length} curso${targets.length === 1 ? '' : 's'}.`)
+      toast(targetAssignmentIds.length
+        ? (existingActivity ? 'Actividad actualizada en Supabase.' : `Actividad guardada para ${targetAssignmentIds.length} curso${targetAssignmentIds.length === 1 ? '' : 's'}.`)
         : `${existingActivity ? 'Actividad actualizada' : 'Actividad guardada'} en tu biblioteca, sin asignar a estudiantes.`);
     } catch (error) {
       fail(error?.message || 'No se pudo guardar la actividad.');
@@ -14379,17 +14421,18 @@
   function openDeleteActivityModal(activity) {
     const assignmentIds = [...new Set(Array.isArray(activity.assignmentIds) ? activity.assignmentIds.filter(Boolean) : [])];
     const shared = assignmentIds.length > 1;
+    const hidden = assignmentIds.length === 0;
     const currentCourse = `${state.assignment?.grade || ''}-${state.assignment?.course || ''}`;
     openModal(`
       <div class="modal-card danger-modal" role="dialog" aria-modal="true" aria-labelledby="deleteActivityTitle">
         <div class="danger-head">
           <span class="danger-red-mesh" aria-hidden="true"></span>
           <div class="warning-tune-stack"><div class="warning-icon warning-duo" aria-hidden="true"><span class="warning-bounce warning-bounce-a"><img class="warning-mark warning-mark-a" src="./assets/warn-exp2.png" alt="" /></span><span class="warning-bounce warning-bounce-b"><img class="warning-mark warning-mark-b" src="./assets/warn-exp1.png" alt="" /></span></div></div>
-          <div class="danger-copy"><h2 id="deleteActivityTitle">${shared ? 'ELIMINARÁS O RETIRARÁS ESTA ACTIVIDAD' : 'ELIMINARÁS ESTA ACTIVIDAD'}</h2><p>${shared ? `Está compartida con ${assignmentIds.length} cursos. Puedes retirarla solo de ${escapeHTML(currentCourse)} o borrarla completamente.` : 'Se eliminarán la actividad, sus archivos y únicamente sus registros de calificación.'}</p></div>
+          <div class="danger-copy"><h2 id="deleteActivityTitle">${shared ? 'ELIMINARÁS O RETIRARÁS ESTA ACTIVIDAD' : 'ELIMINARÁS ESTA ACTIVIDAD'}</h2><p>${shared ? `Está compartida con ${assignmentIds.length} cursos. Puedes retirarla solo de ${escapeHTML(currentCourse)} o borrarla completamente.` : hidden ? 'Está oculta en tu biblioteca. Se eliminarán la actividad y sus archivos.' : 'Se eliminarán la actividad, sus archivos y únicamente sus registros de calificación.'}</p></div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
         <div class="danger-body">
-          <div class="delete-target"><strong>${escapeHTML(activity.title || 'Actividad')}</strong><span>Curso ${escapeHTML(currentCourse)} · Periodo ${Number(activity.period || 1)}</span></div>
+          <div class="delete-target"><strong>${escapeHTML(activity.title || 'Actividad')}</strong><span>${hidden ? 'Oculta · Biblioteca' : `Curso ${escapeHTML(currentCourse)}`} · Periodo ${Number(activity.period || 1)}</span></div>
           <p class="em-delete-class-error" id="deleteActivityError" role="alert"></p>
           <div class="danger-actions">${shared ? `<button class="ghost-btn" id="removeActivityFromCourseBtn" type="button">Quitar solo de ${escapeHTML(currentCourse)}</button>` : ''}<button class="danger-confirm" id="deleteActivityEverywhereBtn" type="button">${shared ? 'Eliminar de todos los cursos' : 'Sí, eliminar actividad'}</button><button class="ghost-btn" type="button" data-close-modal>Cancelar</button></div>
         </div>
@@ -14790,6 +14833,7 @@
   function openDeleteClassModal(lesson) {
     const assignmentIds = [...new Set(Array.isArray(lesson.assignmentIds) ? lesson.assignmentIds.filter(Boolean) : [])];
     const shared = assignmentIds.length > 1;
+    const hidden = assignmentIds.length === 0;
     const currentCourse = `${state.assignment?.grade || ''}-${state.assignment?.course || ''}`;
     openModal(`
       <div class="modal-card danger-modal" role="dialog" aria-modal="true" aria-labelledby="deleteClassTitle">
@@ -14805,7 +14849,9 @@
             <h2 id="deleteClassTitle">${shared ? 'ELIMINARÁS O RETIRARÁS ESTA CLASE' : 'ELIMINARÁS ESTA CLASE'}</h2>
             <p>${shared
               ? `Está compartida con ${assignmentIds.length} cursos. Puedes retirarla solo de ${escapeHTML(currentCourse)} o borrarla completamente.`
-              : 'Se eliminarán la clase, el PDF y su portada. Esta acción no se puede deshacer.'}</p>
+              : hidden
+                ? 'Está oculta en tu biblioteca. Se eliminarán la clase, el PDF y su portada.'
+                : 'Se eliminarán la clase, el PDF y su portada. Esta acción no se puede deshacer.'}</p>
           </div>
           <button class="modal-close danger-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
@@ -14814,7 +14860,9 @@
             <strong>${escapeHTML(lesson.title || 'Clase sin nombre')}</strong>
             <span>${shared
               ? `Disponible en ${assignmentIds.length} cursos · Curso actual ${escapeHTML(currentCourse)}`
-              : `Curso ${escapeHTML(currentCourse)} · Periodo ${escapeHTML(String(lesson.period || state.period || 1))}`}</span>
+              : hidden
+                ? `Oculta · Biblioteca · Periodo ${escapeHTML(String(lesson.period || state.period || 1))}`
+                : `Curso ${escapeHTML(currentCourse)} · Periodo ${escapeHTML(String(lesson.period || state.period || 1))}`}</span>
           </div>
           <p class="em-delete-class-error" id="deleteClassError" role="alert"></p>
           <div class="danger-actions">
@@ -15944,7 +15992,8 @@
     return `
       <article class="em-class-card em-notebook-card ${assigned ? '' : 'is-unassigned'}" data-class-id="${escapeAttr(item.id)}" data-sort-content-id="${escapeAttr(item.id)}" data-sort-assigned="${assigned ? 'true' : 'false'}" role="button" tabindex="0" aria-label="Abrir ${escapeAttr(item.title || 'clase')}">
         ${studentMode ? '' : `
-          ${assigned ? `<div class="em-content-sort-controls" aria-label="Posición de la clase"><span data-sort-position>${orderPosition}</span><button type="button" data-sort-move="-1">Subir</button><button type="button" data-sort-move="1">Bajar</button></div>` : '<span class="em-unassigned-badge">Sin asignar</span>'}
+          ${assigned ? `<div class="em-content-sort-controls" aria-label="Posición de la clase"><span data-sort-position>${orderPosition}</span><button type="button" data-sort-move="-1">Subir</button><button type="button" data-sort-move="1">Bajar</button></div>` : ''}
+          <span class="em-content-visibility-badge ${assigned ? 'is-visible' : 'is-hidden'}">${escapeHTML(contentVisibilityLabel(item, assignmentId))}</span>
           <div class="em-class-card-actions">
             <button class="em-class-edit-btn" type="button" data-edit-class-id="${escapeAttr(item.id)}" aria-label="Editar ${escapeAttr(item.title || 'clase')}" title="Editar clase">✎</button>
             <button class="em-class-delete-btn" type="button" data-delete-class-id="${escapeAttr(item.id)}" aria-label="Eliminar ${escapeAttr(item.title || 'clase')}" title="Eliminar clase">🗑</button>

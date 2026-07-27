@@ -36077,3 +36077,102 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   padding-top: calc(56px + var(--safe-top)) !important;
   scroll-padding-top: calc(56px + var(--safe-top));
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.062 · BIBLIOTECA Y VISIBILIDAD DE CONTENIDO
+========================================================= */
+.em-content-visibility-badge {
+  position: absolute;
+  z-index: 32;
+  top: 9px;
+  left: 9px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 999px !important;
+  color: #fff;
+  font: 900 .59rem/1 "Montserrat", Arial, sans-serif;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0,0,0,.22);
+  backdrop-filter: blur(8px);
+}
+.em-content-visibility-badge.is-visible {
+  border-color: rgba(84,198,0,.42);
+  background: rgba(33,92,16,.92) !important;
+  color: #ddffcc;
+}
+.em-content-visibility-badge.is-hidden {
+  border-color: rgba(248,200,95,.34);
+  background: rgba(72,52,15,.94) !important;
+  color: #ffe19a;
+}
+
+.em-activity-card.has-management {
+  padding-top: 58px !important;
+}
+.em-activity-card-actions {
+  position: absolute !important;
+  z-index: 34 !important;
+  top: 7px;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.em-activity-card-actions .em-activity-edit-btn,
+.em-activity-card-actions .em-activity-delete-card-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px solid rgba(255,255,255,.20);
+  border-radius: 4px !important;
+  background: rgba(7,13,23,.88) !important;
+  color: #fff;
+  font: 800 .94rem/1 "Montserrat", Arial, sans-serif;
+  cursor: pointer;
+  opacity: .92;
+  backdrop-filter: blur(8px);
+  transition: transform .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
+}
+.em-activity-card-actions .em-activity-edit-btn:hover,
+.em-activity-card-actions .em-activity-edit-btn:focus-visible {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--em-current-subject-color, var(--maincolor, #1368ce)) 72%, white 28%);
+  background: color-mix(in srgb, var(--em-current-subject-color, var(--maincolor, #1368ce)) 72%, #07101c 28%) !important;
+}
+.em-activity-card-actions .em-activity-delete-card-btn:hover,
+.em-activity-card-actions .em-activity-delete-card-btn:focus-visible {
+  opacity: 1;
+  border-color: rgba(255,120,137,.62);
+  background: rgba(190,24,45,.94) !important;
+}
+.em-activity-card-actions :is(.em-activity-edit-btn,.em-activity-delete-card-btn):active {
+  transform: scale(.92);
+}
+.em-activity-visibility {
+  margin-top: 12px;
+}
+.em-content-list.is-sorting .em-content-visibility-badge,
+.em-content-list.is-sorting .em-activity-card-actions {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 520px) {
+  .em-content-visibility-badge {
+    max-width: calc(100% - 92px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .em-activity-card-actions .em-activity-edit-btn,
+  .em-activity-card-actions .em-activity-delete-card-btn {
+    width: 30px;
+    height: 30px;
+  }
+}
