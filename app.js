@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.064';
+  const APP_VERSION = '0.25.066';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1043,18 +1043,132 @@
     return true;
   }
 
+  function syncStableSignature(value) {
+    const normalize = (input) => {
+      if (Array.isArray(input)) return input.map(normalize);
+      if (input && typeof input === 'object') {
+        return Object.keys(input).sort().reduce((result, key) => {
+          const normalized = normalize(input[key]);
+          if (normalized !== undefined) result[key] = normalized;
+          return result;
+        }, {});
+      }
+      if (typeof input === 'number' && !Number.isFinite(input)) return null;
+      if (typeof input === 'function' || typeof input === 'undefined') return undefined;
+      return input;
+    };
+    try { return JSON.stringify(normalize(value)); } catch (_) { return ''; }
+  }
+
+  function notesAutomaticRefreshSignature() {
+    const assignment = state.assignment;
+    if (!assignment) return '';
+    const assignmentId = String(assignment.id || '');
+    const period = Number(state.activePeriod || 1);
+    const attendance = Object.entries(state.cloud.attendance || {})
+      .filter(([key]) => {
+        const separator = key.indexOf('|');
+        if (separator < 0 || key.slice(0, separator) !== assignmentId) return false;
+        return getAutomaticAcademicPeriod(key.slice(separator + 1)) === period;
+      })
+      .sort(([a], [b]) => a.localeCompare(b));
+    const activityGrades = (state.data.activityGrades || [])
+      .filter((row) => String(row.assignmentId || '') === assignmentId)
+      .slice()
+      .sort((a, b) => `${a.activityId}|${a.studentCode}`.localeCompare(`${b.activityId}|${b.studentCode}`));
+    const quizGrades = (state.data.quizGrades || [])
+      .filter((row) => String(row.assignmentId || '') === assignmentId)
+      .slice()
+      .sort((a, b) => `${a.quizId}|${a.studentCode}`.localeCompare(`${b.quizId}|${b.studentCode}`));
+    const rockstars = getBaseRockstarEvents()
+      .filter((row) => String(row.assignmentId || '') === assignmentId && Number(row.period || 1) === period)
+      .slice()
+      .sort((a, b) => String(a.id || a.createdAt || '').localeCompare(String(b.id || b.createdAt || '')));
+    return syncStableSignature({
+      assignmentId,
+      period,
+      students: getStudentsForAssignment(assignment).map((student) => ({
+        id: student.id,
+        fullName: student.fullName,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        active: student.active,
+        groupId: student.groupId
+      })),
+      activities: getNotesActivities().map((activity) => ({
+        id: activity.id,
+        title: activity.title,
+        period: activity.period,
+        startsAt: activity.startsAt,
+        createdAt: activity.createdAt,
+        assignmentIds: contentAssignmentIds(activity),
+        order: contentSortOrderForAssignment(activity, assignmentId)
+      })),
+      quizzes: getNotesQuizzes().map((quiz) => ({
+        id: quiz.id,
+        title: quiz.title,
+        period: quiz.period,
+        assignmentIds: quiz.assignmentIds,
+        availableFrom: quiz.availableFrom,
+        createdAt: quiz.createdAt,
+        openAt: quiz.openAt
+      })),
+      activityGrades,
+      quizGrades,
+      attendance,
+      rockstars,
+      config: getNotesConfigStore()[notesConfigKey(assignmentId, period)] || {}
+    });
+  }
+
+  function activityAutomaticRefreshSignature() {
+    const assignment = state.assignment;
+    const activityId = String(state.activeActivityId || state.appRoute?.activityId || '');
+    if (!assignment || !activityId) return '';
+    const assignmentId = String(assignment.id || '');
+    const activity = (state.data.activities || []).find((item) => String(item.id || '') === activityId) || {};
+    const grades = (state.data.activityGrades || [])
+      .filter((row) => String(row.assignmentId || '') === assignmentId && String(row.activityId || '') === activityId)
+      .slice()
+      .sort((a, b) => String(a.studentCode || '').localeCompare(String(b.studentCode || '')));
+    return syncStableSignature({
+      assignmentId,
+      activityId,
+      activityUpdatedAt: activity.updatedAt || activity.createdAt || '',
+      progress: activity.progressByAssignment?.[assignmentId] || {},
+      students: getStudentsForAssignment(assignment).map((student) => ({
+        id: student.id,
+        fullName: student.fullName,
+        active: student.active,
+        groupId: student.groupId
+      })),
+      grades
+    });
+  }
+
   function bindOfflineSyncEvents() {
     if (bindOfflineSyncEvents.bound) return;
     bindOfflineSyncEvents.bound = true;
     window.addEventListener('encisomath:sync-complete', (event) => {
       const snapshot = event.detail?.snapshot;
       const summary = event.detail?.summary || {};
+      const routeScreen = state.appRoute?.screen || '';
+      const notesBefore = routeScreen === 'subject' && state.activeSubjectTab === 'notes' ? notesAutomaticRefreshSignature() : '';
+      const activityBefore = routeScreen === 'activity' && !isStudentPortal() ? activityAutomaticRefreshSignature() : '';
       if (!applyCloudSnapshotToState(snapshot, { initializePeriod: false })) return;
-      if (state.appRoute?.screen === 'activity' && !isStudentPortal()) {
-        const activity = (state.data.activities || []).find((item) => String(item.id) === String(state.activeActivityId || state.appRoute.activityId || ''));
-        if (activity) loadActivityGradebook(activity).catch?.(() => {});
-      } else if (state.appRoute?.screen === 'subject') {
-        refreshActivePeriodContent(false);
+      if (routeScreen === 'activity' && !isStudentPortal()) {
+        const activityAfter = activityAutomaticRefreshSignature();
+        if (activityBefore !== activityAfter) {
+          const activity = (state.data.activities || []).find((item) => String(item.id) === String(state.activeActivityId || state.appRoute.activityId || ''));
+          if (activity) loadActivityGradebook(activity, { silent: true, preserveScroll: true }).catch?.(() => {});
+        }
+      } else if (routeScreen === 'subject') {
+        if (state.activeSubjectTab === 'notes') {
+          const notesAfter = notesAutomaticRefreshSignature();
+          if (notesBefore !== notesAfter) refreshActivePeriodContent(false, { silentSync: true, preserveScroll: true });
+        } else {
+          refreshActivePeriodContent(false);
+        }
       }
       if (summary.conflicts) toast(`${summary.conflicts} cambio(s) no se aplicaron porque Supabase tenía una versión más reciente.`);
       else if (summary.applied) toast(`${summary.applied} cambio(s) sincronizado(s).`);
@@ -1118,7 +1232,7 @@
   function initializeAcademicPeriodState() {
     return syncAcademicPeriodState(getAutomaticAcademicPeriod());
   }
-  function refreshActivePeriodContent(animate = true) {
+  function refreshActivePeriodContent(animate = true, options = {}) {
     const tab = state.activeSubjectTab;
     if (tab === 'classes') updateClassGrid(animate);
     else if (tab === 'activities') {
@@ -1129,7 +1243,7 @@
         bindContentSorting('activity');
         if (animate) pulseElement(content, 'class-grid-update');
       }
-    } else if (tab === 'notes') renderNotesTab({ animate });
+    } else if (tab === 'notes') renderNotesTab({ animate, ...options });
     else if (tab === 'rockstars') refreshRockstarList(animate);
     else if (tab === 'quizzes') {
       state.quizQuestionIndex = 0;
@@ -4798,11 +4912,13 @@
     `;
   }
 
-  function emNotesInitHero(root = document) {
+  function emNotesInitHero(root = document, options = {}) {
     const hero = root.querySelector?.('[data-em-notes-hero]');
     if (!hero) return;
-    hero.classList.remove('is-live');
-    void hero.offsetWidth;
+    if (options.replay !== false) {
+      hero.classList.remove('is-live');
+      void hero.offsetWidth;
+    }
     hero.classList.add('is-live');
     hero.querySelectorAll('.em-act-shape').forEach((shape, index) => {
       shape.style.setProperty('--em-act-shape-delay', `${-1.25 * (index + 1)}s`);
@@ -4939,6 +5055,9 @@
     const assignment = state.assignment;
     const content = document.getElementById('tabContent');
     if (!assignment || !content) return;
+    const previousSheet = options.preserveScroll ? content.querySelector('.em-notes-sheet-scroll') : null;
+    const previousScroll = previousSheet ? { left: previousSheet.scrollLeft, top: previousSheet.scrollTop } : null;
+    const previousPageY = options.preserveScroll ? window.scrollY : null;
     setActiveSubjectTabMeta('notes');
     const columns = notesColumnDefinitions();
     const students = getStudentsForAssignment(assignment);
@@ -5007,9 +5126,21 @@
     document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
       downloadNotesForEducaCity(event.currentTarget);
     });
-    emNotesInitHero(content);
-    emPlayTabEntrance(content, 'notes');
-    if (options.animate) pulseElement(content, 'tab-enter');
+    emNotesInitHero(content, { replay: !options.silentSync });
+    if (!options.silentSync) emPlayTabEntrance(content, 'notes');
+    if (options.animate && !options.silentSync) pulseElement(content, 'tab-enter');
+    if (previousScroll) {
+      const restore = () => {
+        const nextSheet = content.querySelector('.em-notes-sheet-scroll');
+        if (nextSheet) {
+          nextSheet.scrollLeft = previousScroll.left;
+          nextSheet.scrollTop = previousScroll.top;
+        }
+        if (Number.isFinite(previousPageY)) window.scrollTo({ top: previousPageY, left: window.scrollX, behavior: 'auto' });
+      };
+      restore();
+      window.requestAnimationFrame(restore);
+    }
   }
 
   function openNotesColumnModal(columnKey) {
@@ -12806,6 +12937,16 @@
     return Array.isArray(payload?.files) ? payload.files.filter((file) => file?.url) : [];
   }
 
+  function activityMediaZoomControlsHTML() {
+    return `
+      <div class="em-activity-media-zoom-controls" aria-label="Controles de zoom">
+        <button type="button" data-activity-media-zoom-out aria-label="Alejar">−</button>
+        <button type="button" class="em-activity-media-zoom-reset" data-activity-media-zoom-reset aria-label="Restablecer zoom">100%</button>
+        <button type="button" data-activity-media-zoom-in aria-label="Acercar">＋</button>
+      </div>
+    `;
+  }
+
   function activityContentShellHTML(activity, source = 'content') {
     const isReview = source === 'review';
     const type = (isReview ? activity.reviewType : activity.contentType) || 'rich_text';
@@ -12816,12 +12957,24 @@
     if (type === 'pdf') {
       const file = files[0];
       return file
-        ? `<div class="em-activity-pdf-viewer" id="${prefix}PdfViewer" data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando ${label}…</p></div></div>`
+        ? `<div class="em-activity-media-viewer" data-activity-media-viewer data-activity-media-type="pdf">
+            ${activityMediaZoomControlsHTML()}
+            <div class="em-activity-media-viewport" data-activity-media-viewport>
+              <div class="em-activity-media-zoom-content em-activity-pdf-viewer" id="${prefix}PdfViewer" data-activity-media-zoom-content data-pdf-url="${escapeAttr(file.url)}"><div class="em-activity-content-loader"><span></span><p>Cargando ${label}…</p></div></div>
+            </div>
+          </div>`
         : `<div class="em-activity-content-empty">El PDF de ${label} no está disponible.</div>`;
     }
     if (type === 'image') {
       return files.length
-        ? `<div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de ${label}" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>`
+        ? `<div class="em-activity-media-viewer" data-activity-media-viewer data-activity-media-type="image">
+            ${activityMediaZoomControlsHTML()}
+            <div class="em-activity-media-viewport" data-activity-media-viewport>
+              <div class="em-activity-media-zoom-content" data-activity-media-zoom-content>
+                <div class="em-activity-image-sequence">${files.map((file, index) => `<figure><img src="${escapeAttr(file.url)}" alt="Imagen ${index + 1} de ${label}" loading="lazy" /><figcaption>${index + 1}/${files.length}</figcaption></figure>`).join('')}</div>
+              </div>
+            </div>
+          </div>`
         : `<div class="em-activity-content-empty">No hay imágenes disponibles en ${label}.</div>`;
     }
     if (type === 'html_css') {
@@ -12842,6 +12995,110 @@
       });
     });
     return template.innerHTML;
+  }
+
+  function initActivityMediaZoom(scope = document) {
+    const viewers = [
+      ...(scope?.matches?.('[data-activity-media-viewer]') ? [scope] : []),
+      ...(scope?.querySelectorAll?.('[data-activity-media-viewer]') || [])
+    ];
+    viewers.forEach((viewer) => {
+      if (viewer.dataset.zoomReady === 'true') return;
+      const viewport = viewer.querySelector('[data-activity-media-viewport]');
+      const content = viewer.querySelector('[data-activity-media-zoom-content]');
+      const zoomOut = viewer.querySelector('[data-activity-media-zoom-out]');
+      const zoomReset = viewer.querySelector('[data-activity-media-zoom-reset]');
+      const zoomIn = viewer.querySelector('[data-activity-media-zoom-in]');
+      if (!viewport || !content) return;
+
+      viewer.dataset.zoomReady = 'true';
+      let scale = 1;
+      let pinchStartDistance = 0;
+      let pinchStartScale = 1;
+      let pinchAnchorX = 0;
+      let pinchAnchorY = 0;
+      const minScale = 1;
+      const maxScale = 4;
+
+      const clampScale = (value) => Math.max(minScale, Math.min(maxScale, Number(value) || 1));
+      const updateControls = () => {
+        if (zoomOut) zoomOut.disabled = scale <= minScale + .01;
+        if (zoomIn) zoomIn.disabled = scale >= maxScale - .01;
+        if (zoomReset) {
+          zoomReset.disabled = Math.abs(scale - 1) < .01;
+          zoomReset.textContent = `${Math.round(scale * 100)}%`;
+        }
+        viewport.classList.toggle('is-zoomed', scale > 1.01);
+      };
+      const applyScale = (nextScale, options = {}) => {
+        const previousScale = scale;
+        const next = clampScale(nextScale);
+        if (Math.abs(next - previousScale) < .005) return;
+        const rect = viewport.getBoundingClientRect();
+        const offsetX = Number.isFinite(options.clientX) ? options.clientX - rect.left : viewport.clientWidth / 2;
+        const offsetY = Number.isFinite(options.clientY) ? options.clientY - rect.top : viewport.clientHeight / 2;
+        const anchorX = options.anchorX ?? ((viewport.scrollLeft + offsetX) / previousScale);
+        const anchorY = options.anchorY ?? ((viewport.scrollTop + offsetY) / previousScale);
+        scale = next;
+        content.style.width = `${scale * 100}%`;
+        content.style.setProperty('--em-activity-media-scale', String(scale));
+        window.requestAnimationFrame(() => {
+          viewport.scrollLeft = Math.max(0, anchorX * scale - offsetX);
+          viewport.scrollTop = Math.max(0, anchorY * scale - offsetY);
+        });
+        updateControls();
+      };
+      const resetScale = () => {
+        scale = 1;
+        content.style.width = '100%';
+        content.style.setProperty('--em-activity-media-scale', '1');
+        viewport.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+        updateControls();
+      };
+
+      content.style.width = '100%';
+      updateControls();
+      zoomOut?.addEventListener('click', () => applyScale(scale - .25));
+      zoomIn?.addEventListener('click', () => applyScale(scale + .25));
+      zoomReset?.addEventListener('click', resetScale);
+      viewport.addEventListener('dblclick', (event) => {
+        applyScale(scale > 1.01 ? 1 : 2, { clientX: event.clientX, clientY: event.clientY });
+      });
+      viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        applyScale(scale + (event.deltaY < 0 ? .2 : -.2), { clientX: event.clientX, clientY: event.clientY });
+      }, { passive: false });
+      viewport.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 2) return;
+        const [a, b] = event.touches;
+        const rect = viewport.getBoundingClientRect();
+        const centerX = (a.clientX + b.clientX) / 2 - rect.left;
+        const centerY = (a.clientY + b.clientY) / 2 - rect.top;
+        pinchStartDistance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1;
+        pinchStartScale = scale;
+        pinchAnchorX = (viewport.scrollLeft + centerX) / scale;
+        pinchAnchorY = (viewport.scrollTop + centerY) / scale;
+      }, { passive: true });
+      viewport.addEventListener('touchmove', (event) => {
+        if (event.touches.length !== 2 || !pinchStartDistance) return;
+        event.preventDefault();
+        const [a, b] = event.touches;
+        const rect = viewport.getBoundingClientRect();
+        const centerX = (a.clientX + b.clientX) / 2 - rect.left;
+        const centerY = (a.clientY + b.clientY) / 2 - rect.top;
+        const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || pinchStartDistance;
+        applyScale(pinchStartScale * (distance / pinchStartDistance), {
+          clientX: rect.left + centerX,
+          clientY: rect.top + centerY,
+          anchorX: pinchAnchorX,
+          anchorY: pinchAnchorY
+        });
+      }, { passive: false });
+      const finishPinch = () => { pinchStartDistance = 0; };
+      viewport.addEventListener('touchend', finishPinch, { passive: true });
+      viewport.addEventListener('touchcancel', finishPinch, { passive: true });
+    });
   }
 
   async function renderActivityPdfContent(activity, source = 'content') {
@@ -12871,8 +13128,8 @@
         canvas.className = 'em-activity-pdf-page';
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
-        canvas.style.width = `${Math.round(viewport.width / pixelRatio)}px`;
-        canvas.style.height = `${Math.round(viewport.height / pixelRatio)}px`;
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
         canvas.setAttribute('aria-label', `Página ${number} de ${pdfDocument.numPages}`);
         const context = canvas.getContext('2d', { alpha: false });
         context.fillStyle = '#fff';
@@ -12882,6 +13139,7 @@
         page.cleanup?.();
       }
       await pdfDocument.destroy?.();
+      initActivityMediaZoom(host.closest('[data-activity-media-viewer]') || document);
     } catch (error) {
       host.dataset.rendered = 'false';
       host.innerHTML = `<div class="em-activity-content-empty">${escapeHTML(error?.message || 'No se pudo cargar el PDF.')}</div>`;
@@ -12894,7 +13152,14 @@
     const payload = isReview ? activity.reviewPayload : activity.contentPayload;
     const prefix = isReview ? 'activityReview' : 'activity';
     if (type === 'pdf') {
+      const host = document.getElementById(isReview ? 'activityReviewPdfViewer' : 'activityPdfViewer');
+      initActivityMediaZoom(host?.closest('[data-activity-media-viewer]') || document);
       renderActivityPdfContent(activity, source);
+      return;
+    }
+    if (type === 'image') {
+      const panel = document.querySelector(`[data-activity-detail-panel="${source}"]`);
+      initActivityMediaZoom(panel || document);
       return;
     }
     if (type === 'rich_text') {
@@ -13299,13 +13564,35 @@
     updateActivityGradeSortIndicators();
   }
 
-  function refreshActivityGradebookList() {
+  function refreshActivityGradebookList(options = {}) {
     const list = document.getElementById('activityGradebookList');
     if (!list) return;
+    const scroll = list.closest('.em-activity-grade-table-scroll');
+    const previousScroll = options.preserveScroll && scroll ? { left: scroll.scrollLeft, top: scroll.scrollTop } : null;
     const query = document.getElementById('activityGradeSearch')?.value || '';
+    const signatureRows = sortedActivityGradebookRows(state.activityGradebook || []).rows;
+    const signature = syncStableSignature({
+      activityId: state.activeActivityId || '',
+      query,
+      sort: state.activityGradeSort || {},
+      rows: signatureRows
+    });
+    if (options.skipUnchanged && list.__encisoGradebookSignature === signature) {
+      updateActivityGradeSortIndicators();
+      return;
+    }
     list.innerHTML = activityGradebookRowsHTML(state.activityGradebook || [], query);
+    list.__encisoGradebookSignature = signature;
     updateActivityGradeSortIndicators();
     bindActivityGradeRows();
+    if (previousScroll && scroll) {
+      scroll.scrollLeft = previousScroll.left;
+      scroll.scrollTop = previousScroll.top;
+      window.requestAnimationFrame(() => {
+        scroll.scrollLeft = previousScroll.left;
+        scroll.scrollTop = previousScroll.top;
+      });
+    }
   }
 
   function bindActivityGradeRows() {
@@ -13324,20 +13611,32 @@
     });
   }
 
-  async function loadActivityGradebook(activity) {
+  async function loadActivityGradebook(activity, options = {}) {
     const list = document.getElementById('activityGradebookList');
     if (!list) return;
-    list.innerHTML = '<tr><td colspan="4"><div class="em-activity-grade-loading"><span></span><p>Preparando lista de estudiantes…</p></div></td></tr>';
+    const requestedActivityId = String(activity?.id || '');
+    const requestedAssignmentId = String(state.assignment?.id || '');
+    if (!options.silent) {
+      list.innerHTML = '<tr><td colspan="4"><div class="em-activity-grade-loading"><span></span><p>Preparando lista de estudiantes…</p></div></td></tr>';
+      list.__encisoGradebookSignature = '';
+    }
     try {
-      state.activityGradebook = await cloudAPI().getActivityGradebook({
-        activityId: activity.id,
-        assignmentId: state.assignment?.id || ''
+      const rows = await cloudAPI().getActivityGradebook({
+        activityId: requestedActivityId,
+        assignmentId: requestedAssignmentId
       });
-      syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
+      if (String(state.activeActivityId || state.appRoute?.activityId || '') !== requestedActivityId || String(state.assignment?.id || '') !== requestedAssignmentId) return;
+      state.activityGradebook = rows;
+      syncActivityGradesFromGradebook(requestedActivityId, requestedAssignmentId, state.activityGradebook);
       updateActivityProgressFromGradebook(activity, state.activityGradebook);
-      refreshActivityGradebookList();
+      refreshActivityGradebookList({
+        preserveScroll: Boolean(options.preserveScroll),
+        skipUnchanged: Boolean(options.silent)
+      });
     } catch (error) {
-      list.innerHTML = `<tr><td class="em-activity-grade-empty" colspan="4">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</td></tr>`;
+      if (!options.silent && document.getElementById('activityGradebookList') === list) {
+        list.innerHTML = `<tr><td class="em-activity-grade-empty" colspan="4">${escapeHTML(error?.message || 'No se pudo cargar la lista de calificaciones.')}</td></tr>`;
+      }
       reportCloudError('No se pudo cargar la actividad', error, { silent: true });
     }
   }

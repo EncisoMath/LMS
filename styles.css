@@ -36184,3 +36184,135 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     flex-basis: 30px;
   }
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.066 · ZOOM PARA PDF E IMÁGENES DE ACTIVIDADES
+========================================================= */
+.em-activity-media-viewer {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.em-activity-media-viewport {
+  position: relative;
+  width: 100%;
+  max-height: min(78vh, 920px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: #05070b;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.25) transparent;
+}
+.em-activity-media-viewport::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.em-activity-media-viewport::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(255,255,255,.25);
+  background-clip: padding-box;
+}
+.em-activity-media-viewport.is-zoomed {
+  cursor: grab;
+}
+.em-activity-media-viewport.is-zoomed:active {
+  cursor: grabbing;
+}
+.em-activity-media-zoom-content {
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  transition: width .16s ease;
+}
+.em-activity-media-zoom-controls {
+  position: absolute;
+  z-index: 12;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 14px;
+  background: rgba(4,7,13,.82);
+  box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.em-activity-media-zoom-controls button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font: 800 1.05rem/1 "Montserrat", Arial, sans-serif;
+  cursor: pointer;
+}
+.em-activity-media-zoom-controls button:active:not(:disabled) {
+  transform: scale(.93);
+}
+.em-activity-media-zoom-controls button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+.em-activity-media-zoom-controls .em-activity-media-zoom-reset {
+  width: 58px;
+  font-size: .68rem;
+}
+.em-activity-media-viewer .em-activity-pdf-pages,
+.em-activity-media-viewer .em-activity-image-sequence {
+  width: 100%;
+  box-sizing: border-box;
+}
+.em-activity-media-viewer .em-activity-pdf-pages {
+  padding: 12px;
+}
+.em-activity-media-viewer .em-activity-pdf-page {
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+}
+.em-activity-media-viewer .em-activity-image-sequence {
+  padding: 12px;
+}
+.em-activity-media-viewer .em-activity-image-sequence img {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+@media (max-width: 600px) {
+  .em-activity-media-viewport {
+    max-height: 72vh;
+    border-radius: 10px;
+  }
+  .em-activity-media-zoom-controls {
+    left: 8px;
+    bottom: 8px;
+  }
+  .em-activity-media-zoom-controls button {
+    width: 36px;
+    height: 36px;
+  }
+  .em-activity-media-viewer .em-activity-pdf-pages,
+  .em-activity-media-viewer .em-activity-image-sequence {
+    padding: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .em-activity-media-zoom-content {
+    transition: none;
+  }
+}
