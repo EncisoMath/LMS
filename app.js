@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.068';
+  const APP_VERSION = '0.25.069';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12436,32 +12436,46 @@
     return String(a?.title || '').localeCompare(String(b?.title || ''), 'es');
   }
 
-  function classMatchesCurrentLibrary(item, assignment = state.assignment) {
-    if (!assignment || contentAssignmentIds(item).length) return false;
-    const assignmentId = String(assignment.id || '');
+  function contentLibraryOriginAssignment(item) {
     const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
-    if (libraryAssignmentId) return libraryAssignmentId === assignmentId;
+    if (!libraryAssignmentId) return null;
+    return (state.data.assignments || []).find((assignment) => String(assignment?.id || '') === libraryAssignmentId) || null;
+  }
 
-    // Algunas clases antiguas o cargadas directamente desde la biblioteca no
-    // conservan el grado de origen. En ese caso siguen perteneciendo a la
-    // biblioteca de la misma asignatura por materia y área.
-    const libraryGrade = String(item?.libraryGrade || item?.grade || '');
-    if (libraryGrade && libraryGrade !== String(assignment.grade || '')) return false;
-    return String(item?.librarySubject || item?.subject || '') === String(assignment.subject || '')
-      && String(item?.libraryArea || item?.area || '') === String(assignment.area || '');
+  function contentLibraryMetadata(item) {
+    const originAssignment = contentLibraryOriginAssignment(item);
+    return {
+      grade: String(item?.libraryGrade || item?.grade || originAssignment?.grade || ''),
+      subject: String(item?.librarySubject || item?.subject || originAssignment?.subject || ''),
+      area: String(item?.libraryArea || item?.area || originAssignment?.area || '')
+    };
+  }
+
+  function contentMatchesCurrentGradeLibrary(item, assignment = state.assignment) {
+    if (!assignment || contentAssignmentIds(item).length) return false;
+    const library = contentLibraryMetadata(item);
+
+    // La biblioteca oculta se comparte entre los cursos del mismo grado, pero
+    // nunca debe mezclarse con otros grados. El grado es obligatorio para
+    // evitar que contenido antiguo sin alcance termine apareciendo en todos.
+    if (!library.grade || library.grade !== String(assignment.grade || '')) return false;
+    return library.subject === String(assignment.subject || '')
+      && library.area === String(assignment.area || '');
+  }
+
+  function classMatchesCurrentLibrary(item, assignment = state.assignment) {
+    return contentMatchesCurrentGradeLibrary(item, assignment);
   }
 
   function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {
+    if (contentMatchesCurrentGradeLibrary(activity, assignment)) return true;
     if (!assignment || contentAssignmentIds(activity).length) return false;
-    if (activity.libraryAssignmentId) return String(activity.libraryAssignmentId) === String(assignment.id || '');
-    if (activity.librarySubject || activity.libraryArea) {
-      return String(activity.librarySubject || '') === String(assignment.subject || '')
-        && String(activity.libraryArea || '') === String(assignment.area || '');
-    }
+
+    // Compatibilidad para actividades antiguas que solo conservaron la clase
+    // relacionada: únicamente se muestran cuando esa clase sí pertenece a la
+    // biblioteca del grado actual.
     const lesson = activityRelatedLesson(activity);
-    return Boolean(lesson
-      && String(lesson.subject || '') === String(assignment.subject || '')
-      && String(lesson.area || '') === String(assignment.area || ''));
+    return Boolean(lesson && classMatchesCurrentLibrary(lesson, assignment));
   }
 
   function getActivitiesForCurrentAssignment() {
