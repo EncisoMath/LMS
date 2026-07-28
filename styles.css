@@ -36326,3 +36326,205 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     transition: none;
   }
 }
+
+/* ================================================================
+   v0.25.068 · NOTIFICACIONES DE CALIFICACIÓN PARA ESTUDIANTES
+   ================================================================ */
+.em-student-notification-button {
+  position: relative;
+  overflow: visible !important;
+}
+.em-student-notification-button > span:first-child {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+.em-student-notification-button.has-unread {
+  border-color: rgba(235,181,19,.58) !important;
+}
+.em-student-notification-button.is-topbar {
+  flex: 0 0 auto;
+}
+.em-student-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid var(--bar-bg, #000);
+  border-radius: 999px !important;
+  background: #e21b3c;
+  color: #fff;
+  font: 900 .58rem/1 Montserrat, system-ui, sans-serif;
+  letter-spacing: 0;
+  box-shadow: none !important;
+}
+.em-student-notification-badge[hidden] {
+  display: none !important;
+}
+.em-student-notifications-modal {
+  width: min(94vw, 590px);
+  max-height: min(86dvh, 760px);
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+}
+.em-student-notifications-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 38px;
+}
+.em-student-notifications-heading > span {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(19,104,206,.14);
+  font-size: 1.25rem;
+}
+.em-student-notifications-heading h2 {
+  margin: 0;
+}
+.em-student-notifications-heading small {
+  color: #92a1b5;
+  font-size: .68rem;
+  font-weight: 750;
+}
+.em-student-notification-permission {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  color: #9aa9bc;
+  font-size: .68rem;
+  text-align: center;
+}
+.em-student-notification-permission .is-enabled {
+  color: #caffb7;
+  font-weight: 800;
+}
+.em-student-notifications-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.em-student-notifications-actions .ghost-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: .7rem;
+}
+.em-student-notifications-list {
+  min-height: 120px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  overflow: auto;
+  padding-right: 2px;
+}
+.em-student-notification-item {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.025);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.em-student-notification-item:hover,
+.em-student-notification-item:focus-visible {
+  border-color: rgba(19,104,206,.42);
+  background: rgba(19,104,206,.08);
+}
+.em-student-notification-item.is-unread {
+  border-left: 4px solid #ebb513;
+  background: rgba(235,181,19,.055);
+}
+.em-student-notification-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.05);
+  font-size: 1rem;
+}
+.em-student-notification-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.em-student-notification-copy strong {
+  color: #f2f7ff;
+  font-size: .76rem;
+  line-height: 1.25;
+}
+.em-student-notification-copy span {
+  color: #a6b3c4;
+  font-size: .67rem;
+  line-height: 1.42;
+}
+.em-student-notification-copy small {
+  color: #75859a;
+  font-size: .6rem;
+}
+.em-student-notification-score {
+  min-width: 42px;
+  min-height: 32px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 8px;
+  border-radius: 999px !important;
+  background: rgba(84,198,0,.14);
+  color: #d7ffc4;
+  font: 900 .72rem/1 Montserrat, system-ui, sans-serif;
+}
+.em-student-notification-empty {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.11);
+  color: #9aa9bc;
+  text-align: center;
+}
+.em-student-notification-empty strong {
+  color: #eef5ff;
+}
+.em-student-notification-empty span {
+  max-width: 38ch;
+  font-size: .7rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.em-student-notification-empty.is-error strong {
+  color: #ff9dae;
+}
+@media (max-width: 560px) {
+  .em-student-notifications-modal {
+    width: min(96vw, 590px);
+    max-height: 88dvh;
+  }
+  .em-student-notification-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .em-student-notification-score {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 27px;
+  }
+}

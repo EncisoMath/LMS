@@ -2654,6 +2654,41 @@
   }
 
 
+  function studentNotificationMigrationError(error, fallback) {
+    const message = String(error?.message || '').toLowerCase();
+    if (error?.code === 'PGRST202' || message.includes('encisomath_student_notifications') || message.includes('encisomath_student_mark_notifications_read')) {
+      return new Error('Falta ejecutar SUPABASE_STUDENT_GRADE_NOTIFICATIONS_v0.25.068.sql en Supabase.');
+    }
+    return normalizeError(error, fallback);
+  }
+
+  async function loadStudentNotifications({ studentCode = '', limit = 50 } = {}) {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
+    const { data, error } = await getStudentClient().rpc('encisomath_student_notifications', {
+      p_student_code: code,
+      p_limit: Math.max(1, Math.min(100, Number(limit) || 50))
+    });
+    if (error) throw studentNotificationMigrationError(error, 'No se pudieron cargar las notificaciones.');
+    return {
+      ok: data?.ok !== false,
+      unreadCount: Math.max(0, Number(data?.unreadCount || 0)),
+      notifications: Array.isArray(data?.notifications) ? data.notifications : []
+    };
+  }
+
+  async function markStudentNotificationsRead({ studentCode = '', notificationIds = [] } = {}) {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
+    const ids = [...new Set((notificationIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+    const { data, error } = await getStudentClient().rpc('encisomath_student_mark_notifications_read', {
+      p_student_code: code,
+      p_notification_ids: ids.length ? ids : null
+    });
+    if (error) throw studentNotificationMigrationError(error, 'No se pudieron actualizar las notificaciones.');
+    return data || { ok: true, updated: 0, unreadCount: 0 };
+  }
+
   function connectionMigrationError(error, fallback) {
     const message = String(error?.message || '').toLowerCase();
     if (error?.code === 'PGRST202' || message.includes('encisomath_connection_') || message.includes('encisomath_teacher_connections')) {
@@ -2765,6 +2800,8 @@
     heartbeatConnectionSession,
     endConnectionSession,
     loadConnectionReport,
+    loadStudentNotifications,
+    markStudentNotificationsRead,
     resolveStudentDbId
   });
 })();

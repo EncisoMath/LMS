@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.067';
+  const APP_VERSION = '0.25.068';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -10,6 +10,9 @@
   let excelJsLoaderPromise = null;
   let usernameDuplicateCheckShown = false;
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
+  const STUDENT_NOTIFICATION_POLL_MS = 45000;
+  const STUDENT_NOTIFICATION_ANNOUNCED_PREFIX = 'encisomath:announced-grade-notifications:';
+
   const DATA_FILES = {
     users: './data/users.json',
     assignments: './data/assignments.json',
@@ -569,6 +572,14 @@
       roleFilter: 'all',
       statusFilter: 'all',
       search: ''
+    },
+    notifications: {
+      items: [],
+      unreadCount: 0,
+      loading: false,
+      initialized: false,
+      disabled: false,
+      error: ''
     }
   };
 
@@ -818,6 +829,8 @@
   let connectionHeartbeatBusy = false;
   let connectionStartPromise = null;
   let connectionDashboardRefreshTimer = null;
+  let studentNotificationPollTimer = null;
+  let pendingStudentNotificationTarget = null;
 
   function detectConnectionDevice() {
     const ua = String(navigator.userAgent || '');
@@ -1424,7 +1437,11 @@
         localStorage.setItem('encisomath:lastStudentCode', String(cloudData.user.id || cloudData.user.username || ''));
         localStorage.setItem('encisomath:lastLoginMode', 'student');
         renderStudentHome();
+        startStudentNotificationPolling();
+        loadStudentNotifications({ silent: true, announce: true }).then(consumePendingStudentNotificationTarget);
       } else {
+        stopStudentNotificationPolling();
+        state.notifications = { items: [], unreadCount: 0, loading: false, initialized: false, disabled: false, error: '' };
         localStorage.setItem('encisomath:lastUser', JSON.stringify({
           id: cloudData.user.email || cloudData.user.id,
           email: cloudData.user.email || '',
@@ -1448,6 +1465,7 @@
   }
 
   async function boot() {
+    consumeStudentNotificationQueryTarget();
     applyPreferences();
     applyQuizFeedbackTune();
     registerServiceWorker();
@@ -2346,6 +2364,7 @@
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>${escapeHTML(assignment.subject)}</h1>
           <span class="spacer"></span>
+          ${studentMode ? studentNotificationButtonHTML('topbar') : ''}
           ${academicPeriodSelectorHTML()}
         </header>
         <section class="subject-banner" data-em-flat-bg data-icon-hidden="${isSubjectIconVisible(assignment) ? 'false' : 'true'}">
@@ -2391,6 +2410,7 @@
 
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', renderRoleHome);
+      if (studentMode) bindStudentNotificationButtons(document);
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
       const subjectSectionSelect = document.getElementById('subjectSectionSelect');
       subjectSectionSelect?.addEventListener('change', (event) => {
@@ -13685,6 +13705,7 @@
           <button class="icon-btn" id="backBtn" aria-label="Volver">←</button>
           <h1>Actividad</h1>
           <span class="spacer"></span>
+          ${studentMode ? studentNotificationButtonHTML('topbar') : ''}
         </header>
         <div class="em-activity-detail-wrap">
           <section class="activity-hero em-act-hero-host em-activity-detail-hero" data-em-activities-hero aria-label="Detalle de la actividad">
@@ -13780,6 +13801,7 @@
         if (window.history?.length > 1) window.history.back();
         else renderSubjectDetail('activities');
       });
+      if (studentMode) bindStudentNotificationButtons(document);
       if (!studentMode) {
         document.getElementById('editActivityBtn')?.addEventListener('click', () => openEditActivityModal(activity));
         document.getElementById('deleteActivityBtn')?.addEventListener('click', () => openDeleteActivityModal(activity));
@@ -15845,6 +15867,7 @@
           <div class="profile-cover" data-em-flat-bg data-em-flat-bg-color="#1368ce"></div>
           <div class="profile-info">
             <div class="profile-action-row">
+              ${studentNotificationButtonHTML('round')}
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
             <img class="profile-avatar" src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
@@ -15878,6 +15901,7 @@
 
     mount(markup, () => {
       document.getElementById('logoutBtn')?.addEventListener('click', logout);
+      bindStudentNotificationButtons(document);
       bindAssignmentCards(assignments);
     });
   }
@@ -16659,6 +16683,8 @@
   }
   async function logout() {
     const leavingStudentPortal = isStudentPortal();
+    stopStudentNotificationPolling();
+    state.notifications = { items: [], unreadCount: 0, loading: false, initialized: false, disabled: false, error: '' };
     await stopConnectionPresence({ end: true });
     try {
       if (cloudAPI()) await cloudAPI().signOut();
@@ -16716,6 +16742,317 @@
       toast('No se pudo enviar la notificación de prueba.');
     }
   }
+  function studentNotificationCode() {
+    return String(state.user?.id || state.user?.username || localStorage.getItem('encisomath:lastStudentCode') || '').trim();
+  }
+
+  function studentNotificationAnnouncedKey() {
+    return `${STUDENT_NOTIFICATION_ANNOUNCED_PREFIX}${normalizeID(studentNotificationCode())}`;
+  }
+
+  function readAnnouncedStudentNotificationIds() {
+    try {
+      const value = JSON.parse(localStorage.getItem(studentNotificationAnnouncedKey()) || '[]');
+      return new Set(Array.isArray(value) ? value.map(String) : []);
+    } catch (_) {
+      return new Set();
+    }
+  }
+
+  function rememberAnnouncedStudentNotifications(ids = []) {
+    const announced = readAnnouncedStudentNotificationIds();
+    ids.map(String).filter(Boolean).forEach((id) => announced.add(id));
+    localStorage.setItem(studentNotificationAnnouncedKey(), JSON.stringify([...announced].slice(-250)));
+  }
+
+  function formatStudentNotificationDate(value) {
+    const date = new Date(value || '');
+    if (Number.isNaN(date.getTime())) return 'Ahora';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'
+    }).format(date);
+  }
+
+  function formatStudentNotificationScore(value) {
+    const score = Number(value);
+    if (!Number.isFinite(score)) return '—';
+    return Number.isInteger(score) ? String(score) : score.toFixed(1);
+  }
+
+  function studentNotificationButtonHTML(variant = 'round') {
+    const count = Math.max(0, Number(state.notifications.unreadCount || 0));
+    const className = variant === 'topbar'
+      ? 'icon-btn em-student-notification-button is-topbar'
+      : 'round-action em-student-notification-button';
+    return `<button class="${className}" type="button" data-student-notifications-button aria-label="Notificaciones${count ? `, ${count} sin leer` : ''}" title="Notificaciones"><span aria-hidden="true">🔔</span><b class="em-student-notification-badge" data-student-notification-badge ${count ? '' : 'hidden'}>${count > 99 ? '99+' : count}</b></button>`;
+  }
+
+  function updateStudentNotificationBadges() {
+    const count = Math.max(0, Number(state.notifications.unreadCount || 0));
+    document.querySelectorAll('[data-student-notification-badge]').forEach((badge) => {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.hidden = count < 1;
+    });
+    document.querySelectorAll('[data-student-notifications-button]').forEach((button) => {
+      button.setAttribute('aria-label', `Notificaciones${count ? `, ${count} sin leer` : ''}`);
+      button.classList.toggle('has-unread', count > 0);
+    });
+    const modalCount = document.getElementById('studentNotificationUnreadCount');
+    if (modalCount) modalCount.textContent = count ? `${count} sin leer` : 'Todo al día';
+  }
+
+  function bindStudentNotificationButtons(root = document) {
+    root.querySelectorAll?.('[data-student-notifications-button]').forEach((button) => {
+      if (button.dataset.notificationBound === 'true') return;
+      button.dataset.notificationBound = 'true';
+      button.addEventListener('click', openStudentNotificationsModal);
+    });
+    updateStudentNotificationBadges();
+  }
+
+  async function showStudentSystemNotification(items = []) {
+    if (!items.length || !('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const latest = items[0];
+      const multiple = items.length > 1;
+      await registration.showNotification(multiple ? `${items.length} calificaciones nuevas` : (latest.title || 'EncisoMath'), {
+        body: multiple ? `${latest.message || 'Tienes nuevas calificaciones.'} y ${items.length - 1} más.` : (latest.message || 'Tienes una calificación nueva.'),
+        icon: './assets/app-icon-192.png',
+        badge: './assets/notification-icon-96.png',
+        tag: multiple ? 'encisomath-grade-summary' : `encisomath-grade-${latest.id}`,
+        renotify: true,
+        data: {
+          notificationId: String(latest.id || ''),
+          activityId: String(latest.activityId || ''),
+          assignmentId: String(latest.assignmentId || '')
+        }
+      });
+    } catch (error) {
+      console.warn('No se pudo mostrar la notificación del dispositivo.', error);
+    }
+  }
+
+  async function loadStudentNotifications(options = {}) {
+    if (!isStudentPortal() || state.notifications.disabled || !cloudAPI()?.loadStudentNotifications) return null;
+    if (state.notifications.loading) return null;
+    if (navigator.onLine === false) return null;
+    state.notifications.loading = true;
+    try {
+      const result = await cloudAPI().loadStudentNotifications({ studentCode: studentNotificationCode(), limit: 60 });
+      const items = Array.isArray(result?.notifications) ? result.notifications : [];
+      state.notifications.items = items;
+      state.notifications.unreadCount = Math.max(0, Number(result?.unreadCount || 0));
+      state.notifications.initialized = true;
+      state.notifications.error = '';
+      updateStudentNotificationBadges();
+      refreshStudentNotificationsModal();
+
+      if (options.announce !== false) {
+        const announced = readAnnouncedStudentNotificationIds();
+        const newItems = items.filter((item) => !item.readAt && item.id && !announced.has(String(item.id)));
+        if (newItems.length) {
+          const latest = newItems[0];
+          toast(newItems.length === 1 ? (latest.message || 'Tienes una calificación nueva.') : `Tienes ${newItems.length} calificaciones nuevas.`);
+          await showStudentSystemNotification(newItems);
+          rememberAnnouncedStudentNotifications(newItems.map((item) => item.id));
+        }
+      }
+      return result;
+    } catch (error) {
+      state.notifications.error = error?.message || 'No se pudieron cargar las notificaciones.';
+      if (/SUPABASE_STUDENT_GRADE_NOTIFICATIONS/i.test(state.notifications.error)) state.notifications.disabled = true;
+      refreshStudentNotificationsModal();
+      if (!options.silent) console.warn(state.notifications.error);
+      return null;
+    } finally {
+      state.notifications.loading = false;
+    }
+  }
+
+  function startStudentNotificationPolling() {
+    stopStudentNotificationPolling();
+    if (!isStudentPortal()) return;
+    studentNotificationPollTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadStudentNotifications({ silent: true, announce: true });
+    }, STUDENT_NOTIFICATION_POLL_MS);
+    if (!startStudentNotificationPolling.bound) {
+      startStudentNotificationPolling.bound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && isStudentPortal()) loadStudentNotifications({ silent: true, announce: true });
+      });
+      window.addEventListener('focus', () => {
+        if (isStudentPortal()) loadStudentNotifications({ silent: true, announce: true });
+      });
+    }
+  }
+
+  function stopStudentNotificationPolling() {
+    window.clearInterval(studentNotificationPollTimer);
+    studentNotificationPollTimer = null;
+  }
+
+  async function markStudentNotificationsRead(ids = []) {
+    const targetIds = [...new Set((ids || []).map(String).filter(Boolean))];
+    const now = new Date().toISOString();
+    state.notifications.items = state.notifications.items.map((item) => {
+      const shouldRead = !targetIds.length || targetIds.includes(String(item.id));
+      return shouldRead && !item.readAt ? { ...item, readAt: now } : item;
+    });
+    state.notifications.unreadCount = state.notifications.items.filter((item) => !item.readAt).length;
+    updateStudentNotificationBadges();
+    refreshStudentNotificationsModal();
+    try {
+      const result = await cloudAPI()?.markStudentNotificationsRead?.({
+        studentCode: studentNotificationCode(),
+        notificationIds: targetIds
+      });
+      if (result && Number.isFinite(Number(result.unreadCount))) {
+        state.notifications.unreadCount = Math.max(0, Number(result.unreadCount));
+        updateStudentNotificationBadges();
+      }
+    } catch (error) {
+      console.warn('No se pudieron marcar las notificaciones como leídas.', error);
+    }
+  }
+
+  function studentNotificationPermissionHTML() {
+    if (!('Notification' in window)) return '<span>Este navegador no permite avisos del dispositivo.</span>';
+    if (Notification.permission === 'granted') return '<span class="is-enabled">✓ Avisos del dispositivo activados</span>';
+    if (Notification.permission === 'denied') return '<span>Los avisos están bloqueados en la configuración del navegador.</span>';
+    return '<button class="mini-btn" id="enableStudentNotificationsBtn" type="button">Activar avisos del dispositivo</button>';
+  }
+
+  function studentNotificationsListHTML() {
+    if (state.notifications.loading && !state.notifications.initialized) return '<div class="em-student-notification-empty">Cargando notificaciones…</div>';
+    if (state.notifications.error) return `<div class="em-student-notification-empty is-error"><strong>No se pudieron cargar.</strong><span>${escapeHTML(state.notifications.error)}</span></div>`;
+    if (!state.notifications.items.length) return '<div class="em-student-notification-empty"><strong>Todo al día</strong><span>Las calificaciones nuevas aparecerán aquí.</span></div>';
+    return state.notifications.items.map((item) => `
+      <button class="em-student-notification-item ${item.readAt ? '' : 'is-unread'}" type="button" data-student-notification-id="${escapeAttr(item.id)}">
+        <span class="em-student-notification-icon" aria-hidden="true">${item.type === 'activity_grade_updated' ? '✏️' : '✅'}</span>
+        <span class="em-student-notification-copy">
+          <strong>${escapeHTML(item.title || 'Calificación')}</strong>
+          <span>${escapeHTML(item.message || 'Tienes una novedad en una actividad.')}</span>
+          <small>${escapeHTML(formatStudentNotificationDate(item.createdAt))}</small>
+        </span>
+        <span class="em-student-notification-score">${escapeHTML(formatStudentNotificationScore(item.score))}</span>
+      </button>
+    `).join('');
+  }
+
+  function refreshStudentNotificationsModal() {
+    const list = document.getElementById('studentNotificationsList');
+    const permission = document.getElementById('studentNotificationPermission');
+    const markAll = document.getElementById('markAllStudentNotificationsReadBtn');
+    if (list) list.innerHTML = studentNotificationsListHTML();
+    if (permission) permission.innerHTML = studentNotificationPermissionHTML();
+    if (markAll) markAll.disabled = state.notifications.unreadCount < 1;
+    updateStudentNotificationBadges();
+    bindStudentNotificationsModalEvents();
+  }
+
+  function bindStudentNotificationsModalEvents() {
+    const markAll = document.getElementById('markAllStudentNotificationsReadBtn');
+    if (markAll && markAll.dataset.notificationBound !== 'true') {
+      markAll.dataset.notificationBound = 'true';
+      markAll.addEventListener('click', () => markStudentNotificationsRead([]));
+    }
+    const enable = document.getElementById('enableStudentNotificationsBtn');
+    if (enable && enable.dataset.notificationBound !== 'true') {
+      enable.dataset.notificationBound = 'true';
+      enable.addEventListener('click', requestStudentNotificationPermission);
+    }
+    document.querySelectorAll('[data-student-notification-id]').forEach((button) => {
+      if (button.dataset.notificationItemBound === 'true') return;
+      button.dataset.notificationItemBound = 'true';
+      button.addEventListener('click', () => {
+        const item = state.notifications.items.find((candidate) => String(candidate.id) === String(button.dataset.studentNotificationId));
+        if (item) openStudentNotificationTarget(item);
+      });
+    });
+  }
+
+  function openStudentNotificationsModal() {
+    openModal(`
+      <section class="modal-card em-student-notifications-modal" role="dialog" aria-modal="true" aria-labelledby="studentNotificationsTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <div class="em-student-notifications-heading">
+          <span aria-hidden="true">🔔</span>
+          <div><p class="section-kicker">Panel estudiante</p><h2 id="studentNotificationsTitle">Notificaciones</h2><small id="studentNotificationUnreadCount">${state.notifications.unreadCount ? `${state.notifications.unreadCount} sin leer` : 'Todo al día'}</small></div>
+        </div>
+        <div class="em-student-notification-permission" id="studentNotificationPermission">${studentNotificationPermissionHTML()}</div>
+        <div class="em-student-notifications-actions"><button class="ghost-btn" id="markAllStudentNotificationsReadBtn" type="button" ${state.notifications.unreadCount ? '' : 'disabled'}>Marcar todas como leídas</button></div>
+        <div class="em-student-notifications-list" id="studentNotificationsList">${studentNotificationsListHTML()}</div>
+      </section>
+    `, () => {
+      bindStudentNotificationsModalEvents();
+      loadStudentNotifications({ silent: true, announce: false });
+    });
+  }
+
+  async function requestStudentNotificationPermission() {
+    if (!('Notification' in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      refreshStudentNotificationsModal();
+      if (permission === 'granted') {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('Notificaciones activadas', {
+          body: 'EncisoMath te avisará cuando una actividad sea calificada o tu nota cambie.',
+          icon: './assets/app-icon-192.png',
+          badge: './assets/notification-icon-96.png',
+          tag: 'encisomath-notifications-enabled'
+        });
+      }
+    } catch (error) {
+      console.warn('No se pudo solicitar el permiso de notificaciones.', error);
+    }
+  }
+
+  async function openStudentNotificationTarget(item = {}) {
+    if (item.id) await markStudentNotificationsRead([item.id]);
+    closeModal(false, { restoreFocus: false });
+    if (navigator.onLine !== false && cloudAPI()?.loadApplicationData) {
+      try {
+        const fresh = await cloudAPI().loadApplicationData();
+        applyCloudSnapshotToState(fresh, { initializePeriod: false });
+      } catch (error) {
+        console.warn('No se pudo refrescar la calificación antes de abrir la actividad.', error);
+      }
+    }
+    const assignment = (state.data.assignments || []).find((candidate) => String(candidate.id) === String(item.assignmentId || ''));
+    const activity = (state.data.activities || []).find((candidate) => String(candidate.id) === String(item.activityId || ''));
+    if (!assignment || !activity) {
+      toast('La actividad ya no está disponible en este curso.');
+      return;
+    }
+    activateAssignment(assignment);
+    renderActivityDetail(activity);
+  }
+
+  function consumeStudentNotificationQueryTarget() {
+    try {
+      const url = new URL(window.location.href);
+      const notificationId = url.searchParams.get('emNotification') || '';
+      const assignmentId = url.searchParams.get('assignmentId') || '';
+      const activityId = url.searchParams.get('activityId') || '';
+      if (!notificationId && !assignmentId && !activityId) return;
+      pendingStudentNotificationTarget = { notificationId, assignmentId, activityId };
+      url.searchParams.delete('emNotification');
+      url.searchParams.delete('assignmentId');
+      url.searchParams.delete('activityId');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    } catch (_) {}
+  }
+
+  function consumePendingStudentNotificationTarget() {
+    if (!isStudentPortal() || !pendingStudentNotificationTarget) return;
+    const target = pendingStudentNotificationTarget;
+    pendingStudentNotificationTarget = null;
+    const item = state.notifications.items.find((candidate) => String(candidate.id) === String(target.notificationId || '')) || target;
+    window.setTimeout(() => openStudentNotificationTarget(item), 120);
+  }
+
   function applyPreferences() {
     const requestedAccent = normalizeHexColor(state.prefs.accent);
     const safeAccent = requestedAccent && isAllowedAccentColor(requestedAccent) ? requestedAccent : DEFAULT_PREFS.accent;
@@ -17130,7 +17467,18 @@
 
     navigator.serviceWorker.addEventListener('controllerchange', reloadWithNewWorker);
     navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data?.type === 'ENCISOMATH_UPDATE_ACTIVATED') showMandatoryUpdateScreen();
+      if (event.data?.type === 'ENCISOMATH_UPDATE_ACTIVATED') {
+        showMandatoryUpdateScreen();
+        return;
+      }
+      if (event.data?.type === 'ENCISOMATH_OPEN_NOTIFICATION') {
+        pendingStudentNotificationTarget = {
+          notificationId: String(event.data.notificationId || ''),
+          activityId: String(event.data.activityId || ''),
+          assignmentId: String(event.data.assignmentId || '')
+        };
+        consumePendingStudentNotificationTarget();
+      }
     });
 
     window.addEventListener('load', async () => {

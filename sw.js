@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.067';
+const SW_VERSION = 'encisomath-offline-v0.25.068';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -588,7 +588,33 @@ self.addEventListener('push', (event) => {
       body: data.body || 'Tienes una notificación.',
       icon: './assets/app-icon-192.png',
       badge: './assets/notification-icon-96.png',
-      tag: data.tag || 'encisomath'
+      tag: data.tag || 'encisomath',
+      data: data.data && typeof data.data === 'object' ? data.data : {}
     })
   );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const data = event.notification.data && typeof event.notification.data === 'object' ? event.notification.data : {};
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const existing = windows.find((client) => client.url.startsWith(self.registration.scope)) || windows[0];
+    const message = {
+      type: 'ENCISOMATH_OPEN_NOTIFICATION',
+      notificationId: String(data.notificationId || ''),
+      activityId: String(data.activityId || ''),
+      assignmentId: String(data.assignmentId || '')
+    };
+    if (existing) {
+      try { await existing.focus(); } catch (_) {}
+      existing.postMessage(message);
+      return;
+    }
+    const url = new URL('./', self.registration.scope);
+    if (message.notificationId) url.searchParams.set('emNotification', message.notificationId);
+    if (message.assignmentId) url.searchParams.set('assignmentId', message.assignmentId);
+    if (message.activityId) url.searchParams.set('activityId', message.activityId);
+    await self.clients.openWindow(url.href);
+  })());
 });
