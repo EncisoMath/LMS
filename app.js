@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.070';
+  const APP_VERSION = '0.25.071';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12526,12 +12526,30 @@
     return grades;
   }
 
+  function normalizeContentScopeText(value) {
+    return String(value ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('es');
+  }
+
   function classMatchesCurrentLibrary(item, assignment = state.assignment) {
     if (!assignment || contentAssignmentIds(item).length) return false;
+    const currentGrade = normalizeContentGrade(assignment.grade);
+    if (!currentGrade || !classLibraryGradeCandidates(item).has(currentGrade)) return false;
+
+    // El grado define el alcance de la biblioteca. Materia y área solo se usan
+    // cuando la clase realmente conserva esos datos; varios registros antiguos
+    // no los tienen aunque sí mantengan el enlace oculto al curso de origen.
     const library = contentLibraryMetadata(item);
-    if (library.subject !== String(assignment.subject || '')
-      || library.area !== String(assignment.area || '')) return false;
-    return classLibraryGradeCandidates(item).has(normalizeContentGrade(assignment.grade));
+    const librarySubject = normalizeContentScopeText(library.subject);
+    const currentSubject = normalizeContentScopeText(assignment.subject);
+    const libraryArea = normalizeContentScopeText(library.area);
+    const currentArea = normalizeContentScopeText(assignment.area);
+    if (librarySubject && currentSubject && librarySubject !== currentSubject) return false;
+    if (libraryArea && currentArea && libraryArea !== currentArea) return false;
+    return true;
   }
 
   function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {
