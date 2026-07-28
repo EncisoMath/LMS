@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.069';
+  const APP_VERSION = '0.25.070';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12436,16 +12436,53 @@
     return String(a?.title || '').localeCompare(String(b?.title || ''), 'es');
   }
 
+  function normalizeContentGrade(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return '';
+    return /^\d+$/.test(raw) ? String(Number(raw)) : raw.toLocaleLowerCase('es');
+  }
+
   function contentLibraryOriginAssignment(item) {
     const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
     if (!libraryAssignmentId) return null;
     return (state.data.assignments || []).find((assignment) => String(assignment?.id || '') === libraryAssignmentId) || null;
   }
 
+  function contentAssignmentById(assignmentId) {
+    const safeId = String(assignmentId || '').trim();
+    if (!safeId) return null;
+    return (state.data.assignments || []).find((assignment) => String(assignment?.id || '') === safeId) || null;
+  }
+
+  function contentGradeFromAssignmentId(assignmentId) {
+    const safeId = String(assignmentId || '').trim();
+    if (!safeId) return '';
+    const assignment = contentAssignmentById(safeId);
+    if (assignment?.grade !== undefined && assignment?.grade !== null) {
+      return normalizeContentGrade(assignment.grade);
+    }
+
+    // Respaldo para identificadores legibles como mat-est-10-2. Evita perder
+    // el alcance por grado cuando una asignación antigua ya no está en memoria.
+    const parts = safeId.split(/[-_]/).filter(Boolean);
+    if (parts.length >= 2) {
+      const possibleGrade = parts[parts.length - 2];
+      if (/^\d{1,2}$/.test(possibleGrade)) return normalizeContentGrade(possibleGrade);
+    }
+    return '';
+  }
+
   function contentLibraryMetadata(item) {
     const originAssignment = contentLibraryOriginAssignment(item);
+    const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
     return {
-      grade: String(item?.libraryGrade || item?.grade || originAssignment?.grade || ''),
+      grade: normalizeContentGrade(
+        item?.libraryGrade
+        || item?.grade
+        || originAssignment?.grade
+        || contentGradeFromAssignmentId(libraryAssignmentId)
+        || ''
+      ),
       subject: String(item?.librarySubject || item?.subject || originAssignment?.subject || ''),
       area: String(item?.libraryArea || item?.area || originAssignment?.area || '')
     };
@@ -12454,17 +12491,47 @@
   function contentMatchesCurrentGradeLibrary(item, assignment = state.assignment) {
     if (!assignment || contentAssignmentIds(item).length) return false;
     const library = contentLibraryMetadata(item);
+    const currentGrade = normalizeContentGrade(assignment.grade);
 
-    // La biblioteca oculta se comparte entre los cursos del mismo grado, pero
-    // nunca debe mezclarse con otros grados. El grado es obligatorio para
-    // evitar que contenido antiguo sin alcance termine apareciendo en todos.
-    if (!library.grade || library.grade !== String(assignment.grade || '')) return false;
+    if (!library.grade || library.grade !== currentGrade) return false;
     return library.subject === String(assignment.subject || '')
       && library.area === String(assignment.area || '');
   }
 
+  function classLibraryGradeCandidates(item) {
+    const grades = new Set();
+    const direct = contentLibraryMetadata(item).grade;
+    if (direct) grades.add(direct);
+
+    const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
+    const directAssignmentGrade = contentGradeFromAssignmentId(libraryAssignmentId);
+    if (directAssignmentGrade) grades.add(directAssignmentGrade);
+
+    // Las clases creadas antes de la biblioteca por grado podían quedar sin
+    // metadata propia. Sus actividades relacionadas sí conservan el grado, por
+    // lo que sirven para recuperar el alcance sin volver a mezclar otros grados.
+    (state.data.activities || []).forEach((activity) => {
+      if (String(activity?.lessonId || '') !== String(item?.id || '')) return;
+      const activityLibrary = contentLibraryMetadata(activity);
+      if (activityLibrary.grade) grades.add(activityLibrary.grade);
+      const activityLibraryAssignmentId = String(activity?.libraryAssignmentId || activity?.library_assignment_id || '');
+      const activityLibraryGrade = contentGradeFromAssignmentId(activityLibraryAssignmentId);
+      if (activityLibraryGrade) grades.add(activityLibraryGrade);
+      contentAssignmentIds(activity).forEach((assignmentId) => {
+        const grade = contentGradeFromAssignmentId(assignmentId);
+        if (grade) grades.add(grade);
+      });
+    });
+
+    return grades;
+  }
+
   function classMatchesCurrentLibrary(item, assignment = state.assignment) {
-    return contentMatchesCurrentGradeLibrary(item, assignment);
+    if (!assignment || contentAssignmentIds(item).length) return false;
+    const library = contentLibraryMetadata(item);
+    if (library.subject !== String(assignment.subject || '')
+      || library.area !== String(assignment.area || '')) return false;
+    return classLibraryGradeCandidates(item).has(normalizeContentGrade(assignment.grade));
   }
 
   function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {
