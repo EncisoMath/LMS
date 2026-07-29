@@ -105,17 +105,52 @@
   function getStudentClient() {
     if (publicStudentClient) return publicStudentClient;
     assertConfigured();
-    publicStudentClient = window.supabase.createClient(config.url, config.publishableKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        storageKey: `${config.authStorageKey || 'encisomath.supabase.auth.v1'}.student-public`
-      },
-      global: {
-        headers: { 'x-application-name': 'EncisoMath-LMS-Student' }
+
+    // El portal por código solo necesita RPC anónimas. Usar fetch evita crear
+    // una segunda instancia de GoTrueClient y mantiene intacta la sesión docente.
+    const rpc = async (functionName, params = {}) => {
+      const safeName = String(functionName || '').trim();
+      if (!/^[a-z0-9_]+$/i.test(safeName)) {
+        return { data: null, error: { code: 'INVALID_RPC', message: 'Nombre de RPC pública inválido.' } };
       }
-    });
+      try {
+        const baseUrl = String(config.url || '').replace(/\/+$/, '');
+        const response = await fetch(`${baseUrl}/rest/v1/rpc/${safeName}`, {
+          method: 'POST',
+          headers: {
+            apikey: config.publishableKey,
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(params && typeof params === 'object' ? params : {})
+        });
+
+        const text = await response.text();
+        let payload = null;
+        if (text) {
+          try { payload = JSON.parse(text); }
+          catch (_) { payload = text; }
+        }
+
+        if (!response.ok) {
+          const details = payload && typeof payload === 'object' ? payload : {};
+          return {
+            data: null,
+            error: {
+              ...details,
+              message: details.message || (typeof payload === 'string' ? payload : `Supabase respondió ${response.status}.`),
+              status: response.status,
+              statusCode: response.status
+            }
+          };
+        }
+        return { data: payload, error: null };
+      } catch (error) {
+        return { data: null, error: normalizeError(error, 'No se pudo conectar con Supabase.') };
+      }
+    };
+
+    publicStudentClient = Object.freeze({ rpc });
     return publicStudentClient;
   }
 
@@ -413,8 +448,8 @@
     if (!code) throw new Error('Escribe el usuario o código del estudiante.');
     const remember = options.remember !== false;
 
-    // El portal estudiantil usa un cliente público separado. La sesión docente
-    // permanece intacta y continúa renovándose en segundo plano.
+    // El portal estudiantil usa RPC públicas sin crear otra sesión Auth.
+    // La sesión docente permanece intacta y continúa renovándose en segundo plano.
     const { data, error } = await getStudentClient().rpc('encisomath_student_portal', { p_student_code: code });
     if (error) {
       const message = String(error.message || '').toLowerCase();
@@ -576,6 +611,7 @@
       sortOrder: assignmentId ? sortOrder : 0,
       sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {},
       libraryAssignmentId: hiddenLink ? linkedAssignmentId : '',
+      libraryAssignmentIds: hiddenLink ? [linkedAssignmentId] : [],
       libraryGrade: hiddenLink ? String(libraryAssignment?.grade || '') : '',
       librarySubject: hiddenLink ? String(libraryAssignment?.subject || lesson.subject_name || '') : '',
       libraryArea: hiddenLink ? String(libraryAssignment?.area || lesson.area || '') : ''
@@ -628,7 +664,15 @@
     const values = Object.values(existing.sortOrderByAssignment).map(Number).filter(Number.isFinite);
     existing.sortOrder = values.length ? Math.min(...values) : Number(existing.sortOrder || incoming.sortOrder || 0);
     if (!existing.createdAt && incoming.createdAt) existing.createdAt = incoming.createdAt;
+    const libraryIds = new Set([
+      ...(existing.libraryAssignmentIds || []),
+      ...(incoming.libraryAssignmentIds || []),
+      existing.libraryAssignmentId,
+      incoming.libraryAssignmentId
+    ].map((value) => String(value || '')).filter(Boolean));
+    existing.libraryAssignmentIds = [...libraryIds];
     if (!existing.libraryAssignmentId && incoming.libraryAssignmentId) existing.libraryAssignmentId = incoming.libraryAssignmentId;
+    if (!existing.libraryAssignmentId && existing.libraryAssignmentIds.length) existing.libraryAssignmentId = existing.libraryAssignmentIds[0];
     if (!existing.libraryGrade && incoming.libraryGrade) existing.libraryGrade = incoming.libraryGrade;
     if (!existing.librarySubject && incoming.librarySubject) existing.librarySubject = incoming.librarySubject;
     if (!existing.libraryArea && incoming.libraryArea) existing.libraryArea = incoming.libraryArea;
@@ -1076,38 +1120,37 @@
       const ownedLessons = (ownedLessonsResult.data || [])
         .filter((lesson) => !LEGACY_DEMO_LESSON_IDS.includes(String(lesson?.id || '')));
 
-      // La biblioteca de clases necesita conservar el enlace invisible al
-      // curso desde el cual se ocultó. La consulta general puede omitir esos
-      // enlaces bajo algunas combinaciones de caché/RLS, así que los pedimos
-      // directamente por lesson_id y los fusionamos con las clases del dueño.
-      let ownedLessonLinks = [];
-      const ownedLessonIds = ownedLessons.map((lesson) => String(lesson?.id || '')).filter(Boolean);
-      if (ownedLessonIds.length) {
-        const ownedLessonLinksResult = await supabaseClient
-          .from('assignment_lessons')
-          .select('lesson_id,assignment_id,sort_order,visible')
-          .in('lesson_id', ownedLessonIds);
-        if (ownedLessonLinksResult.error) {
-          console.warn('No se pudieron recuperar los alcances de la biblioteca de clases.', ownedLessonLinksResult.error);
-        } else {
-          ownedLessonLinks = ownedLessonLinksResult.data || [];
+      // Los enlaces visible=false no siempre son legibles mediante la tabla
+      // por las políticas RLS. La RPC devuelve únicamente los alcances ocultos
+      // de clases creadas por el docente autenticado.
+      let ownedHiddenLessonLinks = [];
+      const hiddenScopeResult = await supabaseClient.rpc('encisomath_teacher_hidden_lesson_scopes');
+      if (hiddenScopeResult.error) {
+        const scopeMessage = String(hiddenScopeResult.error.message || '').toLowerCase();
+        const missingScopeRpc = hiddenScopeResult.error.code === 'PGRST202'
+          || scopeMessage.includes('encisomath_teacher_hidden_lesson_scopes');
+        if (missingScopeRpc) {
+          throw new Error('Falta ejecutar SUPABASE_HIDDEN_LESSON_SCOPES_v0.25.072.sql en Supabase.');
         }
+        throw normalizeError(hiddenScopeResult.error, 'No se pudo recuperar el grado de las clases ocultas.');
       }
-      const linksByLesson = new Map();
-      ownedLessonLinks.forEach((link) => {
+      ownedHiddenLessonLinks = Array.isArray(hiddenScopeResult.data) ? hiddenScopeResult.data : [];
+
+      const hiddenLinksByLesson = new Map();
+      ownedHiddenLessonLinks.forEach((link) => {
         const lessonId = String(link?.lesson_id || '');
         if (!lessonId) return;
-        if (!linksByLesson.has(lessonId)) linksByLesson.set(lessonId, []);
-        linksByLesson.get(lessonId).push(link);
+        if (!hiddenLinksByLesson.has(lessonId)) hiddenLinksByLesson.set(lessonId, []);
+        hiddenLinksByLesson.get(lessonId).push(link);
       });
       ownedLessonRows = ownedLessons.flatMap((lesson) => {
-        const links = linksByLesson.get(String(lesson?.id || '')) || [];
-        if (!links.length) return [{ lesson }];
-        return links.map((link) => ({
+        const hiddenLinks = hiddenLinksByLesson.get(String(lesson?.id || '')) || [];
+        if (!hiddenLinks.length) return [{ lesson }];
+        return hiddenLinks.map((link) => ({
           lesson,
           assignment_id: link.assignment_id,
           sort_order: link.sort_order,
-          visible: link.visible
+          visible: false
         }));
       });
       ownedActivityRows = (ownedActivitiesResult.data || []).map((activity) => ({ activity }));
@@ -2660,6 +2703,41 @@
   }
 
 
+  function studentNotificationMigrationError(error, fallback) {
+    const message = String(error?.message || '').toLowerCase();
+    if (error?.code === 'PGRST202' || message.includes('encisomath_student_notifications') || message.includes('encisomath_student_mark_notifications_read')) {
+      return new Error('Falta ejecutar SUPABASE_STUDENT_GRADE_NOTIFICATIONS_v0.25.068.sql en Supabase.');
+    }
+    return normalizeError(error, fallback);
+  }
+
+  async function loadStudentNotifications({ studentCode = '', limit = 50 } = {}) {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
+    const { data, error } = await getStudentClient().rpc('encisomath_student_notifications', {
+      p_student_code: code,
+      p_limit: Math.max(1, Math.min(100, Number(limit) || 50))
+    });
+    if (error) throw studentNotificationMigrationError(error, 'No se pudieron cargar las notificaciones.');
+    return {
+      ok: data?.ok !== false,
+      unreadCount: Math.max(0, Number(data?.unreadCount || 0)),
+      notifications: Array.isArray(data?.notifications) ? data.notifications : []
+    };
+  }
+
+  async function markStudentNotificationsRead({ studentCode = '', notificationIds = [] } = {}) {
+    const code = normalizeStudentPortalCode(studentCode || readStoredStudentPortalCode());
+    if (!code) throw new Error('La sesión del estudiante no contiene un código válido.');
+    const ids = [...new Set((notificationIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+    const { data, error } = await getStudentClient().rpc('encisomath_student_mark_notifications_read', {
+      p_student_code: code,
+      p_notification_ids: ids.length ? ids : null
+    });
+    if (error) throw studentNotificationMigrationError(error, 'No se pudieron actualizar las notificaciones.');
+    return data || { ok: true, updated: 0, unreadCount: 0 };
+  }
+
   function connectionMigrationError(error, fallback) {
     const message = String(error?.message || '').toLowerCase();
     if (error?.code === 'PGRST202' || message.includes('encisomath_connection_') || message.includes('encisomath_teacher_connections')) {
@@ -2771,6 +2849,8 @@
     heartbeatConnectionSession,
     endConnectionSession,
     loadConnectionReport,
+    loadStudentNotifications,
+    markStudentNotificationsRead,
     resolveStudentDbId
   });
 })();

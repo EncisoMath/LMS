@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.071';
+  const APP_VERSION = '0.25.072';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12442,10 +12442,18 @@
     return /^\d+$/.test(raw) ? String(Number(raw)) : raw.toLocaleLowerCase('es');
   }
 
+  function contentLibraryAssignmentIds(item) {
+    return [...new Set([
+      ...(Array.isArray(item?.libraryAssignmentIds) ? item.libraryAssignmentIds : []),
+      item?.libraryAssignmentId,
+      item?.library_assignment_id
+    ].map((value) => String(value || '').trim()).filter(Boolean))];
+  }
+
   function contentLibraryOriginAssignment(item) {
-    const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
-    if (!libraryAssignmentId) return null;
-    return (state.data.assignments || []).find((assignment) => String(assignment?.id || '') === libraryAssignmentId) || null;
+    const ids = contentLibraryAssignmentIds(item);
+    if (!ids.length) return null;
+    return (state.data.assignments || []).find((assignment) => ids.includes(String(assignment?.id || ''))) || null;
   }
 
   function contentAssignmentById(assignmentId) {
@@ -12503,9 +12511,10 @@
     const direct = contentLibraryMetadata(item).grade;
     if (direct) grades.add(direct);
 
-    const libraryAssignmentId = String(item?.libraryAssignmentId || item?.library_assignment_id || '');
-    const directAssignmentGrade = contentGradeFromAssignmentId(libraryAssignmentId);
-    if (directAssignmentGrade) grades.add(directAssignmentGrade);
+    contentLibraryAssignmentIds(item).forEach((libraryAssignmentId) => {
+      const directAssignmentGrade = contentGradeFromAssignmentId(libraryAssignmentId);
+      if (directAssignmentGrade) grades.add(directAssignmentGrade);
+    });
 
     // Las clases creadas antes de la biblioteca por grado podían quedar sin
     // metadata propia. Sus actividades relacionadas sí conservan el grado, por
