@@ -1,7 +1,7 @@
 ((root) => {
   'use strict';
 
-  const MANIFEST_VERSION = 3;
+  const MANIFEST_VERSION = 4;
   const FILE_EXTENSION_RE = /\.(?:pdf|png|jpe?g|webp|gif|svg|avif|bmp|txt|csv|docx?|xlsx?|pptx?|zip|mp3|m4a|ogg|wav|mp4|webm)(?:$|[?#])/i;
   const OMIT_KEYS = new Set([
     'progressByAssignment', 'sortOrderByAssignment', 'objectUrl', 'localBlobKey',
@@ -236,7 +236,8 @@
         reviewPayload: portableValue(review.payload),
         reviewHasContent: review.hasContent,
         reviewAvailable: review.available,
-        rubric: portableValue(activity.rubric || [])
+        rubric: portableValue(activity.rubric || []),
+        rubricByAssignment: portableValue(activity.rubricByAssignment || {})
       };
       const urls = collectDownloadableUrls({
         contentPayload: activity.contentPayload || {},
@@ -274,10 +275,14 @@
       const activity = nestedRecord(row, 'activity');
       const id = stringValue(activity?.id);
       if (!id) return;
-      if (!activityGroups.has(id)) activityGroups.set(id, { activity, assignmentIds: new Set() });
+      if (!activityGroups.has(id)) activityGroups.set(id, { activity, assignmentIds: new Set(), rubricByAssignment: new Map() });
       const group = activityGroups.get(id);
       const assignmentId = stringValue(row?.assignment_id || row?.assignmentId);
-      if (assignmentId) group.assignmentIds.add(assignmentId);
+      if (assignmentId) {
+        group.assignmentIds.add(assignmentId);
+        const assignmentRubric = Array.isArray(row?.rubric) ? row.rubric : (Array.isArray(activity?.rubric) ? activity.rubric : []);
+        group.rubricByAssignment.set(assignmentId, assignmentRubric);
+      }
     });
 
     const entries = {};
@@ -305,7 +310,7 @@
       if (entry) entries[entry.key] = entry;
     });
 
-    activityGroups.forEach(({ activity, assignmentIds }, id) => {
+    activityGroups.forEach(({ activity, assignmentIds, rubricByAssignment }, id) => {
       const contentPayload = activity.content_payload || activity.contentPayload || {};
       const rawReviewPayload = activity.review_payload || activity.reviewPayload || {};
       const safeAssignmentIds = uniqueStrings([...assignmentIds]);
@@ -327,7 +332,8 @@
         reviewPayload: portableValue(review.payload),
         reviewHasContent: review.hasContent,
         reviewAvailable: review.available,
-        rubric: portableValue(activity.rubric || [])
+        rubric: portableValue(activity.rubric || []),
+        rubricByAssignment: portableValue(Object.fromEntries(rubricByAssignment || []))
       };
       const entry = makeEntry('activity', id, canonical, collectDownloadableUrls({ contentPayload, reviewPayload: review.payload }));
       if (entry) entries[entry.key] = entry;

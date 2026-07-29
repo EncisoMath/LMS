@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.073';
+  const OFFLINE_VERSION = '0.25.075';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -1595,6 +1595,7 @@
       reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles, releaseEnabled: payload.reviewReleaseEnabled === true },
       reviewReleaseEnabled: payload.reviewReleaseEnabled === true,
       rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
+      rubricByAssignment: Object.fromEntries(ids.map((id) => [String(id), Array.isArray(payload.rubric) ? safeClone(payload.rubric) : []])),
       status: 'published',
       assignmentId: ids[0] || '',
       assignmentIds: ids,
@@ -1625,6 +1626,18 @@
     await updateSnapshot(async (snapshot) => {
       const activity = (snapshot.data.activities || []).find((item) => String(item.id) === String(payload.activityId));
       if (!activity) return;
+      const nextAssignmentIds = [...new Set((payload.targetAssignmentIds || []).filter(Boolean))];
+      const previousAssignmentIds = new Set((activity.assignmentIds || []).map(String));
+      const previousRubricByAssignment = activity.rubricByAssignment && typeof activity.rubricByAssignment === 'object'
+        ? activity.rubricByAssignment
+        : {};
+      const currentAssignmentId = String(payload.currentAssignment?.id || '');
+      const nextRubric = Array.isArray(payload.rubric) ? payload.rubric : [];
+      const nextRubricByAssignment = Object.fromEntries(nextAssignmentIds.map((id) => {
+        const safeId = String(id);
+        const keepExisting = safeId !== currentAssignmentId && previousAssignmentIds.has(safeId) && Array.isArray(previousRubricByAssignment[safeId]);
+        return [safeId, safeClone(keepExisting ? previousRubricByAssignment[safeId] : nextRubric)];
+      }));
       Object.assign(activity, {
         title: String(payload.title || '').trim(),
         lessonId: payload.lessonId || '',
@@ -1647,9 +1660,10 @@
         reviewType: payload.reviewType,
         reviewPayload: { text: payload.reviewText || '', html: payload.reviewHtml || '', css: payload.reviewCss || '', files: reviewFiles, releaseEnabled: payload.reviewReleaseEnabled === true },
         reviewReleaseEnabled: payload.reviewReleaseEnabled === true,
-        rubric: Array.isArray(payload.rubric) ? payload.rubric : [],
-        assignmentIds: [...new Set((payload.targetAssignmentIds || []).filter(Boolean))],
-        sortOrderByAssignment: Object.fromEntries([...new Set((payload.targetAssignmentIds || []).filter(Boolean))].map((id, index) => [String(id), Number(activity.sortOrderByAssignment?.[id] || activity.sortOrder || Math.floor(Date.now() / 1000) + index)])),
+        rubric: nextRubric,
+        rubricByAssignment: nextRubricByAssignment,
+        assignmentIds: nextAssignmentIds,
+        sortOrderByAssignment: Object.fromEntries(nextAssignmentIds.map((id, index) => [String(id), Number(activity.sortOrderByAssignment?.[id] || activity.sortOrder || Math.floor(Date.now() / 1000) + index)])),
         libraryAssignmentId: String(payload.existingContentPayload?.library?.assignmentId || payload.currentAssignment?.id || activity.libraryAssignmentId || ''),
         librarySubject: String(payload.existingContentPayload?.library?.subject || payload.currentAssignment?.subject || activity.librarySubject || ''),
         libraryArea: String(payload.existingContentPayload?.library?.area || payload.currentAssignment?.area || activity.libraryArea || ''),
@@ -1701,8 +1715,12 @@
       const activity = (snapshot.data.activities || []).find((item) => String(item.id) === String(payload.activityId));
       if (!activity) return;
       if (payload.mode === 'course') {
-        activity.assignmentIds = (activity.assignmentIds || []).filter((id) => String(id) !== String(payload.assignmentId));
+        const removedAssignmentId = String(payload.assignmentId || '');
+        activity.assignmentIds = (activity.assignmentIds || []).filter((id) => String(id) !== removedAssignmentId);
         activity.assignmentId = activity.assignmentIds[0] || '';
+        if (activity.rubricByAssignment && typeof activity.rubricByAssignment === 'object') {
+          delete activity.rubricByAssignment[removedAssignmentId];
+        }
       } else {
         snapshot.data.activities = (snapshot.data.activities || []).filter((item) => String(item.id) !== String(payload.activityId));
         snapshot.data.activityGrades = (snapshot.data.activityGrades || []).filter((item) => String(item.activityId) !== String(payload.activityId));

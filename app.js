@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.073';
+  const APP_VERSION = '0.25.075';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -14055,6 +14055,8 @@
       ? (Array.isArray(activity?.assignmentIds) ? activity.assignmentIds : [activity?.assignmentId]).map(String).filter(Boolean)
       : [String(assignment.id)];
     const selectedIds = new Set(existingAssignmentIds);
+    const currentCourseLabel = `${assignment.grade || ''}-${assignment.course || ''}`;
+    const editingCurrentCourseRubric = editing && selectedIds.has(String(assignment.id));
     openModal(`
       <section class="modal-card em-activity-create-modal" role="dialog" aria-modal="true" aria-labelledby="addActivityTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -14118,7 +14120,7 @@
               ${activityContentEditorHTML('activityReview', activity?.reviewType || 'rich_text', activity?.reviewPayload || {})}
             </div>
             <div class="em-activity-form-block em-activity-rubric-block">
-              <div class="em-rubric-head"><div class="em-activity-block-head em-activity-block-head-compact"><span class="em-activity-step-badge">5</span><div><h3>Criterios de evaluación</h3><p>La suma debe ser exactamente 100% para guardar.</p></div></div><button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button></div>
+              <div class="em-rubric-head"><div class="em-activity-block-head em-activity-block-head-compact"><span class="em-activity-step-badge">5</span><div><h3>Criterios de evaluación${editingCurrentCourseRubric ? ` · ${escapeHTML(currentCourseLabel)}` : ''}</h3><p>${editingCurrentCourseRubric ? `Estos criterios se guardarán para ${escapeHTML(currentCourseLabel)}. Cualquier curso nuevo que marques recibirá una copia; los cursos ya existentes conservarán los suyos.` : 'La suma debe ser exactamente 100%. Al crearla, se copiarán a los cursos seleccionados y luego podrás personalizarlos desde cada curso.'}</p></div></div><button class="mini-btn" id="addRubricCriterionBtn" type="button">＋ Criterio</button></div>
               <div class="em-rubric-list" id="activityRubricList"></div>
               <div class="em-rubric-total" id="activityRubricTotal"><span>Total</span><strong>0%</strong></div>
             </div>
@@ -14167,8 +14169,9 @@
     previous?.addEventListener('click', () => showTab('assign'));
     modal?.querySelectorAll('[data-content-editor]').forEach(initActivityContentEditor);
     document.getElementById('addRubricCriterionBtn')?.addEventListener('click', () => addRubricCriterion());
-    const rubric = Array.isArray(activity?.rubric) && activity.rubric.length
-      ? activity.rubric
+    const effectiveRubric = activityRubricForAssignment(activity, state.assignment?.id || '');
+    const rubric = effectiveRubric.length
+      ? effectiveRubric
       : [{ name: 'Comprensión y desarrollo', percentage: 50 }, { name: 'Procedimiento, presentación y entrega', percentage: 50 }];
     rubric.forEach((item) => addRubricCriterion(item.name, item.percentage));
     form?.addEventListener('submit', (event) => submitActivityEditor(event, activity));
@@ -14192,6 +14195,17 @@
       editor.querySelector('.em-rich-editor')?.focus();
     }));
     update();
+  }
+
+  function activityRubricForAssignment(activity, assignmentId = state.assignment?.id || '') {
+    const safeAssignmentId = String(assignmentId || '');
+    const byAssignment = activity?.rubricByAssignment && typeof activity.rubricByAssignment === 'object'
+      ? activity.rubricByAssignment
+      : {};
+    if (safeAssignmentId && Object.prototype.hasOwnProperty.call(byAssignment, safeAssignmentId) && Array.isArray(byAssignment[safeAssignmentId])) {
+      return byAssignment[safeAssignmentId];
+    }
+    return Array.isArray(activity?.rubric) ? activity.rubric : [];
   }
 
   function addRubricCriterion(name = '', percentage = '') {
@@ -14317,7 +14331,8 @@
         existingReviewPayload: existingActivity?.reviewPayload || {},
         existingReviewType: existingActivity?.reviewType || '',
         reviewReleaseEnabled: document.getElementById('activityReviewReleaseInput')?.checked === true,
-        rubric: criteria
+        rubric: criteria,
+        baseRubric: Array.isArray(existingActivity?.rubric) ? existingActivity.rubric : []
       };
       const activity = existingActivity
         ? await cloudAPI().updateActivity(payload)
@@ -14404,9 +14419,8 @@
     const existingFile = record.submissionFile?.url ? record.submissionFile : null;
     const trackingCount = eventHistory.length;
     const selectedStickerUrl = normalizeActivityStickerUrl(record.stickerUrl || record.sticker_url || '');
-    const rubricCriteria = Array.isArray(activity?.rubric)
-      ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
-      : [];
+    const rubricCriteria = activityRubricForAssignment(activity, state.assignment?.id || '')
+      .filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0);
     const storedRubric = record.rubricScores && typeof record.rubricScores === 'object' ? record.rubricScores : {};
     const storedRubricCriteria = Array.isArray(storedRubric.criteria) ? storedRubric.criteria : [];
     const rubricScoreAt = (criterion, index) => {
@@ -14524,9 +14538,8 @@
     const stickerUploadStatus = document.getElementById('activityStickerUploadStatus');
     gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
-    const rubricCriteria = Array.isArray(activity?.rubric)
-      ? activity.rubric.filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0)
-      : [];
+    const rubricCriteria = activityRubricForAssignment(activity, state.assignment?.id || '')
+      .filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0);
     let gradingMode = record.rubricScores?.mode === 'rubric' && rubricCriteria.length ? 'rubric' : 'normal';
     let calculatedRubricScore = Number(record.rubricScores?.calculatedScore || record.score || 0);
 
@@ -14888,8 +14901,12 @@
     try {
       await cloudAPI().deleteActivity({ activityId: activity.id, assignmentId: state.assignment?.id || '', mode });
       if (mode === 'course') {
-        activity.assignmentIds = (activity.assignmentIds || []).filter((id) => id !== state.assignment?.id);
+        const removedAssignmentId = String(state.assignment?.id || '');
+        activity.assignmentIds = (activity.assignmentIds || []).filter((id) => String(id) !== removedAssignmentId);
         activity.assignmentId = activity.assignmentIds[0] || '';
+        if (activity.rubricByAssignment && typeof activity.rubricByAssignment === 'object') {
+          delete activity.rubricByAssignment[removedAssignmentId];
+        }
       } else {
         state.data.activities = (state.data.activities || []).filter((item) => item.id !== activity.id);
       }

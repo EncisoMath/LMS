@@ -621,6 +621,28 @@
     };
   }
 
+  function missingActivityAssignmentRubricColumn(error) {
+    const message = String(error?.message || error?.details || '').toLowerCase();
+    return error?.code === '42703'
+      || error?.code === 'PGRST204'
+      || (message.includes('rubric') && message.includes('activity_assignments'));
+  }
+
+  async function loadActivityAssignmentRows(supabaseClient, assignmentIds = []) {
+    const withRubric = await supabaseClient
+      .from('activity_assignments')
+      .select('assignment_id,sort_order,visible,rubric,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
+      .in('assignment_id', assignmentIds)
+      .eq('visible', true);
+    if (!withRubric.error || !missingActivityAssignmentRubricColumn(withRubric.error)) return withRubric;
+    console.warn('La migración de rúbricas por curso aún no está instalada. Se usará temporalmente la rúbrica general.');
+    return supabaseClient
+      .from('activity_assignments')
+      .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
+      .in('assignment_id', assignmentIds)
+      .eq('visible', true);
+  }
+
   function mapActivity(row) {
     const activity = Array.isArray(row?.activity) ? row.activity[0] : row?.activity;
     if (!activity) return null;
@@ -629,6 +651,8 @@
     const library = contentPayload.library && typeof contentPayload.library === 'object' ? contentPayload.library : {};
     const assignmentId = String(row?.assignment_id || '');
     const sortOrder = Number(row?.sort_order || 0);
+    const baseRubric = Array.isArray(activity.rubric) ? activity.rubric : [];
+    const assignmentRubric = Array.isArray(row?.rubric) ? row.rubric : baseRubric;
     return {
       id: String(activity.id || ''),
       ownerId: activity.owner_id || '',
@@ -642,7 +666,8 @@
       reviewType: activity.review_type || 'rich_text',
       reviewPayload,
       reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
-      rubric: Array.isArray(activity.rubric) ? activity.rubric : [],
+      rubric: baseRubric,
+      rubricByAssignment: assignmentId ? { [assignmentId]: assignmentRubric } : {},
       status: activity.status || 'published',
       libraryAssignmentId: String(library.assignmentId || ''),
       librarySubject: String(library.subject || ''),
@@ -663,6 +688,10 @@
     existing.sortOrderByAssignment = {
       ...(existing.sortOrderByAssignment || {}),
       ...(incoming.sortOrderByAssignment || {})
+    };
+    existing.rubricByAssignment = {
+      ...(existing.rubricByAssignment || {}),
+      ...(incoming.rubricByAssignment || {})
     };
     const values = Object.values(existing.sortOrderByAssignment).map(Number).filter(Number.isFinite);
     existing.sortOrder = values.length ? Math.min(...values) : Number(existing.sortOrder || incoming.sortOrder || 0);
@@ -1079,11 +1108,7 @@
           .from('assignment_lessons')
           .select('assignment_id,sort_order,visible,lesson:lessons(id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status)')
           .in('assignment_id', assignmentIds), 'Clases cargadas...'),
-        trackAcademicQuery(supabaseClient
-          .from('activity_assignments')
-          .select('assignment_id,sort_order,visible,activity:activities(id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at)')
-          .in('assignment_id', assignmentIds)
-          .eq('visible', true), 'Actividades cargadas...'),
+        trackAcademicQuery(loadActivityAssignmentRows(supabaseClient, assignmentIds), 'Actividades cargadas...'),
         trackAcademicQuery(supabaseClient
           .from('lessons')
           .select('id,period,area,subject_name,title,emoji,lesson_type,estimated_time,content_url,thumbnail_url,storage_pdf_path,storage_thumbnail_path,source_file_name,page_count,status,created_at,created_by')
@@ -2056,11 +2081,15 @@
         activity_id: activityId,
         assignment_id: assignmentId,
         sort_order: Math.floor(Date.now() / 1000) + index,
-        visible: true
+        visible: true,
+        rubric
       }));
       if (linkRows.length) {
         const linksResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
-        if (linksResult.error) throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
+        if (linksResult.error) {
+          if (missingActivityAssignmentRubricColumn(linksResult.error)) throw new Error('Falta ejecutar SUPABASE_RUBRICAS_POR_CURSO_v0.25.075.sql en Supabase.');
+          throw normalizeError(linksResult.error, 'La actividad se creó, pero no pudo asignarse a los cursos.');
+        }
       }
       return {
         id: activityId,
@@ -2075,6 +2104,7 @@
         reviewPayload,
         reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
         rubric,
+        rubricByAssignment: Object.fromEntries(linkRows.map((link) => [String(link.assignment_id), rubric])),
         status: row.status,
         assignmentId: ids[0] || '',
         assignmentIds: ids,
@@ -2108,7 +2138,7 @@
     if (result.error) console.warn('No se pudieron retirar algunos archivos de Storage.', result.error);
   }
 
-  async function updateActivity({ activityId, currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', reviewReleaseEnabled = false, rubric = [], mutationId = '', clientMutationId = '' }) {
+  async function updateActivity({ activityId, currentAssignment, targetAssignmentIds, title, lessonId, period, startsAt, dueAt, contentType, contentText = '', contentHtml = '', contentCss = '', contentFiles = [], existingContentPayload = {}, existingContentType = '', reviewType, reviewText = '', reviewHtml = '', reviewCss = '', reviewFiles = [], existingReviewPayload = {}, existingReviewType = '', reviewReleaseEnabled = false, rubric = [], baseRubric = [], mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
@@ -2117,6 +2147,12 @@
     const ids = [...new Set((targetAssignmentIds || []).filter(Boolean))];
     const total = (rubric || []).reduce((sum, item) => sum + Number(item.percentage || 0), 0);
     if (Math.abs(total - 100) > .001) throw new Error('Los criterios de evaluación deben sumar exactamente 100%.');
+
+    const currentLinks = await supabaseClient.from('activity_assignments').select('assignment_id,sort_order,rubric').eq('activity_id', safeActivityId);
+    if (currentLinks.error) {
+      if (missingActivityAssignmentRubricColumn(currentLinks.error)) throw new Error('Falta ejecutar SUPABASE_RUBRICAS_POR_CURSO_v0.25.075.sql en Supabase.');
+      throw normalizeError(currentLinks.error, 'No se pudieron revisar los cursos actuales de la actividad.');
+    }
 
     const uploadedPaths = [];
     try {
@@ -2169,8 +2205,6 @@
         .eq('owner_id', activeSession.user.id);
       if (updateResult.error) throw normalizeError(updateResult.error, 'No se pudo actualizar la actividad.');
 
-      const currentLinks = await supabaseClient.from('activity_assignments').select('assignment_id,sort_order').eq('activity_id', safeActivityId);
-      if (currentLinks.error) throw normalizeError(currentLinks.error, 'No se pudieron revisar los cursos actuales de la actividad.');
       const currentIds = (currentLinks.data || []).map((row) => row.assignment_id);
       const removedIds = currentIds.filter((id) => !ids.includes(id));
       if (removedIds.length) {
@@ -2178,16 +2212,31 @@
         if (removeResult.error) throw normalizeError(removeResult.error, 'No se pudieron retirar los cursos anteriores.');
       }
       const currentSortMap = new Map((currentLinks.data || []).map((row) => [String(row.assignment_id || ''), Number(row.sort_order || 0)]));
+      const fallbackRubric = Array.isArray(baseRubric) ? baseRubric : [];
+      const currentRubricMap = new Map((currentLinks.data || []).map((row) => [
+        String(row.assignment_id || ''),
+        Array.isArray(row.rubric) ? row.rubric : fallbackRubric
+      ]));
+      const currentAssignmentId = String(currentAssignment?.id || '');
       const activityBaseSort = Math.floor(Date.now() / 1000);
-      const linkRows = ids.map((assignmentId, index) => ({
-        activity_id: safeActivityId,
-        assignment_id: assignmentId,
-        sort_order: currentSortMap.get(String(assignmentId)) || activityBaseSort + index,
-        visible: true
-      }));
+      const linkRows = ids.map((assignmentId, index) => {
+        const safeAssignmentId = String(assignmentId || '');
+        const isCurrentCourse = safeAssignmentId === currentAssignmentId;
+        const isNewCourse = !currentRubricMap.has(safeAssignmentId);
+        return {
+          activity_id: safeActivityId,
+          assignment_id: assignmentId,
+          sort_order: currentSortMap.get(safeAssignmentId) || activityBaseSort + index,
+          visible: true,
+          rubric: isCurrentCourse || isNewCourse ? rubric : currentRubricMap.get(safeAssignmentId)
+        };
+      });
       if (linkRows.length) {
         const linkResult = await supabaseClient.from('activity_assignments').upsert(linkRows, { onConflict: 'activity_id,assignment_id' });
-        if (linkResult.error) throw normalizeError(linkResult.error, 'No se pudieron actualizar los cursos de la actividad.');
+        if (linkResult.error) {
+          if (missingActivityAssignmentRubricColumn(linkResult.error)) throw new Error('Falta ejecutar SUPABASE_RUBRICAS_POR_CURSO_v0.25.075.sql en Supabase.');
+          throw normalizeError(linkResult.error, 'No se pudieron actualizar los cursos de la actividad.');
+        }
       }
 
       const oldPaths = [
@@ -2213,6 +2262,7 @@
         reviewPayload,
         reviewReleaseEnabled: reviewPayload.releaseEnabled === true,
         rubric,
+        rubricByAssignment: Object.fromEntries(linkRows.map((link) => [String(link.assignment_id), Array.isArray(link.rubric) ? link.rubric : rubric])),
         status: 'published',
         assignmentId: ids[0] || '',
         assignmentIds: ids,
