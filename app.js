@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.072';
+  const APP_VERSION = '0.25.073';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12546,19 +12546,11 @@
   function classMatchesCurrentLibrary(item, assignment = state.assignment) {
     if (!assignment || contentAssignmentIds(item).length) return false;
     const currentGrade = normalizeContentGrade(assignment.grade);
-    if (!currentGrade || !classLibraryGradeCandidates(item).has(currentGrade)) return false;
 
-    // El grado define el alcance de la biblioteca. Materia y área solo se usan
-    // cuando la clase realmente conserva esos datos; varios registros antiguos
-    // no los tienen aunque sí mantengan el enlace oculto al curso de origen.
-    const library = contentLibraryMetadata(item);
-    const librarySubject = normalizeContentScopeText(library.subject);
-    const currentSubject = normalizeContentScopeText(assignment.subject);
-    const libraryArea = normalizeContentScopeText(library.area);
-    const currentArea = normalizeContentScopeText(assignment.area);
-    if (librarySubject && currentSubject && librarySubject !== currentSubject) return false;
-    if (libraryArea && currentArea && libraryArea !== currentArea) return false;
-    return true;
+    // En CLASES el alcance de la biblioteca es estrictamente el grado. Una
+    // clase oculta desde cualquier 10-* debe verse en todos los 10-* y nunca
+    // en 8-*, 9-* u 11-*, aunque los textos históricos de materia/área varíen.
+    return Boolean(currentGrade && classLibraryGradeCandidates(item).has(currentGrade));
   }
 
   function activityMatchesCurrentLibrary(activity, assignment = state.assignment) {

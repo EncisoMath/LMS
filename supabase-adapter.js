@@ -586,6 +586,9 @@
     const libraryAssignment = hiddenLink
       ? assignments.find((item) => String(item?.id || '') === linkedAssignmentId)
       : null;
+    const rpcLibraryGrade = String(row?.library_grade ?? row?.libraryGrade ?? '');
+    const rpcLibrarySubject = String(row?.library_subject ?? row?.librarySubject ?? '');
+    const rpcLibraryArea = String(row?.library_area ?? row?.libraryArea ?? '');
     const sortOrder = Number(row?.sort_order || 0);
     return {
       id: String(lesson.id || ''),
@@ -612,9 +615,9 @@
       sortOrderByAssignment: assignmentId ? { [assignmentId]: sortOrder } : {},
       libraryAssignmentId: hiddenLink ? linkedAssignmentId : '',
       libraryAssignmentIds: hiddenLink ? [linkedAssignmentId] : [],
-      libraryGrade: hiddenLink ? String(libraryAssignment?.grade || '') : '',
-      librarySubject: hiddenLink ? String(libraryAssignment?.subject || lesson.subject_name || '') : '',
-      libraryArea: hiddenLink ? String(libraryAssignment?.area || lesson.area || '') : ''
+      libraryGrade: hiddenLink ? String(rpcLibraryGrade || libraryAssignment?.grade || '') : '',
+      librarySubject: hiddenLink ? String(rpcLibrarySubject || libraryAssignment?.subject || lesson.subject_name || '') : '',
+      libraryArea: hiddenLink ? String(rpcLibraryArea || libraryAssignment?.area || lesson.area || '') : ''
     };
   }
 
@@ -1120,41 +1123,31 @@
       const ownedLessons = (ownedLessonsResult.data || [])
         .filter((lesson) => !LEGACY_DEMO_LESSON_IDS.includes(String(lesson?.id || '')));
 
-      // Los enlaces visible=false no siempre son legibles mediante la tabla
-      // por las políticas RLS. La RPC devuelve únicamente los alcances ocultos
-      // de clases creadas por el docente autenticado.
-      let ownedHiddenLessonLinks = [];
-      const hiddenScopeResult = await supabaseClient.rpc('encisomath_teacher_hidden_lesson_scopes');
-      if (hiddenScopeResult.error) {
-        const scopeMessage = String(hiddenScopeResult.error.message || '').toLowerCase();
-        const missingScopeRpc = hiddenScopeResult.error.code === 'PGRST202'
-          || scopeMessage.includes('encisomath_teacher_hidden_lesson_scopes');
+      // Las clases ocultas se recuperan mediante una RPC SECURITY DEFINER.
+      // La propiedad se valida por la asignación docente (teaching_assignments),
+      // no por lessons.created_by: varias clases antiguas no conservaron ese
+      // campo aunque su enlace oculto al curso sí existe.
+      const hiddenLessonsResult = await supabaseClient.rpc('encisomath_teacher_hidden_lessons_v2');
+      if (hiddenLessonsResult.error) {
+        const scopeMessage = String(hiddenLessonsResult.error.message || '').toLowerCase();
+        const missingScopeRpc = hiddenLessonsResult.error.code === 'PGRST202'
+          || scopeMessage.includes('encisomath_teacher_hidden_lessons_v2');
         if (missingScopeRpc) {
-          throw new Error('Falta ejecutar SUPABASE_HIDDEN_LESSON_SCOPES_v0.25.072.sql en Supabase.');
+          throw new Error('Falta ejecutar SUPABASE_HIDDEN_LESSONS_v0.25.073.sql en Supabase.');
         }
-        throw normalizeError(hiddenScopeResult.error, 'No se pudo recuperar el grado de las clases ocultas.');
+        throw normalizeError(hiddenLessonsResult.error, 'No se pudieron recuperar las clases ocultas.');
       }
-      ownedHiddenLessonLinks = Array.isArray(hiddenScopeResult.data) ? hiddenScopeResult.data : [];
 
-      const hiddenLinksByLesson = new Map();
-      ownedHiddenLessonLinks.forEach((link) => {
-        const lessonId = String(link?.lesson_id || '');
-        if (!lessonId) return;
-        if (!hiddenLinksByLesson.has(lessonId)) hiddenLinksByLesson.set(lessonId, []);
-        hiddenLinksByLesson.get(lessonId).push(link);
-      });
-      ownedLessonRows = ownedLessons.flatMap((lesson) => {
-        const hiddenLinks = hiddenLinksByLesson.get(String(lesson?.id || '')) || [];
-        if (!hiddenLinks.length) return [{ lesson }];
-        return hiddenLinks.map((link) => ({
-          lesson,
-          assignment_id: link.assignment_id,
-          sort_order: link.sort_order,
-          visible: false
-        }));
-      });
+      const hiddenLessonRows = (Array.isArray(hiddenLessonsResult.data) ? hiddenLessonsResult.data : [])
+        .map((row) => row?.data && typeof row.data === 'object' ? row.data : row)
+        .filter((row) => row && row.lesson && row.assignment_id);
+
+      // Se conservan las clases propias para edición y compatibilidad. Las filas
+      // completas de la RPC se añaden aparte y aportan el grado/área/asignatura
+      // reales del enlace oculto, incluso en contenido antiguo.
+      ownedLessonRows = ownedLessons.map((lesson) => ({ lesson }));
+      lessonRows.push(...ownedLessonRows, ...hiddenLessonRows);
       ownedActivityRows = (ownedActivitiesResult.data || []).map((activity) => ({ activity }));
-      lessonRows.push(...ownedLessonRows);
       activityRows.push(...ownedActivityRows);
       activityProgressRows = activityProgressResult.data || [];
       quizAssignmentRows = (quizzesResult.data || []).filter((row) => !LEGACY_DEMO_QUIZ_IDS.includes(nestedId(row, 'quiz')));
