@@ -1,4 +1,19 @@
-# EncisoMath LMS v0.25.059
+# EncisoMath LMS v0.25.076
+
+
+## v0.25.076 — entregas estudiantiles con fotos y PDF
+
+- El estudiante puede adjuntar múltiples fotografías y archivos PDF desde el bloque **Mi entrega** ubicado dentro del hero **Mi resultado** de cada actividad.
+- No existe un límite fijo de cantidad de imágenes; cada selección puede contener todos los archivos que el estudiante necesite.
+- Las fotografías se redimensionan en el navegador hasta 1920 px y se convierten a WebP antes de subirlas para reducir el consumo de Storage.
+- Los PDF se conservan sin conversión y cada archivo puede pesar máximo 20 MB.
+- Los archivos se almacenan en el bucket privado `student-submissions` mediante autorizaciones temporales creadas por una Edge Function.
+- La pestaña **Entrega** del modal docente muestra todos los archivos en un carrusel: navegación por flechas, deslizamiento lateral, pantalla completa, doble toque, rueda con Ctrl y pellizco para ampliar.
+- El visor respeta la relación de aspecto completa de cada imagen y renderiza los PDF con PDF.js.
+- El docente puede añadir un archivo complementario sin borrar los archivos enviados por el estudiante.
+- Al calificar en grupo se conservan las entregas propias de cada integrante; no se reemplazan accidentalmente por la del estudiante principal.
+- Si una subida termina pero falla su registro, el LMS elimina los objetos temporales para no consumir Storage con archivos huérfanos.
+- Se incluyen la migración SQL, la Edge Function y una guía de despliegue.
 
 
 ## v0.25.059 — tarjetas estudiantiles más compactas

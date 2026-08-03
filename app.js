@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.075';
+  const APP_VERSION = '0.25.076';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4571,7 +4571,8 @@
         studentCode: String(row.studentCode || ''),
         score: Number(row.score ?? 40),
         gradedAt: row.gradedAt || '',
-        gradingGroupId: row.gradingGroupId || ''
+        gradingGroupId: row.gradingGroupId || '',
+        submissionFile: row.submissionFile && typeof row.submissionFile === 'object' ? row.submissionFile : {}
       });
     });
   }
@@ -12650,7 +12651,7 @@
     const progress = (rows || []).reduce((acc, row) => {
       const file = row?.submissionFile && typeof row.submissionFile === 'object' ? row.submissionFile : {};
       const graded = Boolean(row?.gradedAt);
-      const delivered = graded || Boolean(file.path || file.url || file.name) || submittedStatuses.has(String(row?.latestDeliveryStatus || ''));
+      const delivered = graded || activitySubmissionHasFiles(file) || submittedStatuses.has(String(row?.latestDeliveryStatus || ''));
       const score = Number(row?.score);
       acc.total += 1;
       if (delivered) acc.delivered += 1;
@@ -13244,6 +13245,203 @@
     });
   }
 
+
+  async function renderActivitySubmissionPdf(host, url) {
+    if (!host || !url) return;
+    host.innerHTML = '<div class="em-activity-content-loader"><span></span><p>Cargando PDF…</p></div>';
+    try {
+      const pdfjs = await loadPdfJs();
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`El PDF respondió con estado ${response.status}.`);
+      const bytes = await response.arrayBuffer();
+      const pdfDocument = await pdfjs.getDocument({ data: bytes, isEvalSupported: false }).promise;
+      const pages = document.createElement('div');
+      pages.className = 'em-activity-pdf-pages em-submission-pdf-pages';
+      host.innerHTML = '';
+      host.appendChild(pages);
+      const availableWidth = Math.max(260, Math.min(980, host.clientWidth || 720));
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.75);
+      for (let number = 1; number <= pdfDocument.numPages; number += 1) {
+        const page = await pdfDocument.getPage(number);
+        const base = page.getViewport({ scale: 1 });
+        const cssScale = availableWidth / Math.max(1, base.width);
+        const viewport = page.getViewport({ scale: cssScale * pixelRatio });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'em-activity-pdf-page';
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
+        pages.appendChild(canvas);
+        await page.render({ canvasContext: canvas.getContext('2d', { alpha: false }), viewport }).promise;
+      }
+    } catch (error) {
+      host.innerHTML = `<div class="em-activity-content-empty">${escapeHTML(error?.message || 'No se pudo abrir el PDF.')}</div>`;
+    }
+  }
+
+  function renderActivitySubmissionGallery(host, sourceFiles = [], options = {}) {
+    if (!host) return;
+    const files = (Array.isArray(sourceFiles) ? sourceFiles : [])
+      .map((file, index) => ({
+        ...file,
+        id: String(file?.id || file?.path || `submission-view-${index + 1}`),
+        name: String(file?.name || `Archivo ${index + 1}`),
+        type: String(file?.type || ''),
+        size: Number(file?.size || 0),
+        url: String(file?.signedUrl || file?.signed_url || file?.url || '')
+      }))
+      .filter((file) => file.url);
+    if (!files.length) {
+      host.innerHTML = '<div class="em-submission-gallery-empty"><span aria-hidden="true">▧</span><strong>Sin archivos entregados</strong><p>Cuando el estudiante suba fotos o PDF aparecerán aquí.</p></div>';
+      return;
+    }
+    let currentIndex = Math.max(0, Math.min(files.length - 1, Number(options.initialIndex || 0)));
+    host.innerHTML = `
+      <div class="em-submission-gallery" data-submission-gallery tabindex="0">
+        <div class="em-submission-gallery-head">
+          <div><span data-submission-gallery-counter></span><strong data-submission-gallery-name></strong><small data-submission-gallery-meta></small></div>
+          <div class="em-submission-gallery-nav">
+            <button type="button" data-submission-gallery-prev aria-label="Archivo anterior">←</button>
+            <button type="button" data-submission-gallery-next aria-label="Archivo siguiente">→</button>
+          </div>
+        </div>
+        <div class="em-submission-gallery-stage" data-submission-gallery-stage></div>
+        <div class="em-submission-gallery-strip" data-submission-gallery-strip role="tablist" aria-label="Archivos de la entrega">
+          ${files.map((file, index) => `<button type="button" role="tab" data-submission-gallery-index="${index}" aria-label="Ver ${escapeAttr(file.name)}"><span>${activitySubmissionFileIsPdf(file) ? 'PDF' : 'IMG'}</span><strong>${index + 1}</strong></button>`).join('')}
+        </div>
+      </div>
+    `;
+    const gallery = host.querySelector('[data-submission-gallery]');
+    const stage = host.querySelector('[data-submission-gallery-stage]');
+    const counter = host.querySelector('[data-submission-gallery-counter]');
+    const name = host.querySelector('[data-submission-gallery-name]');
+    const meta = host.querySelector('[data-submission-gallery-meta]');
+    const prev = host.querySelector('[data-submission-gallery-prev]');
+    const next = host.querySelector('[data-submission-gallery-next]');
+    const stripButtons = [...host.querySelectorAll('[data-submission-gallery-index]')];
+    let renderToken = 0;
+
+    const setIndex = (nextIndex) => {
+      if (!files.length) return;
+      currentIndex = (Number(nextIndex) + files.length) % files.length;
+      const file = files[currentIndex];
+      const token = ++renderToken;
+      if (counter) counter.textContent = `${currentIndex + 1} de ${files.length}`;
+      if (name) name.textContent = file.name;
+      if (meta) meta.textContent = [activitySubmissionFileIsPdf(file) ? 'PDF' : 'Imagen WebP', file.size ? formatActivitySubmissionBytes(file.size) : ''].filter(Boolean).join(' · ');
+      stripButtons.forEach((button, index) => {
+        const active = index === currentIndex;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if (prev) prev.disabled = files.length < 2;
+      if (next) next.disabled = files.length < 2;
+      if (!stage) return;
+      const viewerId = `submissionViewer-${Date.now()}-${currentIndex}`;
+      if (activitySubmissionFileIsImage(file)) {
+        stage.innerHTML = `
+          <div class="em-activity-media-viewer em-submission-media-viewer" data-activity-media-viewer data-activity-media-type="image" tabindex="0">
+            ${activityMediaFullscreenButtonHTML()}
+            <div class="em-activity-media-viewport em-submission-media-viewport" data-activity-media-viewport>
+              <div class="em-activity-media-zoom-content em-submission-media-content" data-activity-media-zoom-content>
+                <div class="em-submission-image-stage"><img src="${escapeAttr(file.url)}" alt="${escapeAttr(file.name)}" draggable="false" /></div>
+              </div>
+            </div>
+          </div>`;
+      } else if (activitySubmissionFileIsPdf(file)) {
+        stage.innerHTML = `
+          <div class="em-activity-media-viewer em-submission-media-viewer" data-activity-media-viewer data-activity-media-type="pdf" tabindex="0">
+            ${activityMediaFullscreenButtonHTML()}
+            <div class="em-activity-media-viewport em-submission-media-viewport" data-activity-media-viewport>
+              <div class="em-activity-media-zoom-content em-activity-pdf-viewer em-submission-media-content" id="${viewerId}" data-activity-media-zoom-content></div>
+            </div>
+          </div>`;
+      } else {
+        stage.innerHTML = `<div class="em-submission-unsupported"><span>ARCHIVO</span><strong>${escapeHTML(file.name)}</strong><a href="${escapeAttr(file.url)}" target="_blank" rel="noopener">Abrir archivo</a></div>`;
+      }
+      const mediaViewer = stage.querySelector('[data-activity-media-viewer]');
+      if (mediaViewer) {
+        initActivityMediaZoom(mediaViewer);
+        let swipeStart = null;
+        mediaViewer.addEventListener('pointerdown', (event) => {
+          if (event.button !== undefined && event.button !== 0) return;
+          swipeStart = { x: event.clientX, y: event.clientY, at: Date.now() };
+        });
+        mediaViewer.addEventListener('pointerup', (event) => {
+          if (!swipeStart || mediaViewer.querySelector('[data-activity-media-viewport]')?.classList.contains('is-zoomed')) {
+            swipeStart = null;
+            return;
+          }
+          const dx = event.clientX - swipeStart.x;
+          const dy = event.clientY - swipeStart.y;
+          const elapsed = Date.now() - swipeStart.at;
+          swipeStart = null;
+          if (elapsed > 700 || Math.abs(dx) < 58 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+          setIndex(currentIndex + (dx < 0 ? 1 : -1));
+        });
+      }
+      if (activitySubmissionFileIsPdf(file)) {
+        const pdfHost = document.getElementById(viewerId);
+        window.requestAnimationFrame(() => {
+          if (token === renderToken) renderActivitySubmissionPdf(pdfHost, file.url);
+        });
+      }
+    };
+
+    prev?.addEventListener('click', () => setIndex(currentIndex - 1));
+    next?.addEventListener('click', () => setIndex(currentIndex + 1));
+    stripButtons.forEach((button) => button.addEventListener('click', () => setIndex(Number(button.dataset.submissionGalleryIndex || 0))));
+    gallery?.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft') { event.preventDefault(); setIndex(currentIndex - 1); }
+      if (event.key === 'ArrowRight') { event.preventDefault(); setIndex(currentIndex + 1); }
+    });
+    setIndex(currentIndex);
+  }
+
+  function openActivitySubmissionViewerModal(files = [], initialIndex = 0, title = 'Mi entrega') {
+    openModal(`
+      <section class="modal-card em-submission-viewer-modal" role="dialog" aria-modal="true" aria-labelledby="submissionViewerTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Archivos de la actividad</p>
+        <h2 id="submissionViewerTitle">${escapeHTML(title)}</h2>
+        <div id="activitySubmissionModalGallery"></div>
+      </section>
+    `, () => renderActivitySubmissionGallery(document.getElementById('activitySubmissionModalGallery'), files, { initialIndex }));
+  }
+
+
+  async function loadActivitySubmissionGalleryForTeacher(activity, record) {
+    const host = document.getElementById('activitySubmissionGalleryHost');
+    if (!host || !activity || !record) return;
+    const legacyFiles = activitySubmissionFiles(record.submissionFile || {}).filter((file) => file.url);
+    try {
+      const result = await cloudAPI().loadActivitySubmissionFiles({
+        activityId: activity.id,
+        assignmentId: state.assignment?.id || '',
+        studentCode: record.studentCode || ''
+      });
+      const packageValue = {
+        version: 2,
+        submittedAt: result?.submittedAt || result?.submitted_at || '',
+        updatedAt: result?.updatedAt || result?.updated_at || '',
+        files: Array.isArray(result?.files) ? result.files : []
+      };
+      record.submissionFile = packageValue;
+      renderActivitySubmissionGallery(host, packageValue.files, { initialIndex: 0 });
+    } catch (error) {
+      if (legacyFiles.length) {
+        renderActivitySubmissionGallery(host, legacyFiles, { initialIndex: 0 });
+        const warning = document.createElement('p');
+        warning.className = 'em-submission-gallery-warning';
+        warning.textContent = error?.message || 'No se pudieron consultar los archivos privados más recientes.';
+        host.appendChild(warning);
+      } else {
+        host.innerHTML = `<div class="em-submission-gallery-empty is-error"><span aria-hidden="true">!</span><strong>No se pudo cargar la entrega</strong><p>${escapeHTML(error?.message || 'Intenta nuevamente cuando haya conexión.')}</p></div>`;
+      }
+    }
+  }
+
   async function renderActivityPdfContent(activity, source = 'content') {
     const isReview = source === 'review';
     const host = document.getElementById(isReview ? 'activityReviewPdfViewer' : 'activityPdfViewer');
@@ -13490,6 +13688,83 @@
     }
   }
 
+
+  function normalizeActivitySubmissionPackage(value = {}) {
+    const source = value && typeof value === 'object' ? value : {};
+    const rawFiles = Array.isArray(source.files)
+      ? source.files
+      : ((source.path || source.url || source.name) ? [source] : []);
+    const files = rawFiles.map((file, index) => ({
+      id: String(file?.id || file?.path || `submission-${index + 1}`),
+      name: String(file?.name || `Archivo ${index + 1}`),
+      type: String(file?.type || ''),
+      size: Number(file?.size || 0),
+      path: String(file?.path || ''),
+      bucket: String(file?.bucket || ''),
+      url: String(file?.signedUrl || file?.signed_url || file?.url || ''),
+      signedUrl: String(file?.signedUrl || file?.signed_url || file?.url || ''),
+      uploadedAt: String(file?.uploadedAt || file?.uploaded_at || source.updatedAt || source.submittedAt || '')
+    })).filter((file) => file.path || file.url);
+    return {
+      version: 2,
+      submittedAt: String(source.submittedAt || source.submitted_at || files[0]?.uploadedAt || ''),
+      updatedAt: String(source.updatedAt || source.updated_at || files.at(-1)?.uploadedAt || ''),
+      files
+    };
+  }
+
+  function activitySubmissionFiles(value = {}) {
+    return normalizeActivitySubmissionPackage(value).files;
+  }
+
+  function activitySubmissionHasFiles(value = {}) {
+    return activitySubmissionFiles(value).length > 0;
+  }
+
+  function formatActivitySubmissionBytes(value = 0) {
+    const bytes = Math.max(0, Number(value) || 0);
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    const mb = bytes / 1024 / 1024;
+    return `${mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)} MB`;
+  }
+
+  function activitySubmissionFileIsPdf(file = {}) {
+    return String(file?.type || '').toLowerCase() === 'application/pdf' || /\.pdf(?:$|[?#])/i.test(String(file?.name || file?.url || ''));
+  }
+
+  function activitySubmissionFileIsImage(file = {}) {
+    return String(file?.type || '').toLowerCase().startsWith('image/') || /\.(?:webp|png|jpe?g|gif)(?:$|[?#])/i.test(String(file?.name || file?.url || ''));
+  }
+
+  function studentActivitySubmissionPanelHTML(activity, status = {}) {
+    const storedFiles = activitySubmissionFiles(status?.record?.submissionFile || status?.record?.submission_file || {});
+    const initialLabel = storedFiles.length
+      ? `${storedFiles.length} archivo${storedFiles.length === 1 ? '' : 's'} en tu entrega`
+      : 'Aún no has adjuntado archivos';
+    return `
+      <div class="em-student-submission-panel" data-student-submission-panel data-activity-id="${escapeAttr(activity?.id || '')}" data-assignment-id="${escapeAttr(state.assignment?.id || '')}">
+        <div class="em-student-submission-heading">
+          <div><span>Mi entrega</span><strong data-student-submission-summary>${escapeHTML(initialLabel)}</strong></div>
+          <small>Fotos optimizadas a WebP · PDF sin modificar</small>
+        </div>
+        <div class="em-student-submission-files" data-student-submission-files>
+          <div class="em-student-submission-loading"><span></span><p>Cargando tu entrega…</p></div>
+        </div>
+        <div class="em-student-submission-actions">
+          <label class="em-student-submission-upload" for="studentActivitySubmissionInput"><span aria-hidden="true">＋</span><strong>Subir fotos o PDF</strong></label>
+          <input class="em-hidden-file" id="studentActivitySubmissionInput" data-student-submission-input type="file" accept="image/*,application/pdf,.pdf" multiple />
+        </div>
+        <p class="em-student-submission-note">Puedes seleccionar todas las imágenes que necesites. Cada foto se reduce a un tamaño adecuado antes de subirla.</p>
+        <div class="em-student-submission-progress" data-student-submission-progress hidden>
+          <span><i data-student-submission-progress-bar></i></span>
+          <strong data-student-submission-progress-label>Preparando archivos…</strong>
+        </div>
+        <p class="em-student-submission-message" data-student-submission-message aria-live="polite"></p>
+      </div>
+    `;
+  }
+
   function studentActivityStatusCardHTML(activity, status) {
     const scoreClass = status.graded ? notesScoreClass(status.score) : 'is-pending';
     const scoreLabel = status.graded
@@ -13541,6 +13816,7 @@
           <span>Fecha de calificación</span>
           <strong>${escapeHTML(gradedAt)}</strong>
         </article>
+        ${studentActivitySubmissionPanelHTML(activity, status)}
       </section>
     `;
   }
@@ -13614,6 +13890,294 @@
         });
       }, 300);
     });
+  }
+
+
+  function updateStudentActivitySubmissionRecord(activity, packageValue = {}) {
+    if (!activity || !state.assignment || !state.user) return;
+    if (!Array.isArray(state.data.activityGrades)) state.data.activityGrades = [];
+    const activityId = String(activity.id || '');
+    const assignmentId = String(state.assignment.id || '');
+    const studentCode = String(state.user.id || '');
+    let record = state.data.activityGrades.find((row) => (
+      String(row.activityId || '') === activityId &&
+      String(row.assignmentId || '') === assignmentId &&
+      (!row.studentCode || String(row.studentCode || '') === studentCode)
+    ));
+    if (!record) {
+      record = { activityId, assignmentId, studentCode, score: null, gradedAt: '' };
+      state.data.activityGrades.push(record);
+    }
+    record.submissionFile = normalizeActivitySubmissionPackage(packageValue);
+  }
+
+  function studentSubmissionFileListHTML(files = []) {
+    if (!files.length) return '<div class="em-student-submission-empty"><span aria-hidden="true">▧</span><p>Aún no has subido fotos ni PDF.</p></div>';
+    return files.map((file, index) => `
+      <article class="em-student-submission-file" data-student-submission-file>
+        <button class="em-student-submission-preview" type="button" data-student-submission-open="${index}" aria-label="Abrir ${escapeAttr(file.name)}">
+          ${activitySubmissionFileIsImage(file) && file.url
+            ? `<img src="${escapeAttr(file.url)}" alt="" loading="lazy" decoding="async" />`
+            : `<span aria-hidden="true">${activitySubmissionFileIsPdf(file) ? 'PDF' : 'DOC'}</span>`}
+        </button>
+        <button class="em-student-submission-file-info" type="button" data-student-submission-open="${index}">
+          <strong>${escapeHTML(file.name)}</strong>
+          <span>${[activitySubmissionFileIsPdf(file) ? 'PDF' : 'Imagen WebP', file.size ? formatActivitySubmissionBytes(file.size) : '', file.uploadedAt ? activityStudentDateLabel(file.uploadedAt, true) : ''].filter(Boolean).join(' · ')}</span>
+        </button>
+        <button class="em-student-submission-remove" type="button" data-student-submission-remove="${escapeAttr(file.path)}" aria-label="Eliminar ${escapeAttr(file.name)}">×</button>
+      </article>
+    `).join('');
+  }
+
+  function renderStudentActivitySubmissionPanel(panel, activity, result = {}) {
+    if (!panel) return;
+    const packageValue = {
+      version: 2,
+      submittedAt: result.submittedAt || result.submitted_at || '',
+      updatedAt: result.updatedAt || result.updated_at || '',
+      files: Array.isArray(result.files) ? result.files : []
+    };
+    const files = activitySubmissionFiles(packageValue);
+    panel.__submissionFiles = files;
+    const host = panel.querySelector('[data-student-submission-files]');
+    const summary = panel.querySelector('[data-student-submission-summary]');
+    if (host) host.innerHTML = studentSubmissionFileListHTML(files);
+    if (summary) summary.textContent = files.length
+      ? `${files.length} archivo${files.length === 1 ? '' : 's'} en tu entrega`
+      : 'Aún no has adjuntado archivos';
+    updateStudentActivitySubmissionRecord(activity, packageValue);
+  }
+
+  function setStudentActivitySubmissionProgress(panel, current = 0, total = 1, label = '', visible = true) {
+    const progress = panel?.querySelector('[data-student-submission-progress]');
+    const bar = panel?.querySelector('[data-student-submission-progress-bar]');
+    const text = panel?.querySelector('[data-student-submission-progress-label]');
+    if (!progress) return;
+    progress.hidden = !visible;
+    const percentage = total > 0 ? Math.max(0, Math.min(100, Math.round((current / total) * 100))) : 0;
+    if (bar) bar.style.width = `${percentage}%`;
+    if (text) text.textContent = label || `${percentage}%`;
+  }
+
+  async function loadStudentActivitySubmissionPanel(activity, panel, options = {}) {
+    if (!activity || !panel || !cloudAPI()?.loadActivitySubmissionFiles) return;
+    const host = panel.querySelector('[data-student-submission-files]');
+    const message = panel.querySelector('[data-student-submission-message]');
+    if (!options.silent && host) host.innerHTML = '<div class="em-student-submission-loading"><span></span><p>Cargando tu entrega…</p></div>';
+    if (message && !options.keepMessage) message.textContent = '';
+    try {
+      const result = await cloudAPI().loadActivitySubmissionFiles({
+        activityId: activity.id,
+        assignmentId: state.assignment?.id || '',
+        studentCode: state.user?.id || ''
+      });
+      renderStudentActivitySubmissionPanel(panel, activity, result || {});
+      return result;
+    } catch (error) {
+      if (host && !panel.__submissionFiles?.length) host.innerHTML = `<div class="em-student-submission-empty is-error"><span aria-hidden="true">!</span><p>${escapeHTML(error?.message || 'No se pudo cargar la entrega.')}</p></div>`;
+      if (message) message.textContent = error?.message || 'No se pudo cargar la entrega.';
+      return null;
+    }
+  }
+
+  async function decodeStudentSubmissionImage(file) {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        return { width: bitmap.width, height: bitmap.height, source: bitmap, close: () => bitmap.close?.() };
+      } catch (_) {
+        try {
+          const bitmap = await createImageBitmap(file);
+          return { width: bitmap.width, height: bitmap.height, source: bitmap, close: () => bitmap.close?.() };
+        } catch (_) {}
+      }
+    }
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const node = new Image();
+        node.onload = () => resolve(node);
+        node.onerror = () => reject(new Error('No se pudo leer la fotografía seleccionada.'));
+        node.src = objectUrl;
+      });
+      return { width: image.naturalWidth, height: image.naturalHeight, source: image, close: () => URL.revokeObjectURL(objectUrl) };
+    } catch (error) {
+      URL.revokeObjectURL(objectUrl);
+      throw error;
+    }
+  }
+
+  function canvasToSubmissionWebp(canvas, quality) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Este navegador no pudo convertir la foto a WebP.')), 'image/webp', quality);
+    });
+  }
+
+  async function optimizeStudentActivitySubmissionFile(file) {
+    if (!(file instanceof Blob)) throw new Error('Selecciona una foto o PDF válido.');
+    const type = String(file.type || '').toLowerCase();
+    const name = String(file.name || 'archivo');
+    if (type === 'application/pdf' || /\.pdf$/i.test(name)) {
+      if (file.size > 20 * 1024 * 1024) throw new Error(`${name} supera el máximo de 20 MB permitido para PDF.`);
+      return file;
+    }
+    if (!type.startsWith('image/')) throw new Error(`${name} no es una imagen o PDF compatible.`);
+    if (file.size > 35 * 1024 * 1024) throw new Error(`${name} es demasiado pesada para procesarla desde el navegador.`);
+    const decoded = await decodeStudentSubmissionImage(file);
+    try {
+      if (!decoded.width || !decoded.height) throw new Error(`No se pudieron leer las dimensiones de ${name}.`);
+      const targetBytes = 900 * 1024;
+      let maxEdge = Math.min(1920, Math.max(decoded.width, decoded.height));
+      let quality = .86;
+      let blob = null;
+      let width = 0;
+      let height = 0;
+      for (let resizeAttempt = 0; resizeAttempt < 5; resizeAttempt += 1) {
+        const ratio = Math.min(1, maxEdge / Math.max(decoded.width, decoded.height));
+        width = Math.max(1, Math.round(decoded.width * ratio));
+        height = Math.max(1, Math.round(decoded.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { alpha: true });
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(decoded.source, 0, 0, width, height);
+        quality = .86;
+        for (let qualityAttempt = 0; qualityAttempt < 5; qualityAttempt += 1) {
+          blob = await canvasToSubmissionWebp(canvas, quality);
+          if (blob.size <= targetBytes || quality <= .66) break;
+          quality -= .05;
+        }
+        if (blob.size <= 1250 * 1024 || maxEdge <= 1150) break;
+        maxEdge = Math.max(1150, Math.round(maxEdge * .84));
+      }
+      const baseName = name.replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 72) || 'foto';
+      return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() });
+    } finally {
+      decoded.close?.();
+    }
+  }
+
+  async function uploadStudentActivitySubmissionSelection(activity, panel, selectedFiles = []) {
+    const files = [...selectedFiles];
+    if (!files.length || !activity || !panel) return;
+    const message = panel.querySelector('[data-student-submission-message]');
+    const input = panel.querySelector('[data-student-submission-input]');
+    const uploadLabel = panel.querySelector('.em-student-submission-upload');
+    const uploaded = [];
+    const failed = [];
+    if (message) message.textContent = '';
+    if (uploadLabel) uploadLabel.classList.add('is-disabled');
+    if (input) input.disabled = true;
+    setStudentActivitySubmissionProgress(panel, 0, files.length, 'Preparando archivos…', true);
+    for (let index = 0; index < files.length; index += 1) {
+      const sourceFile = files[index];
+      try {
+        setStudentActivitySubmissionProgress(panel, index, files.length, `Optimizando ${index + 1} de ${files.length}: ${sourceFile.name}`, true);
+        const optimized = await optimizeStudentActivitySubmissionFile(sourceFile);
+        setStudentActivitySubmissionProgress(panel, index + .35, files.length, `Autorizando ${index + 1} de ${files.length}…`, true);
+        const preparedResult = await cloudAPI().prepareStudentActivitySubmission({
+          activityId: activity.id,
+          assignmentId: state.assignment?.id || '',
+          studentCode: state.user?.id || '',
+          fileName: optimized.name,
+          contentType: optimized.type,
+          size: optimized.size
+        });
+        const prepared = preparedResult?.upload || preparedResult;
+        setStudentActivitySubmissionProgress(panel, index + .55, files.length, `Subiendo ${index + 1} de ${files.length}: ${optimized.name}`, true);
+        await cloudAPI().uploadPreparedStudentActivitySubmission({
+          path: prepared?.path || '',
+          token: prepared?.token || '',
+          signedUrl: prepared?.signedUrl || prepared?.signed_url || '',
+          file: optimized
+        });
+        uploaded.push({
+          id: prepared?.id || prepared?.path || '',
+          name: optimized.name,
+          type: optimized.type,
+          size: optimized.size,
+          path: prepared?.path || '',
+          bucket: prepared?.bucket || 'student-submissions',
+          uploadedAt: new Date().toISOString()
+        });
+        setStudentActivitySubmissionProgress(panel, index + 1, files.length, `${index + 1} de ${files.length} subido${index + 1 === 1 ? '' : 's'}`, true);
+      } catch (error) {
+        failed.push(`${sourceFile.name}: ${error?.message || 'no se pudo subir'}`);
+      }
+    }
+    try {
+      if (uploaded.length) {
+        setStudentActivitySubmissionProgress(panel, files.length, files.length, 'Guardando la entrega…', true);
+        const result = await cloudAPI().commitStudentActivitySubmission({
+          activityId: activity.id,
+          assignmentId: state.assignment?.id || '',
+          studentCode: state.user?.id || '',
+          files: uploaded
+        });
+        renderStudentActivitySubmissionPanel(panel, activity, result || {});
+        toast(`${uploaded.length} archivo${uploaded.length === 1 ? '' : 's'} añadido${uploaded.length === 1 ? '' : 's'} a tu entrega.`);
+      }
+      if (message) {
+        message.textContent = failed.length
+          ? `${uploaded.length ? 'Se guardaron los demás archivos. ' : ''}${failed.join(' · ')}`
+          : (uploaded.length ? 'Entrega actualizada correctamente.' : 'No se seleccionaron archivos compatibles.');
+      }
+    } catch (error) {
+      if (uploaded.length && cloudAPI()?.discardStudentActivitySubmissionFiles) {
+        await cloudAPI().discardStudentActivitySubmissionFiles({
+          activityId: activity.id,
+          assignmentId: state.assignment?.id || '',
+          studentCode: state.user?.id || '',
+          paths: uploaded.map((file) => file.path).filter(Boolean)
+        }).catch(() => null);
+      }
+      if (message) message.textContent = error?.message || 'Los archivos se subieron, pero no se pudo registrar la entrega.';
+    } finally {
+      if (input) { input.disabled = false; input.value = ''; }
+      if (uploadLabel) uploadLabel.classList.remove('is-disabled');
+      window.setTimeout(() => setStudentActivitySubmissionProgress(panel, 0, 1, '', false), 700);
+      if (uploaded.length) loadStudentActivitySubmissionPanel(activity, panel, { silent: true, keepMessage: true });
+    }
+  }
+
+  function initStudentActivitySubmissionPanel(activity) {
+    const panel = document.querySelector('[data-student-submission-panel]');
+    if (!panel || panel.dataset.submissionReady === 'true') return;
+    panel.dataset.submissionReady = 'true';
+    const input = panel.querySelector('[data-student-submission-input]');
+    input?.addEventListener('change', () => uploadStudentActivitySubmissionSelection(activity, panel, input.files || []));
+    panel.addEventListener('click', async (event) => {
+      const openButton = event.target.closest('[data-student-submission-open]');
+      if (openButton) {
+        openActivitySubmissionViewerModal(panel.__submissionFiles || [], Number(openButton.dataset.studentSubmissionOpen || 0), activity?.title || 'Mi entrega');
+        return;
+      }
+      const removeButton = event.target.closest('[data-student-submission-remove]');
+      if (!removeButton) return;
+      const path = String(removeButton.dataset.studentSubmissionRemove || '');
+      const file = (panel.__submissionFiles || []).find((item) => item.path === path);
+      if (!path || !file) return;
+      if (!window.confirm(`¿Eliminar ${file.name} de tu entrega?`)) return;
+      removeButton.disabled = true;
+      const message = panel.querySelector('[data-student-submission-message]');
+      if (message) message.textContent = 'Eliminando archivo…';
+      try {
+        const result = await cloudAPI().removeStudentActivitySubmissionFile({
+          activityId: activity.id,
+          assignmentId: state.assignment?.id || '',
+          studentCode: state.user?.id || '',
+          path
+        });
+        renderStudentActivitySubmissionPanel(panel, activity, result || {});
+        if (message) message.textContent = 'Archivo eliminado de la entrega.';
+      } catch (error) {
+        removeButton.disabled = false;
+        if (message) message.textContent = error?.message || 'No se pudo eliminar el archivo.';
+      }
+    });
+    loadStudentActivitySubmissionPanel(activity, panel);
   }
 
   function activityGroupMetaMap(rows = []) {
@@ -13980,7 +14544,10 @@
       setActivityDetailTab('content', false);
       if (!studentMode && assignedToCurrentCourse) loadActivityGradebook(activity);
       emActInitActivitiesHero(document);
-      if (studentMode) emInitStudentActivityStatus(document);
+      if (studentMode) {
+        emInitStudentActivityStatus(document);
+        initStudentActivitySubmissionPanel(activity);
+      }
       const entranceSelectors = studentMode
         ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-detail-content-tabs', '.em-activity-content-stage > *']
         : assignedToCurrentCourse
@@ -14416,7 +14983,8 @@
       .filter((item) => currentCodes.has(item.studentCode) || !item.gradingGroupId)
       .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
     const eventHistory = Array.isArray(record.deliveryEvents) ? record.deliveryEvents : [];
-    const existingFile = record.submissionFile?.url ? record.submissionFile : null;
+    const existingSubmissionPackage = normalizeActivitySubmissionPackage(record.submissionFile || {});
+    const existingSubmissionCount = existingSubmissionPackage.files.length;
     const trackingCount = eventHistory.length;
     const selectedStickerUrl = normalizeActivityStickerUrl(record.stickerUrl || record.sticker_url || '');
     const rubricCriteria = activityRubricForAssignment(activity, state.assignment?.id || '')
@@ -14477,11 +15045,16 @@
             </div>
           </section>
 
-          <section class="em-grade-form-section" data-grade-modal-panel="delivery" hidden>
-            <div class="em-grade-form-heading"><h3>Entrega</h3><p>Consulta o reemplaza el archivo entregado por el estudiante.</p></div>
-            ${existingFile ? `<a class="em-submission-current-file" href="${escapeAttr(existingFile.url)}" target="_blank" rel="noopener">📎 ${escapeHTML(existingFile.name || 'Abrir archivo actual')}</a>` : '<p class="em-activity-panel-empty">Este estudiante aún no tiene archivo adjunto.</p>'}
-            <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>${existingFile ? 'Reemplazar archivo' : 'Adjuntar archivo'}</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
-            <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
+          <section class="em-grade-form-section em-grade-delivery-panel" data-grade-modal-panel="delivery" hidden>
+            <div class="em-grade-form-heading"><h3>Entrega</h3><p>Revisa todas las fotos y PDF enviados por el estudiante. Desliza a los lados para cambiar de archivo y pellizca para ampliar.</p></div>
+            <div class="em-grade-submission-gallery-host" id="activitySubmissionGalleryHost" data-initial-submission-count="${existingSubmissionCount}">
+              <div class="em-activity-content-loader"><span></span><p>Cargando entrega…</p></div>
+            </div>
+            <div class="em-grade-teacher-attachment">
+              <div><strong>Añadir desde docente</strong><span>Este archivo se agregará a la entrega sin borrar los enviados por el estudiante.</span></div>
+              <label class="em-file-drop is-optional" for="activitySubmissionFile"><strong>Adjuntar archivo complementario</strong><span id="activitySubmissionFileName">PDF o imagen · máximo 20 MB</span></label>
+              <input class="em-hidden-file" id="activitySubmissionFile" type="file" accept="application/pdf,image/png,image/jpeg,image/webp" />
+            </div>
           </section>
 
           <section class="em-grade-form-section" data-grade-modal-panel="group" hidden>
@@ -14537,6 +15110,7 @@
     const stickerFileInput = document.getElementById('activityStickerFilesInput');
     const stickerUploadStatus = document.getElementById('activityStickerUploadStatus');
     gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
+    loadActivitySubmissionGalleryForTeacher(activity, record);
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
     const rubricCriteria = activityRubricForAssignment(activity, state.assignment?.id || '')
       .filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0);

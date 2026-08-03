@@ -169,6 +169,134 @@
     return normalized;
   }
 
+
+  const STUDENT_SUBMISSIONS_FUNCTION = 'encisomath-student-submissions';
+  const STUDENT_SUBMISSIONS_BUCKET = 'student-submissions';
+
+  function studentSubmissionServiceError(error, fallback = 'No se pudo consultar la entrega.') {
+    const message = String(error?.message || error?.error || '').trim();
+    const lower = message.toLowerCase();
+    if (error?.status === 404 || lower.includes('function not found') || lower.includes(STUDENT_SUBMISSIONS_FUNCTION)) {
+      return new Error('Falta desplegar la función encisomath-student-submissions y ejecutar SUPABASE_STUDENT_SUBMISSIONS_v0.25.076.sql en Supabase.');
+    }
+    return normalizeError(error, fallback);
+  }
+
+  async function invokeStudentSubmissionFunction(action, payload = {}) {
+    const safeAction = String(action || '').trim();
+    if (!safeAction) throw new Error('No se indicó la operación de entrega.');
+    assertConfigured();
+    const studentPortalActive = Boolean(session?.encisomathStudentPortal || readStoredStudentPortalCode());
+    const headers = {
+      apikey: config.publishableKey,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'x-application-name': 'EncisoMath-LMS'
+    };
+    if (!studentPortalActive) {
+      const activeSession = await requireAuthenticatedSession();
+      if (activeSession?.access_token) headers.Authorization = `Bearer ${activeSession.access_token}`;
+    }
+    const body = {
+      action: safeAction,
+      ...(payload && typeof payload === 'object' ? payload : {})
+    };
+    if (studentPortalActive && !body.studentCode) body.studentCode = readStoredStudentPortalCode();
+    let response;
+    try {
+      response = await fetch(`${String(config.url || '').replace(/\/+$/, '')}/functions/v1/${STUDENT_SUBMISSIONS_FUNCTION}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      throw studentSubmissionServiceError(error, 'No se pudo conectar con el servicio de entregas.');
+    }
+    const text = await response.text();
+    let data = null;
+    if (text) {
+      try { data = JSON.parse(text); }
+      catch (_) { data = { message: text }; }
+    }
+    if (!response.ok || data?.ok === false) {
+      const error = new Error(data?.message || data?.error || `Supabase respondió ${response.status}.`);
+      error.status = response.status;
+      error.code = data?.code || '';
+      throw studentSubmissionServiceError(error, 'No se pudo completar la operación de entrega.');
+    }
+    return data || { ok: true };
+  }
+
+  async function loadActivitySubmissionFiles({ activityId, assignmentId, studentCode = '' } = {}) {
+    return invokeStudentSubmissionFunction('list', {
+      activityId: String(activityId || ''),
+      assignmentId: String(assignmentId || ''),
+      studentCode: String(studentCode || '')
+    });
+  }
+
+  async function prepareStudentActivitySubmission({ activityId, assignmentId, studentCode = '', fileName = '', contentType = '', size = 0 } = {}) {
+    return invokeStudentSubmissionFunction('prepare', {
+      activityId: String(activityId || ''),
+      assignmentId: String(assignmentId || ''),
+      studentCode: String(studentCode || ''),
+      file: {
+        name: String(fileName || 'archivo'),
+        type: String(contentType || ''),
+        size: Number(size || 0)
+      }
+    });
+  }
+
+  async function uploadPreparedStudentActivitySubmission({ path = '', token = '', signedUrl = '', file } = {}) {
+    if (!(file instanceof Blob)) throw new Error('No se encontró el archivo preparado para subir.');
+    const safePath = String(path || '').trim();
+    if (!safePath) throw new Error('Supabase no devolvió la ruta de subida.');
+    if (token) {
+      const result = await getClient().storage.from(STUDENT_SUBMISSIONS_BUCKET).uploadToSignedUrl(safePath, String(token), file, {
+        contentType: file.type || undefined,
+        upsert: false
+      });
+      if (result.error) throw normalizeError(result.error, 'No se pudo subir el archivo de la entrega.');
+      return result.data || { path: safePath };
+    }
+    if (!signedUrl) throw new Error('Supabase no devolvió una autorización de subida válida.');
+    const response = await fetch(String(signedUrl), {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'false' },
+      body: file
+    });
+    if (!response.ok) throw new Error(`No se pudo subir el archivo de la entrega (${response.status}).`);
+    return { path: safePath };
+  }
+
+  async function commitStudentActivitySubmission({ activityId, assignmentId, studentCode = '', files = [] } = {}) {
+    return invokeStudentSubmissionFunction('commit', {
+      activityId: String(activityId || ''),
+      assignmentId: String(assignmentId || ''),
+      studentCode: String(studentCode || ''),
+      files: Array.isArray(files) ? files : []
+    });
+  }
+
+  async function discardStudentActivitySubmissionFiles({ activityId, assignmentId, studentCode = '', paths = [] } = {}) {
+    return invokeStudentSubmissionFunction('discard', {
+      activityId: String(activityId || ''),
+      assignmentId: String(assignmentId || ''),
+      studentCode: String(studentCode || ''),
+      paths: Array.isArray(paths) ? paths : []
+    });
+  }
+
+  async function removeStudentActivitySubmissionFile({ activityId, assignmentId, studentCode = '', path = '' } = {}) {
+    return invokeStudentSubmissionFunction('remove', {
+      activityId: String(activityId || ''),
+      assignmentId: String(assignmentId || ''),
+      studentCode: String(studentCode || ''),
+      path: String(path || '')
+    });
+  }
+
   function authSessionError(message = 'La sesión se está recuperando automáticamente. El cambio quedará pendiente hasta que Supabase responda.') {
     const error = new Error(message);
     error.code = 'AUTH_SESSION_REQUIRED';
@@ -840,6 +968,9 @@
         score: gradedAt ? Number(scoreValue ?? 40) : null,
         observations: String(row?.observations || ''),
         stickerUrl: String(row?.sticker_url || row?.stickerUrl || ''),
+        submissionFile: row?.submission_file && typeof row.submission_file === 'object'
+          ? row.submission_file
+          : (row?.submissionFile && typeof row.submissionFile === 'object' ? row.submissionFile : {}),
         gradedAt,
         allGraded: row?.all_graded === true || row?.allGraded === true,
         totalStudents: Number(row?.total_students ?? row?.totalStudents ?? 0),
@@ -2375,6 +2506,86 @@
     }).sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
   }
 
+
+  function normalizeActivitySubmissionPackage(value = {}) {
+    const source = value && typeof value === 'object' ? value : {};
+    const rawFiles = Array.isArray(source.files)
+      ? source.files
+      : ((source.path || source.url || source.name) ? [source] : []);
+    const files = rawFiles.map((file, index) => ({
+      id: String(file?.id || file?.path || `legacy-${index + 1}`),
+      name: String(file?.name || `Archivo ${index + 1}`),
+      type: String(file?.type || ''),
+      size: Number(file?.size || 0),
+      path: String(file?.path || ''),
+      url: String(file?.url || ''),
+      bucket: String(file?.bucket || (file?.path && !file?.url ? STUDENT_SUBMISSIONS_BUCKET : '')),
+      uploadedAt: String(file?.uploadedAt || file?.uploaded_at || source.updatedAt || source.submittedAt || '')
+    })).filter((file) => file.path || file.url);
+    return {
+      version: 2,
+      submittedAt: String(source.submittedAt || source.submitted_at || files[0]?.uploadedAt || ''),
+      updatedAt: String(source.updatedAt || source.updated_at || files.at(-1)?.uploadedAt || ''),
+      files
+    };
+  }
+
+  function activitySubmissionHasFiles(value = {}) {
+    return normalizeActivitySubmissionPackage(value).files.length > 0;
+  }
+
+  function mergeActivitySubmissionPackage(existing = {}, newFile = null) {
+    const current = normalizeActivitySubmissionPackage(existing);
+    if (!newFile || typeof newFile !== 'object') return current.files.length ? current : {};
+    const now = new Date().toISOString();
+    const normalized = {
+      id: String(newFile.id || newFile.path || globalThis.crypto?.randomUUID?.() || Date.now()),
+      name: String(newFile.name || 'Archivo de entrega'),
+      type: String(newFile.type || ''),
+      size: Number(newFile.size || 0),
+      path: String(newFile.path || ''),
+      url: String(newFile.url || ''),
+      bucket: String(newFile.bucket || (newFile.path ? (config.storageBucket || 'lms-public') : '')),
+      uploadedAt: String(newFile.uploadedAt || now)
+    };
+    const files = current.files.filter((item) => item.path !== normalized.path || !normalized.path);
+    files.push(normalized);
+    return {
+      version: 2,
+      submittedAt: current.submittedAt || now,
+      updatedAt: now,
+      files
+    };
+  }
+
+  function activitySubmissionStorageObjects(value = {}) {
+    return normalizeActivitySubmissionPackage(value).files
+      .filter((file) => file.path)
+      .map((file) => ({
+        path: file.path,
+        bucket: file.bucket || (file.url ? (config.storageBucket || 'lms-public') : STUDENT_SUBMISSIONS_BUCKET)
+      }));
+  }
+
+  function activitySubmissionStoragePaths(value = {}) {
+    return activitySubmissionStorageObjects(value).map((file) => file.path);
+  }
+
+  async function removeStorageObjects(objects = []) {
+    const grouped = new Map();
+    (objects || []).forEach((item) => {
+      const path = String(item?.path || '').trim();
+      if (!path) return;
+      const bucket = String(item?.bucket || config.storageBucket || 'lms-public').trim();
+      if (!grouped.has(bucket)) grouped.set(bucket, new Set());
+      grouped.get(bucket).add(path);
+    });
+    for (const [bucket, paths] of grouped.entries()) {
+      const result = await getClient().storage.from(bucket).remove([...paths]);
+      if (result.error) console.warn(`No se pudieron retirar algunos archivos del bucket ${bucket}.`, result.error);
+    }
+  }
+
   async function uploadActivitySubmission({ activityId, assignmentId, studentCode, file, mutationId = '' }) {
     if (!file) return null;
     const activeSession = await requireAuthenticatedSession();
@@ -2391,7 +2602,9 @@
       type: file.type || '',
       size: Number(file.size || 0),
       path,
-      url: getClient().storage.from(bucket).getPublicUrl(path).data?.publicUrl || ''
+      bucket,
+      url: getClient().storage.from(bucket).getPublicUrl(path).data?.publicUrl || '',
+      uploadedAt: new Date().toISOString()
     };
   }
 
@@ -2404,23 +2617,46 @@
     if (dbRows.some((row) => !row.studentId)) throw new Error('No se encontró uno de los estudiantes seleccionados.');
     const groupId = codes.length > 1 ? (String(gradingGroupId || '').trim() || globalThis.crypto?.randomUUID?.() || null) : null;
     const stableMutationId = mutationId || clientMutationId || '';
+    const selectedStudentIds = dbRows.map((row) => row.studentId);
+    const currentSubmissionResult = await supabaseClient
+      .from('activity_student_records')
+      .select('student_id,submission_file')
+      .eq('activity_id', activityId)
+      .eq('assignment_id', assignmentId)
+      .in('student_id', selectedStudentIds);
+    if (currentSubmissionResult.error) throw normalizeError(currentSubmissionResult.error, 'No se pudieron conservar las entregas existentes del grupo.');
+    const currentSubmissionByStudent = new Map((currentSubmissionResult.data || []).map((row) => [String(row.student_id), row.submission_file || {}]));
+    const primaryStudentId = dbRows.find((row) => row.code === primaryStudentCode)?.studentId || '';
+    const primaryExistingSubmission = normalizeActivitySubmissionPackage(
+      activitySubmissionHasFiles(existingSubmissionFile)
+        ? existingSubmissionFile
+        : (currentSubmissionByStudent.get(String(primaryStudentId)) || {})
+    );
     const newSubmission = await uploadActivitySubmission({ activityId, assignmentId, studentCode: primaryStudentCode, file: submissionFile, mutationId: stableMutationId });
-    const submissionPayload = newSubmission || (existingSubmissionFile && typeof existingSubmissionFile === 'object' ? existingSubmissionFile : {});
+    const primarySubmissionPayload = newSubmission
+      ? mergeActivitySubmissionPackage(primaryExistingSubmission, newSubmission)
+      : (primaryExistingSubmission.files.length ? primaryExistingSubmission : {});
     const gradedAt = new Date().toISOString();
-    const rows = dbRows.map(({ code, studentId }) => ({
-      activity_id: activityId,
-      assignment_id: assignmentId,
-      student_id: studentId,
-      score: Math.max(0, Math.min(100, Number(scores[code] ?? scores[primaryStudentCode] ?? 40))),
-      observations: String(observations || ''),
-      sticker_url: String(stickerUrl || ''),
-      submission_file: submissionPayload,
-      grading_group_id: groupId,
-      rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
-      graded_by: activeSession.user.id,
-      graded_at: gradedAt,
-      client_mutation_id: stableMutationId ? `${stableMutationId}:${studentId}` : null
-    }));
+    const rows = dbRows.map(({ code, studentId }) => {
+      const ownSubmission = normalizeActivitySubmissionPackage(currentSubmissionByStudent.get(String(studentId)) || {});
+      const submissionPayload = code === primaryStudentCode
+        ? primarySubmissionPayload
+        : (ownSubmission.files.length ? ownSubmission : primarySubmissionPayload);
+      return {
+        activity_id: activityId,
+        assignment_id: assignmentId,
+        student_id: studentId,
+        score: Math.max(0, Math.min(100, Number(scores[code] ?? scores[primaryStudentCode] ?? 40))),
+        observations: String(observations || ''),
+        sticker_url: String(stickerUrl || ''),
+        submission_file: submissionPayload,
+        grading_group_id: groupId,
+        rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
+        graded_by: activeSession.user.id,
+        graded_at: gradedAt,
+        client_mutation_id: stableMutationId ? `${stableMutationId}:${studentId}` : null
+      };
+    });
     const upsertResult = await supabaseClient
       .from('activity_student_records')
       .upsert(rows, { onConflict: 'activity_id,assignment_id,student_id' })
@@ -2464,9 +2700,6 @@
       }
     }
 
-    if (newSubmission?.path && existingSubmissionFile?.path && existingSubmissionFile.path !== newSubmission.path) {
-      await removeStorageFiles([existingSubmissionFile.path]);
-    }
     return getActivityGradebook({ activityId, assignmentId });
   }
 
@@ -2514,10 +2747,11 @@
     if (activityResult.error) throw normalizeError(activityResult.error, 'No se pudo leer la actividad.');
     const submissionResult = await supabaseClient.from('activity_student_records').select('submission_file').eq('activity_id', safeActivityId);
     if (submissionResult.error) throw normalizeError(submissionResult.error, 'No se pudieron revisar los archivos de entrega.');
-    const basePaths = [
-      ...storedActivityFiles(activityResult.data?.content_payload).map((item) => item.path),
-      ...storedActivityFiles(activityResult.data?.review_payload).map((item) => item.path),
-      ...(submissionResult.data || []).map((row) => row.submission_file?.path).filter(Boolean)
+    const publicBucket = config.storageBucket || 'lms-public';
+    const storageObjects = [
+      ...storedActivityFiles(activityResult.data?.content_payload).map((item) => ({ path: item.path, bucket: publicBucket })),
+      ...storedActivityFiles(activityResult.data?.review_payload).map((item) => ({ path: item.path, bucket: publicBucket })),
+      ...(submissionResult.data || []).flatMap((row) => activitySubmissionStorageObjects(row.submission_file))
     ];
 
     if (mode === 'course') {
@@ -2530,7 +2764,7 @@
 
     const deleteResult = await supabaseClient.from('activities').delete().eq('id', safeActivityId);
     if (deleteResult.error) throw normalizeError(deleteResult.error, 'No se pudo eliminar la actividad.');
-    await removeStorageFiles(basePaths);
+    await removeStorageObjects(storageObjects);
     return { mode: 'all' };
   }
 
@@ -2882,6 +3116,12 @@
     reorderActivities,
     getActivityGradebook,
     saveActivityGrades,
+    loadActivitySubmissionFiles,
+    prepareStudentActivitySubmission,
+    uploadPreparedStudentActivitySubmission,
+    commitStudentActivitySubmission,
+    discardStudentActivitySubmissionFiles,
+    removeStudentActivitySubmissionFile,
     uploadActivityStickerToGithub,
     deleteActivity,
     deletePdfLesson,

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.075';
+  const OFFLINE_VERSION = '0.25.076';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -2387,6 +2387,30 @@
       const seeded = seedOfflineGradebook(payload.activityId, payload.assignmentId);
       await gradebookPut(payload.activityId, payload.assignmentId, seeded);
       return seeded;
+    },
+    async loadActivitySubmissionFiles(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para consultar los archivos de la entrega.');
+      return cloud.loadActivitySubmissionFiles(payload);
+    },
+    async prepareStudentActivitySubmission(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para subir fotos o PDF.');
+      return cloud.prepareStudentActivitySubmission(payload);
+    },
+    async uploadPreparedStudentActivitySubmission(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para subir fotos o PDF.');
+      return cloud.uploadPreparedStudentActivitySubmission(payload);
+    },
+    async commitStudentActivitySubmission(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para guardar la entrega.');
+      return cloud.commitStudentActivitySubmission(payload);
+    },
+    async discardStudentActivitySubmissionFiles(payload) {
+      if (!isOnline()) return null;
+      return cloud.discardStudentActivitySubmissionFiles(payload);
+    },
+    async removeStudentActivitySubmissionFile(payload) {
+      if (!isOnline()) throw new Error('Necesitas conexión para eliminar un archivo de la entrega.');
+      return cloud.removeStudentActivitySubmissionFile(payload);
     },
     async uploadActivityStickerToGithub(payload) {
       if (!isOnline()) throw new Error('Necesitas conexión para guardar un sticker nuevo en GitHub.');

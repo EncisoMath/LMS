@@ -36528,3 +36528,526 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     min-height: 27px;
   }
 }
+
+/* ================================================================
+   ENCISOMATH v0.25.076 · ENTREGAS ESTUDIANTILES MULTIARCHIVO
+   ================================================================ */
+.em-activity-detail-screen.is-student-readonly
+.em-student-activity-status-v39 .em-student-submission-panel {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 4px !important;
+  background: rgba(2,6,12,.34);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+}
+.em-student-submission-heading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.em-student-submission-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.em-student-submission-heading span {
+  color: rgba(255,255,255,.74);
+  font: 800 .62rem/1.1 "Montserrat", Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+}
+.em-student-submission-heading strong {
+  overflow: hidden;
+  color: #fff;
+  font: 850 .82rem/1.2 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-student-submission-heading small {
+  flex: 0 0 auto;
+  color: rgba(255,255,255,.72);
+  font: 650 .58rem/1.25 "Montserrat", Arial, sans-serif;
+  text-align: right;
+}
+.em-student-submission-files {
+  min-width: 0;
+  max-height: 250px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.em-student-submission-file {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.25);
+}
+.em-student-submission-preview,
+.em-student-submission-file-info,
+.em-student-submission-remove {
+  border: 0;
+  border-radius: 4px !important;
+  color: #fff;
+  cursor: pointer;
+}
+.em-student-submission-preview {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(255,255,255,.12);
+  font: 900 .62rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-student-submission-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.em-student-submission-file-info {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 2px 0;
+  background: transparent;
+  text-align: left;
+}
+.em-student-submission-file-info strong {
+  overflow: hidden;
+  color: #fff;
+  font: 800 .68rem/1.2 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-student-submission-file-info span {
+  overflow: hidden;
+  color: rgba(255,255,255,.68);
+  font: 600 .55rem/1.2 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-student-submission-remove {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: rgba(170,24,45,.72);
+  font: 800 1rem/1 system-ui, sans-serif;
+}
+.em-student-submission-remove:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+.em-student-submission-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.em-student-submission-upload {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 4px !important;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font: 800 .66rem/1 "Montserrat", Arial, sans-serif;
+  cursor: pointer;
+}
+.em-student-submission-upload > span {
+  font-size: 1rem;
+  line-height: 1;
+}
+.em-student-submission-upload.is-disabled {
+  opacity: .48;
+  pointer-events: none;
+}
+.em-student-submission-note,
+.em-student-submission-message {
+  margin: 0;
+  color: rgba(255,255,255,.72);
+  font: 600 .57rem/1.4 "Montserrat", Arial, sans-serif;
+}
+.em-student-submission-message:not(:empty) {
+  padding: 7px 8px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.22);
+}
+.em-student-submission-progress {
+  display: grid;
+  gap: 5px;
+}
+.em-student-submission-progress[hidden] {
+  display: none !important;
+}
+.em-student-submission-progress > span {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.35);
+}
+.em-student-submission-progress > span > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #fff;
+  transition: width .18s ease;
+}
+.em-student-submission-progress > strong {
+  overflow: hidden;
+  color: #fff;
+  font: 700 .58rem/1.25 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-student-submission-empty,
+.em-student-submission-loading {
+  min-height: 66px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 10px;
+  border: 1px dashed rgba(255,255,255,.18);
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.16);
+  text-align: center;
+}
+.em-student-submission-empty span {
+  font: 900 .9rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-student-submission-empty p,
+.em-student-submission-loading p {
+  margin: 0;
+  color: rgba(255,255,255,.72);
+  font: 650 .6rem/1.35 "Montserrat", Arial, sans-serif;
+}
+.em-student-submission-loading span {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255,255,255,.24);
+  border-top-color: #fff;
+  border-radius: 50% !important;
+  animation: emActivitySpin .8s linear infinite;
+}
+.em-student-submission-empty.is-error {
+  border-color: rgba(255,169,183,.42);
+}
+
+/* Carrusel común para estudiante y docente. */
+.em-grade-submission-gallery-host,
+#activitySubmissionModalGallery {
+  min-width: 0;
+}
+.em-submission-gallery {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  outline: none;
+}
+.em-submission-gallery-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 4px !important;
+  background: rgba(3,7,18,.68);
+}
+.em-submission-gallery-head > div:first-child {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+}
+.em-submission-gallery-head span {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #8dbdff;
+  font: 900 .64rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #fff;
+  font: 800 .74rem/1.2 "Montserrat", Arial, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.em-submission-gallery-head small {
+  color: #8f9db1;
+  font: 650 .58rem/1.2 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-nav {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 5px;
+}
+.em-submission-gallery-nav button,
+.em-submission-gallery-strip button {
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px !important;
+  background: rgba(255,255,255,.05);
+  color: #fff;
+  cursor: pointer;
+}
+.em-submission-gallery-nav button {
+  width: 36px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font: 800 1rem/1 system-ui, sans-serif;
+}
+.em-submission-gallery-nav button:disabled {
+  opacity: .3;
+  cursor: default;
+}
+.em-submission-gallery-stage {
+  min-width: 0;
+}
+.em-submission-media-viewport {
+  width: 100%;
+  height: min(58vh, 610px);
+  min-height: 360px;
+  max-height: none !important;
+  border-radius: 4px !important;
+  background: #020305;
+  touch-action: pan-y;
+}
+.em-submission-media-content {
+  min-height: 100%;
+}
+.em-submission-image-stage {
+  width: 100%;
+  min-height: min(58vh, 610px);
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.em-submission-image-stage img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(min(58vh, 610px) - 24px);
+  object-fit: contain;
+  border-radius: 4px !important;
+  background: #000;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.em-submission-pdf-pages {
+  padding: 10px !important;
+}
+.em-submission-media-viewer:fullscreen .em-submission-media-viewport,
+.em-submission-media-viewer.is-pseudo-fullscreen .em-submission-media-viewport {
+  min-height: 0;
+}
+.em-submission-media-viewer:fullscreen .em-submission-image-stage,
+.em-submission-media-viewer.is-pseudo-fullscreen .em-submission-image-stage {
+  min-height: 100%;
+}
+.em-submission-media-viewer:fullscreen .em-submission-image-stage img,
+.em-submission-media-viewer.is-pseudo-fullscreen .em-submission-image-stage img {
+  max-height: calc(100dvh - 44px);
+}
+.em-submission-gallery-strip {
+  min-width: 0;
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 1px 0 3px;
+  scrollbar-width: thin;
+}
+.em-submission-gallery-strip button {
+  min-width: 52px;
+  height: 34px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  font: 750 .56rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-strip button span {
+  color: #92a2b7;
+  font-size: .51rem;
+}
+.em-submission-gallery-strip button strong {
+  color: #fff;
+  font-size: .64rem;
+}
+.em-submission-gallery-strip button.is-active {
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 70%, white 30%);
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 35%, rgba(255,255,255,.04));
+}
+.em-submission-gallery-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 4px !important;
+  background: rgba(3,7,18,.45);
+  color: #98a8bc;
+  text-align: center;
+}
+.em-submission-gallery-empty > span {
+  color: #6f8097;
+  font: 900 1.2rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-empty strong {
+  color: #eef5ff;
+  font: 800 .78rem/1.2 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-empty p,
+.em-submission-gallery-warning {
+  margin: 0;
+  color: #8f9eb2;
+  font: 650 .65rem/1.4 "Montserrat", Arial, sans-serif;
+}
+.em-submission-gallery-empty.is-error strong {
+  color: #ff9dae;
+}
+.em-submission-gallery-warning {
+  margin-top: 7px;
+  padding: 8px;
+  border: 1px solid rgba(255,185,78,.3);
+  border-radius: 4px !important;
+  background: rgba(154,91,0,.12);
+}
+.em-submission-unsupported {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 4px !important;
+  background: #03060c;
+  text-align: center;
+}
+.em-submission-unsupported span {
+  color: #7faef2;
+  font: 900 .72rem/1 "Montserrat", Arial, sans-serif;
+}
+.em-submission-unsupported strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #fff;
+}
+.em-submission-unsupported a {
+  color: #fff;
+  font-weight: 800;
+}
+.em-grade-teacher-attachment {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.em-grade-teacher-attachment > div {
+  display: grid;
+  gap: 2px;
+}
+.em-grade-teacher-attachment > div strong {
+  color: #fff;
+  font: 800 .72rem/1.2 "Montserrat", Arial, sans-serif;
+}
+.em-grade-teacher-attachment > div span {
+  color: #8f9eb2;
+  font: 650 .62rem/1.35 "Montserrat", Arial, sans-serif;
+}
+.em-submission-viewer-modal {
+  width: min(94vw, 900px);
+  max-height: 94dvh;
+  overflow: auto;
+  border-radius: 4px !important;
+  background: #040811;
+}
+.em-submission-viewer-modal > h2 {
+  margin: 3px 0 14px;
+  padding-right: 36px;
+}
+.em-activity-grade-modal .em-submission-media-viewport,
+.em-activity-grade-modal .em-submission-gallery-head,
+.em-activity-grade-modal .em-submission-gallery-nav button,
+.em-activity-grade-modal .em-submission-gallery-strip button,
+.em-activity-grade-modal .em-submission-gallery-empty {
+  border-radius: 4px !important;
+}
+
+@media (max-width: 600px) {
+  .em-student-submission-heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .em-student-submission-heading small {
+    text-align: left;
+  }
+  .em-student-submission-upload {
+    width: 100%;
+  }
+  .em-submission-gallery-head {
+    align-items: start;
+  }
+  .em-submission-gallery-head > div:first-child {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+  .em-submission-gallery-head span {
+    grid-row: auto;
+  }
+  .em-submission-media-viewport {
+    height: min(54vh, 520px);
+    min-height: 300px;
+  }
+  .em-submission-image-stage {
+    min-height: min(54vh, 520px);
+    padding: 8px;
+  }
+  .em-submission-image-stage img {
+    max-height: calc(min(54vh, 520px) - 16px);
+  }
+  .em-submission-viewer-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 12px !important;
+  }
+}
