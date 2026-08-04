@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.078
+# EncisoMath LMS v0.25.079
+
+
+## v0.25.079 — modal de entrega con shapes animados del hero
+
+- El modal **Mi entrega** reutiliza exactamente las figuras del hero de Actividades: círculo, cuadrado, triángulo y equis.
+- Las cuatro figuras se inicializan con el mismo sistema `emActInitActivitiesHero` y permanecen animadas mientras el modal está abierto.
+- El modal y sus componentes mantienen esquinas de `4px`, siguiendo la regla visual de EncisoMath.
+- No requiere ejecutar un SQL nuevo.
 
 ## v0.25.078 — entrega estudiantil organizada y avisos docentes
 

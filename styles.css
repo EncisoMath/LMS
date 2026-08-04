@@ -37401,3 +37401,98 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     font-size: .57rem;
   }
 }
+
+
+/* ================================================================
+   ENCISOMATH v0.25.079 · MODAL DE ENTREGA CON HERO REAL DE ACTIVIDADES
+   Reutiliza exactamente los shapes del hero de actividad y su animación.
+   ================================================================ */
+.modal-card.em-student-submission-modal {
+  border-radius: 4px !important;
+}
+.activity-hero.em-act-hero-host.em-student-submission-modal-hero {
+  --em-act-main: var(--em-current-subject-color, #1368ce);
+  position: relative !important;
+  isolation: isolate !important;
+  contain: paint !important;
+  width: 100% !important;
+  min-height: 142px !important;
+  margin: 0 !important;
+  padding: 22px 64px 22px 22px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 18px !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 4px 4px 0 0 !important;
+  background:
+    linear-gradient(130deg,
+      color-mix(in srgb, var(--em-current-subject-color, #1368ce) 84%, #07111d 16%),
+      color-mix(in srgb, var(--em-current-subject-color, #1368ce) 52%, #07111d 48%)) !important;
+  box-shadow: none !important;
+}
+.activity-hero.em-act-hero-host.em-student-submission-modal-hero::before,
+.activity-hero.em-act-hero-host.em-student-submission-modal-hero::after {
+  content: none !important;
+  display: none !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  border-radius: inherit !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape {
+  opacity: .22 !important;
+  background: #000 !important;
+  animation-play-state: running !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-circle {
+  background: #000 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-square {
+  border-radius: 10px !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-triangle {
+  background: transparent !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: #000 !important;
+  border-radius: 0 !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-x {
+  background: transparent !important;
+}
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-x::before,
+.em-student-submission-modal-hero > .em-act-shapes .em-act-shape-x::after {
+  background: #000 !important;
+}
+.em-student-submission-modal-copy,
+.em-student-submission-modal-symbol,
+.em-student-submission-modal-close {
+  position: relative;
+  z-index: 2;
+}
+.em-student-submission-modal-summary,
+.em-student-submission-modal .em-student-submission-panel,
+.em-student-submission-modal .em-student-submission-file,
+.em-student-submission-modal .em-student-submission-upload,
+.em-student-submission-modal .em-student-submission-message:not(:empty),
+.em-student-submission-modal-footer .primary-btn {
+  border-radius: 4px !important;
+}
+@media (max-width: 600px) {
+  .activity-hero.em-act-hero-host.em-student-submission-modal-hero {
+    min-height: 126px !important;
+    grid-template-columns: minmax(0, 1fr) 50px !important;
+    gap: 10px !important;
+    padding: 18px 50px 18px 15px !important;
+  }
+}

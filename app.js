@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.078';
+  const APP_VERSION = '0.25.079';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -14195,9 +14195,13 @@
     const storedFiles = activitySubmissionFiles(status?.record?.submissionFile || status?.record?.submission_file || {});
     openModal(`
       <section class="modal-card em-student-submission-modal" role="dialog" aria-modal="true" aria-labelledby="studentSubmissionModalTitle">
-        <div class="em-student-submission-modal-hero">
-          <span class="em-student-submission-modal-shape is-one" aria-hidden="true"></span>
-          <span class="em-student-submission-modal-shape is-two" aria-hidden="true"></span>
+        <div class="activity-hero em-act-hero-host em-student-submission-modal-hero" data-em-activities-hero>
+          <div class="em-act-shapes" aria-hidden="true">
+            <span class="em-act-shape em-act-shape-circle"></span>
+            <span class="em-act-shape em-act-shape-square"></span>
+            <span class="em-act-shape em-act-shape-triangle"></span>
+            <span class="em-act-shape em-act-shape-x"></span>
+          </div>
           <div class="em-student-submission-modal-copy">
             <p>Mi entrega</p>
             <h2 id="studentSubmissionModalTitle">${escapeHTML(activity?.title || 'Actividad')}</h2>
@@ -14220,7 +14224,10 @@
     `, () => {
       initStudentActivitySubmissionPanel(activity);
       const modal = document.querySelector('.em-student-submission-modal');
-      if (modal) emPlayEntranceSequence(modal, ['.em-student-submission-modal-hero', '.em-student-submission-modal-summary', '.em-student-submission-panel', '.em-student-submission-modal-footer'], { duration: 360, stagger: 35, distance: 12, scale: .99 });
+      if (modal) {
+        emActInitActivitiesHero(modal);
+        emPlayEntranceSequence(modal, ['.em-student-submission-modal-hero', '.em-student-submission-modal-summary', '.em-student-submission-panel', '.em-student-submission-modal-footer'], { duration: 360, stagger: 35, distance: 12, scale: .99 });
+      }
     });
   }
 
