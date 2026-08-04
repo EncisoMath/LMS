@@ -37553,3 +37553,30 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     inset: 8px 8px auto auto !important;
   }
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.081 · IMÁGENES DE ACTIVIDAD SIN SCROLL INTERNO
+========================================================= */
+/*
+ * En la vista normal de una actividad, las imágenes altas dejan crecer el
+ * visor según su relación de aspecto. Así solo se desplaza la página general
+ * y no aparece una segunda barra de scroll dentro de la imagen.
+ * El carrusel de entregas y el modo pantalla completa conservan su viewport
+ * independiente para navegación, zoom y pellizco.
+ */
+.em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-media-viewport {
+  max-height: none;
+  overflow: visible;
+  overscroll-behavior: auto;
+  -webkit-overflow-scrolling: auto;
+  touch-action: auto;
+}
+.em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-image-sequence {
+  padding: 0;
+}
+.em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-image-sequence figure,
+.em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-image-sequence img {
+  width: 100%;
+  max-width: none;
+}
+

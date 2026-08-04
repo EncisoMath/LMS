@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.080
+# EncisoMath LMS v0.25.081
+
+## v0.25.081 — visor de imágenes sin doble desplazamiento
+
+- Las imágenes de una actividad ya no quedan encerradas en un viewport con altura máxima.
+- El visor crece hasta mostrar la imagen completa según su relación de aspecto y el desplazamiento vertical queda únicamente en la página general.
+- La imagen ocupa todo el ancho útil del `em-activity-media-viewer`, sin padding interno adicional.
+- El carrusel de entregas docentes y el modo pantalla completa conservan su scroll propio, zoom y pellizco.
+- No requiere ejecutar SQL nuevo.
 
 ## v0.25.080 — cabecera limpia de Mi entrega
 
