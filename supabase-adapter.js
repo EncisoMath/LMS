@@ -170,131 +170,145 @@
   }
 
 
-  const STUDENT_SUBMISSIONS_FUNCTION = 'encisomath-student-submissions';
   const STUDENT_SUBMISSIONS_BUCKET = 'student-submissions';
+  const STUDENT_SUBMISSIONS_SQL = 'SUPABASE_STUDENT_SUBMISSIONS_SQL_ONLY_v0.25.077.sql';
+  const STUDENT_SUBMISSION_SIGNED_URL_SECONDS = 60 * 60;
 
   function studentSubmissionServiceError(error, fallback = 'No se pudo consultar la entrega.') {
     const message = String(error?.message || error?.error || '').trim();
     const lower = message.toLowerCase();
-    if (error?.status === 404 || lower.includes('function not found') || lower.includes(STUDENT_SUBMISSIONS_FUNCTION)) {
-      return new Error('Falta desplegar la función encisomath-student-submissions y ejecutar SUPABASE_STUDENT_SUBMISSIONS_v0.25.076.sql en Supabase.');
+    if (error?.code === 'PGRST202' || lower.includes('encisomath_student_submission_') || lower.includes('encisomath_activity_submission_list')) {
+      return new Error(`Falta ejecutar ${STUDENT_SUBMISSIONS_SQL} en Supabase.`);
     }
     return normalizeError(error, fallback);
   }
 
-  async function invokeStudentSubmissionFunction(action, payload = {}) {
-    const safeAction = String(action || '').trim();
-    if (!safeAction) throw new Error('No se indicó la operación de entrega.');
-    assertConfigured();
-    const studentPortalActive = Boolean(session?.encisomathStudentPortal || readStoredStudentPortalCode());
-    const headers = {
-      apikey: config.publishableKey,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'x-application-name': 'EncisoMath-LMS'
-    };
-    if (!studentPortalActive) {
-      const activeSession = await requireAuthenticatedSession();
-      if (activeSession?.access_token) headers.Authorization = `Bearer ${activeSession.access_token}`;
-    }
-    const body = {
-      action: safeAction,
-      ...(payload && typeof payload === 'object' ? payload : {})
-    };
-    if (studentPortalActive && !body.studentCode) body.studentCode = readStoredStudentPortalCode();
-    let response;
+  function studentSubmissionRpcClient() {
+    return Boolean(session?.encisomathStudentPortal || readStoredStudentPortalCode())
+      ? getStudentClient()
+      : getClient();
+  }
+
+  async function invokeStudentSubmissionRpc(functionName, params = {}, fallback = 'No se pudo completar la operación de entrega.') {
     try {
-      response = await fetch(`${String(config.url || '').replace(/\/+$/, '')}/functions/v1/${STUDENT_SUBMISSIONS_FUNCTION}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-      });
+      const { data, error } = await studentSubmissionRpcClient().rpc(functionName, params);
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data?.message || fallback);
+      return data || { ok: true };
     } catch (error) {
-      throw studentSubmissionServiceError(error, 'No se pudo conectar con el servicio de entregas.');
+      throw studentSubmissionServiceError(error, fallback);
     }
-    const text = await response.text();
-    let data = null;
-    if (text) {
-      try { data = JSON.parse(text); }
-      catch (_) { data = { message: text }; }
-    }
-    if (!response.ok || data?.ok === false) {
-      const error = new Error(data?.message || data?.error || `Supabase respondió ${response.status}.`);
-      error.status = response.status;
-      error.code = data?.code || '';
-      throw studentSubmissionServiceError(error, 'No se pudo completar la operación de entrega.');
-    }
-    return data || { ok: true };
+  }
+
+  async function signActivitySubmissionFiles(payload = {}) {
+    const rawFiles = Array.isArray(payload?.files) ? payload.files : [];
+    const signedFiles = await Promise.all(rawFiles.map(async (rawFile, index) => {
+      const file = rawFile && typeof rawFile === 'object' ? { ...rawFile } : {};
+      const path = String(file.path || '').trim();
+      const bucket = String(file.bucket || STUDENT_SUBMISSIONS_BUCKET).trim();
+      const fallbackUrl = String(file.signedUrl || file.signed_url || file.url || '').trim();
+      if (!path) return fallbackUrl ? { ...file, url: fallbackUrl, signedUrl: fallbackUrl } : null;
+      const result = await getClient().storage.from(bucket).createSignedUrl(path, STUDENT_SUBMISSION_SIGNED_URL_SECONDS);
+      if (result.error) {
+        if (fallbackUrl) return { ...file, bucket, url: fallbackUrl, signedUrl: fallbackUrl };
+        console.warn(`No se pudo autorizar temporalmente ${path}.`, result.error);
+        return null;
+      }
+      const signedUrl = String(result.data?.signedUrl || '').trim();
+      return {
+        ...file,
+        id: String(file.id || path || `submission-${index + 1}`),
+        bucket,
+        url: signedUrl,
+        signedUrl
+      };
+    }));
+    return {
+      ...(payload && typeof payload === 'object' ? payload : {}),
+      files: signedFiles.filter(Boolean)
+    };
   }
 
   async function loadActivitySubmissionFiles({ activityId, assignmentId, studentCode = '' } = {}) {
-    return invokeStudentSubmissionFunction('list', {
-      activityId: String(activityId || ''),
-      assignmentId: String(assignmentId || ''),
-      studentCode: String(studentCode || '')
-    });
+    const data = await invokeStudentSubmissionRpc('encisomath_activity_submission_list', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_activity_id: String(activityId || ''),
+      p_assignment_id: String(assignmentId || '')
+    }, 'No se pudo consultar la entrega.');
+    return signActivitySubmissionFiles(data);
   }
 
   async function prepareStudentActivitySubmission({ activityId, assignmentId, studentCode = '', fileName = '', contentType = '', size = 0 } = {}) {
-    return invokeStudentSubmissionFunction('prepare', {
-      activityId: String(activityId || ''),
-      assignmentId: String(assignmentId || ''),
-      studentCode: String(studentCode || ''),
-      file: {
-        name: String(fileName || 'archivo'),
-        type: String(contentType || ''),
-        size: Number(size || 0)
-      }
-    });
+    return invokeStudentSubmissionRpc('encisomath_student_submission_prepare', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_activity_id: String(activityId || ''),
+      p_assignment_id: String(assignmentId || ''),
+      p_file_name: String(fileName || 'archivo'),
+      p_content_type: String(contentType || ''),
+      p_size: Math.max(0, Number(size) || 0)
+    }, 'No se pudo preparar la subida del archivo.');
   }
 
-  async function uploadPreparedStudentActivitySubmission({ path = '', token = '', signedUrl = '', file } = {}) {
+  async function uploadPreparedStudentActivitySubmission({ path = '', file } = {}) {
     if (!(file instanceof Blob)) throw new Error('No se encontró el archivo preparado para subir.');
     const safePath = String(path || '').trim();
     if (!safePath) throw new Error('Supabase no devolvió la ruta de subida.');
-    if (token) {
-      const result = await getClient().storage.from(STUDENT_SUBMISSIONS_BUCKET).uploadToSignedUrl(safePath, String(token), file, {
-        contentType: file.type || undefined,
-        upsert: false
-      });
-      if (result.error) throw normalizeError(result.error, 'No se pudo subir el archivo de la entrega.');
-      return result.data || { path: safePath };
-    }
-    if (!signedUrl) throw new Error('Supabase no devolvió una autorización de subida válida.');
-    const response = await fetch(String(signedUrl), {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'false' },
-      body: file
+    const result = await getClient().storage.from(STUDENT_SUBMISSIONS_BUCKET).upload(safePath, file, {
+      contentType: file.type || undefined,
+      cacheControl: '31536000',
+      upsert: false
     });
-    if (!response.ok) throw new Error(`No se pudo subir el archivo de la entrega (${response.status}).`);
-    return { path: safePath };
+    if (result.error) throw studentSubmissionServiceError(result.error, 'No se pudo subir el archivo de la entrega.');
+    return result.data || { path: safePath };
   }
 
   async function commitStudentActivitySubmission({ activityId, assignmentId, studentCode = '', files = [] } = {}) {
-    return invokeStudentSubmissionFunction('commit', {
-      activityId: String(activityId || ''),
-      assignmentId: String(assignmentId || ''),
-      studentCode: String(studentCode || ''),
-      files: Array.isArray(files) ? files : []
-    });
+    const data = await invokeStudentSubmissionRpc('encisomath_student_submission_commit', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_activity_id: String(activityId || ''),
+      p_assignment_id: String(assignmentId || ''),
+      p_files: Array.isArray(files) ? files : []
+    }, 'Los archivos se subieron, pero no se pudo registrar la entrega.');
+    return signActivitySubmissionFiles(data);
   }
 
   async function discardStudentActivitySubmissionFiles({ activityId, assignmentId, studentCode = '', paths = [] } = {}) {
-    return invokeStudentSubmissionFunction('discard', {
-      activityId: String(activityId || ''),
-      assignmentId: String(assignmentId || ''),
-      studentCode: String(studentCode || ''),
-      paths: Array.isArray(paths) ? paths : []
-    });
+    const safePaths = [...new Set((paths || []).map((value) => String(value || '').trim()).filter(Boolean))];
+    if (safePaths.length) {
+      const removal = await getClient().storage.from(STUDENT_SUBMISSIONS_BUCKET).remove(safePaths);
+      if (removal.error) console.warn('No se pudieron retirar todos los archivos temporales.', removal.error);
+    }
+    return invokeStudentSubmissionRpc('encisomath_student_submission_discard', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_activity_id: String(activityId || ''),
+      p_assignment_id: String(assignmentId || ''),
+      p_paths: safePaths
+    }, 'No se pudieron limpiar los archivos temporales.');
   }
 
   async function removeStudentActivitySubmissionFile({ activityId, assignmentId, studentCode = '', path = '' } = {}) {
-    return invokeStudentSubmissionFunction('remove', {
-      activityId: String(activityId || ''),
-      assignmentId: String(assignmentId || ''),
-      studentCode: String(studentCode || ''),
-      path: String(path || '')
-    });
+    const safePath = String(path || '').trim();
+    if (!safePath) throw new Error('No se identificó el archivo que deseas eliminar.');
+    const commonParams = {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_activity_id: String(activityId || ''),
+      p_assignment_id: String(assignmentId || ''),
+      p_path: safePath
+    };
+    await invokeStudentSubmissionRpc('encisomath_student_submission_remove_prepare', commonParams, 'No se pudo preparar la eliminación del archivo.');
+    let storageRemoved = false;
+    try {
+      const removal = await getClient().storage.from(STUDENT_SUBMISSIONS_BUCKET).remove([safePath]);
+      if (removal.error) throw removal.error;
+      storageRemoved = true;
+      const data = await invokeStudentSubmissionRpc('encisomath_student_submission_remove_commit', commonParams, 'El archivo se retiró, pero no se pudo actualizar la entrega.');
+      return signActivitySubmissionFiles(data);
+    } catch (error) {
+      if (!storageRemoved) {
+        await invokeStudentSubmissionRpc('encisomath_student_submission_remove_cancel', commonParams, 'No se pudo restaurar el estado del archivo.').catch(() => null);
+      }
+      throw studentSubmissionServiceError(error, 'No se pudo eliminar el archivo.');
+    }
   }
 
   function authSessionError(message = 'La sesión se está recuperando automáticamente. El cambio quedará pendiente hasta que Supabase responda.') {

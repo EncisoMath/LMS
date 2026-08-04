@@ -1,5 +1,13 @@
-# EncisoMath LMS v0.25.076
+# EncisoMath LMS v0.25.077
 
+## v0.25.077 — entregas estudiantiles sin Edge Function
+
+- Se eliminó la dependencia de `encisomath-student-submissions`; ya no hay que desplegar funciones, usar terminal, crear tokens de GitHub ni configurar GitHub Actions.
+- La instalación requiere únicamente subir los archivos del parche al repositorio y ejecutar `supabase/migrations/SUPABASE_STUDENT_SUBMISSIONS_SQL_ONLY_v0.25.077.sql` en Supabase SQL Editor.
+- Las fotografías continúan convirtiéndose a WebP y los PDF continúan almacenándose en el bucket privado `student-submissions`.
+- La autorización se realiza mediante RPC y políticas RLS creadas por el SQL. Cada archivo recibe una ruta aleatoria privada vinculada al estudiante, actividad y curso.
+- Se mantienen la carga múltiple sin límite fijo de imágenes, el carrusel docente, el visor de PDF, el zoom y la eliminación individual de archivos.
+- Esta versión reemplaza el mecanismo de despliegue descrito en v0.25.076; no se necesita la Edge Function anterior.
 
 ## v0.25.076 — entregas estudiantiles con fotos y PDF
 
@@ -7,13 +15,10 @@
 - No existe un límite fijo de cantidad de imágenes; cada selección puede contener todos los archivos que el estudiante necesite.
 - Las fotografías se redimensionan en el navegador hasta 1920 px y se convierten a WebP antes de subirlas para reducir el consumo de Storage.
 - Los PDF se conservan sin conversión y cada archivo puede pesar máximo 20 MB.
-- Los archivos se almacenan en el bucket privado `student-submissions` mediante autorizaciones temporales creadas por una Edge Function.
 - La pestaña **Entrega** del modal docente muestra todos los archivos en un carrusel: navegación por flechas, deslizamiento lateral, pantalla completa, doble toque, rueda con Ctrl y pellizco para ampliar.
 - El visor respeta la relación de aspecto completa de cada imagen y renderiza los PDF con PDF.js.
 - El docente puede añadir un archivo complementario sin borrar los archivos enviados por el estudiante.
 - Al calificar en grupo se conservan las entregas propias de cada integrante; no se reemplazan accidentalmente por la del estudiante principal.
-- Si una subida termina pero falla su registro, el LMS elimina los objetos temporales para no consumir Storage con archivos huérfanos.
-- Se incluyen la migración SQL, la Edge Function y una guía de despliegue.
 
 
 ## v0.25.059 — tarjetas estudiantiles más compactas
