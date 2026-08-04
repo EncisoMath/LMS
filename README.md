@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.077
+# EncisoMath LMS v0.25.078
+
+## v0.25.078 — entrega estudiantil organizada y avisos docentes
+
+- En el hero **Mi resultado** del estudiante, la gestión de archivos se compactó en un botón **Añadir entrega**.
+- El botón abre un modal visual e intuitivo con la lista completa de fotos y PDF, carga múltiple, eliminación, progreso y acceso al visor.
+- La pestaña **Entrega** del modal docente muestra una insignia con el número de archivos asociados a la entrega.
+- En la lista de calificaciones aparece `⚠️` cuando hay archivos enviados pendientes de calificar y `❗❗` cuando no hay archivos ni calificación. Los avisos desaparecen al calificar.
+- No requiere ejecutar un SQL nuevo: reutiliza la estructura de entregas instalada en v0.25.077.
 
 ## v0.25.077 — entregas estudiantiles sin Edge Function
 

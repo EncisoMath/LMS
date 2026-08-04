@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.077';
+  const APP_VERSION = '0.25.078';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -13737,6 +13737,28 @@
     return String(file?.type || '').toLowerCase().startsWith('image/') || /\.(?:webp|png|jpe?g|gif)(?:$|[?#])/i.test(String(file?.name || file?.url || ''));
   }
 
+  function studentActivitySubmissionTriggerHTML(activity, status = {}) {
+    const storedFiles = activitySubmissionFiles(status?.record?.submissionFile || status?.record?.submission_file || {});
+    const count = storedFiles.length;
+    const countLabel = count
+      ? `${count} archivo${count === 1 ? '' : 's'} en tu entrega`
+      : 'Fotos o PDF · sin límite fijo';
+    return `
+      <div class="em-student-submission-launch">
+        <button class="em-student-submission-launch-btn" type="button" data-student-submission-trigger data-activity-id="${escapeAttr(activity?.id || '')}" aria-label="${escapeAttr(count ? `Abrir entrega con ${count} archivo${count === 1 ? '' : 's'}` : 'Añadir entrega')}">
+          <span class="em-student-submission-launch-icon" aria-hidden="true">⇧</span>
+          <span class="em-student-submission-launch-copy">
+            <small>Mi entrega</small>
+            <strong>Añadir entrega</strong>
+            <em data-student-submission-trigger-label>${escapeHTML(countLabel)}</em>
+          </span>
+          <b data-student-submission-trigger-count ${count ? '' : 'hidden'}>${count}</b>
+          <i aria-hidden="true">›</i>
+        </button>
+      </div>
+    `;
+  }
+
   function studentActivitySubmissionPanelHTML(activity, status = {}) {
     const storedFiles = activitySubmissionFiles(status?.record?.submissionFile || status?.record?.submission_file || {});
     const initialLabel = storedFiles.length
@@ -13745,14 +13767,14 @@
     return `
       <div class="em-student-submission-panel" data-student-submission-panel data-activity-id="${escapeAttr(activity?.id || '')}" data-assignment-id="${escapeAttr(state.assignment?.id || '')}">
         <div class="em-student-submission-heading">
-          <div><span>Mi entrega</span><strong data-student-submission-summary>${escapeHTML(initialLabel)}</strong></div>
+          <div><span>Archivos enviados</span><strong data-student-submission-summary>${escapeHTML(initialLabel)}</strong></div>
           <small>Fotos optimizadas a WebP · PDF sin modificar</small>
         </div>
         <div class="em-student-submission-files" data-student-submission-files>
           <div class="em-student-submission-loading"><span></span><p>Cargando tu entrega…</p></div>
         </div>
         <div class="em-student-submission-actions">
-          <label class="em-student-submission-upload" for="studentActivitySubmissionInput"><span aria-hidden="true">＋</span><strong>Subir fotos o PDF</strong></label>
+          <label class="em-student-submission-upload" for="studentActivitySubmissionInput"><span aria-hidden="true">＋</span><strong>Seleccionar fotos o PDF</strong></label>
           <input class="em-hidden-file" id="studentActivitySubmissionInput" data-student-submission-input type="file" accept="image/*,application/pdf,.pdf" multiple />
         </div>
         <p class="em-student-submission-note">Puedes seleccionar todas las imágenes que necesites. Cada foto se reduce a un tamaño adecuado antes de subirla.</p>
@@ -13816,7 +13838,7 @@
           <span>Fecha de calificación</span>
           <strong>${escapeHTML(gradedAt)}</strong>
         </article>
-        ${studentActivitySubmissionPanelHTML(activity, status)}
+        ${studentActivitySubmissionTriggerHTML(activity, status)}
       </section>
     `;
   }
@@ -13929,6 +13951,26 @@
     `).join('');
   }
 
+  function updateStudentActivitySubmissionTrigger(activity, files = []) {
+    const activityId = String(activity?.id || '');
+    const count = Array.isArray(files) ? files.length : 0;
+    document.querySelectorAll('[data-student-submission-trigger]').forEach((button) => {
+      if (String(button.dataset.activityId || '') !== activityId) return;
+      const countNode = button.querySelector('[data-student-submission-trigger-count]');
+      const labelNode = button.querySelector('[data-student-submission-trigger-label]');
+      if (countNode) {
+        countNode.textContent = String(count);
+        countNode.hidden = count === 0;
+      }
+      if (labelNode) labelNode.textContent = count
+        ? `${count} archivo${count === 1 ? '' : 's'} en tu entrega`
+        : 'Fotos o PDF · sin límite fijo';
+      button.setAttribute('aria-label', count
+        ? `Abrir entrega con ${count} archivo${count === 1 ? '' : 's'}`
+        : 'Añadir entrega');
+    });
+  }
+
   function renderStudentActivitySubmissionPanel(panel, activity, result = {}) {
     if (!panel) return;
     const packageValue = {
@@ -13946,6 +13988,12 @@
       ? `${files.length} archivo${files.length === 1 ? '' : 's'} en tu entrega`
       : 'Aún no has adjuntado archivos';
     updateStudentActivitySubmissionRecord(activity, packageValue);
+    updateStudentActivitySubmissionTrigger(activity, files);
+    document.querySelectorAll('[data-student-submission-modal-summary]').forEach((node) => {
+      node.textContent = files.length
+        ? `${files.length} archivo${files.length === 1 ? '' : 's'} enviado${files.length === 1 ? '' : 's'}`
+        : 'Sin archivos todavía';
+    });
   }
 
   function setStudentActivitySubmissionProgress(panel, current = 0, total = 1, label = '', visible = true) {
@@ -14142,6 +14190,48 @@
     }
   }
 
+  function openStudentActivitySubmissionModal(activity) {
+    const status = activityStudentGradeStatus(activity);
+    const storedFiles = activitySubmissionFiles(status?.record?.submissionFile || status?.record?.submission_file || {});
+    openModal(`
+      <section class="modal-card em-student-submission-modal" role="dialog" aria-modal="true" aria-labelledby="studentSubmissionModalTitle">
+        <div class="em-student-submission-modal-hero">
+          <span class="em-student-submission-modal-shape is-one" aria-hidden="true"></span>
+          <span class="em-student-submission-modal-shape is-two" aria-hidden="true"></span>
+          <div class="em-student-submission-modal-copy">
+            <p>Mi entrega</p>
+            <h2 id="studentSubmissionModalTitle">${escapeHTML(activity?.title || 'Actividad')}</h2>
+            <span>Añade, revisa o elimina tus fotos y PDF antes de la calificación.</span>
+          </div>
+          <div class="em-student-submission-modal-symbol" aria-hidden="true">⇧</div>
+          <button class="modal-close em-student-submission-modal-close" data-close-modal aria-label="Cerrar">×</button>
+        </div>
+        <div class="em-student-submission-modal-body">
+          <div class="em-student-submission-modal-summary">
+            <span>Estado actual</span>
+            <strong data-student-submission-modal-summary>${storedFiles.length ? `${storedFiles.length} archivo${storedFiles.length === 1 ? '' : 's'} enviado${storedFiles.length === 1 ? '' : 's'}` : 'Sin archivos todavía'}</strong>
+          </div>
+          ${studentActivitySubmissionPanelHTML(activity, status)}
+        </div>
+        <div class="em-student-submission-modal-footer">
+          <button class="primary-btn" type="button" data-close-modal>Listo</button>
+        </div>
+      </section>
+    `, () => {
+      initStudentActivitySubmissionPanel(activity);
+      const modal = document.querySelector('.em-student-submission-modal');
+      if (modal) emPlayEntranceSequence(modal, ['.em-student-submission-modal-hero', '.em-student-submission-modal-summary', '.em-student-submission-panel', '.em-student-submission-modal-footer'], { duration: 360, stagger: 35, distance: 12, scale: .99 });
+    });
+  }
+
+  function initStudentActivitySubmissionTrigger(activity) {
+    document.querySelectorAll('[data-student-submission-trigger]').forEach((button) => {
+      if (button.dataset.submissionTriggerReady === 'true') return;
+      button.dataset.submissionTriggerReady = 'true';
+      button.addEventListener('click', () => openStudentActivitySubmissionModal(activity));
+    });
+  }
+
   function initStudentActivitySubmissionPanel(activity) {
     const panel = document.querySelector('[data-student-submission-panel]');
     if (!panel || panel.dataset.submissionReady === 'true') return;
@@ -14231,12 +14321,19 @@
       const semaphore = activitySemaphore(row.score);
       const group = groupMap.get(String(row.gradingGroupId || ''));
       const name = notesStudentNameParts(row);
+      const graded = Boolean(row?.gradedAt);
+      const submittedFiles = activitySubmissionFiles(row?.submissionFile || {});
+      const deliveryAlert = graded
+        ? ''
+        : (submittedFiles.length
+          ? '<b class="em-activity-grade-delivery-alert has-submission" role="img" aria-label="Entrega recibida y pendiente de calificar" title="Entrega recibida · pendiente de calificar">⚠️</b>'
+          : '<b class="em-activity-grade-delivery-alert is-missing" role="img" aria-label="Sin entrega y pendiente de calificar" title="Sin entrega · pendiente de calificar">❗❗</b>');
       return `
         <tr class="em-activity-grade-row" data-activity-record-id="${escapeAttr(row.recordId)}" tabindex="0" role="button" aria-label="Calificar a ${escapeAttr(row.fullName || `${name.lastName} ${name.firstName}`)}">
           <td class="em-activity-grade-group-cell">${group ? `<i style="--em-grade-group-color:${group.color}">${group.number}</i>` : '<i class="is-empty">—</i>'}</td>
           <th class="em-activity-grade-student-cell" scope="row" title="${escapeAttr(row.fullName || '')}">
             <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
-            <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
+            <span class="em-activity-grade-student-name-line"><strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>${deliveryAlert}</span>
             <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
           </th>
           <td class="em-activity-grade-score-cell"><strong class="${notesScoreClass(row.score)}">${Number(row.score ?? 40)}</strong></td>
@@ -14546,7 +14643,7 @@
       emActInitActivitiesHero(document);
       if (studentMode) {
         emInitStudentActivityStatus(document);
-        initStudentActivitySubmissionPanel(activity);
+        initStudentActivitySubmissionTrigger(activity);
       }
       const entranceSelectors = studentMode
         ? ['.em-activity-detail-hero', '.em-student-activity-status', '.em-activity-detail-content-tabs', '.em-activity-content-stage > *']
@@ -15004,7 +15101,7 @@
         <h2 id="activityGradeTitle">${escapeHTML(record.fullName)}</h2>
         <div class="em-activity-grade-tabbar" role="tablist" aria-label="Opciones de calificación">
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
-          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega</button>
+          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega<span class="em-grade-tab-count${existingSubmissionCount ? '' : ' is-zero'}">${existingSubmissionCount}</span></button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="sticker">Sticker</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="tracking">Seguimiento${trackingCount ? `<span class="em-grade-tab-count">${trackingCount}</span>` : ''}</button>
