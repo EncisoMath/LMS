@@ -37165,10 +37165,10 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   position: relative;
   min-height: 142px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 18px;
-  padding: 22px 64px 22px 22px;
+  gap: 0;
+  padding: 22px 58px 22px 22px;
   overflow: hidden;
   background:
     linear-gradient(130deg,
@@ -37248,12 +37248,23 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
 }
 .em-student-submission-modal-close {
+  position: absolute !important;
   top: 10px !important;
   right: 10px !important;
+  left: auto !important;
+  bottom: auto !important;
   z-index: 5 !important;
-  border-color: rgba(255,255,255,.25) !important;
-  background: rgba(0,0,0,.2) !important;
+  width: 34px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border-color: rgba(255,255,255,.28) !important;
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.24) !important;
   color: #fff !important;
+  line-height: 1 !important;
 }
 .em-student-submission-modal-body {
   display: grid;
@@ -37365,9 +37376,9 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   }
   .em-student-submission-modal-hero {
     min-height: 126px;
-    grid-template-columns: minmax(0, 1fr) 50px;
-    gap: 10px;
-    padding: 18px 50px 18px 15px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 18px 54px 18px 15px;
   }
   .em-student-submission-modal-symbol {
     width: 50px;
@@ -37474,11 +37485,17 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 .em-student-submission-modal-hero > .em-act-shapes .em-act-shape-x::after {
   background: #000 !important;
 }
-.em-student-submission-modal-copy,
-.em-student-submission-modal-symbol,
-.em-student-submission-modal-close {
+.em-student-submission-modal-copy {
   position: relative;
   z-index: 2;
+}
+.em-student-submission-modal-close {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 5 !important;
 }
 .em-student-submission-modal-summary,
 .em-student-submission-modal .em-student-submission-panel,
@@ -37491,8 +37508,48 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 @media (max-width: 600px) {
   .activity-hero.em-act-hero-host.em-student-submission-modal-hero {
     min-height: 126px !important;
-    grid-template-columns: minmax(0, 1fr) 50px !important;
-    gap: 10px !important;
-    padding: 18px 50px 18px 15px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    padding: 18px 54px 18px 15px !important;
+  }
+}
+
+
+/* ================================================================
+   ENCISOMATH v0.25.080 · CABECERA LIMPIA DEL MODAL MI ENTREGA
+   Sin icono de subida; cierre fijo y bien alineado arriba a la derecha.
+   ================================================================ */
+.activity-hero.em-act-hero-host.em-student-submission-modal-hero {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding-right: 58px !important;
+}
+.em-student-submission-modal-symbol {
+  display: none !important;
+}
+.em-student-submission-modal-close {
+  position: absolute !important;
+  inset: 10px 10px auto auto !important;
+  width: 34px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(255,255,255,.3) !important;
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.24) !important;
+  color: #fff !important;
+  font-size: 1.1rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  z-index: 8 !important;
+}
+@media (max-width: 600px) {
+  .activity-hero.em-act-hero-host.em-student-submission-modal-hero {
+    padding-right: 54px !important;
+  }
+  .em-student-submission-modal-close {
+    inset: 8px 8px auto auto !important;
   }
 }

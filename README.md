@@ -1,4 +1,10 @@
-# EncisoMath LMS v0.25.079
+# EncisoMath LMS v0.25.080
+
+## v0.25.080 — cabecera limpia de Mi entrega
+
+- Se eliminó el icono de flecha hacia arriba del modal estudiantil.
+- El botón de cierre queda fijado y alineado en la esquina superior derecha.
+- Se conserva el radio de 4 px y la animación de shapes del hero de Actividades.
 
 
 ## v0.25.079 — modal de entrega con shapes animados del hero

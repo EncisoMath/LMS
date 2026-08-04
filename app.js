@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.079';
+  const APP_VERSION = '0.25.080';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -14207,7 +14207,6 @@
             <h2 id="studentSubmissionModalTitle">${escapeHTML(activity?.title || 'Actividad')}</h2>
             <span>Añade, revisa o elimina tus fotos y PDF antes de la calificación.</span>
           </div>
-          <div class="em-student-submission-modal-symbol" aria-hidden="true">⇧</div>
           <button class="modal-close em-student-submission-modal-close" data-close-modal aria-label="Cerrar">×</button>
         </div>
         <div class="em-student-submission-modal-body">
