@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.081
+# EncisoMath LMS v0.25.082
+
+
+## v0.25.082 — asistencia completa sin corte de 1.000 registros
+
+- La carga docente de `attendance_records` ahora pagina las consultas hasta recuperar todos los registros disponibles.
+- Corrige el caso en que la asistencia sí quedaba guardada en Supabase, pero las fechas más recientes no aparecían ni en Asistencia diaria ni en la Planilla.
+- La paginación usa un orden estable por fecha, asignación y estudiante para evitar saltos o duplicados entre páginas.
+- No requiere ejecutar SQL nuevo.
 
 ## v0.25.081 — visor de imágenes sin doble desplazamiento
 
