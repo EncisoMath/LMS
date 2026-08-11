@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.082';
+  const APP_VERSION = '0.25.083';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -18201,33 +18201,35 @@
     if (window.CSS && typeof window.CSS.escape === 'function') return CSS.escape(String(value));
     return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   }
-  function showMandatoryUpdateScreen() {
-    if (document.getElementById('emMandatoryUpdateScreen')) return;
+  function showMandatoryUpdateScreen(message = 'Actualizando EncisoMath...', progressValue = 88) {
+    let overlay = document.getElementById('emMandatoryUpdateScreen');
+    if (!overlay) {
+      // Reutiliza exactamente la pantalla de carga principal para que una
+      // actualización no cambie de lenguaje visual ni muestre un overlay blanco.
+      const template = document.createElement('template');
+      template.innerHTML = renderLoadingHTML(message, progressValue).trim();
+      overlay = template.content.firstElementChild;
+      if (!overlay) return null;
 
-    // Reutiliza exactamente la pantalla de carga principal para que una
-    // actualización no cambie de lenguaje visual ni muestre un overlay blanco.
-    const template = document.createElement('template');
-    template.innerHTML = renderLoadingHTML('Actualizando EncisoMath...', 78).trim();
-    const overlay = template.content.firstElementChild;
-    if (!overlay) return;
+      overlay.id = 'emMandatoryUpdateScreen';
+      overlay.setAttribute('role', 'status');
+      overlay.setAttribute('aria-live', 'assertive');
+      overlay.setAttribute('aria-label', 'Actualizando EncisoMath');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;width:100%;min-height:100dvh';
 
-    overlay.id = 'emMandatoryUpdateScreen';
-    overlay.setAttribute('role', 'status');
-    overlay.setAttribute('aria-live', 'assertive');
-    overlay.setAttribute('aria-label', 'Actualizando EncisoMath');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;width:100%;min-height:100dvh';
+      document.getElementById('emMandatoryUpdateStyle')?.remove();
+      document.body.appendChild(overlay);
+      initEncisoAnimatedLogos(overlay);
+    }
 
-    document.getElementById('emMandatoryUpdateStyle')?.remove();
-    document.body.appendChild(overlay);
-    initEncisoAnimatedLogos(overlay);
-
-    // Completa visualmente la misma barra real de inicio mientras el nuevo
-    // Service Worker toma el control y ejecuta la recarga obligatoria.
-    window.requestAnimationFrame(() => {
-      const progress = overlay.querySelector('.em-app-loader-progress');
-      progress?.style.setProperty('--em-app-load-progress', '94%');
-      progress?.setAttribute('aria-valuenow', '94');
-    });
+    const text = overlay.querySelector('.loading-phrase, .em-app-loader-copy, [data-loading-copy]');
+    if (text && message) text.textContent = message;
+    const progress = overlay.querySelector('.em-app-loader-progress');
+    const safeProgress = Math.max(0, Math.min(100, Number(progressValue) || 0));
+    progress?.style.setProperty('--em-app-load-progress', `${safeProgress}%`);
+    progress?.setAttribute('aria-valuenow', String(safeProgress));
+    overlay.classList.toggle('is-complete', safeProgress >= 100);
+    return overlay;
   }
 
   function clearServiceWorkerUpdateMarker() {
@@ -18242,27 +18244,119 @@
 
   function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
-    const reloadKey = `encisomath:sw-reload:${APP_VERSION}`;
-    let reloadingForUpdate = false;
 
-    const reloadWithNewWorker = () => {
-      if (reloadingForUpdate || !navigator.serviceWorker.controller) return;
-      reloadingForUpdate = true;
-      showMandatoryUpdateScreen();
-      const lastReload = Number(sessionStorage.getItem(reloadKey) || 0);
-      if (lastReload && Date.now() - lastReload < 30000) {
-        console.warn('[EncisoMath] Se evitó una recarga repetida del Service Worker.');
-        document.getElementById('emMandatoryUpdateScreen')?.remove();
-        return;
-      }
-      sessionStorage.setItem(reloadKey, String(Date.now()));
-      window.setTimeout(() => window.location.reload(), 120);
+    // El navegador puede activar un Service Worker nuevo sin entregar siempre
+    // controllerchange en el mismo orden que los mensajes. Toda señal de
+    // actualización termina en una única recarga controlada y con anti-bucle.
+    const reloadGuardKey = 'encisomath:sw-reload-guard';
+    const reloadGuardMs = 45000;
+    const hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
+    let registrationRef = null;
+    let updateInProgress = false;
+    let reloadScheduled = false;
+    let fallbackTimer = 0;
+    let pendingVersion = '';
+
+    const normalizeWorkerVersion = (value) => String(value || '')
+      .replace(/^encisomath-offline-v/i, '')
+      .trim();
+
+    const readReloadGuard = () => {
+      try { return JSON.parse(sessionStorage.getItem(reloadGuardKey) || 'null'); }
+      catch (_) { return null; }
     };
 
-    navigator.serviceWorker.addEventListener('controllerchange', reloadWithNewWorker);
+    const clearFallback = () => {
+      if (!fallbackTimer) return;
+      window.clearTimeout(fallbackTimer);
+      fallbackTimer = 0;
+    };
+
+    const finishWithoutReloadLoop = () => {
+      clearFallback();
+      document.getElementById('emMandatoryUpdateScreen')?.remove();
+      updateInProgress = false;
+    };
+
+    const reloadWithNewWorker = (reason = 'service-worker', version = '') => {
+      if (reloadScheduled) return;
+      const normalizedVersion = normalizeWorkerVersion(version || pendingVersion) || 'pending';
+      const now = Date.now();
+      const previous = readReloadGuard();
+
+      if (previous && now - Number(previous.at || 0) < reloadGuardMs) {
+        console.warn('[EncisoMath] Se evitó un bucle de recarga del Service Worker.', {
+          reason,
+          previous,
+          version: normalizedVersion
+        });
+        finishWithoutReloadLoop();
+        return;
+      }
+
+      reloadScheduled = true;
+      clearFallback();
+      showMandatoryUpdateScreen('Aplicando nueva versión...', 100);
+      try {
+        sessionStorage.setItem(reloadGuardKey, JSON.stringify({
+          at: now,
+          version: normalizedVersion,
+          reason
+        }));
+      } catch (_) {}
+
+      // replace() fuerza una navegación real pero evita llenar el historial.
+      // El parámetro temporal también impide reutilizar una navegación antigua.
+      window.setTimeout(() => {
+        try {
+          const target = new URL(window.location.href);
+          target.searchParams.set('__em_update', normalizedVersion === 'pending' ? String(now) : normalizedVersion);
+          window.location.replace(target.href);
+        } catch (_) {
+          window.location.reload();
+        }
+      }, 180);
+    };
+
+    const armActivationFallback = (version = '') => {
+      clearFallback();
+      fallbackTimer = window.setTimeout(() => {
+        if (reloadScheduled) return;
+        try { registrationRef?.waiting?.postMessage({ type: 'SKIP_WAITING' }); }
+        catch (_) {}
+        // Si controllerchange se perdió por una carrera del navegador, la
+        // navegación controlada termina de aplicar igualmente el SW activado.
+        reloadWithNewWorker('activation-timeout', version || pendingVersion);
+      }, 9000);
+    };
+
+    const activateWaitingWorker = (registration, version = '') => {
+      if (!registration?.waiting) return false;
+      updateInProgress = true;
+      if (version) pendingVersion = version;
+      showMandatoryUpdateScreen('Aplicando nueva versión...', 96);
+      try { registration.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+      catch (_) {}
+      armActivationFallback(version);
+      return true;
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // En la primera instalación no hace falta reiniciar la aplicación. Para
+      // una actualización sí: el nuevo controller debe arrancar con su HTML/JS.
+      if (!hadControllerAtBoot && !updateInProgress) return;
+      updateInProgress = true;
+      reloadWithNewWorker('controllerchange', pendingVersion);
+    });
+
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data?.type === 'ENCISOMATH_UPDATE_ACTIVATED') {
-        showMandatoryUpdateScreen();
+        updateInProgress = true;
+        pendingVersion = String(event.data.version || pendingVersion || '');
+        showMandatoryUpdateScreen('Aplicando nueva versión...', 100);
+        // No esperamos indefinidamente un controllerchange: el mensaje de
+        // activación ya confirma que el nuevo SW está listo y puede recargarse.
+        reloadWithNewWorker('activation-message', pendingVersion);
         return;
       }
       if (event.data?.type === 'ENCISOMATH_OPEN_NOTIFICATION') {
@@ -18277,34 +18371,64 @@
 
     window.addEventListener('load', async () => {
       clearServiceWorkerUpdateMarker();
-      window.setTimeout(() => sessionStorage.removeItem(reloadKey), 30000);
+
+      // El guard solo protege la transición inmediata. Una vez que la nueva
+      // versión ha permanecido estable, futuras actualizaciones pueden recargar.
+      window.setTimeout(() => {
+        try { sessionStorage.removeItem(reloadGuardKey); }
+        catch (_) {}
+      }, reloadGuardMs + 5000);
+
       try {
         // URL estable: las instalaciones actuales y futuras consultan siempre el
         // mismo sw.js. updateViaCache:none obliga al navegador a revalidarlo.
         const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+        registrationRef = registration;
 
-        const activateWaitingWorker = () => {
-          if (registration.waiting) registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        const watchInstallingWorker = (worker) => {
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              updateInProgress = true;
+              showMandatoryUpdateScreen('Nueva versión lista...', 94);
+              // En algunos navegadores waiting se publica un instante después.
+              window.setTimeout(() => {
+                if (!activateWaitingWorker(registration)) armActivationFallback();
+              }, 0);
+            }
+            if (worker.state === 'activated' && updateInProgress && !reloadScheduled) {
+              reloadWithNewWorker('worker-activated', pendingVersion);
+            }
+            if (worker.state === 'redundant' && updateInProgress && !reloadScheduled) {
+              console.warn('[EncisoMath] La actualización del Service Worker quedó redundante.');
+              finishWithoutReloadLoop();
+            }
+          });
         };
+
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          if (!worker || !navigator.serviceWorker.controller) return;
+          updateInProgress = true;
+          watchInstallingWorker(worker);
+        });
+
+        if (registration.installing && navigator.serviceWorker.controller) {
+          updateInProgress = true;
+          watchInstallingWorker(registration.installing);
+        }
+        activateWaitingWorker(registration);
+
         const checkForUpdate = async () => {
-          if (!navigator.onLine) return;
+          if (!navigator.onLine || reloadScheduled) return;
           try {
             await registration.update();
-            activateWaitingWorker();
+            activateWaitingWorker(registration);
           } catch (error) {
             console.warn('[EncisoMath] No se pudo comprobar la actualización:', error);
           }
         };
 
-        registration.addEventListener('updatefound', () => {
-          const worker = registration.installing;
-          if (!worker) return;
-          worker.addEventListener('statechange', () => {
-            if (worker.state === 'installed' && navigator.serviceWorker.controller) activateWaitingWorker();
-          });
-        });
-
-        activateWaitingWorker();
         await checkForUpdate();
         window.addEventListener('online', checkForUpdate);
         document.addEventListener('visibilitychange', () => {
@@ -18313,6 +18437,7 @@
         window.setInterval(checkForUpdate, 15 * 60 * 1000);
       } catch (error) {
         console.warn('Service worker no registrado:', error);
+        finishWithoutReloadLoop();
       }
     }, { once: true });
   }

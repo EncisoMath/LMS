@@ -1,16 +1,19 @@
-# EncisoMath LMS v0.25.082
+# EncisoMath LMS v0.25.083
 
+## v0.25.083 — actualización PWA sin reinicio manual
 
-## v0.25.082 — asistencia completa sin corte de 1.000 registros
-
-- La carga docente de `attendance_records` ahora pagina las consultas hasta recuperar todos los registros disponibles.
-- Corrige el caso en que la asistencia sí quedaba guardada en Supabase, pero las fechas más recientes no aparecían ni en Asistencia diaria ni en la Planilla.
-- La paginación usa un orden estable por fecha, asignación y estudiante para evitar saltos o duplicados entre páginas.
+- Se eliminó la doble navegación que podía producirse entre `client.navigate()`, `controllerchange` y `location.reload()` al activar una versión nueva.
+- El Service Worker ahora solo anuncia que la nueva versión quedó activa y `app.js` realiza una única recarga controlada.
+- Si el navegador pierde el evento `controllerchange`, un fallback de 9 segundos aplica la versión automáticamente en lugar de dejar la pantalla **Actualizando EncisoMath...** indefinidamente.
+- El mensaje `ENCISOMATH_UPDATE_ACTIVATED` también dispara la recarga, por lo que ya no depende exclusivamente de un único evento del navegador.
+- Se añadió una protección de 45 segundos contra bucles de actualización y recargas repetidas.
+- La actualización usa `location.replace()` con un marcador temporal y luego limpia ese marcador al iniciar, evitando llenar el historial.
 - No requiere ejecutar SQL nuevo.
+
 
 ## v0.25.081 — visor de imágenes sin doble desplazamiento
 
-- Las imágenes de una actividad ya no quedan encerradas en un viewport con altura máxima.xD
+- Las imágenes de una actividad ya no quedan encerradas en un viewport con altura máxima.
 - El visor crece hasta mostrar la imagen completa según su relación de aspecto y el desplazamiento vertical queda únicamente en la página general.
 - La imagen ocupa todo el ancho útil del `em-activity-media-viewer`, sin padding interno adicional.
 - El carrusel de entregas docentes y el modo pantalla completa conservan su scroll propio, zoom y pellizco.

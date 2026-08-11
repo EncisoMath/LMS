@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.082';
+const SW_VERSION = 'encisomath-offline-v0.25.083';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -118,18 +118,19 @@ self.addEventListener('activate', (event) => {
 
     await self.clients.claim();
 
-    // La recarga se ordena desde el propio Service Worker para alcanzar incluso
-    // instalaciones que todavía ejecutan un app.js antiguo sin recarga automática.
+    // El Service Worker solo anuncia que ya quedó activo. La navegación la
+    // controla app.js para evitar la carrera histórica entre client.navigate(),
+    // controllerchange y location.reload() que podía dejar "Actualizando..."
+    // bloqueado hasta que el estudiante cerrara y abriera la PWA.
     if (hadPreviousVersion) {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       await Promise.allSettled(windows.map(async (client) => {
-        try { client.postMessage({ type: 'ENCISOMATH_UPDATE_ACTIVATED', version: SW_VERSION }); }
-        catch (_) {}
-        await new Promise((resolve) => setTimeout(resolve, 180));
         try {
-          const target = new URL(client.url);
-          target.searchParams.set('__em_update', SW_VERSION.replace('encisomath-offline-v', ''));
-          await client.navigate(target.href);
+          client.postMessage({
+            type: 'ENCISOMATH_UPDATE_ACTIVATED',
+            version: SW_VERSION,
+            reloadRequired: true
+          });
         } catch (_) {}
       }));
     }
