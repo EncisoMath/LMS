@@ -906,31 +906,6 @@
     return cache;
   }
 
-  async function loadAllAttendanceRows(supabaseClient, assignmentIds) {
-    const pageSize = 1000;
-    const rows = [];
-    let from = 0;
-
-    while (true) {
-      const result = await supabaseClient
-        .from('attendance_records')
-        .select('assignment_id,student_id,attendance_date,status')
-        .in('assignment_id', assignmentIds)
-        .order('attendance_date', { ascending: true })
-        .order('assignment_id', { ascending: true })
-        .order('student_id', { ascending: true })
-        .range(from, from + pageSize - 1);
-
-      if (result.error) return result;
-      const page = result.data || [];
-      rows.push(...page);
-      if (page.length < pageSize) break;
-      from += pageSize;
-    }
-
-    return { data: rows, error: null };
-  }
-
   function mapRockstarEvents(rows) {
     return (rows || []).map((row) => {
       const code = studentDbIdToCode.get(row.student_id);
@@ -1295,7 +1270,10 @@
           .from('quiz_assignments')
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
           .in('assignment_id', assignmentIds), 'Quizzes cargados...'),
-        trackAcademicQuery(loadAllAttendanceRows(supabaseClient, assignmentIds), 'Asistencia cargada...'),
+        trackAcademicQuery(supabaseClient
+          .from('attendance_records')
+          .select('assignment_id,student_id,attendance_date,status')
+          .in('assignment_id', assignmentIds), 'Asistencia cargada...'),
         trackAcademicQuery(supabaseClient
           .from('rockstar_events')
           .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')
@@ -1499,6 +1477,22 @@
       .single();
     if (error) throw normalizeError(error, 'No se pudo guardar la asistencia.');
     return data;
+  }
+
+  async function deleteAttendanceDate({ assignmentId, attendanceDate }) {
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const safeAssignmentId = String(assignmentId || '').trim();
+    const safeDate = String(attendanceDate || '').slice(0, 10);
+    if (!safeAssignmentId || !safeDate) throw new Error('No se pudo identificar la fecha de asistencia.');
+    const { data, error } = await supabaseClient
+      .from('attendance_records')
+      .delete()
+      .eq('assignment_id', safeAssignmentId)
+      .eq('attendance_date', safeDate)
+      .select('id');
+    if (error) throw normalizeError(error, 'No se pudo eliminar la asistencia de esa fecha.');
+    return { deleted: true, count: Array.isArray(data) ? data.length : 0 };
   }
 
   async function getAttendanceRecordDetail({ assignmentId, studentCode, attendanceDate }) {
@@ -3135,6 +3129,7 @@
     loadApplicationData,
     normalizeStudentContentPayload,
     saveAttendanceStatus,
+    deleteAttendanceDate,
     getAttendanceRecordDetail,
     addRockstarEvent,
     createStudentAndEnroll,

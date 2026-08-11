@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.084';
+  const APP_VERSION = '0.25.085';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4322,7 +4322,9 @@
         measured = Math.max(measured, String(name.lastName || '').length * 7, String(name.firstName || '').length * 5.8);
       }
     });
-    return Math.round(Math.max(118, Math.min(184, measured + 28)));
+    // La planilla debe priorizar densidad: los nombres largos ya cuentan con
+    // ellipsis y title completo, por lo que no necesitan ensanchar toda la hoja.
+    return Math.round(Math.max(104, Math.min(146, measured + 20)));
   }
 
   function notesAttendanceSessions(assignmentId, period) {
@@ -4379,12 +4381,76 @@
   }
 
   function notesAttendanceHeaderHTML(session) {
-    const label = notesAttendanceDateLabel(session?.date || '');
+    const date = String(session?.date || '');
+    const label = notesAttendanceDateLabel(date);
     return `
-      <th class="em-notes-attendance-header" scope="col" title="${escapeAttr(label)}">
-        <div><span>${escapeHTML(label)}</span></div>
+      <th class="em-notes-attendance-header" scope="col" title="${escapeAttr(`${label}. Toca para eliminar esta fecha de asistencia.`)}">
+        <button
+          class="em-notes-attendance-header-trigger"
+          type="button"
+          data-notes-attendance-session-delete="${escapeAttr(date)}"
+          aria-label="${escapeAttr(`Eliminar ${label} y todas las asistencias de ese día en este curso`)}"
+        ><span>${escapeHTML(label)}</span></button>
       </th>
     `;
+  }
+
+  function openNotesAttendanceDateDeleteModal(session) {
+    const assignment = state.assignment;
+    if (!assignment || !session?.date) return;
+    const label = notesAttendanceDateLabel(session.date);
+    const registered = Object.values(session.attendance || {}).filter(Boolean).length;
+    const courseLabel = `${assignment.grade || ''}-${assignment.course || ''}`.replace(/^-|-$/g, '') || 'este curso';
+    openModal(`
+      <section class="modal-card em-notes-attendance-delete-modal" role="dialog" aria-modal="true" aria-labelledby="notesAttendanceDeleteTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Eliminar asistencia</p>
+        <h2 id="notesAttendanceDeleteTitle">${escapeHTML(label)}</h2>
+        <p class="em-notes-attendance-delete-copy">Se eliminará esta fecha de la PLANILLA y también los <strong>${registered}</strong> registro${registered === 1 ? '' : 's'} de asistencia guardados para <strong>${escapeHTML(courseLabel)}</strong>.</p>
+        <div class="em-notes-attendance-delete-warning"><span aria-hidden="true">⚠️</span><p>Esta acción elimina la asistencia de ese día para todo el curso. No afecta otros cursos ni otras fechas.</p></div>
+        <p class="em-class-create-error" id="notesAttendanceDeleteError" role="alert"></p>
+        <div class="em-activity-modal-actions">
+          <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+          <button class="danger-confirm" id="confirmNotesAttendanceDeleteBtn" type="button">Eliminar fecha</button>
+        </div>
+      </section>
+    `, () => {
+      document.getElementById('confirmNotesAttendanceDeleteBtn')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const errorBox = document.getElementById('notesAttendanceDeleteError');
+        button.disabled = true;
+        button.textContent = 'Eliminando…';
+        if (errorBox) errorBox.textContent = '';
+        try {
+          await deleteNotesAttendanceDate(assignment.id, session.date);
+          closeModal(false);
+          renderNotesTab({ preserveScroll: true, silentSync: true });
+          toast(`${label} eliminada de la planilla.`);
+        } catch (error) {
+          if (errorBox) errorBox.textContent = error?.message || 'No se pudo eliminar esta fecha de asistencia.';
+          reportCloudError('No se pudo eliminar la fecha de asistencia', error, { silent: true });
+          button.disabled = false;
+          button.textContent = 'Eliminar fecha';
+        }
+      });
+    });
+  }
+
+  async function deleteNotesAttendanceDate(assignmentId, attendanceDate) {
+    const safeAssignmentId = String(assignmentId || '');
+    const safeDate = String(attendanceDate || '').slice(0, 10);
+    if (!safeAssignmentId || !safeDate) throw new Error('No se pudo identificar la fecha de asistencia.');
+    if (!isCloudReady()) {
+      localStorage.removeItem(`encisomath:attendance:${safeAssignmentId}:${safeDate}`);
+      return { deleted: true, offline: true };
+    }
+    if (typeof cloudAPI()?.deleteAttendanceDate !== 'function') {
+      throw new Error('Actualiza los archivos del LMS antes de eliminar una fecha de asistencia.');
+    }
+    const result = await cloudAPI().deleteAttendanceDate({ assignmentId: safeAssignmentId, attendanceDate: safeDate });
+    const key = cloudAttendanceKey(safeAssignmentId, safeDate);
+    if (state.cloud.attendance?.[key]) delete state.cloud.attendance[key];
+    return result;
   }
 
   function notesAttendanceCellHTML(student, session) {
@@ -5079,22 +5145,31 @@
     openModal(`
       <section class="modal-card em-notes-grade-detail-modal is-loading" role="dialog" aria-modal="true" aria-label="Cargando detalle de la calificación">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <div class="em-notes-grade-detail-loading"><span></span><strong>Cargando detalle…</strong><small>Consultando únicamente esta actividad.</small></div>
+        <div class="em-notes-grade-detail-loading"><span></span><strong>Cargando detalle…</strong><small>Preparando calificación, entrega y seguimiento.</small></div>
       </section>
     `);
     try {
       const rows = await cloudAPI().getActivityGradebook({ activityId: activity.id, assignmentId });
+      state.activityGradebook = Array.isArray(rows) ? rows : [];
       const basicRecord = notesActivityGradeMap(assignmentId).get(`${activity.id}|${studentCode}`) || null;
-      const record = (rows || []).find((item) => String(item.studentCode || '') === String(studentCode || '')) || {
+      const record = state.activityGradebook.find((item) => String(item.studentCode || '') === String(studentCode || '')) || {
         studentCode,
         fullName: student?.fullName || '',
+        firstName: student?.firstName || '',
+        lastName: student?.lastName || '',
         score: Number(basicRecord?.score ?? 40),
         gradedAt: basicRecord?.gradedAt || '',
         observations: '',
-        deliveryEvents: []
+        deliveryEvents: [],
+        submissionFile: {}
       };
-      syncActivityGradesFromGradebook(activity.id, assignmentId, rows || []);
-      openModal(notesActivityGradeDetailHTML(activity, student, record));
+      syncActivityGradesFromGradebook(activity.id, assignmentId, state.activityGradebook);
+      openActivityGradeModal(activity, record, {
+        fromNotes: true,
+        kicker: 'Detalle de la calificación',
+        title: activity?.title || 'Actividad',
+        subtitle: student?.fullName || record?.fullName || record?.studentCode || ''
+      });
     } catch (error) {
       openModal(`
         <section class="modal-card em-notes-grade-detail-modal" role="dialog" aria-modal="true" aria-labelledby="notesGradeDetailErrorTitle">
@@ -5162,7 +5237,7 @@
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca un icono de asistencia para ver la hora o cambiarlo; toca una nota de actividad para consultar su detalle.</p>
+        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca el título de una fecha para eliminar esa asistencia del curso; toca un icono para verla o cambiarla. Las notas de actividad se pueden editar directamente desde la planilla.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
@@ -5179,6 +5254,13 @@
         button.dataset.notesAttendanceStudent || '',
         button.dataset.notesAttendanceDetail || ''
       ));
+    });
+    content.querySelectorAll('[data-notes-attendance-session-delete]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const date = button.dataset.notesAttendanceSessionDelete || '';
+        const session = sessions.find((item) => String(item?.date || '') === String(date));
+        if (session) openNotesAttendanceDateDeleteModal(session);
+      });
     });
     document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
       downloadNotesForEducaCity(event.currentTarget);
@@ -15112,7 +15194,7 @@
     return `${dateLabel} · ${timeLabel}`;
   }
 
-  function openActivityGradeModal(activity, record) {
+  function openActivityGradeModal(activity, record, options = {}) {
     const gradebook = state.activityGradebook || [];
     const currentGroup = record.gradingGroupId
       ? gradebook.filter((item) => item.gradingGroupId === record.gradingGroupId)
@@ -15139,8 +15221,9 @@
     openModal(`
       <section class="modal-card em-activity-grade-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <p class="section-kicker">Calificar actividad</p>
-        <h2 id="activityGradeTitle">${escapeHTML(record.fullName)}</h2>
+        <p class="section-kicker">${escapeHTML(options.kicker || 'Calificar actividad')}</p>
+        <h2 id="activityGradeTitle">${escapeHTML(options.title || record.fullName)}</h2>
+        ${options.subtitle ? `<p class="em-notes-grade-detail-student">${escapeHTML(options.subtitle)}</p>` : ''}
         <div class="em-activity-grade-tabbar" role="tablist" aria-label="Opciones de calificación">
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega<span class="em-grade-tab-count${existingSubmissionCount ? '' : ' is-zero'}">${existingSubmissionCount}</span></button>
@@ -15236,10 +15319,10 @@
           <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Enviar calificación</button></div>
         </form>
       </section>
-    `, () => initActivityGradeModal(activity, record, currentGroup));
+    `, () => initActivityGradeModal(activity, record, currentGroup, options));
   }
 
-  function initActivityGradeModal(activity, record, currentGroup) {
+  function initActivityGradeModal(activity, record, currentGroup, options = {}) {
     const form = document.getElementById('activityGradeForm');
     const groupOptions = document.getElementById('activityGroupOptions');
     const mainScore = document.getElementById('activityScoreInput');
@@ -15568,7 +15651,11 @@
         syncActivityGradesFromGradebook(activity.id, state.assignment?.id || '', state.activityGradebook);
         updateActivityProgressFromGradebook(activity, state.activityGradebook);
         closeModal(false);
-        refreshActivityGradebookList();
+        if (options.fromNotes) {
+          renderNotesTab({ preserveScroll: true, silentSync: true });
+        } else {
+          refreshActivityGradebookList();
+        }
         toast(selectedCodes.length > 1
           ? `${selectedStickerUrl ? 'Calificación y sticker guardados' : 'Calificación guardada'} para los ${selectedCodes.length} integrantes del grupo.`
           : 'Calificación guardada.');

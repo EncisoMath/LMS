@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.084
+# EncisoMath LMS v0.25.085
+
+## v0.25.085 — PLANILLA compacta, asistencia por fecha y edición completa
+
+- El encabezado de cada fecha de asistencia en la PLANILLA ahora es interactivo: al tocarlo se puede eliminar esa fecha y todos sus registros de asistencia únicamente para el curso actual, con confirmación previa.
+- La columna `Estudiante`, las columnas de asistencia, las columnas de notas y la `Definitiva` se compactaron para mostrar más información horizontalmente sin perder los nombres completos en `title`.
+- Al tocar una nota de actividad desde la PLANILLA se abre el editor completo de calificación con nota normal o rúbrica, entrega/archivos, observación, grupo, sticker y seguimiento.
+- Al guardar desde ese editor, la PLANILLA se recalcula y actualiza inmediatamente.
+- No requiere SQL nuevo.
 
 ## v0.25.084 — PLANILLA solo con actividades visibles del curso
 
