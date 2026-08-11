@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.083';
+  const APP_VERSION = '0.25.084';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4139,11 +4139,17 @@
   }
 
   function getNotesActivities() {
-    return getActivitiesForCurrentAssignment()
+    const assignmentId = String(state.assignment?.id || '');
+    if (!assignmentId) return [];
+    // La vista docente de Actividades incluye también elementos de la biblioteca
+    // para poder administrarlos. La PLANILLA, en cambio, debe representar
+    // únicamente lo que está realmente visible/asignado a este curso.
+    return (state.data.activities || [])
+      .filter((activity) => contentIsAssignedTo(activity, assignmentId))
       .filter((activity) => Number(activity.period || 1) === Number(state.activePeriod || 1))
       .sort((a, b) => {
-        const aOrder = contentSortOrderForAssignment(a, state.assignment?.id || '');
-        const bOrder = contentSortOrderForAssignment(b, state.assignment?.id || '');
+        const aOrder = contentSortOrderForAssignment(a, assignmentId);
+        const bOrder = contentSortOrderForAssignment(b, assignmentId);
         if (aOrder !== bOrder) return aOrder - bOrder;
         const aDate = String(a.startsAt || a.createdAt || '');
         const bDate = String(b.startsAt || b.createdAt || '');
@@ -4212,8 +4218,10 @@
     const defaults = notesDefaultWeights(baseColumns.length);
     const root = getNotesConfigStore()[notesConfigKey(assignmentId, period)] || {};
     const savedColumns = root.columns && typeof root.columns === 'object' ? root.columns : {};
-    const hasSavedColumns = Object.keys(savedColumns).length > 0;
-    return baseColumns.map((column, index) => {
+    const activeKeys = new Set(baseColumns.map((column) => column.key));
+    const activeSavedKeys = Object.keys(savedColumns).filter((key) => activeKeys.has(key));
+    const hasSavedColumns = activeSavedKeys.length > 0;
+    const columns = baseColumns.map((column, index) => {
       const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
       const hasSavedWeight = Object.prototype.hasOwnProperty.call(saved, 'weight');
       const savedWeight = Number(saved.weight);
@@ -4225,6 +4233,34 @@
         target: column.type === 'rockstars' ? Math.max(1, Number(saved.target || 15)) : null
       };
     });
+
+    // Compatibilidad con planillas guardadas antes de v0.25.084: si una
+    // actividad oculta había quedado almacenada como columna con peso, ese
+    // porcentaje ya no debe reservarse. Conservamos la proporción configurada
+    // entre las columnas visibles y la normalizamos nuevamente a 100%.
+    const hasWeightedHiddenActivity = Object.entries(savedColumns).some(([key, value]) => (
+      key.startsWith('activity:')
+      && !activeKeys.has(key)
+      && Number(value?.weight || 0) > 0
+    ));
+    const activeWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
+    if (hasWeightedHiddenActivity && activeWeight > 0 && Math.abs(activeWeight - 100) > .001) {
+      const factor = 100 / activeWeight;
+      let accumulated = 0;
+      let lastWeightedIndex = -1;
+      columns.forEach((column, index) => {
+        if (Number(column.weight || 0) > 0) lastWeightedIndex = index;
+      });
+      columns.forEach((column, index) => {
+        if (index === lastWeightedIndex) return;
+        column.weight = Math.round(Number(column.weight || 0) * factor * 10) / 10;
+        accumulated += Number(column.weight || 0);
+      });
+      if (lastWeightedIndex >= 0) {
+        columns[lastWeightedIndex].weight = Math.max(0, Math.round((100 - accumulated) * 10) / 10);
+      }
+    }
+    return columns;
   }
 
   function saveNotesColumnConfig(columnKey, values) {

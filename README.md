@@ -1,4 +1,10 @@
-# EncisoMath LMS v0.25.083
+# EncisoMath LMS v0.25.084
+
+## v0.25.084 — PLANILLA solo con actividades visibles del curso
+
+- La PLANILLA ya no incluye actividades ocultas en la biblioteca docente ni actividades asignadas a otros cursos.
+- La definitiva se calcula únicamente con los componentes realmente visibles/asignados al curso actual.
+- Si una configuración antigua reservaba peso para una actividad que ahora está oculta, el peso de los componentes visibles se normaliza proporcionalmente a 100% sin alterar la configuración guardada.
 
 ## v0.25.083 — actualización PWA sin reinicio manual
 
