@@ -906,6 +906,39 @@
     return cache;
   }
 
+  async function loadAllAttendanceRows(supabaseClient, assignmentIds) {
+    const safeAssignmentIds = [...new Set((assignmentIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
+    if (!safeAssignmentIds.length) return { data: [], error: null };
+
+    // Supabase/PostgREST suele limitar a 1000 las filas devueltas por una sola
+    // consulta. La asistencia crece rápidamente porque cada estudiante genera
+    // una fila por fecha, así que la cargamos por páginas para no perder las
+    // fechas más recientes de la PLANILLA. Se usa un orden estable antes de
+    // aplicar range() para que ninguna fila salte o se repita entre páginas.
+    const pageSize = 500;
+    const rows = [];
+    let from = 0;
+
+    while (true) {
+      const result = await supabaseClient
+        .from('attendance_records')
+        .select('assignment_id,student_id,attendance_date,status')
+        .in('assignment_id', safeAssignmentIds)
+        .order('attendance_date', { ascending: true })
+        .order('assignment_id', { ascending: true })
+        .order('student_id', { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (result.error) return result;
+      const page = Array.isArray(result.data) ? result.data : [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { data: rows, error: null };
+  }
+
   function mapRockstarEvents(rows) {
     return (rows || []).map((row) => {
       const code = studentDbIdToCode.get(row.student_id);
@@ -1270,10 +1303,7 @@
           .from('quiz_assignments')
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
           .in('assignment_id', assignmentIds), 'Quizzes cargados...'),
-        trackAcademicQuery(supabaseClient
-          .from('attendance_records')
-          .select('assignment_id,student_id,attendance_date,status')
-          .in('assignment_id', assignmentIds), 'Asistencia cargada...'),
+        trackAcademicQuery(loadAllAttendanceRows(supabaseClient, assignmentIds), 'Asistencia cargada...'),
         trackAcademicQuery(supabaseClient
           .from('rockstar_events')
           .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')

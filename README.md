@@ -1,4 +1,11 @@
-# EncisoMath LMS v0.25.085
+# EncisoMath LMS v0.25.086
+
+## v0.25.086 — Recuperación completa de fechas de asistencia en PLANILLA
+
+- La carga docente de `attendance_records` ahora se pagina en bloques de 500 filas, evitando el límite de respuesta de Supabase/PostgREST cuando el historial supera 1000 registros.
+- Cada página se ordena de forma estable por fecha, curso y estudiante antes de aplicar `range()`, evitando saltos o duplicados entre páginas.
+- La PLANILLA vuelve a recibir todas las fechas disponibles del periodo; no se modifica la lógica de eliminación por fecha ni el diseño compacto introducido en v0.25.085.
+- No requiere SQL nuevo.
 
 ## v0.25.085 — PLANILLA compacta, asistencia por fecha y edición completa
 
