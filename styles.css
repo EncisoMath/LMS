@@ -39871,9 +39871,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-rocket-shell .em-rs-rocket {
     animation: emProgressRocketThrust097 .46s ease-in-out infinite !important;
   }
-  .em-progress-rocket-plume {
-    animation: emProgressRocketPlume097 var(--em-pj-fire-speed, .32s) ease-in-out infinite alternate !important;
-  }
   .em-progress-rocket-shell::after {
     animation: emProgressShockRing097 .92s ease-out infinite !important;
   }
@@ -39883,11 +39880,11 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 
-/* ==========================================================================\n   ENCISOMATH v0.25.098 - PROGRESO / ESTELA CONTINUA\n   La estela vuelve a una barra gruesa rectangular. El movimiento se produce\n   dentro del plasma; la silueta exterior ya no se recorta en picos.\n   ========================================================================== */
+/* ==========================================================================\n   ENCISOMATH v0.25.099 - PROGRESO / LIMPIEZA DE ESTELA\n   La estela vuelve a una barra gruesa rectangular. El movimiento se produce\n   dentro del plasma; la silueta exterior ya no se recorta en picos.\n   ========================================================================== */
 .em-progress-journey-fire,
 .em-progress-journey.is-settled .em-progress-journey-fire {
   height: 12px !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   border-radius: 3px !important;
   clip-path: none !important;
   background: linear-gradient(
@@ -39944,55 +39941,45 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   to { background-position: 0 0; }
 }
 
-/* Halo continuo: también rectangular, sin punta romboidal. */
+/* Halo continuo dentro de la barra: brillo interno, sin capuchón externo. */
 .em-progress-journey-fire::after {
   content: "" !important;
   position: absolute !important;
-  inset: -5px 0 !important;
+  inset: 1px !important;
   width: auto !important;
   height: auto !important;
-  right: 0 !important;
-  top: 50% !important;
-  border-radius: 5px !important;
+  right: auto !important;
+  top: auto !important;
+  border-radius: 2px !important;
   clip-path: none !important;
-  background: linear-gradient(90deg, rgba(226,27,60,.12), rgba(255,122,0,.20), rgba(235,181,19,.30)) !important;
-  filter: blur(6px) !important;
-  opacity: .58 !important;
-  transform: translateY(-50%) !important;
-  animation: emProgressFireAura098 .25s ease-in-out infinite alternate !important;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.06) 0%,
+    rgba(255,170,32,.10) 18%,
+    rgba(255,236,170,.24) 50%,
+    rgba(255,170,32,.10) 82%,
+    rgba(255,255,255,.06) 100%) !important;
+  filter: blur(2px) !important;
+  opacity: .55 !important;
+  transform: none !important;
+  animation: emProgressFireAura098 .32s ease-in-out infinite alternate !important;
 }
 @keyframes emProgressFireAura098 {
-  from { opacity: .42; transform: translateY(-50%) scaleY(.82); }
-  to { opacity: .70; transform: translateY(-50%) scaleY(1.14); }
+  from { opacity: .40; filter: blur(1.8px); }
+  to { opacity: .64; filter: blur(2.4px); }
 }
 
-/* Extensión corta del motor: sin triángulos; parece el nacimiento de la barra. */
-.em-progress-rocket-plume {
-  left: -8px !important;
-  top: 50% !important;
-  width: 32px !important;
-  height: 10px !important;
-  border-radius: 999px 3px 3px 999px !important;
-  clip-path: none !important;
-  background: linear-gradient(90deg, rgba(226,27,60,0) 0%, #e21b3c 18%, #ff7a00 55%, #EBB513 82%, #fff7ca 100%) !important;
-  filter: drop-shadow(0 0 4px rgba(255,122,0,.72)) !important;
-}
-.em-progress-rocket-plume::before {
-  right: 1px !important;
-  width: 18px !important;
-  height: 4px !important;
-  border-radius: 999px !important;
+/* Se elimina el propulsor secundario: solo queda la barra principal. */
+.em-progress-rocket-plume,
+.em-progress-rocket-plume::before,
+.em-progress-rocket-plume::after {
+  display: none !important;
+  content: none !important;
 }
 
 @media (max-width: 560px) {
   .em-progress-journey-fire,
   .em-progress-journey.is-settled .em-progress-journey-fire {
     height: 11px !important;
-  }
-  .em-progress-rocket-plume {
-    left: -3px !important;
-    width: 28px !important;
-    height: 9px !important;
   }
 }
 
