@@ -1,4 +1,24 @@
-# EncisoMath LMS v0.25.087
+# EncisoMath LMS v0.25.089
+
+
+## v0.25.089 — Rockstars sin pérdida de puntos al resincronizar
+
+- La carga docente de `rockstar_events` ahora se pagina en bloques de 500 filas, evitando que Supabase/PostgREST recorte el historial cuando supera el límite de una sola respuesta.
+- Cada página se ordena de forma estable por `occurred_at` e `id`, de modo que pulsaciones consecutivas de `+1` no desaparezcan al reconstruir el puntaje desde Supabase.
+- Los eventos recuperados se deduplican por `id` antes de calcular los totales, protegiendo el contador frente a solapamientos de paginación.
+- El cambio corrige el caso en que un estudiante podía verse con 8 puntos inmediatamente y bajar a 7 después de una sincronización aunque los eventos se hubieran registrado.
+- No requiere SQL nuevo.
+
+
+## v0.25.088 — máximo 4 figuras por hero estudiantil
+
+- El fondo animado del Home del estudiante pasa de 8 a 4 figuras geométricas.
+- La cabecera de asignatura (por ejemplo, `ESTADÍSTICA · Grado 9-2 · Municipal · Vista estudiante`) pasa de 8 a 4 figuras geométricas.
+- El hero de Clases pasa de 7 a 4 shapes animados.
+- El hero de Actividades ya tenía 4 shapes y se conserva sin cambios.
+- El hero de Quizzes pasa de 7 a 4 shapes animados.
+- Se conservan los mismos tipos de figura, animaciones y colores; únicamente se reduce la cantidad visible para mantener una composición más limpia.
+- No requiere SQL nuevo.
 
 ## v0.25.087 — navegación estudiantil en tarjetas
 

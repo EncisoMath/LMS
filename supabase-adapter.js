@@ -939,6 +939,36 @@
     return { data: rows, error: null };
   }
 
+  async function loadAllRockstarRows(supabaseClient, assignmentIds = []) {
+    const safeAssignmentIds = [...new Set((assignmentIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
+    if (!safeAssignmentIds.length) return { data: [], error: null };
+
+    const pageSize = 500;
+    const rowsById = new Map();
+    let from = 0;
+
+    while (true) {
+      const result = await supabaseClient
+        .from('rockstar_events')
+        .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')
+        .in('assignment_id', safeAssignmentIds)
+        .order('occurred_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (result.error) return result;
+      const page = Array.isArray(result.data) ? result.data : [];
+      page.forEach((row) => {
+        const key = String(row?.id || `${row?.assignment_id || ''}|${row?.student_id || ''}|${row?.occurred_at || ''}|${row?.points || 0}`);
+        rowsById.set(key, row);
+      });
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { data: [...rowsById.values()], error: null };
+  }
+
   function mapRockstarEvents(rows) {
     return (rows || []).map((row) => {
       const code = studentDbIdToCode.get(row.student_id);
@@ -1304,11 +1334,7 @@
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
           .in('assignment_id', assignmentIds), 'Quizzes cargados...'),
         trackAcademicQuery(loadAllAttendanceRows(supabaseClient, assignmentIds), 'Asistencia cargada...'),
-        trackAcademicQuery(supabaseClient
-          .from('rockstar_events')
-          .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')
-          .in('assignment_id', assignmentIds)
-          .order('occurred_at', { ascending: true }), 'Puntos Rockstar cargados...')
+        trackAcademicQuery(loadAllRockstarRows(supabaseClient, assignmentIds), 'Puntos Rockstar cargados...')
       ]);
       if (lessonsResult.error) throw normalizeError(lessonsResult.error, 'No se pudieron cargar las clases.');
       if (activitiesResult.error) throw normalizeError(activitiesResult.error, 'No se pudieron cargar las actividades.');

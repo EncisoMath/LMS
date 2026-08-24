@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.087';
+  const APP_VERSION = '0.25.089';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -3236,7 +3236,7 @@
   }
 
   const EM_QZ_HERO_CONFIG = {
-    shapesTotal: 7,
+    shapesTotal: 4,
     shapesSpeed: 0.38,
     shapeTypes: ['square', 'triangle', 'x', 'circle'],
     tileSwapMs: 2100,
@@ -3498,7 +3498,7 @@
 
 
   const EM_CL_HERO_CONFIG = {
-    shapesTotal: 7,
+    shapesTotal: 4,
     shapesSpeed: 0.38,
     shapeTypes: ['square', 'triangle', 'x', 'circle'],
     cardSwapMs: 2300,
@@ -16871,11 +16871,7 @@
     'circle',
     'x',
     'triangle',
-    'square',
-    'circle',
-    'triangle',
-    'square',
-    'x'
+    'square'
   ];
 
   const EM_SUBJECT_COLORS = [
