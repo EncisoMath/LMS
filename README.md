@@ -1,5 +1,11 @@
-# EncisoMath LMS v0.25.101
+# EncisoMath LMS v0.25.102
 
+## v0.25.102 — Progreso: hero retirado y destello verde contenido
+
+- Se elimina completamente el hero azul de **PROGRESO**; la sección comienza directamente con el viaje espacial.
+- En **80–89**, el destello del número queda recortado dentro de las cifras mediante un shimmer interno; se eliminan el halo y la órbita que proyectaban luz fuera del número.
+- EncisoFlowIn/Out continúa aplicándose al viaje y a las tarjetas de Progreso.
+- No requiere SQL nuevo.
 
 ## v0.25.101 — Progreso: estados visuales de velocidad
 

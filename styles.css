@@ -40343,3 +40343,66 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-accordion-score.is-green, .em-progress-detail-score.is-green { animation: emProgressSmallGreen101 1.8s ease-in-out infinite !important; }
   .em-progress-accordion-score.is-gold, .em-progress-detail-score.is-gold { animation: emProgressSmallGold101 2s linear infinite !important; }
 }
+
+
+/* ==========================================================================
+   ENCISOMATH v0.25.102 - PROGRESO / HERO FUERA + DESTELLO VERDE CONTENIDO
+   - Progreso comienza directamente en el viaje.
+   - En 80–89 el brillo vive dentro de las cifras: no hay rayos/halos externos.
+   ========================================================================== */
+
+/* 80–89: verde estable con shimmer INTERNO recortado por el propio texto. */
+.em-progress-journey.is-green .em-progress-journey-message strong b {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  background: linear-gradient(
+    112deg,
+    #159447 0%,
+    #35ca68 27%,
+    #64ef8c 42%,
+    #e2ffea 49%,
+    #72f399 56%,
+    #35ca68 70%,
+    #159447 100%
+  ) !important;
+  background-size: 260% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: none !important;
+  text-shadow: none !important;
+  overflow: visible !important;
+  animation: emProgressScoreGreenInside102 1.8s ease-in-out infinite !important;
+}
+
+/* Las órbitas/halos anteriores son precisamente lo que producía el rayo verde
+   que sobresalía de la cifra. Para este rango se eliminan por completo. */
+.em-progress-journey.is-green .em-progress-journey-message strong b::before,
+.em-progress-journey.is-green .em-progress-journey-message strong b::after {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
+@keyframes emProgressScoreGreenInside102 {
+  0%, 100% {
+    background-position: 115% 0;
+    opacity: .94;
+  }
+  46% {
+    background-position: 52% 0;
+    opacity: 1;
+  }
+  54% {
+    background-position: 38% 0;
+    opacity: 1;
+  }
+  100% {
+    background-position: -115% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-progress-journey.is-green .em-progress-journey-message strong b {
+    animation: emProgressScoreGreenInside102 1.8s ease-in-out infinite !important;
+  }
+}

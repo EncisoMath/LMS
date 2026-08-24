@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.101';
+  const APP_VERSION = '0.25.102';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4365,18 +4365,6 @@
       hasServerConfig: Object.keys(config).length > 0
     };
   }
-  function studentProgressHeroHTML() {
-    const assignment = state.assignment || {};
-    return `
-      <section class="rockstar-hero em-rs-hero-host em-progress-rs-hero-host" aria-label="Progreso de la asignatura">
-        ${emRsRockstarsHeroHTML(
-          assignment.subject || 'ESTADÍSTICA',
-          emRsGetAssignmentGradeCourse(assignment),
-          { title: 'PROGRESO', subtitle: 'Tu avance académico en EncisoMath.' }
-        )}
-      </section>
-    `;
-  }
   function studentProgressJourneyStarsHTML(score = 0) {
     const safe = Math.max(0, Math.min(100, Number(score) || 0));
     const speed = 1 + (safe / 100) * 5.8;
@@ -4438,9 +4426,6 @@
       </section>
     `;
   }
-  function emProgressInitHero(root = document) {
-    emRsInitRockstarsHero(root);
-  }
   const EM_PROGRESS_JOURNEY_ENTRY_MS = 1900;
   const emProgressJourneyRuns = new Map();
   function emProgressInitJourney(root = document) {
@@ -4494,7 +4479,6 @@
       <div class="em-progress-data-notice">${escapeHTML(progressMessage || 'La asistencia y Rockstars todavía no están disponibles en este dispositivo. Actualiza la configuración de Supabase para activar el resumen completo.')}</div>
     `;
     root.innerHTML = `
-      ${studentProgressHeroHTML()}
       ${studentProgressJourneyHTML(definitive)}
       ${notice}
       <div class="em-progress-stack">
@@ -4526,7 +4510,6 @@
         body.hidden = !nextOpen;
       });
     });
-    emProgressInitHero(root);
     emProgressInitJourney(root);
     if (options.animate) {
       emPlayStudentProgressEncisoFlowIn(root);
