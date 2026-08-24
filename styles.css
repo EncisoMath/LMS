@@ -39995,3 +39995,351 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     animation: emProgressFireAura098 .25s ease-in-out infinite alternate !important;
   }
 }
+
+
+/* ==========================================================================
+   ENCISOMATH v0.25.100 - PROGRESO / ESTADOS DE VELOCIDAD
+   El número comunica el rango académico mediante color, luz y frecuencia.
+   Las transiciones son progresivas: nunca hay cambios de color instantáneos.
+   ========================================================================== */
+
+/* El tratamiento astronómico base se conserva, pero cada banda controla
+   ahora su propio gradiente, halo y ritmo. */
+.em-progress-journey-message strong b {
+  transition: filter .22s ease, text-shadow .22s ease !important;
+}
+
+/* 0–59: alarma roja rápida, dos pulsos completos por segundo. */
+.em-progress-journey.is-red .em-progress-journey-message strong b {
+  background: linear-gradient(180deg, #ff6a72 0%, #d71932 46%, #64101d 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: emProgressScoreRedAlarm100 .25s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreRedAlarm100 {
+  0% {
+    filter: drop-shadow(0 0 2px rgba(90,5,16,.52)) drop-shadow(0 0 5px rgba(118,8,23,.28));
+    text-shadow: 0 0 2px rgba(87,4,14,.38);
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(255,35,55,.88)) drop-shadow(0 0 13px rgba(255,0,35,.82)) drop-shadow(0 0 22px rgba(210,0,28,.46));
+    text-shadow: 0 0 5px rgba(255,55,70,.72);
+  }
+}
+.em-progress-journey.is-red .em-progress-journey-message strong b::after {
+  background: radial-gradient(circle, rgba(255,22,48,.40), rgba(120,4,20,.08) 52%, transparent 72%) !important;
+  animation: emProgressScoreRedHalo100 .25s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreRedHalo100 {
+  from { opacity: .30; transform: scale(.90); }
+  to { opacity: .98; transform: scale(1.18); }
+}
+
+/* 60–69: transición roja ↔ naranja, un pulso por segundo. */
+.em-progress-journey.is-orange .em-progress-journey-message strong b {
+  background: linear-gradient(180deg, #ffb049 0%, #ff681b 48%, #c62422 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: emProgressScoreOrangeWarn100 .50s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreOrangeWarn100 {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(225,27,60,.62)) drop-shadow(0 0 9px rgba(205,18,40,.42));
+    text-shadow: 0 0 3px rgba(225,27,60,.35);
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(255,122,0,.78)) drop-shadow(0 0 14px rgba(255,122,0,.62));
+    text-shadow: 0 0 5px rgba(255,145,24,.45);
+  }
+}
+.em-progress-journey.is-orange .em-progress-journey-message strong b::after {
+  background: radial-gradient(circle, rgba(255,112,12,.34), rgba(224,28,43,.10) 58%, transparent 75%) !important;
+  animation: emProgressScoreOrangeHalo100 .50s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreOrangeHalo100 {
+  from { opacity: .42; transform: scale(.94); }
+  to { opacity: .84; transform: scale(1.12); }
+}
+
+/* 70–79: transición naranja ↔ amarillo, un pulso por segundo. */
+.em-progress-journey.is-yellow .em-progress-journey-message strong b {
+  background: linear-gradient(180deg, #fff07b 0%, #f6d43a 42%, #ff7a00 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: emProgressScoreYellowRise100 .50s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreYellowRise100 {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(255,122,0,.58)) drop-shadow(0 0 8px rgba(255,122,0,.34));
+    text-shadow: 0 0 3px rgba(255,122,0,.32);
+  }
+  100% {
+    filter: drop-shadow(0 0 5px rgba(246,212,58,.82)) drop-shadow(0 0 15px rgba(246,212,58,.62));
+    text-shadow: 0 0 5px rgba(255,225,84,.46);
+  }
+}
+.em-progress-journey.is-yellow .em-progress-journey-message strong b::after {
+  background: radial-gradient(circle, rgba(255,222,63,.38), rgba(255,126,0,.09) 58%, transparent 76%) !important;
+  animation: emProgressScoreYellowHalo100 .50s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreYellowHalo100 {
+  from { opacity: .42; transform: scale(.95); }
+  to { opacity: .88; transform: scale(1.13); }
+}
+
+/* 80–89: verde estable; no cambia de color, solo recibe destellos. */
+.em-progress-journey.is-green .em-progress-journey-message strong b {
+  background: linear-gradient(180deg, #d9ffe5 0%, #5bef83 32%, #22bd58 72%, #087c34 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0 0 5px rgba(69,214,107,.64)) drop-shadow(0 0 13px rgba(37,196,83,.34)) !important;
+  animation: none !important;
+}
+.em-progress-journey.is-green .em-progress-journey-message strong b::after {
+  background: linear-gradient(110deg, transparent 25%, rgba(220,255,229,0) 38%, rgba(230,255,236,.82) 49%, rgba(220,255,229,0) 60%, transparent 76%) !important;
+  inset: 2% -18% -2% -18% !important;
+  border-radius: 0 !important;
+  filter: blur(1px) !important;
+  opacity: .72 !important;
+  animation: emProgressScoreGreenGlint100 1.8s linear infinite !important;
+}
+@keyframes emProgressScoreGreenGlint100 {
+  0% { transform: translateX(-48%) skewX(-13deg); opacity: 0; }
+  18% { opacity: .82; }
+  48% { opacity: .58; }
+  72%,100% { transform: translateX(52%) skewX(-13deg); opacity: 0; }
+}
+
+/* 90–100: acabado oro metálico con brillo y resplandor continuo. */
+.em-progress-journey.is-gold .em-progress-journey-message strong b {
+  background: linear-gradient(115deg,
+    #8b5a00 0%,
+    #d79a00 14%,
+    #fff2a6 31%,
+    #f7c928 44%,
+    #fff9cf 52%,
+    #e5aa00 66%,
+    #ffdf58 82%,
+    #8c5d00 100%) !important;
+  background-size: 220% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0 0 5px rgba(255,225,94,.66)) drop-shadow(0 0 14px rgba(235,181,19,.58)) drop-shadow(0 0 24px rgba(180,119,0,.24)) !important;
+  animation: emProgressScoreGoldMetal100 2.2s linear infinite !important;
+}
+@keyframes emProgressScoreGoldMetal100 {
+  0% { background-position: 120% 0; filter: drop-shadow(0 0 4px rgba(255,220,80,.56)) drop-shadow(0 0 11px rgba(235,181,19,.46)); }
+  50% { filter: drop-shadow(0 0 7px rgba(255,239,153,.88)) drop-shadow(0 0 18px rgba(235,181,19,.72)) drop-shadow(0 0 28px rgba(180,119,0,.32)); }
+  100% { background-position: -120% 0; filter: drop-shadow(0 0 4px rgba(255,220,80,.56)) drop-shadow(0 0 11px rgba(235,181,19,.46)); }
+}
+.em-progress-journey.is-gold .em-progress-journey-message strong b::after {
+  background: radial-gradient(circle, rgba(255,241,157,.54), rgba(235,181,19,.15) 48%, transparent 72%) !important;
+  animation: emProgressScoreGoldHalo100 1.45s ease-in-out infinite alternate !important;
+}
+@keyframes emProgressScoreGoldHalo100 {
+  from { opacity: .48; transform: scale(.92); }
+  to { opacity: 1; transform: scale(1.18); }
+}
+
+/* Frase de estado: más visible pero sigue siendo secundaria al velocímetro. */
+.em-progress-journey-caption {
+  font-weight: 900 !important;
+  letter-spacing: .015em !important;
+  color: rgba(255,255,255,.82) !important;
+  text-shadow: 0 1px 5px rgba(0,0,0,.65);
+}
+.em-progress-journey.is-red .em-progress-journey-caption { color: #ff7884 !important; }
+.em-progress-journey.is-orange .em-progress-journey-caption { color: #ffad5a !important; }
+.em-progress-journey.is-yellow .em-progress-journey-caption { color: #ffe56c !important; }
+.em-progress-journey.is-green .em-progress-journey-caption { color: #81eda0 !important; }
+.em-progress-journey.is-gold .em-progress-journey-caption {
+  color: #f7d856 !important;
+  text-shadow: 0 0 7px rgba(235,181,19,.34), 0 1px 5px rgba(0,0,0,.65);
+}
+
+/* Progreso mantiene estas animaciones incluso con efectos de Windows reducidos. */
+@media (prefers-reduced-motion: reduce) {
+  .em-progress-journey.is-red .em-progress-journey-message strong b { animation: emProgressScoreRedAlarm100 .25s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-red .em-progress-journey-message strong b::after { animation: emProgressScoreRedHalo100 .25s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-orange .em-progress-journey-message strong b { animation: emProgressScoreOrangeWarn100 .50s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-orange .em-progress-journey-message strong b::after { animation: emProgressScoreOrangeHalo100 .50s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-yellow .em-progress-journey-message strong b { animation: emProgressScoreYellowRise100 .50s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-yellow .em-progress-journey-message strong b::after { animation: emProgressScoreYellowHalo100 .50s ease-in-out infinite alternate !important; }
+  .em-progress-journey.is-green .em-progress-journey-message strong b { animation: none !important; }
+  .em-progress-journey.is-green .em-progress-journey-message strong b::after { animation: emProgressScoreGreenGlint100 1.8s linear infinite !important; }
+  .em-progress-journey.is-gold .em-progress-journey-message strong b { animation: emProgressScoreGoldMetal100 2.2s linear infinite !important; }
+  .em-progress-journey.is-gold .em-progress-journey-message strong b::after { animation: emProgressScoreGoldHalo100 1.45s ease-in-out infinite alternate !important; }
+}
+
+/* ==========================================================================
+   ENCISOMATH v0.25.101 - PROGRESO / COLOR REAL DE LAS NOTAS
+   Los cambios de rango afectan al color del número, no solo a su halo.
+   También se aplica el mismo lenguaje visual a los puntajes del acordeón.
+   ========================================================================== */
+
+/* Número principal: 0–59 rojo oscuro <-> rojo saturado, 2 pulsos/s. */
+.em-progress-journey.is-red .em-progress-journey-message strong b {
+  background: none !important;
+  color: #72101d !important;
+  -webkit-text-fill-color: currentColor !important;
+  animation: emProgressScoreRedColor101 .5s ease-in-out infinite !important;
+}
+@keyframes emProgressScoreRedColor101 {
+  0%,100% {
+    color: #66101c;
+    filter: drop-shadow(0 0 2px rgba(92,4,18,.48)) drop-shadow(0 0 5px rgba(115,8,24,.28));
+  }
+  50% {
+    color: #ff2445;
+    filter: drop-shadow(0 0 5px rgba(255,35,62,.92)) drop-shadow(0 0 15px rgba(255,0,42,.80)) drop-shadow(0 0 24px rgba(205,0,31,.42));
+  }
+}
+
+/* Número principal: 60–69 rojo <-> naranja, 1 ciclo/s. */
+.em-progress-journey.is-orange .em-progress-journey-message strong b {
+  background: none !important;
+  color: #dc263b !important;
+  -webkit-text-fill-color: currentColor !important;
+  animation: emProgressScoreOrangeColor101 1s ease-in-out infinite !important;
+}
+@keyframes emProgressScoreOrangeColor101 {
+  0%,100% {
+    color: #dc263b;
+    filter: drop-shadow(0 0 4px rgba(220,38,59,.58)) drop-shadow(0 0 9px rgba(190,20,42,.34));
+  }
+  50% {
+    color: #ff8a16;
+    filter: drop-shadow(0 0 5px rgba(255,126,12,.82)) drop-shadow(0 0 15px rgba(255,112,0,.58));
+  }
+}
+
+/* Número principal: 70–79 naranja <-> amarillo, 1 ciclo/s. */
+.em-progress-journey.is-yellow .em-progress-journey-message strong b {
+  background: none !important;
+  color: #ff8615 !important;
+  -webkit-text-fill-color: currentColor !important;
+  animation: emProgressScoreYellowColor101 1s ease-in-out infinite !important;
+}
+@keyframes emProgressScoreYellowColor101 {
+  0%,100% {
+    color: #ff8615;
+    filter: drop-shadow(0 0 4px rgba(255,122,0,.58)) drop-shadow(0 0 9px rgba(255,122,0,.30));
+  }
+  50% {
+    color: #ffe05a;
+    filter: drop-shadow(0 0 5px rgba(255,224,90,.86)) drop-shadow(0 0 15px rgba(246,212,58,.58));
+  }
+}
+
+/* 80–89: verde fijo con destello, sin cambio de tono. */
+.em-progress-journey.is-green .em-progress-journey-message strong b {
+  background: none !important;
+  color: #47df74 !important;
+  -webkit-text-fill-color: currentColor !important;
+  animation: emProgressScoreGreenSpark101 1.8s ease-in-out infinite !important;
+}
+@keyframes emProgressScoreGreenSpark101 {
+  0%,68%,100% {
+    color: #47df74;
+    filter: drop-shadow(0 0 5px rgba(69,214,107,.58)) drop-shadow(0 0 11px rgba(34,189,88,.28));
+  }
+  78% {
+    color: #baffcc;
+    filter: drop-shadow(0 0 7px rgba(118,255,157,.90)) drop-shadow(0 0 18px rgba(69,214,107,.62));
+  }
+  88% {
+    color: #47df74;
+    filter: drop-shadow(0 0 5px rgba(69,214,107,.60)) drop-shadow(0 0 12px rgba(34,189,88,.32));
+  }
+}
+
+/* 90–100: conserva el metal oro y su shimmer. */
+.em-progress-journey.is-gold .em-progress-journey-message strong b {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  background: linear-gradient(115deg,
+    #765000 0%,
+    #d79a00 14%,
+    #fff2a6 31%,
+    #f7c928 44%,
+    #fffbe0 52%,
+    #e5aa00 66%,
+    #ffdf58 82%,
+    #765000 100%) !important;
+  background-size: 220% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  animation: emProgressScoreGoldMetal100 2.2s linear infinite !important;
+}
+
+/* Puntajes pequeños dentro de ACTIVIDADES / detalle de Progreso. */
+.em-progress-accordion-score,
+.em-progress-detail-score {
+  display: inline-block;
+  transition: color .18s ease, filter .18s ease !important;
+}
+.em-progress-accordion-score.is-red,
+.em-progress-detail-score.is-red {
+  color: #6a101d !important;
+  animation: emProgressSmallRed101 .5s ease-in-out infinite !important;
+}
+@keyframes emProgressSmallRed101 {
+  0%,100% { color:#67101c; filter:drop-shadow(0 0 1px rgba(100,4,18,.34)); }
+  50% { color:#ff2948; filter:drop-shadow(0 0 5px rgba(255,30,60,.72)); }
+}
+.em-progress-accordion-score.is-orange,
+.em-progress-detail-score.is-orange {
+  color: #dc263b !important;
+  animation: emProgressSmallOrange101 1s ease-in-out infinite !important;
+}
+@keyframes emProgressSmallOrange101 {
+  0%,100% { color:#dc263b; filter:drop-shadow(0 0 2px rgba(220,38,59,.32)); }
+  50% { color:#ff8a16; filter:drop-shadow(0 0 5px rgba(255,126,12,.62)); }
+}
+.em-progress-accordion-score.is-yellow,
+.em-progress-detail-score.is-yellow {
+  color: #ff8615 !important;
+  animation: emProgressSmallYellow101 1s ease-in-out infinite !important;
+}
+@keyframes emProgressSmallYellow101 {
+  0%,100% { color:#ff8615; filter:drop-shadow(0 0 2px rgba(255,122,0,.30)); }
+  50% { color:#ffe05a; filter:drop-shadow(0 0 5px rgba(246,212,58,.62)); }
+}
+.em-progress-accordion-score.is-green,
+.em-progress-detail-score.is-green {
+  color: #47df74 !important;
+  animation: emProgressSmallGreen101 1.8s ease-in-out infinite !important;
+}
+@keyframes emProgressSmallGreen101 {
+  0%,72%,100% { color:#47df74; filter:drop-shadow(0 0 2px rgba(69,214,107,.34)); }
+  82% { color:#baffcc; filter:drop-shadow(0 0 6px rgba(90,245,130,.72)); }
+}
+.em-progress-accordion-score.is-gold,
+.em-progress-detail-score.is-gold {
+  color: transparent !important;
+  background: linear-gradient(110deg,#9b6900 0%,#f1bd20 26%,#fff4ad 48%,#e3a700 65%,#ffdc55 82%,#8f6100 100%) !important;
+  background-size: 220% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 4px rgba(235,181,19,.38));
+  animation: emProgressSmallGold101 2s linear infinite !important;
+}
+@keyframes emProgressSmallGold101 {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* Estos efectos académicos deben mantenerse incluso con reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .em-progress-journey.is-red .em-progress-journey-message strong b { animation: emProgressScoreRedColor101 .5s ease-in-out infinite !important; }
+  .em-progress-journey.is-orange .em-progress-journey-message strong b { animation: emProgressScoreOrangeColor101 1s ease-in-out infinite !important; }
+  .em-progress-journey.is-yellow .em-progress-journey-message strong b { animation: emProgressScoreYellowColor101 1s ease-in-out infinite !important; }
+  .em-progress-journey.is-green .em-progress-journey-message strong b { animation: emProgressScoreGreenSpark101 1.8s ease-in-out infinite !important; }
+  .em-progress-journey.is-gold .em-progress-journey-message strong b { animation: emProgressScoreGoldMetal100 2.2s linear infinite !important; }
+  .em-progress-accordion-score.is-red, .em-progress-detail-score.is-red { animation: emProgressSmallRed101 .5s ease-in-out infinite !important; }
+  .em-progress-accordion-score.is-orange, .em-progress-detail-score.is-orange { animation: emProgressSmallOrange101 1s ease-in-out infinite !important; }
+  .em-progress-accordion-score.is-yellow, .em-progress-detail-score.is-yellow { animation: emProgressSmallYellow101 1s ease-in-out infinite !important; }
+  .em-progress-accordion-score.is-green, .em-progress-detail-score.is-green { animation: emProgressSmallGreen101 1.8s ease-in-out infinite !important; }
+  .em-progress-accordion-score.is-gold, .em-progress-detail-score.is-gold { animation: emProgressSmallGold101 2s linear infinite !important; }
+}

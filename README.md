@@ -1,7 +1,7 @@
-# EncisoMath LMS v0.25.099
+# EncisoMath LMS v0.25.101
 
 
-## v0.25.099 — Progreso: estela rectangular continua
+## v0.25.101 — Progreso: estados visuales de velocidad
 
 - La cola de fuego del cohete vuelve a ser una línea gruesa, continua y rectangular, eliminando el recorte dentado que producía triángulos/rombos.
 - Se conserva el flujo animado de derecha a izquierda mediante bandas calientes internas, halo y destellos, pero sin deformar la silueta exterior de la estela.
@@ -242,3 +242,7 @@
 - Se eliminaron fondo, borde, blur, sombra y padding del contenedor del sticker.
 - Visualmente solo aparece la imagen PNG, GIF o WebP asignada.
 - No se modificaron Calificación, Observación, Fecha de calificación ni la lógica de stickers.
+
+## v0.25.101 — Progreso: color real de las notas
+- Los números cambian de color de forma progresiva según el rango, no solo el halo.
+- El mismo tratamiento visual se aplica a los puntajes del acordeón/detalle de Progreso.

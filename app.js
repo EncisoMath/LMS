@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.099';
+  const APP_VERSION = '0.25.101';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4114,6 +4114,14 @@
     const value = Number(score);
     return Number.isFinite(value) ? `${Math.round(Math.max(0, Math.min(100, value)))}/100` : '—';
   }
+  function studentProgressJourneyCaption(score) {
+    const value = Math.max(0, Math.min(100, Number(score) || 0));
+    if (value >= 90) return '✨ MODO ESTELAR ACTIVADO. ESTÁS VOLANDO ENTRE LAS ESTRELLAS';
+    if (value >= 80) return '🛰️ TRAYECTORIA ESTABLE. VAS A TODA MÁQUINA';
+    if (value >= 70) return '🚀 BUEN RUMBO. ESTÁS GANANDO VELOCIDAD';
+    if (value >= 60) return '🔥 LOS MOTORES RESPONDEN, PERO AÚN FALTA ACELERAR';
+    return '🚨 ALERTA: PONTE LAS PILAS QUE TE VAS A ESTRELLAR';
+  }
   function studentProgressBarHTML(score) {
     const empty = score === null || score === undefined || score === '';
     const value = empty ? NaN : Number(score);
@@ -4425,7 +4433,7 @@
               </div>
             </div>
           </div>
-          <small class="em-progress-journey-caption">pero calma, aún no has finalizado el viaje xD</small>
+          <small class="em-progress-journey-caption">${escapeHTML(studentProgressJourneyCaption(score))}</small>
         </div>
       </section>
     `;
