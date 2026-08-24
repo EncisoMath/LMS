@@ -119,16 +119,25 @@
       target: Number(row?.target || 15)
     })).filter((row) => row.assignmentId)
       .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
+    const gradebookConfigs = asArray(progress.gradebook_configs || progress.gradebookConfigs).map((row) => ({
+      assignmentId: stringValue(row?.assignment_id || row?.assignmentId),
+      period: Number(row?.period || 1),
+      config: row?.config && typeof row.config === 'object' && !Array.isArray(row.config) ? row.config : {}
+    })).filter((row) => row.assignmentId)
+      .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
     const hasData = progress.ok === true
       || Array.isArray(progress.attendance)
       || Array.isArray(progress.rockstars)
       || Array.isArray(progress.rockstar_targets)
-      || Array.isArray(progress.rockstarTargets);
+      || Array.isArray(progress.rockstarTargets)
+      || Array.isArray(progress.gradebook_configs)
+      || Array.isArray(progress.gradebookConfigs);
     return {
       available: progress.unavailable !== true && hasData,
       attendance,
       rockstars,
-      targets
+      targets,
+      gradebookConfigs
     };
   }
 
@@ -163,12 +172,25 @@
       })
       .filter(Boolean)
       .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
-    if (!attendance.length && !rockstars.length && !targets.length && progress.available !== true && progress.available !== false) return null;
+    const gradebookConfigs = Object.entries(progress.gradebookConfigs && typeof progress.gradebookConfigs === 'object' ? progress.gradebookConfigs : {})
+      .map(([key, config]) => {
+        const match = String(key).match(/^(.*)\|period-([1-4])$/);
+        if (!match) return null;
+        return {
+          assignmentId: match[1],
+          period: Number(match[2]),
+          config: config && typeof config === 'object' && !Array.isArray(config) ? config : {}
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
+    if (!attendance.length && !rockstars.length && !targets.length && !gradebookConfigs.length && progress.available !== true && progress.available !== false) return null;
     return {
       available: progress.available === true,
       attendance,
       rockstars,
-      targets
+      targets,
+      gradebookConfigs
     };
   }
 

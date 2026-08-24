@@ -1121,6 +1121,14 @@
       if (!assignmentId || ![1, 2, 3, 4].includes(period) || !Number.isFinite(target) || target <= 0) return;
       rockstarTargets[`${assignmentId}|period-${period}`] = target;
     });
+    const gradebookConfigs = {};
+    (Array.isArray(source.gradebook_configs) ? source.gradebook_configs : (Array.isArray(source.gradebookConfigs) ? source.gradebookConfigs : [])).forEach((row) => {
+      const assignmentId = String(row?.assignment_id || row?.assignmentId || '').trim();
+      const period = Number(row?.period || 1);
+      const config = row?.config && typeof row.config === 'object' && !Array.isArray(row.config) ? row.config : {};
+      if (!assignmentId || ![1, 2, 3, 4].includes(period)) return;
+      gradebookConfigs[`${assignmentId}|period-${period}`] = config;
+    });
     return {
       available: source.unavailable !== true && (
         source.ok === true
@@ -1128,11 +1136,14 @@
         || Array.isArray(source.rockstars)
         || Array.isArray(source.rockstar_targets)
         || Array.isArray(source.rockstarTargets)
+        || Array.isArray(source.gradebook_configs)
+        || Array.isArray(source.gradebookConfigs)
       ),
       message: String(source.message || ''),
       attendance,
       rockstars,
-      rockstarTargets
+      rockstarTargets,
+      gradebookConfigs
     };
   }
 
@@ -1217,7 +1228,8 @@
         studentProgress: {
           available: studentProgress.available,
           message: studentProgress.message,
-          rockstarTargets: studentProgress.rockstarTargets
+          rockstarTargets: studentProgress.rockstarTargets,
+          gradebookConfigs: studentProgress.gradebookConfigs
         },
         quizzes
       },
@@ -1300,7 +1312,7 @@
         ok: false,
         unavailable: true,
         message: missingProgressRpc
-          ? 'Falta ejecutar SUPABASE_STUDENT_PROGRESS_v0.25.093.sql en Supabase.'
+          ? 'Falta ejecutar SUPABASE_STUDENT_PROGRESS_v0.25.094.sql en Supabase.'
           : 'No se pudo cargar el resumen de progreso.'
       };
       if (!missingProgressRpc) console.warn('No se pudo cargar el progreso del estudiante.', progressResult.error);

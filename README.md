@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.093
+# EncisoMath LMS v0.25.094
+
+## v0.25.094 — Progreso: viaje de la Definitiva
+
+- Progreso ahora usa el azul principal de EncisoMath (`#1368ce`).
+- El hero reutiliza exactamente la estructura visual base de los heroes de Actividades/Planilla: 4 shapes animados y el bloque decorativo principal reemplazado por notas `60`, `80` y `100` que flotan y crecen.
+- Debajo del hero se añade un recorrido espacial: estrellas se desplazan de derecha a izquierda y un cohete avanza de izquierda a derecha según la **Definitiva real de la PLANILLA**.
+- La estela de fuego funciona como barra de `0` a `100`; al terminar el recorrido aparece `VAS A X VECES LA VELOCIDAD DE LA LUZ`.
+- Añade `supabase/migrations/SUPABASE_STUDENT_PROGRESS_v0.25.094.sql`, que actualiza la RPC existente para entregar también la configuración no sensible de ponderaciones de la PLANILLA. Ejecutarlo en Supabase SQL Editor permite que el cohete use exactamente las ponderaciones configuradas por el docente.
+- Mantiene los acordeones de Actividades, Asistencia y Rockstar Points de v0.25.093.
 
 ## v0.25.093 — Progreso del estudiante
 

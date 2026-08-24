@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.093';
+  const APP_VERSION = '0.25.094';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4237,22 +4237,174 @@
       </section>
     `;
   }
+  function studentProgressGradebookConfig() {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const key = `${assignmentId}|period-${period}`;
+    const configs = state.data.studentProgress?.gradebookConfigs;
+    const config = configs && typeof configs === 'object' && !Array.isArray(configs) ? configs[key] : null;
+    return config && typeof config === 'object' && !Array.isArray(config) ? config : {};
+  }
+  function studentProgressQuizScore(quiz) {
+    const result = quiz?.studentResult && typeof quiz.studentResult === 'object' ? quiz.studentResult : null;
+    if (!result) return null;
+    const score = Number(result.score);
+    const maxScore = Number(result.maxScore);
+    if (Number.isFinite(score) && Number.isFinite(maxScore) && maxScore > 0) {
+      return Math.max(0, Math.min(100, (score / maxScore) * 100));
+    }
+    const grade = Number(result.grade);
+    return Number.isFinite(grade) ? Math.max(0, Math.min(100, grade * 10)) : null;
+  }
+  function studentProgressDefinitiveSummary(activities, attendance, rockstars) {
+    const activityRows = Array.isArray(activities?.rows) ? activities.rows : [];
+    const quizzes = getNotesQuizzes();
+    const baseColumns = [
+      ...activityRows.map((row) => ({
+        key: `activity:${row.activity?.id || ''}`,
+        type: 'activity',
+        score: row.graded ? Number(row.score || 0) : 40
+      })),
+      ...quizzes.map((quiz) => ({
+        key: `quiz:${quiz.id || ''}`,
+        type: 'quiz',
+        score: studentProgressQuizScore(quiz)
+      })),
+      { key: 'attendance', type: 'attendance', score: attendance?.score ?? null },
+      { key: 'rockstars', type: 'rockstars', score: rockstars?.score ?? null }
+    ].filter((column) => column.key && !column.key.endsWith(':'));
+
+    const defaults = notesDefaultWeights(baseColumns.length);
+    const config = studentProgressGradebookConfig();
+    const savedColumns = config.columns && typeof config.columns === 'object' && !Array.isArray(config.columns) ? config.columns : {};
+    const activeKeys = new Set(baseColumns.map((column) => column.key));
+    const activeSavedKeys = Object.keys(savedColumns).filter((key) => activeKeys.has(key));
+    const hasSavedColumns = activeSavedKeys.length > 0;
+    const columns = baseColumns.map((column, index) => {
+      const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
+      const hasSavedWeight = Object.prototype.hasOwnProperty.call(saved, 'weight');
+      const savedWeight = Number(saved.weight);
+      return {
+        ...column,
+        weight: hasSavedWeight && Number.isFinite(savedWeight)
+          ? Math.max(0, Math.min(100, savedWeight))
+          : (hasSavedColumns ? 0 : defaults[index])
+      };
+    });
+
+    const hasWeightedHiddenActivity = Object.entries(savedColumns).some(([key, value]) => (
+      key.startsWith('activity:')
+      && !activeKeys.has(key)
+      && Number(value?.weight || 0) > 0
+    ));
+    const activeWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
+    if (hasWeightedHiddenActivity && activeWeight > 0 && Math.abs(activeWeight - 100) > .001) {
+      const factor = 100 / activeWeight;
+      let accumulated = 0;
+      let lastWeightedIndex = -1;
+      columns.forEach((column, index) => {
+        if (Number(column.weight || 0) > 0) lastWeightedIndex = index;
+      });
+      columns.forEach((column, index) => {
+        if (index === lastWeightedIndex) return;
+        column.weight = Math.round(Number(column.weight || 0) * factor * 10) / 10;
+        accumulated += Number(column.weight || 0);
+      });
+      if (lastWeightedIndex >= 0) {
+        columns[lastWeightedIndex].weight = Math.max(0, Math.round((100 - accumulated) * 10) / 10);
+      }
+    }
+
+    let weighted = 0;
+    columns.forEach((column) => {
+      if (column.score === null || column.score === undefined || !Number.isFinite(Number(column.score))) return;
+      const score = Math.max(0, Math.min(100, Number(column.score)));
+      weighted += score * (Number(column.weight || 0) / 100);
+    });
+    return {
+      score: Math.max(0, Math.min(100, Math.floor(weighted + 1e-9))),
+      columns,
+      hasServerConfig: Object.keys(config).length > 0
+    };
+  }
   function studentProgressHeroHTML() {
+    const assignment = state.assignment || {};
+    const eyebrow = `${escapeHTML(assignment.subject || 'ESTADÍSTICA')} • ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}`;
     return `
-      <section class="em-progress-hero" aria-label="Resumen de progreso">
-        <div class="em-progress-hero-shapes" aria-hidden="true">
-          <span class="em-progress-shape is-circle"></span>
-          <span class="em-progress-shape is-square"></span>
-          <span class="em-progress-shape is-triangle"></span>
-          <span class="em-progress-shape is-x"></span>
+      <section class="activity-hero em-act-hero-host em-progress-hero-host" data-em-progress-hero aria-label="Progreso de la asignatura">
+        <div class="em-act-shapes" aria-hidden="true">
+          <span class="em-act-shape em-act-shape-circle"></span>
+          <span class="em-act-shape em-act-shape-square"></span>
+          <span class="em-act-shape em-act-shape-triangle"></span>
+          <span class="em-act-shape em-act-shape-x"></span>
         </div>
-        <div class="em-progress-hero-copy">
-          <p>PROGRESO · PERIODO ${Number(state.activePeriod || 1)}</p>
-          <h2>Así vas hasta ahora</h2>
-          <span>Consulta tus actividades, asistencia y puntos Rockstar.</span>
+        <div class="em-progress-grade-stack" aria-hidden="true">
+          <span class="em-progress-grade-card is-60">60</span>
+          <span class="em-progress-grade-card is-80">80</span>
+          <span class="em-progress-grade-card is-100">100</span>
+        </div>
+        <div class="em-act-content em-progress-hero-content">
+          <span class="em-act-eyebrow">${eyebrow}</span>
+          <h1 class="em-act-title">PROGRESO</h1>
+          <p class="em-act-subtitle">Tu viaje académico, nota por nota.</p>
         </div>
       </section>
     `;
+  }
+  function studentProgressJourneyStarsHTML() {
+    return Array.from({ length: 18 }, (_, index) => {
+      const top = 10 + ((index * 37) % 78);
+      const size = 2 + (index % 4);
+      const duration = (3.8 + (index % 6) * .55).toFixed(2);
+      const delay = (-((index * .47) % 4.8)).toFixed(2);
+      return `<i style="--em-pj-top:${top}%;--em-pj-size:${size}px;--em-pj-duration:${duration}s;--em-pj-delay:${delay}s"></i>`;
+    }).join('');
+  }
+  function studentProgressJourneyHTML(definitive) {
+    const score = Math.max(0, Math.min(100, Number(definitive?.score || 0)));
+    const rounded = Math.round(score);
+    return `
+      <section class="em-progress-journey ${studentProgressBand(score)}" data-em-progress-journey style="--em-progress-score:${score};--em-progress-score-pct:${score}%">
+        <div class="em-progress-journey-stage" aria-label="Tu viaje va en ${rounded} de 100">
+          <div class="em-progress-journey-stars" aria-hidden="true">${studentProgressJourneyStarsHTML()}</div>
+          <div class="em-progress-journey-travel" aria-hidden="true">
+            <span class="em-progress-journey-limit is-start">0</span>
+            <span class="em-progress-journey-limit is-end">100</span>
+            <span class="em-progress-journey-base"></span>
+            <span class="em-progress-journey-fire"></span>
+            <div class="em-progress-rocket-shell">
+              <div class="em-rs-rocket">
+                <span class="em-rs-window"></span>
+                <span class="em-rs-fin em-rs-finLeft"></span>
+                <span class="em-rs-fin em-rs-finRight"></span>
+                <span class="em-rs-flame"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="em-progress-journey-message">
+          <strong>VAS A <b>${rounded}</b> VECES LA VELOCIDAD DE LA LUZ</strong>
+          <small>pero calma, aún no has finalizado el viaje xD</small>
+        </div>
+      </section>
+    `;
+  }
+  function emProgressInitHero(root = document) {
+    const hero = root.querySelector?.('[data-em-progress-hero]');
+    if (!hero) return;
+    hero.classList.remove('is-live');
+    void hero.offsetWidth;
+    hero.classList.add('is-live');
+    hero.querySelectorAll('.em-act-shape').forEach((shape, index) => {
+      shape.style.setProperty('--em-act-shape-delay', `${-1.3 * (index + 1)}s`);
+      shape.style.setProperty('--em-act-shape-duration', `${7.5 + index * 1.05}s`);
+    });
+  }
+  function emProgressInitJourney(root = document) {
+    const journey = root.querySelector?.('[data-em-progress-journey]');
+    if (!journey) return;
+    journey.classList.remove('is-live');
+    requestAnimationFrame(() => requestAnimationFrame(() => journey.classList.add('is-live')));
   }
   function renderStudentProgressTab(options = {}) {
     const assignment = state.assignment;
@@ -4263,6 +4415,7 @@
     const attendanceSessions = studentProgressAttendanceSessions();
     const attendance = studentProgressAttendanceSummary(attendanceSessions);
     const rockstars = studentProgressRockstarSummary(attendanceSessions, attendance);
+    const definitive = studentProgressDefinitiveSummary(activities, attendance, rockstars);
     const progressAvailable = state.data.studentProgress?.available === true;
     const progressMessage = String(state.data.studentProgress?.message || '').trim();
     const notice = progressAvailable ? '' : `
@@ -4270,6 +4423,7 @@
     `;
     root.innerHTML = `
       ${studentProgressHeroHTML()}
+      ${studentProgressJourneyHTML(definitive)}
       ${notice}
       <div class="em-progress-stack">
         ${studentProgressAccordionItemHTML({
@@ -4300,6 +4454,8 @@
         body.hidden = !nextOpen;
       });
     });
+    emProgressInitHero(root);
+    emProgressInitJourney(root);
     if (options.animate) pulseElement(root, 'tab-enter');
   }
   const EM_CONTENT_SHAPE_PAIRS = [

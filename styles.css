@@ -38438,7 +38438,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .em-student-subject-card-progress {
-  --em-section-accent: #7c3aed;
+  --em-section-accent: #1368ce;
 }
 .em-student-subject-card-progress > .em-student-progress-nav-shape {
   left: auto !important;
@@ -38449,7 +38449,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   border-left-width: 25px !important;
   border-right-width: 25px !important;
   border-bottom-width: 43px !important;
-  border-bottom-color: color-mix(in srgb, #7c3aed 38%, transparent) !important;
+  border-bottom-color: color-mix(in srgb, #1368ce 38%, transparent) !important;
   animation: emAct306ShapeFloat 8.1s -2.9s ease-in-out infinite !important;
 }
 .em-student-subject-card-progress.is-selected > .em-student-progress-nav-shape {
@@ -38851,4 +38851,283 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-accordion-score { min-width: 43px; font-size: .70rem; }
   .em-progress-accordion-copy strong { font-size: .69rem; }
   .em-progress-accordion-copy small { font-size: .56rem; }
+}
+
+
+/* =========================================================
+   ENCISOMATH v0.25.094 - PROGRESO / HERO + VIAJE
+   Hero azul idéntico al lenguaje visual de Actividades y
+   recorrido horizontal basado en la Definitiva de PLANILLA.
+========================================================= */
+.activity-hero.em-act-hero-host.em-progress-hero-host {
+  --em-act-main: #1368ce;
+  grid-template-columns: clamp(82px, 22%, 126px) minmax(0, 1fr);
+  border-radius: 4px !important;
+  background: #1368ce !important;
+}
+.em-progress-hero-host .em-progress-grade-stack {
+  position: relative;
+  z-index: 2;
+  justify-self: center;
+  align-self: stretch;
+  width: clamp(88px, 20vw, 122px);
+  min-height: 92px;
+  pointer-events: none;
+}
+.em-progress-grade-card {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  min-width: 47px;
+  height: 34px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: transparent;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -.065em;
+  -webkit-text-stroke: 1.6px #ffffff;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 0 rgba(0,0,0,.13);
+  transform-origin: center;
+  will-change: transform;
+}
+.em-progress-grade-card.is-60 {
+  left: 3px;
+  bottom: 9px;
+  color: #ff7a00;
+  font-size: 26px;
+  animation: emProgressGrade60 4.8s -1.8s ease-in-out infinite;
+}
+.em-progress-grade-card.is-80 {
+  left: 31px;
+  top: 28px;
+  color: #24b45a;
+  font-size: 31px;
+  animation: emProgressGrade80 5.2s -3.4s ease-in-out infinite;
+}
+.em-progress-grade-card.is-100 {
+  right: -2px;
+  top: 2px;
+  color: #EBB513;
+  font-size: 36px;
+  animation: emProgressGrade100 5.6s -4.2s ease-in-out infinite;
+}
+@keyframes emProgressGrade60 {
+  0%, 100% { transform: translate3d(0, 5px, 0) rotate(-7deg) scale(.78); }
+  48% { transform: translate3d(5px, -6px, 0) rotate(-2deg) scale(.91); }
+  72% { transform: translate3d(-2px, -2px, 0) rotate(-5deg) scale(.85); }
+}
+@keyframes emProgressGrade80 {
+  0%, 100% { transform: translate3d(0, 4px, 0) rotate(4deg) scale(.90); }
+  45% { transform: translate3d(-4px, -8px, 0) rotate(-2deg) scale(1.04); }
+  75% { transform: translate3d(3px, -2px, 0) rotate(2deg) scale(.98); }
+}
+@keyframes emProgressGrade100 {
+  0%, 100% { transform: translate3d(0, 7px, 0) rotate(6deg) scale(1); }
+  42% { transform: translate3d(-5px, -9px, 0) rotate(1deg) scale(1.17); }
+  74% { transform: translate3d(2px, -3px, 0) rotate(4deg) scale(1.09); }
+}
+.em-progress-hero-host.is-live .em-progress-grade-card {
+  animation-play-state: running !important;
+}
+.em-progress-hero-content {
+  padding-left: clamp(3px, .8vw, 8px);
+}
+
+/* Viaje / cohete de Definitiva */
+.em-progress-journey {
+  --em-pj-main: #1368ce;
+  --em-pj-fire-a: #e21b3c;
+  --em-pj-fire-b: #ff7a00;
+  --em-pj-fire-c: #EBB513;
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 10px;
+  padding: 11px 12px 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(19,104,206,.18), transparent 34%),
+    #08111f;
+  color: #fff;
+  isolation: isolate;
+}
+.em-progress-journey-stage {
+  position: relative;
+  height: 92px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #071323 0%, #0a1b31 100%);
+}
+.em-progress-journey-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.em-progress-journey-stars i {
+  position: absolute;
+  left: 105%;
+  top: var(--em-pj-top);
+  width: var(--em-pj-size);
+  height: var(--em-pj-size);
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: .65;
+  box-shadow: 0 0 5px rgba(255,255,255,.32);
+  animation: emProgressStarRush var(--em-pj-duration) var(--em-pj-delay) linear infinite;
+}
+.em-progress-journey-stars i:nth-child(3n) { background: #8bd8ff; opacity: .5; }
+.em-progress-journey-stars i:nth-child(4n) { background: #EBB513; opacity: .48; }
+@keyframes emProgressStarRush {
+  from { transform: translate3d(0,0,0) scale(.7); }
+  to { transform: translate3d(-125vw,0,0) scale(1.22); }
+}
+.em-progress-journey-travel {
+  position: absolute;
+  z-index: 2;
+  left: 26px;
+  right: 26px;
+  top: 50%;
+  height: 18px;
+  transform: translateY(-50%);
+}
+.em-progress-journey-base,
+.em-progress-journey-fire {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 6px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+.em-progress-journey-limit {
+  position: absolute;
+  top: -17px;
+  z-index: 3;
+  color: rgba(255,255,255,.46);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: .52rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.em-progress-journey-limit.is-start { left: -1px; }
+.em-progress-journey-limit.is-end { right: -3px; }
+.em-progress-journey-base {
+  width: 100%;
+  background: rgba(255,255,255,.08);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.045);
+}
+.em-progress-journey-fire {
+  width: 0;
+  background: linear-gradient(90deg, var(--em-pj-fire-a) 0%, var(--em-pj-fire-b) 52%, var(--em-pj-fire-c) 100%);
+  background-size: 180% 100%;
+  box-shadow: 0 0 8px rgba(255,122,0,.58), 0 0 16px rgba(235,181,19,.22);
+  transition: width 1.85s cubic-bezier(.16,1,.3,1);
+  animation: emProgressFireFlow .7s linear infinite;
+}
+.em-progress-journey-fire::before,
+.em-progress-journey-fire::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  width: 18px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translate(30%, -50%);
+  background: rgba(255,122,0,.36);
+  filter: blur(2px);
+}
+.em-progress-journey-fire::after {
+  width: 10px;
+  height: 8px;
+  background: rgba(235,181,19,.58);
+  filter: none;
+}
+@keyframes emProgressFireFlow {
+  to { background-position: -180% 0; }
+}
+.em-progress-rocket-shell {
+  --em-rs-rojo: #e21b3c;
+  --em-rs-amarillo: #EBB513;
+  --em-rs-naranja: #ff7a00;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 4;
+  width: 50px;
+  height: 74px;
+  transform: translate(-50%, -50%) rotate(90deg) scale(.54);
+  transform-origin: center;
+  transition: left 1.85s cubic-bezier(.16,1,.3,1);
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,.22));
+}
+.em-progress-rocket-shell .em-rs-rocket {
+  position: absolute;
+  left: 4px;
+  top: -2px;
+}
+.em-progress-journey.is-live .em-progress-journey-fire {
+  width: var(--em-progress-score-pct);
+}
+.em-progress-journey.is-live .em-progress-rocket-shell {
+  left: var(--em-progress-score-pct);
+}
+.em-progress-journey-message {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  margin-top: 9px;
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity .48s ease 1.92s, transform .65s cubic-bezier(.16,1,.3,1) 1.92s;
+}
+.em-progress-journey.is-live .em-progress-journey-message {
+  opacity: 1;
+  transform: translateX(0);
+}
+.em-progress-journey-message strong {
+  color: rgba(255,255,255,.88);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(.68rem, 2.55vw, .84rem);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: .018em;
+}
+.em-progress-journey-message strong b {
+  color: #EBB513;
+  font-size: 1.26em;
+  font-weight: 1000;
+}
+.em-progress-journey.is-red .em-progress-journey-message strong b { color: #ff4057; }
+.em-progress-journey.is-orange .em-progress-journey-message strong b { color: #ff8b22; }
+.em-progress-journey.is-yellow .em-progress-journey-message strong b { color: #f6d43a; }
+.em-progress-journey.is-green .em-progress-journey-message strong b { color: #45d66b; }
+.em-progress-journey-message small {
+  color: rgba(255,255,255,.48);
+  font-size: .60rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+@media (max-width: 560px) {
+  .activity-hero.em-act-hero-host.em-progress-hero-host {
+    grid-template-columns: 78px minmax(0,1fr);
+  }
+  .em-progress-hero-host .em-progress-grade-stack {
+    width: 82px;
+    min-height: 84px;
+  }
+  .em-progress-grade-card.is-60 { left: -2px; font-size: 23px; }
+  .em-progress-grade-card.is-80 { left: 22px; font-size: 27px; }
+  .em-progress-grade-card.is-100 { right: -5px; font-size: 31px; }
+  .em-progress-journey { padding: 9px; }
+  .em-progress-journey-stage { height: 82px; }
+  .em-progress-journey-travel { left: 24px; right: 24px; }
+  .em-progress-rocket-shell { transform: translate(-50%, -50%) rotate(90deg) scale(.49); }
 }
