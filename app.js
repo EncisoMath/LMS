@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.102';
+  const APP_VERSION = '0.25.103';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4219,62 +4219,6 @@
     const rows = sessions.map((session) => ({ ...session, points: byDate.get(session.date) || 0 }));
     return { points, target, score, rows };
   }
-  function studentProgressActivityRowsHTML(summary) {
-    if (!summary.rows.length) return '<div class="em-progress-empty">Todavía no hay actividades habilitadas para este periodo.</div>';
-    return summary.rows.map(({ activity, graded, score }) => `
-      <div class="em-progress-detail-row em-progress-activity-row">
-        <div class="em-progress-detail-main">
-          <strong>${escapeHTML(activity.title || 'Actividad')}</strong>
-          <small>${graded ? 'Calificada' : 'Pendiente de calificación'}</small>
-        </div>
-        <div class="em-progress-detail-score ${studentProgressBand(score)}">${graded ? `${Math.round(score)}/100` : '—'}</div>
-        ${studentProgressBarHTML(score)}
-      </div>
-    `).join('');
-  }
-  function studentProgressAttendanceRowsHTML(sessions) {
-    if (!sessions.length) return '<div class="em-progress-empty">Aún no hay fechas de asistencia registradas en este periodo.</div>';
-    return [...sessions].reverse().map((session) => {
-      const status = studentProgressStatusLabel(session.status);
-      return `
-        <div class="em-progress-detail-row em-progress-attendance-row">
-          <div class="em-progress-date"><strong>${escapeHTML(formatAcademicDate(session.date))}</strong></div>
-          <span class="em-progress-status ${status.className}"><span>${status.icon}</span>${status.label}</span>
-        </div>
-      `;
-    }).join('');
-  }
-  function studentProgressRockstarRowsHTML(summary) {
-    if (!summary.rows.length) return '<div class="em-progress-empty">Aún no hay jornadas de asistencia para relacionar con tus puntos Rockstar.</div>';
-    return [...summary.rows].reverse().map((row) => {
-      const status = studentProgressStatusLabel(row.status);
-      const points = Number(row.points || 0);
-      return `
-        <div class="em-progress-detail-row em-progress-rockstar-row">
-          <div class="em-progress-detail-main">
-            <strong>${escapeHTML(formatAcademicDate(row.date))}</strong>
-            <small class="${status.className}">${status.label}</small>
-          </div>
-          <strong class="em-progress-day-points ${points > 0 ? 'is-positive' : points < 0 ? 'is-negative' : 'is-zero'}">${points > 0 ? '+' : ''}${points}</strong>
-        </div>
-      `;
-    }).join('');
-  }
-  function studentProgressAccordionItemHTML({ key, icon, title, score, subtitle, open = false, content = '' }) {
-    const band = studentProgressBand(score);
-    return `
-      <section class="em-progress-accordion ${open ? 'is-open' : ''}" data-progress-accordion="${escapeAttr(key)}">
-        <button class="em-progress-accordion-head" type="button" data-progress-toggle="${escapeAttr(key)}" aria-expanded="${open ? 'true' : 'false'}">
-          <span class="em-progress-accordion-icon" aria-hidden="true">${icon}</span>
-          <span class="em-progress-accordion-copy"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(subtitle)}</small></span>
-          <strong class="em-progress-accordion-score ${band}">${studentProgressScoreLabel(score)}</strong>
-          <span class="em-progress-chevron" aria-hidden="true">⌄</span>
-          ${studentProgressBarHTML(score)}
-        </button>
-        <div class="em-progress-accordion-body" ${open ? '' : 'hidden'}>${content}</div>
-      </section>
-    `;
-  }
   function studentProgressGradebookConfig() {
     const assignmentId = String(state.assignment?.id || '');
     const period = Number(state.activePeriod || 1);
@@ -4364,6 +4308,69 @@
       columns,
       hasServerConfig: Object.keys(config).length > 0
     };
+  }
+  function studentProgressWeightedActivityScore(activities, definitive) {
+    const rows = Array.isArray(activities?.gradedRows) ? activities.gradedRows : [];
+    if (!rows.length) return null;
+    const columns = Array.isArray(definitive?.columns) ? definitive.columns : [];
+    const byKey = new Map(columns
+      .filter((column) => column?.type === 'activity')
+      .map((column) => [String(column.key || ''), column]));
+    let weightedSum = 0;
+    let activeWeight = 0;
+    rows.forEach((row) => {
+      const key = `activity:${row.activity?.id || ''}`;
+      const column = byKey.get(key);
+      const weight = Number(column?.weight);
+      const score = Number(row.score);
+      if (!Number.isFinite(score) || !Number.isFinite(weight) || weight <= 0) return;
+      weightedSum += Math.max(0, Math.min(100, score)) * weight;
+      activeWeight += weight;
+    });
+    if (activeWeight > 0) return Math.round((weightedSum / activeWeight) * 10) / 10;
+    return Number.isFinite(Number(activities?.score)) ? Number(activities.score) : null;
+  }
+  function studentProgressRingCardHTML({ key, title, score }) {
+    const empty = score === null || score === undefined || !Number.isFinite(Number(score));
+    const safe = empty ? 0 : Math.max(0, Math.min(100, Number(score)));
+    const rounded = empty ? '—' : Math.round(safe);
+    const band = studentProgressBand(empty ? null : safe);
+    return `
+      <section class="em-progress-summary-card em-progress-summary-card-ring ${band}" data-progress-summary="${escapeAttr(key)}" style="--em-summary-score:${safe}">
+        <strong class="em-progress-summary-title">${escapeHTML(title)}</strong>
+        <div class="em-progress-ring" role="img" aria-label="${escapeAttr(title)}: ${empty ? 'sin dato' : `${rounded} por ciento`}">
+          <span class="em-progress-ring-track" aria-hidden="true"></span>
+          <span class="em-progress-ring-value">${rounded}${empty ? '' : '<small>%</small>'}</span>
+        </div>
+      </section>
+    `;
+  }
+  function studentProgressRockstarCardHTML(rockstars, available = true) {
+    const points = available && Number.isFinite(Number(rockstars?.points)) ? Number(rockstars.points) : null;
+    const label = points === null ? '—' : String(Math.round(points));
+    return `
+      <section class="em-progress-summary-card em-progress-summary-card-rockstars" data-progress-summary="rockstars">
+        <strong class="em-progress-summary-title">ROCKSTAR POINTS</strong>
+        <div class="em-progress-rockstar-coins" aria-hidden="true">
+          <span class="em-progress-r-coin is-left"><b>R</b></span>
+          <span class="em-progress-r-coin is-center"><b>R</b></span>
+          <span class="em-progress-r-coin is-right"><b>R</b></span>
+        </div>
+        <div class="em-progress-rockstar-total" aria-label="${points === null ? 'Rockstar Points sin dato' : `${label} Rockstar Points`}">
+          <strong>${label}</strong>${points === null ? '' : '<small>PTS</small>'}
+        </div>
+      </section>
+    `;
+  }
+  function studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable) {
+    const activityScore = studentProgressWeightedActivityScore(activities, definitive);
+    return `
+      <div class="em-progress-summary-grid" aria-label="Resumen de progreso">
+        ${studentProgressRingCardHTML({ key: 'grade', title: 'CALIFICACIÓN', score: activityScore })}
+        ${studentProgressRingCardHTML({ key: 'attendance', title: 'ASISTENCIA', score: progressAvailable ? attendance?.score : null })}
+        ${studentProgressRockstarCardHTML(rockstars, progressAvailable)}
+      </div>
+    `;
   }
   function studentProgressJourneyStarsHTML(score = 0) {
     const safe = Math.max(0, Math.min(100, Number(score) || 0));
@@ -4481,35 +4488,8 @@
     root.innerHTML = `
       ${studentProgressJourneyHTML(definitive)}
       ${notice}
-      <div class="em-progress-stack">
-        ${studentProgressAccordionItemHTML({
-          key: 'activities', icon: '📝', title: 'ACTIVIDADES', score: activities.score,
-          subtitle: `${activities.gradedRows.length} calificadas de ${activities.rows.length} habilitadas`, open: true,
-          content: `<div class="em-progress-detail-list">${studentProgressActivityRowsHTML(activities)}</div>`
-        })}
-        ${studentProgressAccordionItemHTML({
-          key: 'attendance', icon: '✓', title: 'ASISTENCIA', score: progressAvailable ? attendance.score : null,
-          subtitle: `${attendance.present} asistencias · ${attendance.absent} inasistencias · ${attendance.excused} excusas`,
-          content: `<div class="em-progress-attendance-summary"><span><b>${attendance.present}</b> Asistió</span><span><b>${attendance.absent}</b> No asistió</span><span><b>${attendance.excused}</b> Excusa</span></div><div class="em-progress-detail-list">${studentProgressAttendanceRowsHTML(attendanceSessions)}</div>`
-        })}
-        ${studentProgressAccordionItemHTML({
-          key: 'rockstars', icon: '⭐', title: 'ROCKSTAR POINTS', score: progressAvailable ? rockstars.score : null,
-          subtitle: `${rockstars.points}/${rockstars.target} puntos en el periodo`,
-          content: `<div class="em-progress-rockstar-summary"><strong>${rockstars.points}</strong><span>de ${rockstars.target} puntos meta</span></div><div class="em-progress-detail-list">${studentProgressRockstarRowsHTML(rockstars)}</div>`
-        })}
-      </div>
+      ${studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable)}
     `;
-    root.querySelectorAll('[data-progress-toggle]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const section = button.closest('[data-progress-accordion]');
-        const body = section?.querySelector('.em-progress-accordion-body');
-        if (!section || !body) return;
-        const nextOpen = !section.classList.contains('is-open');
-        section.classList.toggle('is-open', nextOpen);
-        button.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
-        body.hidden = !nextOpen;
-      });
-    });
     emProgressInitJourney(root);
     if (options.animate) {
       emPlayStudentProgressEncisoFlowIn(root);
@@ -19099,13 +19079,13 @@
       '#quizLibrary .em-quiz-start'
     ],
     progress: [
-      '[data-em-rockstars-hero]',
       '.em-progress-journey',
       '.em-progress-journey-message > *',
       '.em-progress-data-notice',
-      '.em-progress-stack > *',
-      '.em-progress-accordion-head',
-      '.em-progress-accordion-body > *'
+      '.em-progress-summary-grid > *',
+      '.em-progress-ring',
+      '.em-progress-r-coin',
+      '.em-progress-rockstar-total'
     ]
   };
 

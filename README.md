@@ -1,10 +1,15 @@
-# EncisoMath LMS v0.25.102
+# EncisoMath LMS v0.25.103
 
-## v0.25.102 — Progreso: hero retirado y destello verde contenido
+## v0.25.103 — Progreso: resumen visual en 3 tarjetas
 
-- Se elimina completamente el hero azul de **PROGRESO**; la sección comienza directamente con el viaje espacial.
-- En **80–89**, el destello del número queda recortado dentro de las cifras mediante un shimmer interno; se eliminan el halo y la órbita que proyectaban luz fuera del número.
-- EncisoFlowIn/Out continúa aplicándose al viaje y a las tarjetas de Progreso.
+- Se eliminan del layout los antiguos contenedores/acordeones de **ACTIVIDADES**, **ASISTENCIA** y **ROCKSTAR POINTS**.
+- Se añade un resumen compacto de **3 columnas × 1 fila** inmediatamente después del viaje espacial.
+- **CALIFICACIÓN** usa un diagrama circular y calcula el resultado de las actividades respetando sus pesos de Planilla; solo normaliza entre actividades ya calificadas para no penalizar pendientes.
+- **ASISTENCIA** usa un diagrama circular con el porcentaje del periodo.
+- Los anillos usan la misma escala visual de Progreso: rojo `<60`, naranja `60–69`, amarillo `70–79`, verde `80–89` y dorado `90–100`.
+- **ROCKSTAR POINTS** reemplaza el medidor circular por tres monedas flat con una `R`, centradas y con movimiento suave, más el total de puntos.
+- No se muestran mensajes secundarios como “Excelente”, “Buena asistencia” o “Sigue participando”.
+- EncisoFlowIn/Out incluye las nuevas tarjetas, anillos y monedas.
 - No requiere SQL nuevo.
 
 ## v0.25.101 — Progreso: estados visuales de velocidad
