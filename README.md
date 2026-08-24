@@ -1,5 +1,12 @@
-# EncisoMath LMS v0.25.097
+# EncisoMath LMS v0.25.098
 
+
+## v0.25.098 — Progreso: estela rectangular continua
+
+- La cola de fuego del cohete vuelve a ser una línea gruesa, continua y rectangular, eliminando el recorte dentado que producía triángulos/rombos.
+- Se conserva el flujo animado de derecha a izquierda mediante bandas calientes internas, halo y destellos, pero sin deformar la silueta exterior de la estela.
+- El pequeño propulsor junto al motor también deja de usar una silueta triangular y se integra como una extensión corta y redondeada de la estela.
+- No requiere SQL nuevo.
 
 ## v0.25.097 — Progreso: viaje espacial reforzado
 
