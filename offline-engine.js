@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.077';
+  const OFFLINE_VERSION = '0.25.092';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -1298,17 +1298,38 @@
     });
   }
 
-  async function optimisticRockstar(payload, mutationId) {
+  async function optimisticRockstar(payload, mutationId, result = null, appliedOnline = false) {
     await updateSnapshot(async (snapshot) => {
       snapshot.data.rockstars = snapshot.data.rockstars || [];
-      if (snapshot.data.rockstars.some((item) => item.clientMutationId === mutationId)) return;
-      snapshot.data.rockstars.push({
+      const events = snapshot.data.rockstars;
+
+      // app.js inserta el evento inmediatamente para que el +1/-1 se vea sin
+      // latencia. Tras una carga fresca, state.data.rockstars y activeSnapshot
+      // pueden compartir temporalmente la misma referencia. No debemos volver
+      // a insertar ese mismo evento al confirmar la mutación, porque produciría
+      // un +2 visual por una sola pulsación.
+      const existing = events.find((item) => (
+        String(item?.clientMutationId || '') === String(mutationId || '')
+        || (payload?.id && String(item?.id || '') === String(payload.id))
+      ));
+
+      if (existing) {
+        existing.clientMutationId = mutationId;
+        if (result?.id) existing.id = result.id;
+        existing.occurredAt = result?.occurred_at || existing.occurredAt || payload.occurredAt || nowIso();
+        existing.date = String(existing.occurredAt || nowIso()).slice(0, 10);
+        existing.pendingSync = !appliedOnline;
+        return;
+      }
+
+      const occurredAt = result?.occurred_at || payload.occurredAt || nowIso();
+      events.push({
         ...payload,
-        id: payload.id || `offline-${mutationId}`,
-        occurredAt: payload.occurredAt || nowIso(),
-        date: String(payload.occurredAt || nowIso()).slice(0, 10),
+        id: result?.id || payload.id || `offline-${mutationId}`,
+        occurredAt,
+        date: String(occurredAt).slice(0, 10),
         clientMutationId: mutationId,
-        pendingSync: true
+        pendingSync: !appliedOnline
       });
     });
   }

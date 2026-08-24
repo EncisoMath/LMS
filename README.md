@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.091
+# EncisoMath LMS v0.25.092
+
+## v0.25.092 — Rockstars: cada toque suma exactamente un punto
+
+- Corrige el caso en que una sola pulsación de `+1` podía reflejarse temporalmente como `+2`.
+- La causa era una referencia compartida entre el estado visible de Rockstars y la copia offline inmediatamente después de una carga fresca.
+- El motor offline ahora reconoce por `id` o `clientMutationId` un evento que `app.js` ya añadió de forma optimista y actualiza ese mismo evento en lugar de insertarlo de nuevo.
+- Al confirmarse en Supabase, el evento existente recibe el `id`/fecha del servidor y se marca como sincronizado, sin alterar nuevamente el puntaje.
+- La misma protección aplica tanto a `+1` como a `-1` y también evita duplicados durante transiciones online/offline.
+- No requiere SQL nuevo.
 
 ## v0.25.091 — cabecera de PLANILLA refinada
 
