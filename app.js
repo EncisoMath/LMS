@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.090';
+  const APP_VERSION = '0.25.091';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4563,21 +4563,14 @@
     const activeFilter = Boolean(view.attendanceFilters?.[date]);
     const activeSort = view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date;
     return `
-      <th class="em-notes-attendance-header ${activeFilter || activeSort ? 'has-filter' : ''}" scope="col" title="${escapeAttr(`${label}. Toca para filtrar; usa la papelera para eliminar esta fecha.`)}">
+      <th class="em-notes-attendance-header ${activeFilter || activeSort ? 'has-filter' : ''}" scope="col" title="${escapeAttr(`${label}. Toca la fecha para filtrar, ordenar o eliminar esa asistencia.`)}">
         <div class="em-notes-attendance-header-wrap">
           <button
             class="em-notes-attendance-filter-trigger"
             type="button"
             data-notes-attendance-filter="${escapeAttr(date)}"
-            aria-label="${escapeAttr(`Filtrar por ${label}`)}"
+            aria-label="${escapeAttr(`Opciones de ${label}`)}"
           ><span>${escapeHTML(label)}</span><i aria-hidden="true">⌄</i></button>
-          <button
-            class="em-notes-attendance-delete-trigger"
-            type="button"
-            data-notes-attendance-session-delete="${escapeAttr(date)}"
-            aria-label="${escapeAttr(`Eliminar ${label} y todas las asistencias de ese día en este curso`)}"
-            title="Eliminar esta fecha"
-          >⌫</button>
         </div>
       </th>
     `;
@@ -5244,13 +5237,12 @@
     return `
       <th class="em-notes-grade-header ${activeFilter || activeSort ? 'has-filter' : ''}" style="--em-notes-column-color:${escapeAttr(column.color)}">
         <div class="em-notes-grade-header-wrap">
-          <button class="em-notes-grade-filter-trigger" type="button" data-notes-grade-filter="${escapeAttr(column.key)}" title="Filtrar ${escapeAttr(column.title)}">
+          <button class="em-notes-grade-filter-trigger" type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}" aria-label="Configurar ${escapeAttr(column.title)}">
             <span class="em-notes-column-code">${escapeHTML(column.code)}</span>
             <span class="em-notes-column-title">${escapeHTML(column.title)}</span>
             <span class="em-notes-column-weight">${Number(column.weight)}%</span>
-            <i class="em-notes-filter-mark" aria-hidden="true">⌄</i>
           </button>
-          <button class="em-notes-grade-config-trigger" type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}" aria-label="Configurar ${escapeAttr(column.title)}">⚙</button>
+          <button class="em-notes-grade-filter-menu-trigger" type="button" data-notes-grade-filter="${escapeAttr(column.key)}" title="Filtrar u ordenar ${escapeAttr(column.title)}" aria-label="Filtrar u ordenar ${escapeAttr(column.title)}"><span></span><span></span><span></span></button>
         </div>
       </th>
     `;
@@ -5505,9 +5497,18 @@
           <option value="desc" ${currentSort === 'desc' ? 'selected' : ''}>Asistió primero</option>
           <option value="asc" ${currentSort === 'asc' ? 'selected' : ''}>No asistió primero</option>
         </select></label>
+        <div class="em-notes-attendance-filter-danger">
+          <span>Administrar esta fecha</span>
+          <p>Elimina de este curso la fecha completa y todos sus registros de asistencia.</p>
+          <button class="danger-btn" id="deleteNotesAttendanceSessionBtn" type="button">Eliminar asistencia de esta fecha</button>
+        </div>
       `,
       footer: `<div class="em-activity-modal-actions"><button class="ghost-btn" id="clearNotesAttendanceFilterBtn" type="button">Limpiar</button><button class="primary-btn" id="applyNotesAttendanceFilterBtn" type="button">Aplicar</button></div>`
     }), () => {
+      document.getElementById('deleteNotesAttendanceSessionBtn')?.addEventListener('click', () => {
+        closeModal(false);
+        setTimeout(() => openNotesAttendanceDateDeleteModal(session), 0);
+      });
       document.getElementById('clearNotesAttendanceFilterBtn')?.addEventListener('click', () => {
         delete view.attendanceFilters[date];
         if (view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date) view.sort = { kind: 'student', key: 'student', direction: 'asc' };
@@ -5624,7 +5625,7 @@
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">La fila superior permanece fija mientras recorres la matriz. Toca un encabezado para filtrar u ordenar; usa ⚙ para configurar una nota y ⌫ para eliminar una fecha de asistencia.</p>
+        <p class="em-notes-sheet-help">La fila superior permanece fija mientras recorres la matriz. En asistencia, toca la fecha para filtrar, ordenar o eliminar. En notas, toca el encabezado para configurar y usa el botón de tres líneas para filtrar u ordenar.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
@@ -5656,14 +5657,14 @@
         button.dataset.notesAttendanceDetail || ''
       ));
     });
-    content.querySelectorAll('[data-notes-attendance-session-delete]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const date = button.dataset.notesAttendanceSessionDelete || '';
-        const session = sessions.find((item) => String(item?.date || '') === String(date));
-        if (session) openNotesAttendanceDateDeleteModal(session);
-      });
-    });
+    const notesHeader = content.querySelector('.em-notes-sheet thead');
+    notesHeader?.addEventListener('wheel', (event) => {
+      // La fila fija sirve para navegar y filtrar; el gesto vertical sobre ella
+      // debe desplazar la página, no consumir el scroll interno de la matriz.
+      if (event.shiftKey || Math.abs(Number(event.deltaY || 0)) <= Math.abs(Number(event.deltaX || 0))) return;
+      event.preventDefault();
+      window.scrollBy({ top: Number(event.deltaY || 0), left: 0, behavior: 'auto' });
+    }, { passive: false });
     document.getElementById('notesStudentSearchInput')?.addEventListener('input', (event) => {
       getNotesViewState().search = event.currentTarget.value || '';
       refreshNotesFilteredRows();

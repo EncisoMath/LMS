@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.090
+# EncisoMath LMS v0.25.091
+
+## v0.25.091 — cabecera de PLANILLA refinada
+
+- La cabecera sticky de **Estudiante** queda siempre por encima de asistencias/notas al desplazar horizontalmente la matriz.
+- El scroll vertical realizado sobre la fila de encabezados desplaza la página, no el scroll interno de la tabla.
+- En **Asistencia**, tocar la fecha abre filtros/orden y desde ese mismo modal se puede eliminar la fecha completa con confirmación.
+- En columnas de nota, tocar el encabezado abre **Configurar nota**; el botón superior derecho abre **Filtros de planilla**.
+- El botón de filtro usa tres líneas horizontales, sin emoji.
+
 
 ## v0.25.090 — planilla compacta, fija y filtrable
 

@@ -38338,3 +38338,94 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   }
 }
 .em-notes-clear-filters[hidden] { display: none !important; }
+
+/* =========================================================
+   ENCISOMATH v0.25.091 - CABECERA PLANILLA SIN SOLAPES
+   ========================================================= */
+/* La columna Estudiante siempre queda por encima de cualquier cabecera que
+   se desplace horizontalmente por debajo de ella. */
+.em-notes-sheet thead .em-notes-student-header {
+  z-index: 80 !important;
+  isolation: isolate;
+  overflow: hidden !important;
+  background: #08101b !important;
+  box-shadow: 10px 0 18px rgba(0,0,0,.42) !important;
+}
+.em-notes-sheet thead .em-notes-student-header .em-notes-student-filter-trigger {
+  position: relative;
+  z-index: 2;
+  background: #08101b !important;
+}
+.em-notes-sheet thead .em-notes-attendance-header,
+.em-notes-sheet thead .em-notes-grade-header,
+.em-notes-sheet thead .em-notes-final-header {
+  z-index: 12 !important;
+}
+
+/* En las notas, el encabezado grande configura; el pequeño menú filtra. */
+.em-notes-grade-filter-menu-trigger {
+  position: absolute !important;
+  top: 4px !important;
+  right: 3px !important;
+  z-index: 5 !important;
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255,255,255,.24) !important;
+  border-radius: 4px !important;
+  background: rgba(0,0,0,.48) !important;
+  color: #fff !important;
+  cursor: pointer !important;
+}
+.em-notes-grade-filter-menu-trigger > span {
+  display: block !important;
+  width: 10px !important;
+  height: 1.5px !important;
+  border-radius: 2px !important;
+  background: currentColor !important;
+  pointer-events: none !important;
+}
+.em-notes-grade-filter-menu-trigger:hover,
+.em-notes-grade-filter-menu-trigger:focus-visible,
+.em-notes-grade-header.has-filter .em-notes-grade-filter-menu-trigger {
+  background: var(--em-notes-column-color) !important;
+  outline: 1px solid rgba(255,255,255,.88) !important;
+  outline-offset: -1px !important;
+}
+
+/* Asistencia ya no tiene botón flotante: toda la fecha abre sus opciones. */
+.em-notes-attendance-filter-trigger {
+  padding-bottom: 10px !important;
+}
+.em-notes-attendance-filter-danger {
+  display: grid;
+  gap: 7px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.09);
+}
+.em-notes-attendance-filter-danger > span {
+  color: #ff8d98;
+  font-size: .66rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.em-notes-attendance-filter-danger > p {
+  margin: 0;
+  color: #9eabbc;
+  font-size: .64rem;
+  line-height: 1.42;
+}
+.em-notes-attendance-filter-danger .danger-btn {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 4px !important;
+}
