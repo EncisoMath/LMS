@@ -1088,6 +1088,54 @@
     return activities;
   }
 
+  function normalizeStudentProgressPayload(payload, studentCode = '') {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    const attendance = {};
+    const attendanceRows = Array.isArray(source.attendance) ? source.attendance : [];
+    attendanceRows.forEach((row) => {
+      const assignmentId = String(row?.assignment_id || row?.assignmentId || '').trim();
+      const date = String(row?.attendance_date || row?.attendanceDate || row?.date || '').slice(0, 10);
+      if (!assignmentId || !date) return;
+      const status = String(row?.status || 'absent').toLowerCase();
+      attendance[`${assignmentId}|${date}`] = {
+        ...(attendance[`${assignmentId}|${date}`] || {}),
+        [String(studentCode || '')]: status
+      };
+    });
+    const rockstars = (Array.isArray(source.rockstars) ? source.rockstars : []).map((row) => ({
+      id: String(row?.id || `student-progress-${row?.assignment_id || row?.assignmentId || ''}-${row?.occurred_at || row?.occurredAt || ''}`),
+      assignmentId: String(row?.assignment_id || row?.assignmentId || ''),
+      studentId: String(studentCode || ''),
+      period: Number(row?.period || 1),
+      date: String(row?.occurred_at || row?.occurredAt || row?.date || '').slice(0, 10),
+      occurredAt: row?.occurred_at || row?.occurredAt || '',
+      delta: Number(row?.points ?? row?.delta ?? 0),
+      category: String(row?.category || ''),
+      reason: String(row?.reason || '')
+    })).filter((row) => row.assignmentId && row.date && [-1, 1].includes(row.delta));
+    const rockstarTargets = {};
+    (Array.isArray(source.rockstar_targets) ? source.rockstar_targets : (Array.isArray(source.rockstarTargets) ? source.rockstarTargets : [])).forEach((row) => {
+      const assignmentId = String(row?.assignment_id || row?.assignmentId || '').trim();
+      const period = Number(row?.period || 1);
+      const target = Number(row?.target || 15);
+      if (!assignmentId || ![1, 2, 3, 4].includes(period) || !Number.isFinite(target) || target <= 0) return;
+      rockstarTargets[`${assignmentId}|period-${period}`] = target;
+    });
+    return {
+      available: source.unavailable !== true && (
+        source.ok === true
+        || Array.isArray(source.attendance)
+        || Array.isArray(source.rockstars)
+        || Array.isArray(source.rockstar_targets)
+        || Array.isArray(source.rockstarTargets)
+      ),
+      message: String(source.message || ''),
+      attendance,
+      rockstars,
+      rockstarTargets
+    };
+  }
+
   function normalizeStudentPortalData(payload, requestedCode = '') {
     const source = payload && typeof payload === 'object' ? payload : {};
     if (source.ok === false) throw new Error(source.message || 'No encontramos un estudiante activo con ese usuario o código.');
@@ -1150,6 +1198,10 @@
     const periodStartsByAssignment = normalizeStudentPeriodStartsByAssignment(
       source.academic_period_starts_by_assignment || source.academicPeriodStartsByAssignment || source.preferences?.academicPeriodStartsByAssignment
     );
+    const studentProgress = normalizeStudentProgressPayload(
+      source.student_progress || source.studentProgress || {},
+      studentCode
+    );
 
     return {
       user: appUser,
@@ -1161,10 +1213,15 @@
         activities: studentActivities,
         activityGrades,
         quizGrades: [],
-        rockstars: [],
+        rockstars: studentProgress.rockstars,
+        studentProgress: {
+          available: studentProgress.available,
+          message: studentProgress.message,
+          rockstarTargets: studentProgress.rockstarTargets
+        },
         quizzes
       },
-      attendance: {},
+      attendance: studentProgress.attendance,
       preferences: {
         ...(source.preferences && typeof source.preferences === 'object' ? source.preferences : {}),
         academicPeriodStartsByAssignment: periodStartsByAssignment
@@ -1182,6 +1239,9 @@
       classes: snapshot.data.classes || [],
       activities: snapshot.data.activities || [],
       activityGrades: snapshot.data.activityGrades || [],
+      rockstars: snapshot.data.rockstars || [],
+      studentProgress: snapshot.data.studentProgress || {},
+      attendance: snapshot.attendance || {},
       preferences: snapshot.preferences || {}
     };
   }
@@ -1208,10 +1268,11 @@
       if (error) throw normalizeError(error, 'No se pudo cargar el portal del estudiante.');
       payload = data;
     }
-    reportApplicationLoadProgress(options, 62, 'Cargando quizzes y calendario académico...');
-    const [academicContextResult, activityStatusResult] = await Promise.all([
+    reportApplicationLoadProgress(options, 62, 'Cargando quizzes, progreso y calendario académico...');
+    const [academicContextResult, activityStatusResult, progressResult] = await Promise.all([
       getStudentClient().rpc('encisomath_student_academic_context', { p_student_code: code }),
-      getStudentClient().rpc('encisomath_student_activity_statuses', { p_student_code: code })
+      getStudentClient().rpc('encisomath_student_activity_statuses', { p_student_code: code }),
+      getStudentClient().rpc('encisomath_student_progress', { p_student_code: code })
     ]);
     const { data: academicContext, error: academicContextError } = academicContextResult;
     if (academicContextError) {
@@ -1231,7 +1292,22 @@
     } else {
       activityStatuses = Array.isArray(activityStatusResult?.data) ? activityStatusResult.data : [];
     }
-    payload = { ...payload, ...academicContext, activity_statuses: activityStatuses };
+    let studentProgress = {};
+    if (progressResult?.error) {
+      const progressMessage = String(progressResult.error.message || '').toLowerCase();
+      const missingProgressRpc = progressResult.error.code === 'PGRST202' || progressMessage.includes('encisomath_student_progress');
+      studentProgress = {
+        ok: false,
+        unavailable: true,
+        message: missingProgressRpc
+          ? 'Falta ejecutar SUPABASE_STUDENT_PROGRESS_v0.25.093.sql en Supabase.'
+          : 'No se pudo cargar el resumen de progreso.'
+      };
+      if (!missingProgressRpc) console.warn('No se pudo cargar el progreso del estudiante.', progressResult.error);
+    } else {
+      studentProgress = progressResult?.data && typeof progressResult.data === 'object' ? progressResult.data : {};
+    }
+    payload = { ...payload, ...academicContext, activity_statuses: activityStatuses, student_progress: studentProgress };
     reportApplicationLoadProgress(options, 78, 'Organizando el portal del estudiante...');
     const snapshot = normalizeStudentPortalData(payload, code);
     const remembered = studentPortalSession?.encisomathRemember ?? readStoredStudentPortalState().remember;

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const OFFLINE_VERSION = '0.25.092';
+  const OFFLINE_VERSION = '0.25.093';
   const DB_NAME = 'encisomath-offline-v1';
   const DB_VERSION = 4;
   const STORES = Object.freeze({
@@ -300,6 +300,9 @@
     if (Array.isArray(normalized.classes)) snapshot.data.classes = normalized.classes;
     if (Array.isArray(normalized.activities)) snapshot.data.activities = normalized.activities;
     if (Array.isArray(normalized.activityGrades)) snapshot.data.activityGrades = normalized.activityGrades;
+    if (Array.isArray(normalized.rockstars)) snapshot.data.rockstars = normalized.rockstars;
+    if (normalized.studentProgress && typeof normalized.studentProgress === 'object') snapshot.data.studentProgress = normalized.studentProgress;
+    if (normalized.attendance && typeof normalized.attendance === 'object') snapshot.attendance = normalized.attendance;
     snapshot.preferences = { ...(snapshot.preferences || {}), ...(normalized.preferences || {}) };
     snapshot._offline = snapshot._offline && typeof snapshot._offline === 'object' ? snapshot._offline : {};
     snapshot._offline.backgroundContentSyncedAt = pending.receivedAt || nowIso();

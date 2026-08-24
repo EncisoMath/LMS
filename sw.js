@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.092';
+const SW_VERSION = 'encisomath-offline-v0.25.093';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -448,12 +448,16 @@ async function fetchStudentPortalPayload(config) {
     Accept: 'application/json',
     'x-application-name': 'EncisoMath-LMS-Background'
   };
-  const [portalResponse, statusResponse] = await Promise.all([
+  const [portalResponse, statusResponse, progressResponse] = await Promise.all([
     fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_portal`, {
       method: 'POST', cache: 'no-store', credentials: 'omit', headers,
       body: JSON.stringify({ p_student_code: studentCode })
     }),
     fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_activity_statuses`, {
+      method: 'POST', cache: 'no-store', credentials: 'omit', headers,
+      body: JSON.stringify({ p_student_code: studentCode })
+    }).catch(() => null),
+    fetch(`${baseUrl}/rest/v1/rpc/encisomath_student_progress`, {
       method: 'POST', cache: 'no-store', credentials: 'omit', headers,
       body: JSON.stringify({ p_student_code: studentCode })
     }).catch(() => null)
@@ -465,7 +469,17 @@ async function fetchStudentPortalPayload(config) {
   if (statusResponse?.ok) {
     try { activityStatuses = await statusResponse.json(); } catch (_) { activityStatuses = []; }
   }
-  const combined = { ...payload, activity_statuses: Array.isArray(activityStatuses) ? activityStatuses : [] };
+  let studentProgress = {};
+  if (progressResponse?.ok) {
+    try { studentProgress = await progressResponse.json(); } catch (_) { studentProgress = {}; }
+  } else {
+    studentProgress = { ok: false, unavailable: true, message: 'No se pudo actualizar el progreso en segundo plano.' };
+  }
+  const combined = {
+    ...payload,
+    activity_statuses: Array.isArray(activityStatuses) ? activityStatuses : [],
+    student_progress: studentProgress
+  };
   return self.EncisoContentSync?.sanitizePortalPayload?.(combined) || combined;
 }
 

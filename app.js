@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.092';
+  const APP_VERSION = '0.25.093';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1258,6 +1258,7 @@
       }
     } else if (tab === 'notes') renderNotesTab({ animate, ...options });
     else if (tab === 'rockstars') refreshRockstarList(animate);
+    else if (tab === 'progress') renderStudentProgressTab({ animate });
     else if (tab === 'quizzes') {
       state.quizQuestionIndex = 0;
       state.quizActiveId = '';
@@ -1574,7 +1575,7 @@
   }
   function normalizeSubjectTab(tab) {
     const value = String(tab || (isStudentPortal() ? 'classes' : 'students'));
-    if (isStudentPortal()) return ['classes', 'activities', 'quizzes'].includes(value) ? value : 'classes';
+    if (isStudentPortal()) return ['classes', 'activities', 'quizzes', 'progress'].includes(value) ? value : 'classes';
     return ['students', 'classes', 'activities', 'notes', 'rockstars', 'quizzes'].includes(value) ? value : 'students';
   }
   function subjectTabDisplayLabel(tab) {
@@ -1584,7 +1585,8 @@
       activities: '📝 Actividades',
       notes: '📊 Planilla',
       rockstars: '🚀 Rockstars',
-      quizzes: '🎮 Quizzes'
+      quizzes: '🎮 Quizzes',
+      progress: '📈 Progreso'
     }[normalizeSubjectTab(tab)] || (isStudentPortal() ? '📚 Clases' : '👥 Estudiantes');
   }
   function appRouteKey(route) {
@@ -2352,7 +2354,8 @@
     const items = [
       { tab: 'classes', label: 'Clases', emoji: '📚', shape: '<span class="em-cl-shape em-cl-shape-square em-student-section-shape" aria-hidden="true" style="--em-cl-shape-x:78%;--em-cl-shape-y:28%;--em-cl-shape-size:42px;--em-cl-shape-alpha:.24;--em-cl-shape-duration:8.4s;--em-cl-shape-delay:-2.4s;--em-cl-x0:-2px;--em-cl-y0:-1px;--em-cl-x1:9px;--em-cl-y1:6px;--em-cl-x2:-8px;--em-cl-y2:9px;--em-cl-x3:7px;--em-cl-y3:-5px;--em-cl-r0:-10deg;--em-cl-r1:28deg;--em-cl-r2:54deg;--em-cl-r3:82deg;--em-cl-r4:350deg"></span>' },
       { tab: 'activities', label: 'Actividades', emoji: '📝', shape: '<span class="em-act-shape em-act-shape-circle em-student-section-shape" aria-hidden="true"></span>' },
-      { tab: 'quizzes', label: 'Quizzes', emoji: '🎮', shape: '<span class="em-qz-shape em-qz-shape-x em-student-section-shape" aria-hidden="true" style="--em-qz-shape-x:78%;--em-qz-shape-y:28%;--em-qz-shape-size:44px;--em-qz-shape-alpha:.24;--em-qz-shape-duration:8.8s;--em-qz-shape-delay:-3.1s;--em-qz-x0:-2px;--em-qz-y0:-2px;--em-qz-x1:10px;--em-qz-y1:6px;--em-qz-x2:-9px;--em-qz-y2:8px;--em-qz-x3:8px;--em-qz-y3:-6px;--em-qz-r0:-12deg;--em-qz-r1:32deg;--em-qz-r2:58deg;--em-qz-r3:86deg;--em-qz-r4:348deg"></span>' }
+      { tab: 'quizzes', label: 'Quizzes', emoji: '🎮', shape: '<span class="em-qz-shape em-qz-shape-x em-student-section-shape" aria-hidden="true" style="--em-qz-shape-x:78%;--em-qz-shape-y:28%;--em-qz-shape-size:44px;--em-qz-shape-alpha:.24;--em-qz-shape-duration:8.8s;--em-qz-shape-delay:-3.1s;--em-qz-x0:-2px;--em-qz-y0:-2px;--em-qz-x1:10px;--em-qz-y1:6px;--em-qz-x2:-9px;--em-qz-y2:8px;--em-qz-x3:8px;--em-qz-y3:-6px;--em-qz-r0:-12deg;--em-qz-r1:32deg;--em-qz-r2:58deg;--em-qz-r3:86deg;--em-qz-r4:348deg"></span>' },
+      { tab: 'progress', label: 'Progreso', emoji: '📈', shape: '<span class="em-act-shape em-act-shape-triangle em-student-section-shape em-student-progress-nav-shape" aria-hidden="true"></span>' }
     ];
     return `
       <nav class="em-student-subject-sections" role="tablist" aria-label="Secciones de la asignatura">
@@ -2469,6 +2472,7 @@
       if (studentMode) {
         if (tab === 'activities') renderActivitiesTab({ animate: true });
         else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
+        else if (tab === 'progress') renderStudentProgressTab({ animate: true });
         else renderClassesTab({ animate: true });
       } else if (tab === 'students') renderStudentsTab({ animate: true });
       else if (tab === 'activities') renderActivitiesTab({ animate: true });
@@ -2513,6 +2517,7 @@
     else if (tab === 'notes') renderNotesTab({ animate: true });
     else if (tab === 'rockstars') renderRockstarsTab({ animate: true });
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
+    else if (tab === 'progress') renderStudentProgressTab({ animate: true });
     else renderClassesTab({ animate: true });
   }
   function renderStudentsTab(options = {}) {
@@ -4063,6 +4068,239 @@
   }
   function getSleepingTier() {
     return { emoji: '😴', label: 'No disponible', className: 'tier-sleep' };
+  }
+  function studentProgressBand(score) {
+    if (score === null || score === undefined || score === '') return 'is-empty';
+    const value = Number(score);
+    if (!Number.isFinite(value)) return 'is-empty';
+    if (value >= 90) return 'is-gold';
+    if (value >= 80) return 'is-green';
+    if (value >= 70) return 'is-yellow';
+    if (value >= 60) return 'is-orange';
+    return 'is-red';
+  }
+  function studentProgressScoreLabel(score) {
+    if (score === null || score === undefined || score === '') return '—';
+    const value = Number(score);
+    return Number.isFinite(value) ? `${Math.round(Math.max(0, Math.min(100, value)))}/100` : '—';
+  }
+  function studentProgressBarHTML(score) {
+    const empty = score === null || score === undefined || score === '';
+    const value = empty ? NaN : Number(score);
+    const safe = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+    const band = studentProgressBand(value);
+    return `<span class="em-progress-bar ${band}" aria-hidden="true"><span style="width:${safe}%"></span></span>`;
+  }
+  function studentProgressStatusLabel(status) {
+    const value = String(status || 'absent').toLowerCase();
+    if (value === 'present') return { label: 'Asistió', icon: '✓', className: 'is-present' };
+    if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '●', className: 'is-excused' };
+    return { label: 'No asistió', icon: '●', className: 'is-absent' };
+  }
+  function studentProgressActivities() {
+    const assignmentId = String(state.assignment?.id || '');
+    const studentCode = String(state.user?.id || '');
+    const activities = getActivitiesForCurrentAssignment()
+      .filter((activity) => contentIsAssignedTo(activity, assignmentId))
+      .filter((activity) => Number(activity.period || 1) === Number(state.activePeriod || 1));
+    const records = new Map((state.data.activityGrades || [])
+      .filter((row) => String(row.assignmentId || '') === assignmentId && String(row.studentCode || '') === studentCode)
+      .map((row) => [String(row.activityId || ''), row]));
+    const rows = activities.map((activity) => {
+      const record = records.get(String(activity.id || '')) || null;
+      const graded = Boolean(record?.gradedAt) && Number.isFinite(Number(record?.score));
+      return {
+        activity,
+        record,
+        graded,
+        score: graded ? Math.max(0, Math.min(100, Number(record.score))) : null
+      };
+    });
+    const gradedRows = rows.filter((row) => row.graded);
+    const score = gradedRows.length
+      ? Math.round(gradedRows.reduce((sum, row) => sum + Number(row.score || 0), 0) / gradedRows.length)
+      : null;
+    return { rows, gradedRows, score };
+  }
+  function studentProgressAttendanceSessions() {
+    const assignmentId = String(state.assignment?.id || '');
+    const studentCode = String(state.user?.id || '');
+    return Object.entries(state.cloud.attendance || {})
+      .map(([key, attendance]) => {
+        const separator = key.indexOf('|');
+        if (separator < 0 || key.slice(0, separator) !== assignmentId) return null;
+        const date = key.slice(separator + 1);
+        if (!date || getAutomaticAcademicPeriod(date) !== Number(state.activePeriod || 1)) return null;
+        return { date, status: String(attendance?.[studentCode] || 'absent') };
+      })
+      .filter(Boolean)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }
+  function studentProgressAttendanceSummary(sessions = studentProgressAttendanceSessions()) {
+    const summary = { total: sessions.length, present: 0, absent: 0, excused: 0, score: null };
+    sessions.forEach((session) => {
+      const status = String(session.status || 'absent');
+      if (status === 'present') summary.present += 1;
+      else if (status === 'excused' || status === 'excuse') summary.excused += 1;
+      else summary.absent += 1;
+    });
+    if (!summary.total) return summary;
+    let score = 0;
+    if (summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
+      score = Math.max(60, Math.round((summary.present / summary.total) * 100));
+    } else {
+      const accountable = summary.present + summary.absent;
+      score = accountable ? Math.round((summary.present / accountable) * 100) : 60;
+    }
+    summary.score = Math.max(0, Math.min(100, score));
+    return summary;
+  }
+  function studentProgressRockstarTarget() {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const targets = state.data.studentProgress?.rockstarTargets;
+    const direct = Number(targets?.[`${assignmentId}|period-${period}`]);
+    return Number.isFinite(direct) && direct > 0 ? direct : 15;
+  }
+  function studentProgressRockstarSummary(sessions = studentProgressAttendanceSessions(), attendanceSummary = studentProgressAttendanceSummary(sessions)) {
+    const assignmentId = String(state.assignment?.id || '');
+    const studentCode = String(state.user?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const target = studentProgressRockstarTarget();
+    const events = getRockstarEvents(assignmentId)
+      .filter((entry) => String(entry.studentId || '') === studentCode && Number(entry.period || 1) === period);
+    const byDate = new Map();
+    events.forEach((entry) => {
+      const date = String(entry.date || '').slice(0, 10);
+      if (!date) return;
+      byDate.set(date, (byDate.get(date) || 0) + Number(entry.delta || 0));
+    });
+    const points = events.reduce((sum, entry) => sum + Number(entry.delta || 0), 0);
+    const proportional = Math.max(0, Math.min(100, Math.round((points / Math.max(1, target)) * 100)));
+    const score = attendanceSummary.present > 0 ? Math.max(60, proportional) : proportional;
+    const rows = sessions.map((session) => ({ ...session, points: byDate.get(session.date) || 0 }));
+    return { points, target, score, rows };
+  }
+  function studentProgressActivityRowsHTML(summary) {
+    if (!summary.rows.length) return '<div class="em-progress-empty">Todavía no hay actividades habilitadas para este periodo.</div>';
+    return summary.rows.map(({ activity, graded, score }) => `
+      <div class="em-progress-detail-row em-progress-activity-row">
+        <div class="em-progress-detail-main">
+          <strong>${escapeHTML(activity.title || 'Actividad')}</strong>
+          <small>${graded ? 'Calificada' : 'Pendiente de calificación'}</small>
+        </div>
+        <div class="em-progress-detail-score ${studentProgressBand(score)}">${graded ? `${Math.round(score)}/100` : '—'}</div>
+        ${studentProgressBarHTML(score)}
+      </div>
+    `).join('');
+  }
+  function studentProgressAttendanceRowsHTML(sessions) {
+    if (!sessions.length) return '<div class="em-progress-empty">Aún no hay fechas de asistencia registradas en este periodo.</div>';
+    return [...sessions].reverse().map((session) => {
+      const status = studentProgressStatusLabel(session.status);
+      return `
+        <div class="em-progress-detail-row em-progress-attendance-row">
+          <div class="em-progress-date"><strong>${escapeHTML(formatAcademicDate(session.date))}</strong></div>
+          <span class="em-progress-status ${status.className}"><span>${status.icon}</span>${status.label}</span>
+        </div>
+      `;
+    }).join('');
+  }
+  function studentProgressRockstarRowsHTML(summary) {
+    if (!summary.rows.length) return '<div class="em-progress-empty">Aún no hay jornadas de asistencia para relacionar con tus puntos Rockstar.</div>';
+    return [...summary.rows].reverse().map((row) => {
+      const status = studentProgressStatusLabel(row.status);
+      const points = Number(row.points || 0);
+      return `
+        <div class="em-progress-detail-row em-progress-rockstar-row">
+          <div class="em-progress-detail-main">
+            <strong>${escapeHTML(formatAcademicDate(row.date))}</strong>
+            <small class="${status.className}">${status.label}</small>
+          </div>
+          <strong class="em-progress-day-points ${points > 0 ? 'is-positive' : points < 0 ? 'is-negative' : 'is-zero'}">${points > 0 ? '+' : ''}${points}</strong>
+        </div>
+      `;
+    }).join('');
+  }
+  function studentProgressAccordionItemHTML({ key, icon, title, score, subtitle, open = false, content = '' }) {
+    const band = studentProgressBand(score);
+    return `
+      <section class="em-progress-accordion ${open ? 'is-open' : ''}" data-progress-accordion="${escapeAttr(key)}">
+        <button class="em-progress-accordion-head" type="button" data-progress-toggle="${escapeAttr(key)}" aria-expanded="${open ? 'true' : 'false'}">
+          <span class="em-progress-accordion-icon" aria-hidden="true">${icon}</span>
+          <span class="em-progress-accordion-copy"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(subtitle)}</small></span>
+          <strong class="em-progress-accordion-score ${band}">${studentProgressScoreLabel(score)}</strong>
+          <span class="em-progress-chevron" aria-hidden="true">⌄</span>
+          ${studentProgressBarHTML(score)}
+        </button>
+        <div class="em-progress-accordion-body" ${open ? '' : 'hidden'}>${content}</div>
+      </section>
+    `;
+  }
+  function studentProgressHeroHTML() {
+    return `
+      <section class="em-progress-hero" aria-label="Resumen de progreso">
+        <div class="em-progress-hero-shapes" aria-hidden="true">
+          <span class="em-progress-shape is-circle"></span>
+          <span class="em-progress-shape is-square"></span>
+          <span class="em-progress-shape is-triangle"></span>
+          <span class="em-progress-shape is-x"></span>
+        </div>
+        <div class="em-progress-hero-copy">
+          <p>PROGRESO · PERIODO ${Number(state.activePeriod || 1)}</p>
+          <h2>Así vas hasta ahora</h2>
+          <span>Consulta tus actividades, asistencia y puntos Rockstar.</span>
+        </div>
+      </section>
+    `;
+  }
+  function renderStudentProgressTab(options = {}) {
+    const assignment = state.assignment;
+    const root = document.getElementById('tabContent');
+    if (!assignment || !root) return;
+    setActiveSubjectTabMeta('progress');
+    const activities = studentProgressActivities();
+    const attendanceSessions = studentProgressAttendanceSessions();
+    const attendance = studentProgressAttendanceSummary(attendanceSessions);
+    const rockstars = studentProgressRockstarSummary(attendanceSessions, attendance);
+    const progressAvailable = state.data.studentProgress?.available === true;
+    const progressMessage = String(state.data.studentProgress?.message || '').trim();
+    const notice = progressAvailable ? '' : `
+      <div class="em-progress-data-notice">${escapeHTML(progressMessage || 'La asistencia y Rockstars todavía no están disponibles en este dispositivo. Actualiza la configuración de Supabase para activar el resumen completo.')}</div>
+    `;
+    root.innerHTML = `
+      ${studentProgressHeroHTML()}
+      ${notice}
+      <div class="em-progress-stack">
+        ${studentProgressAccordionItemHTML({
+          key: 'activities', icon: '📝', title: 'ACTIVIDADES', score: activities.score,
+          subtitle: `${activities.gradedRows.length} calificadas de ${activities.rows.length} habilitadas`, open: true,
+          content: `<div class="em-progress-detail-list">${studentProgressActivityRowsHTML(activities)}</div>`
+        })}
+        ${studentProgressAccordionItemHTML({
+          key: 'attendance', icon: '✓', title: 'ASISTENCIA', score: progressAvailable ? attendance.score : null,
+          subtitle: `${attendance.present} asistencias · ${attendance.absent} inasistencias · ${attendance.excused} excusas`,
+          content: `<div class="em-progress-attendance-summary"><span><b>${attendance.present}</b> Asistió</span><span><b>${attendance.absent}</b> No asistió</span><span><b>${attendance.excused}</b> Excusa</span></div><div class="em-progress-detail-list">${studentProgressAttendanceRowsHTML(attendanceSessions)}</div>`
+        })}
+        ${studentProgressAccordionItemHTML({
+          key: 'rockstars', icon: '⭐', title: 'ROCKSTAR POINTS', score: progressAvailable ? rockstars.score : null,
+          subtitle: `${rockstars.points}/${rockstars.target} puntos en el periodo`,
+          content: `<div class="em-progress-rockstar-summary"><strong>${rockstars.points}</strong><span>de ${rockstars.target} puntos meta</span></div><div class="em-progress-detail-list">${studentProgressRockstarRowsHTML(rockstars)}</div>`
+        })}
+      </div>
+    `;
+    root.querySelectorAll('[data-progress-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const section = button.closest('[data-progress-accordion]');
+        const body = section?.querySelector('.em-progress-accordion-body');
+        if (!section || !body) return;
+        const nextOpen = !section.classList.contains('is-open');
+        section.classList.toggle('is-open', nextOpen);
+        button.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+        body.hidden = !nextOpen;
+      });
+    });
+    if (options.animate) pulseElement(root, 'tab-enter');
   }
   const EM_CONTENT_SHAPE_PAIRS = [
     ['circle', 'x'],

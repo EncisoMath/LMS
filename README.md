@@ -1,4 +1,17 @@
-# EncisoMath LMS v0.25.092
+# EncisoMath LMS v0.25.093
+
+## v0.25.093 — Progreso del estudiante
+
+- Añade una cuarta sección **📈 Progreso** al portal estudiante, dejando Clases / Actividades / Quizzes / Progreso en una fila de cuatro tarjetas.
+- Progreso presenta tres bloques verticales desplegables: **Actividades**, **Asistencia** y **Rockstar Points**.
+- Cada bloque muestra un resumen `/100` con barra por desempeño: rojo 0–59, naranja 60–69, amarillo 70–79, verde 80–89 y dorado 90–100.
+- Actividades lista únicamente las actividades habilitadas para la asignatura y periodo actual, con su nota o estado pendiente.
+- Asistencia muestra el total de asistencias, inasistencias y excusas, además del historial por fecha.
+- Rockstar Points agrupa los puntos por día y los relaciona con las mismas fechas de asistencia; una jornada sin puntos aparece como `0`. La nota Rockstar reutiliza la meta configurada en la PLANILLA (15 por defecto).
+- Añade `supabase/migrations/SUPABASE_STUDENT_PROGRESS_v0.25.093.sql`. Debe ejecutarse una vez en Supabase SQL Editor para exponer al propio estudiante únicamente su asistencia, Rockstars y meta de puntos.
+- Si el SQL todavía no fue ejecutado, el resto del portal sigue cargando y Progreso muestra un aviso en lugar de bloquear el acceso.
+- La sincronización silenciosa de la PWA también incluye el resumen de Progreso para refrescar asistencia y Rockstars cuando cambian en Supabase.
+
 
 ## v0.25.092 — Rockstars: cada toque suma exactamente un punto
 

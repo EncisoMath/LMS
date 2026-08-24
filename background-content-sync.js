@@ -1,7 +1,7 @@
 ((root) => {
   'use strict';
 
-  const MANIFEST_VERSION = 4;
+  const MANIFEST_VERSION = 5;
   const FILE_EXTENSION_RE = /\.(?:pdf|png|jpe?g|webp|gif|svg|avif|bmp|txt|csv|docx?|xlsx?|pptx?|zip|mp3|m4a|ogg|wav|mp4|webm)(?:$|[?#])/i;
   const OMIT_KEYS = new Set([
     'progressByAssignment', 'sortOrderByAssignment', 'objectUrl', 'localBlobKey',
@@ -94,6 +94,88 @@
   function activityStatusRows(source = {}) {
     const value = source?.activityGrades || source?.activity_grades || source?.activity_statuses || source?.activityStatuses || [];
     return Array.isArray(value) ? value : (Array.isArray(value?.records) ? value.records : []);
+  }
+
+  function studentProgressPortalCanonical(source = {}) {
+    const progress = source?.student_progress || source?.studentProgress;
+    if (!progress || typeof progress !== 'object') return null;
+    const attendance = asArray(progress.attendance).map((row) => ({
+      assignmentId: stringValue(row?.assignment_id || row?.assignmentId),
+      date: stringValue(row?.attendance_date || row?.attendanceDate || row?.date).slice(0, 10),
+      status: stringValue(row?.status || 'absent').toLowerCase()
+    })).filter((row) => row.assignmentId && row.date)
+      .sort((a, b) => `${a.assignmentId}|${a.date}`.localeCompare(`${b.assignmentId}|${b.date}`));
+    const rockstars = asArray(progress.rockstars).map((row) => ({
+      id: stringValue(row?.id),
+      assignmentId: stringValue(row?.assignment_id || row?.assignmentId),
+      period: Number(row?.period || 1),
+      date: stringValue(row?.occurred_at || row?.occurredAt || row?.date).slice(0, 10),
+      points: Number(row?.points ?? row?.delta ?? 0)
+    })).filter((row) => row.assignmentId && row.date)
+      .sort((a, b) => `${a.assignmentId}|${a.date}|${a.id}`.localeCompare(`${b.assignmentId}|${b.date}|${b.id}`));
+    const targets = asArray(progress.rockstar_targets || progress.rockstarTargets).map((row) => ({
+      assignmentId: stringValue(row?.assignment_id || row?.assignmentId),
+      period: Number(row?.period || 1),
+      target: Number(row?.target || 15)
+    })).filter((row) => row.assignmentId)
+      .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
+    const hasData = progress.ok === true
+      || Array.isArray(progress.attendance)
+      || Array.isArray(progress.rockstars)
+      || Array.isArray(progress.rockstar_targets)
+      || Array.isArray(progress.rockstarTargets);
+    return {
+      available: progress.unavailable !== true && hasData,
+      attendance,
+      rockstars,
+      targets
+    };
+  }
+
+  function studentProgressSnapshotCanonical(snapshot = {}) {
+    const data = snapshot?.data && typeof snapshot.data === 'object' ? snapshot.data : {};
+    const userId = stringValue(snapshot?.user?.id);
+    const progress = data.studentProgress && typeof data.studentProgress === 'object' ? data.studentProgress : {};
+    const attendance = Object.entries(snapshot?.attendance && typeof snapshot.attendance === 'object' ? snapshot.attendance : {})
+      .map(([key, values]) => {
+        const separator = key.indexOf('|');
+        if (separator < 0) return null;
+        const assignmentId = key.slice(0, separator);
+        const date = key.slice(separator + 1, separator + 11);
+        const status = stringValue(values?.[userId] || 'absent').toLowerCase();
+        return assignmentId && date ? { assignmentId, date, status } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => `${a.assignmentId}|${a.date}`.localeCompare(`${b.assignmentId}|${b.date}`));
+    const rockstars = asArray(data.rockstars).map((row) => ({
+      id: stringValue(row?.id),
+      assignmentId: stringValue(row?.assignmentId || row?.assignment_id),
+      period: Number(row?.period || 1),
+      date: stringValue(row?.date || row?.occurredAt || row?.occurred_at).slice(0, 10),
+      points: Number(row?.delta ?? row?.points ?? 0)
+    })).filter((row) => row.assignmentId && row.date)
+      .sort((a, b) => `${a.assignmentId}|${a.date}|${a.id}`.localeCompare(`${b.assignmentId}|${b.date}|${b.id}`));
+    const targets = Object.entries(progress.rockstarTargets && typeof progress.rockstarTargets === 'object' ? progress.rockstarTargets : {})
+      .map(([key, target]) => {
+        const match = String(key).match(/^(.*)\|period-([1-4])$/);
+        if (!match) return null;
+        return { assignmentId: match[1], period: Number(match[2]), target: Number(target || 15) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => `${a.assignmentId}|${a.period}`.localeCompare(`${b.assignmentId}|${b.period}`));
+    if (!attendance.length && !rockstars.length && !targets.length && progress.available !== true && progress.available !== false) return null;
+    return {
+      available: progress.available === true,
+      attendance,
+      rockstars,
+      targets
+    };
+  }
+
+  function appendStudentProgressEntry(entries, canonical) {
+    if (!canonical) return;
+    const entry = makeEntry('student-progress', 'current', canonical, []);
+    if (entry) entries[entry.key] = entry;
   }
 
   function statusActivityId(row = {}) {
@@ -248,6 +330,7 @@
     });
 
     appendActivityStatusEntries(entries, statuses);
+    appendStudentProgressEntry(entries, studentProgressSnapshotCanonical(snapshot));
     return { version: MANIFEST_VERSION, entries };
   }
 
@@ -340,6 +423,7 @@
     });
 
     appendActivityStatusEntries(entries, statuses);
+    appendStudentProgressEntry(entries, studentProgressPortalCanonical(payload));
     return { version: MANIFEST_VERSION, entries };
   }
 
