@@ -1,4 +1,14 @@
-# EncisoMath LMS v0.25.086
+# EncisoMath LMS v0.25.087
+
+## v0.25.087 — navegación estudiantil en tarjetas
+
+- En la vista estudiante, el selector desplegable de `Clases / Actividades / Quizzes` se sustituyó por tres tarjetas compactas en una sola fila.
+- Cada tarjeta mide aproximadamente la mitad de la altura de los heroes (59 px) y usa esquinas redondeadas de 4 px.
+- La tarjeta seleccionada toma el color exacto del hero correspondiente: Clases `#24b49a`, Actividades `#e21b3c` y Quizzes `#ff7a00`.
+- Cada tarjeta incorpora un único shape animado del mismo sistema visual del hero: cuadrado para Clases, círculo para Actividades y X para Quizzes.
+- Se eliminó el texto `SECCIÓN` y el selector desplegable únicamente para estudiantes; la navegación docente permanece intacta.
+- No requiere SQL nuevo.
+
 
 ## v0.25.086 — Recuperación completa de fechas de asistencia en PLANILLA
 

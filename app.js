@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.086';
+  const APP_VERSION = '0.25.087';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2347,6 +2347,51 @@
       });
     });
   }
+  function studentSubjectSectionCardsHTML(tab = 'classes') {
+    const activeTab = normalizeSubjectTab(tab);
+    const items = [
+      { tab: 'classes', label: 'Clases', emoji: '📚', shape: '<span class="em-cl-shape em-cl-shape-square em-student-section-shape" aria-hidden="true" style="--em-cl-shape-x:78%;--em-cl-shape-y:28%;--em-cl-shape-size:42px;--em-cl-shape-alpha:.24;--em-cl-shape-duration:8.4s;--em-cl-shape-delay:-2.4s;--em-cl-x0:-2px;--em-cl-y0:-1px;--em-cl-x1:9px;--em-cl-y1:6px;--em-cl-x2:-8px;--em-cl-y2:9px;--em-cl-x3:7px;--em-cl-y3:-5px;--em-cl-r0:-10deg;--em-cl-r1:28deg;--em-cl-r2:54deg;--em-cl-r3:82deg;--em-cl-r4:350deg"></span>' },
+      { tab: 'activities', label: 'Actividades', emoji: '📝', shape: '<span class="em-act-shape em-act-shape-circle em-student-section-shape" aria-hidden="true"></span>' },
+      { tab: 'quizzes', label: 'Quizzes', emoji: '🎮', shape: '<span class="em-qz-shape em-qz-shape-x em-student-section-shape" aria-hidden="true" style="--em-qz-shape-x:78%;--em-qz-shape-y:28%;--em-qz-shape-size:44px;--em-qz-shape-alpha:.24;--em-qz-shape-duration:8.8s;--em-qz-shape-delay:-3.1s;--em-qz-x0:-2px;--em-qz-y0:-2px;--em-qz-x1:10px;--em-qz-y1:6px;--em-qz-x2:-9px;--em-qz-y2:8px;--em-qz-x3:8px;--em-qz-y3:-6px;--em-qz-r0:-12deg;--em-qz-r1:32deg;--em-qz-r2:58deg;--em-qz-r3:86deg;--em-qz-r4:348deg"></span>' }
+    ];
+    return `
+      <nav class="em-student-subject-sections" role="tablist" aria-label="Secciones de la asignatura">
+        ${items.map((item) => `
+          <button
+            class="em-student-subject-card em-student-subject-card-${item.tab} ${activeTab === item.tab ? 'is-selected' : ''}"
+            type="button"
+            role="tab"
+            data-student-subject-tab="${item.tab}"
+            aria-selected="${activeTab === item.tab ? 'true' : 'false'}"
+          >
+            ${item.shape}
+            <span class="em-student-subject-card-copy">
+              <span class="em-student-subject-card-emoji" aria-hidden="true">${item.emoji}</span>
+              <span class="em-student-subject-card-label">${item.label}</span>
+            </span>
+          </button>
+        `).join('')}
+      </nav>
+    `;
+  }
+  function syncStudentSubjectSectionCards(tab = 'classes') {
+    const activeTab = normalizeSubjectTab(tab);
+    document.querySelectorAll('[data-student-subject-tab]').forEach((button) => {
+      const selected = button.dataset.studentSubjectTab === activeTab;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
+  }
+  function bindStudentSubjectSectionCards(root = document) {
+    root.querySelectorAll('[data-student-subject-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextTab = normalizeSubjectTab(button.dataset.studentSubjectTab || 'classes');
+        syncStudentSubjectSectionCards(nextTab);
+        setSubjectTab(nextTab);
+      });
+    });
+  }
+
   function renderSubjectDetail(tab = 'students', options = {}) {
     cleanupActivePdfViewer();
     tab = normalizeSubjectTab(tab);
@@ -2382,27 +2427,23 @@
           </div>
         </section>
         <div class="em-subject-workspace">
-          <nav class="em-subject-section-picker" aria-label="Sección de la asignatura">
-            <label class="em-subject-section-select-wrap" for="subjectSectionSelect">
-              <span class="em-subject-section-label">Sección</span>
-              <span class="em-subject-section-current" id="subjectSectionCurrent">${escapeHTML(subjectTabDisplayLabel(tab))}</span>
-              <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
-                ${studentMode ? `
-                  <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
-                  <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
-                  <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
-                ` : `
+          ${studentMode ? studentSubjectSectionCardsHTML(tab) : `
+            <nav class="em-subject-section-picker" aria-label="Sección de la asignatura">
+              <label class="em-subject-section-select-wrap" for="subjectSectionSelect">
+                <span class="em-subject-section-label">Sección</span>
+                <span class="em-subject-section-current" id="subjectSectionCurrent">${escapeHTML(subjectTabDisplayLabel(tab))}</span>
+                <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
                   <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
                   <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
                   <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
                   <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Planilla</option>
                   <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
                   <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
-                `}
-              </select>
-              <span class="em-subject-section-chevron" aria-hidden="true">⌄</span>
-            </label>
-          </nav>
+                </select>
+                <span class="em-subject-section-chevron" aria-hidden="true">⌄</span>
+              </label>
+            </nav>
+          `}
           <section id="tabContent" class="section tab-section"></section>
         </div>
       </main>
@@ -2410,7 +2451,10 @@
 
     mount(markup, () => {
       document.getElementById('backBtn').addEventListener('click', renderRoleHome);
-      if (studentMode) bindStudentNotificationButtons(document);
+      if (studentMode) {
+        bindStudentNotificationButtons(document);
+        bindStudentSubjectSectionCards(document);
+      }
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
       const subjectSectionSelect = document.getElementById('subjectSectionSelect');
       subjectSectionSelect?.addEventListener('change', (event) => {
@@ -2458,6 +2502,7 @@
     const content = document.getElementById('tabContent');
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     setActiveSubjectTabMeta(tab);
+    syncStudentSubjectSectionCards(tab);
     const sectionSelect = document.getElementById('subjectSectionSelect');
     if (sectionSelect && sectionSelect.value !== tab) sectionSelect.value = tab;
     const sectionCurrent = document.getElementById('subjectSectionCurrent');
