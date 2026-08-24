@@ -39204,7 +39204,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   position: absolute;
   left: 106%;
   top: var(--em-pj-top);
-  width: calc(var(--em-pj-size) * var(--em-pj-stretch, 1));
+  width: var(--em-pj-width, var(--em-pj-size)) !important;
   height: var(--em-pj-size);
   border-radius: 999px;
   background: #ffffff;
@@ -39429,5 +39429,455 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-journey-fire::before,
   .em-progress-journey-fire::after {
     animation: none !important;
+  }
+}
+
+/* =========================================================
+   ENCISOMATH v0.25.097 - PROGRESO / VIAJE ESPACIAL PRO
+   - Fondo transparente
+   - Estela = fuego real con flujo de derecha a izquierda
+   - Propulsor detrás del motor
+   - Más sensación de velocidad según la Definitiva
+   - Animación propia incluso con prefers-reduced-motion de Windows
+========================================================= */
+
+/* La tarjeta de navegación Progreso conserva el azul EncisoMath solicitado. */
+.em-student-subject-card-progress {
+  --em-section-accent: #1368CE !important;
+}
+.em-student-subject-card-progress > .em-student-progress-nav-shape {
+  border-bottom-color: color-mix(in srgb, #1368CE 44%, transparent) !important;
+}
+.em-student-subject-card-progress.is-selected > .em-student-progress-nav-shape {
+  border-bottom-color: rgba(0,0,0,.22) !important;
+}
+
+/* El hero continúa siendo el hero Rockstars docente. */
+.rockstar-hero.em-rs-hero-host.em-progress-rs-hero-host {
+  background: #10264d !important;
+}
+
+/* El viaje se funde con el negro general: sin tarjeta, borde ni fondo propio. */
+.em-progress-journey {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.em-progress-journey-stage {
+  position: relative;
+  height: 148px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  animation: emProgressJourneyMicroShake097 var(--em-pj-shake-duration, .38s) ease-in-out infinite !important;
+  transform: translateZ(0);
+  will-change: transform;
+}
+@keyframes emProgressJourneyMicroShake097 {
+  0%, 100% { transform: translate3d(0,0,0); }
+  25% { transform: translate3d(var(--em-pj-shake, 0px), var(--em-pj-shake-y-neg, 0px), 0); }
+  50% { transform: translate3d(var(--em-pj-shake-neg, 0px), var(--em-pj-shake-y, 0px), 0); }
+  75% { transform: translate3d(var(--em-pj-shake, 0px), 0, 0); }
+}
+
+/* Polvo/warp adicional, localizado y transparente. */
+.em-progress-journey-stage::before,
+.em-progress-journey-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 104%;
+  width: 42%;
+  height: 1px;
+  opacity: var(--em-pj-warp-opacity, .22);
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(139,216,255,.58), rgba(255,255,255,.92));
+  filter: blur(.25px);
+  animation: emProgressWarpLine097 var(--em-pj-warp-speed, 1.35s) linear infinite !important;
+}
+.em-progress-journey-stage::before { top: 42%; animation-delay: -.46s !important; }
+.em-progress-journey-stage::after { top: 78%; width: 28%; animation-delay: -.93s !important; }
+@keyframes emProgressWarpLine097 {
+  from { transform: translate3d(0,0,0) scaleX(.22); opacity: 0; }
+  14% { opacity: .45; }
+  to { transform: translate3d(-150vw,0,0) scaleX(1); opacity: 0; }
+}
+
+/* Estrellas con mayor estiramiento/blur y velocidad real ligada a la nota. */
+.em-progress-journey-stars i {
+  animation: emProgressStarRush097 var(--em-pj-duration) var(--em-pj-delay) linear infinite !important;
+  filter: blur(var(--em-pj-star-blur, 0px)) !important;
+  box-shadow: 0 0 5px rgba(255,255,255,.34), 0 0 10px rgba(139,216,255,.10) !important;
+  will-change: transform, opacity;
+}
+@keyframes emProgressStarRush097 {
+  0% { transform: translate3d(0,0,0) scaleX(.34); opacity: .05; }
+  10% { opacity: .78; }
+  100% { transform: translate3d(-142vw,0,0) scaleX(1.12); opacity: .10; }
+}
+
+/* La guía restante desaparece: solo se ve la cola de fuego real. */
+.em-progress-journey-base {
+  opacity: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.em-progress-journey-travel {
+  left: 14px !important;
+  right: 40px !important;
+  top: 68% !important;
+  height: 34px !important;
+}
+
+/* Estela principal: plasma animado, no gradiente estático. */
+.em-progress-journey-fire {
+  z-index: 2 !important;
+  height: 18px !important;
+  overflow: visible !important;
+  border-radius: 0 999px 999px 0 !important;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(226,27,60,.92) 0 10px,
+      rgba(255,67,27,.98) 10px 18px,
+      #ff7a00 18px 29px,
+      #EBB513 29px 36px,
+      #fff4b0 36px 40px,
+      #ff7a00 40px 51px
+    ) !important;
+  background-size: 102px 100% !important;
+  box-shadow:
+    0 0 4px rgba(255,64,30,.95),
+    0 0 10px rgba(255,122,0,.72),
+    0 0 18px rgba(235,181,19,.28) !important;
+  filter: saturate(1.22) contrast(1.06) !important;
+  clip-path: polygon(
+    0 50%, 2% 27%, 4% 43%, 6% 12%, 8% 40%, 10% 20%, 12% 48%, 14% 16%,
+    17% 39%, 20% 21%, 23% 45%, 26% 13%, 29% 43%, 32% 24%, 35% 47%, 38% 17%,
+    42% 43%, 46% 20%, 50% 46%, 54% 14%, 58% 42%, 62% 23%, 66% 48%, 70% 18%,
+    74% 44%, 78% 25%, 82% 47%, 86% 15%, 90% 43%, 94% 24%, 97% 38%, 100% 50%,
+    97% 62%, 94% 78%, 90% 57%, 86% 86%, 82% 59%, 78% 76%, 74% 56%, 70% 82%,
+    66% 58%, 62% 77%, 58% 55%, 54% 85%, 50% 58%, 46% 79%, 42% 56%, 38% 83%,
+    35% 57%, 32% 77%, 29% 54%, 26% 87%, 23% 59%, 20% 79%, 17% 57%, 14% 84%,
+    12% 55%, 10% 80%, 8% 58%, 6% 88%, 4% 60%, 2% 73%
+  ) !important;
+  animation: emProgressFireBeam097 var(--em-pj-fire-speed, .36s) linear infinite !important;
+  transition: width 1.82s cubic-bezier(.16,1,.3,1) !important;
+  will-change: width, background-position, clip-path;
+}
+@keyframes emProgressFireBeam097 {
+  0% {
+    background-position: 102px 0;
+    clip-path: polygon(
+      0 50%, 2% 27%, 4% 43%, 6% 12%, 8% 40%, 10% 20%, 12% 48%, 14% 16%, 17% 39%, 20% 21%, 23% 45%, 26% 13%, 29% 43%, 32% 24%, 35% 47%, 38% 17%, 42% 43%, 46% 20%, 50% 46%, 54% 14%, 58% 42%, 62% 23%, 66% 48%, 70% 18%, 74% 44%, 78% 25%, 82% 47%, 86% 15%, 90% 43%, 94% 24%, 97% 38%, 100% 50%, 97% 62%, 94% 78%, 90% 57%, 86% 86%, 82% 59%, 78% 76%, 74% 56%, 70% 82%, 66% 58%, 62% 77%, 58% 55%, 54% 85%, 50% 58%, 46% 79%, 42% 56%, 38% 83%, 35% 57%, 32% 77%, 29% 54%, 26% 87%, 23% 59%, 20% 79%, 17% 57%, 14% 84%, 12% 55%, 10% 80%, 8% 58%, 6% 88%, 4% 60%, 2% 73%
+    );
+  }
+  50% {
+    background-position: 51px 0;
+    clip-path: polygon(
+      0 50%, 2% 39%, 4% 17%, 6% 44%, 8% 24%, 10% 46%, 12% 11%, 14% 42%, 17% 23%, 20% 48%, 23% 18%, 26% 40%, 29% 25%, 32% 46%, 35% 15%, 38% 41%, 42% 22%, 46% 48%, 50% 16%, 54% 40%, 58% 26%, 62% 47%, 66% 12%, 70% 42%, 74% 22%, 78% 45%, 82% 19%, 86% 48%, 90% 20%, 94% 42%, 97% 29%, 100% 50%, 97% 71%, 94% 58%, 90% 80%, 86% 52%, 82% 81%, 78% 55%, 74% 78%, 70% 58%, 66% 88%, 62% 53%, 58% 74%, 54% 60%, 50% 84%, 46% 52%, 42% 78%, 38% 59%, 35% 85%, 32% 54%, 29% 75%, 26% 60%, 23% 82%, 20% 52%, 17% 77%, 14% 58%, 12% 89%, 10% 54%, 8% 76%, 6% 56%, 4% 83%, 2% 61%
+    );
+  }
+  100% { background-position: 0 0; }
+}
+
+/* Núcleo blanco/amarillo del chorro: también corre de derecha a izquierda. */
+.em-progress-journey-fire::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 5px 0 !important;
+  border-radius: 999px !important;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,.05) 0 7px,
+    rgba(255,246,184,.92) 7px 14px,
+    rgba(255,255,255,.96) 14px 17px,
+    rgba(255,183,27,.28) 17px 27px
+  ) !important;
+  background-size: 58px 100% !important;
+  opacity: .88 !important;
+  filter: blur(.15px) !important;
+  animation: emProgressFireCore097 var(--em-pj-fire-speed, .36s) linear infinite !important;
+}
+@keyframes emProgressFireCore097 {
+  from { background-position: 58px 0; transform: scaleY(.72); }
+  50% { transform: scaleY(1.08); }
+  to { background-position: 0 0; transform: scaleY(.78); }
+}
+
+/* Halo del fuego, sin la antigua punta romboidal que parecía salir del morro. */
+.em-progress-journey-fire::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -8px 0 !important;
+  width: auto !important;
+  height: auto !important;
+  right: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  border-radius: 999px !important;
+  clip-path: none !important;
+  background: linear-gradient(90deg, rgba(226,27,60,.14), rgba(255,122,0,.26), rgba(235,181,19,.42)) !important;
+  filter: blur(7px) !important;
+  opacity: .66 !important;
+  animation: emProgressFireAura097 .24s ease-in-out infinite alternate !important;
+  pointer-events: none !important;
+}
+@keyframes emProgressFireAura097 {
+  from { opacity: .42; transform: translateY(-50%) scaleY(.74); }
+  to { opacity: .78; transform: translateY(-50%) scaleY(1.12); }
+}
+
+/* Rayos/brasas internos corriendo desde el motor hacia atrás. */
+.em-progress-fire-streak {
+  position: absolute;
+  z-index: 4;
+  left: 100%;
+  top: var(--em-pf-y, 50%);
+  width: var(--em-pf-w, 28px);
+  height: 2px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255,255,255,0), #ff7a00 32%, #fff7c7 74%, #ffffff 100%);
+  box-shadow: 0 0 5px rgba(255,214,66,.78);
+  opacity: 0;
+  animation: emProgressFireStreak097 var(--em-pf-duration, .42s) var(--em-pf-delay, 0s) linear infinite !important;
+  pointer-events: none;
+}
+@keyframes emProgressFireStreak097 {
+  0% { left: 100%; opacity: 0; transform: translateY(-50%) scaleX(.35); }
+  12% { opacity: .96; }
+  72% { opacity: .68; }
+  100% { left: -4%; opacity: 0; transform: translateY(-50%) scaleX(1.28); }
+}
+
+/* Cohete horizontal: el shell no rota; solo rota el cuerpo. */
+.em-progress-rocket-shell {
+  width: 76px !important;
+  height: 70px !important;
+  top: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  transform: translate(-50%, -50%) !important;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.10)) drop-shadow(0 4px 7px rgba(0,0,0,.28)) !important;
+  transition: left 1.82s cubic-bezier(.16,1,.3,1) !important;
+  will-change: left, transform;
+}
+.em-progress-rocket-shell .em-rs-rocket {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+  z-index: 3 !important;
+  transform: rotate(90deg) scale(.58) !important;
+  transform-origin: center !important;
+  animation: emProgressRocketThrust097 .46s ease-in-out infinite !important;
+}
+@keyframes emProgressRocketThrust097 {
+  0%,100% { transform: rotate(90deg) scale(.58) translate3d(0,0,0); }
+  50% { transform: rotate(90deg) scale(.59) translate3d(.35px,0,0); }
+}
+
+/* Propulsor: colocado en la parte POSTERIOR (izquierda) del cohete horizontal. */
+.em-progress-rocket-plume {
+  position: absolute;
+  z-index: 1;
+  left: -7px;
+  top: 50%;
+  width: 38px;
+  height: 20px;
+  transform: translateY(-50%);
+  transform-origin: right center;
+  background: linear-gradient(90deg, rgba(226,27,60,0) 0%, #e21b3c 18%, #ff7a00 52%, #EBB513 76%, #fff7ca 100%);
+  clip-path: polygon(0 50%, 25% 18%, 18% 38%, 48% 7%, 42% 35%, 100% 50%, 42% 65%, 50% 91%, 20% 62%, 27% 82%);
+  filter: drop-shadow(0 0 4px rgba(255,122,0,.75));
+  animation: emProgressRocketPlume097 var(--em-pj-fire-speed, .32s) ease-in-out infinite alternate !important;
+  pointer-events: none;
+}
+.em-progress-rocket-plume::before {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  width: 23px;
+  height: 7px;
+  transform: translateY(-50%);
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0), #EBB513 52%, #fff 100%);
+}
+@keyframes emProgressRocketPlume097 {
+  from { transform: translateY(-50%) scaleX(.74) scaleY(.82); opacity: .78; }
+  to { transform: translateY(-50%) scaleX(1.13) scaleY(1.08); opacity: 1; }
+}
+
+/* Halo de choque sutil alrededor del cohete al ganar velocidad. */
+.em-progress-rocket-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 51%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(139,216,255,.30);
+  border-radius: 50%;
+  transform: translate(-50%,-50%) scale(.72);
+  opacity: 0;
+  animation: emProgressShockRing097 .92s ease-out infinite !important;
+  pointer-events: none;
+}
+@keyframes emProgressShockRing097 {
+  0% { transform: translate(-50%,-50%) scale(.52); opacity: .42; }
+  76%,100% { transform: translate(-50%,-50%) scale(1.36); opacity: 0; }
+}
+
+/* Número con tratamiento más astronómico: gradiente, halo y órbita. */
+.em-progress-journey-message strong b {
+  position: relative !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  min-width: 1.45em;
+  padding: 0 .05em;
+  color: transparent !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fff4b0 24%, #EBB513 58%, #ff7a00 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-stroke: .7px rgba(255,255,255,.30);
+  font-size: clamp(2.45rem, 10vw, 3.75rem) !important;
+  font-weight: 1000 !important;
+  font-style: italic;
+  line-height: .76 !important;
+  letter-spacing: -.085em !important;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.28)) drop-shadow(0 0 12px rgba(235,181,19,.34));
+  transform: skewX(-5deg);
+  isolation: isolate;
+}
+.em-progress-journey-message strong b::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 45% -14% auto -10%;
+  height: 38%;
+  border: 1px solid rgba(139,216,255,.58);
+  border-top-color: rgba(255,255,255,.74);
+  border-radius: 50%;
+  transform: translateY(-50%) rotate(-13deg);
+  opacity: .72;
+  box-shadow: 0 0 7px rgba(19,104,206,.22);
+}
+.em-progress-journey-message strong b::after {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 7% 1% 0 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(235,181,19,.16), transparent 66%);
+  filter: blur(3px);
+  animation: emProgressNumberHalo097 1.35s ease-in-out infinite !important;
+}
+@keyframes emProgressNumberHalo097 {
+  0%,100% { opacity: .48; transform: scale(.90); }
+  50% { opacity: .92; transform: scale(1.12); }
+}
+/* El color de banda queda en el halo/orbita; el número mantiene acabado espacial. */
+.em-progress-journey.is-red .em-progress-journey-message strong b,
+.em-progress-journey.is-orange .em-progress-journey-message strong b,
+.em-progress-journey.is-yellow .em-progress-journey-message strong b,
+.em-progress-journey.is-green .em-progress-journey-message strong b,
+.em-progress-journey.is-gold .em-progress-journey-message strong b {
+  color: transparent !important;
+}
+
+/* Estado ya asentado: congela solo la entrada (posición/ancho), NO las animaciones infinitas. */
+.em-progress-journey.is-settled .em-progress-journey-fire,
+.em-progress-journey.is-settled .em-progress-rocket-shell,
+.em-progress-journey.is-settled .em-progress-journey-message {
+  transition: none !important;
+}
+.em-progress-journey.is-settled .em-progress-journey-fire {
+  width: var(--em-progress-score-pct) !important;
+  animation: emProgressFireBeam097 var(--em-pj-fire-speed, .36s) linear infinite !important;
+}
+.em-progress-journey.is-settled .em-progress-rocket-shell { left: var(--em-progress-score-pct) !important; }
+.em-progress-journey.is-settled .em-progress-journey-message { opacity: 1 !important; transform: translateX(0) !important; }
+
+@media (max-width: 560px) {
+  .em-progress-journey-stage { height: 142px !important; }
+  .em-progress-journey-message { top: 8px !important; }
+  .em-progress-journey-message strong b { font-size: clamp(2.25rem, 11.5vw, 3.15rem) !important; }
+  .em-progress-journey-travel { left: 10px !important; right: 31px !important; top: 68% !important; }
+  .em-progress-rocket-shell { transform: translate(-50%, -50%) !important; }
+  .em-progress-rocket-shell .em-rs-rocket { transform: rotate(90deg) scale(.52) !important; }
+  .em-progress-rocket-plume { left: -2px; width: 34px; }
+}
+
+/* IMPORTANTE: Progreso conserva movimiento incluso si Windows desactiva
+   "Animation effects" y el navegador expone prefers-reduced-motion: reduce. */
+@media (prefers-reduced-motion: reduce) {
+  .em-progress-rs-hero-host .em-rs-star {
+    animation: emRsStarMove var(--em-rs-star-duration) var(--em-rs-star-delay) linear infinite !important;
+    animation-play-state: running !important;
+  }
+  .em-progress-rs-hero-host .em-rs-title {
+    animation: emRsWordSoftPop 4.8s ease-in-out infinite !important;
+    animation-play-state: running !important;
+  }
+  .em-progress-rs-hero-host .em-rs-flame {
+    animation: emRsFlameSway .72s ease-in-out infinite !important;
+    animation-play-state: running !important;
+  }
+  .em-progress-rs-hero-host .em-rs-flame::before {
+    animation: emRsFlameOuter .72s ease-in-out infinite !important;
+    animation-play-state: running !important;
+  }
+  .em-progress-rs-hero-host .em-rs-flame::after {
+    animation: emRsFlameInner .72s ease-in-out infinite !important;
+    animation-play-state: running !important;
+  }
+  .em-progress-journey-stage {
+    animation: emProgressJourneyMicroShake097 var(--em-pj-shake-duration, .38s) ease-in-out infinite !important;
+  }
+  .em-progress-journey-stage::before,
+  .em-progress-journey-stage::after {
+    animation-name: emProgressWarpLine097 !important;
+    animation-duration: var(--em-pj-warp-speed, 1.35s) !important;
+    animation-timing-function: linear !important;
+    animation-iteration-count: infinite !important;
+  }
+  .em-progress-journey-stars i {
+    animation: emProgressStarRush097 var(--em-pj-duration) var(--em-pj-delay) linear infinite !important;
+  }
+  .em-progress-journey-fire,
+  .em-progress-journey.is-settled .em-progress-journey-fire {
+    animation: emProgressFireBeam097 var(--em-pj-fire-speed, .36s) linear infinite !important;
+    transition: width 1.82s cubic-bezier(.16,1,.3,1) !important;
+  }
+  .em-progress-journey-fire::before {
+    animation: emProgressFireCore097 var(--em-pj-fire-speed, .36s) linear infinite !important;
+  }
+  .em-progress-journey-fire::after {
+    animation: emProgressFireAura097 .24s ease-in-out infinite alternate !important;
+  }
+  .em-progress-fire-streak {
+    animation: emProgressFireStreak097 var(--em-pf-duration, .42s) var(--em-pf-delay, 0s) linear infinite !important;
+  }
+  .em-progress-rocket-shell {
+    transition: left 1.82s cubic-bezier(.16,1,.3,1) !important;
+  }
+  .em-progress-rocket-shell .em-rs-rocket {
+    animation: emProgressRocketThrust097 .46s ease-in-out infinite !important;
+  }
+  .em-progress-rocket-plume {
+    animation: emProgressRocketPlume097 var(--em-pj-fire-speed, .32s) ease-in-out infinite alternate !important;
+  }
+  .em-progress-rocket-shell::after {
+    animation: emProgressShockRing097 .92s ease-out infinite !important;
+  }
+  .em-progress-journey-message strong b::after {
+    animation: emProgressNumberHalo097 1.35s ease-in-out infinite !important;
   }
 }

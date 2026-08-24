@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.095';
+  const APP_VERSION = '0.25.097';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2501,12 +2501,9 @@
     const content = document.getElementById('tabContent');
     if (content) content.dataset.activeTab = tab;
   }
-  function setSubjectTab(tab, options = {}) {
-    tab = normalizeSubjectTab(tab);
-    const content = document.getElementById('tabContent');
-    if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
+  let emStudentSubjectFlowToken = 0;
+  function renderSubjectTabNow(tab, options = {}) {
     setActiveSubjectTabMeta(tab);
-    syncStudentSubjectSectionCards(tab);
     const sectionSelect = document.getElementById('subjectSectionSelect');
     if (sectionSelect && sectionSelect.value !== tab) sectionSelect.value = tab;
     const sectionCurrent = document.getElementById('subjectSectionCurrent');
@@ -2519,6 +2516,37 @@
     else if (tab === 'quizzes') renderQuizzesTab({ animate: true });
     else if (tab === 'progress') renderStudentProgressTab({ animate: true });
     else renderClassesTab({ animate: true });
+  }
+  function setSubjectTab(tab, options = {}) {
+    tab = normalizeSubjectTab(tab);
+    const content = document.getElementById('tabContent');
+    if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
+    const previousTab = normalizeSubjectTab(state.activeSubjectTab || content?.dataset.activeTab || 'classes');
+    syncStudentSubjectSectionCards(tab);
+
+    const shouldFlowOut = Boolean(
+      isStudentPortal()
+      && content
+      && (previousTab === 'progress' || tab === 'progress')
+      && prefEnabled('effectsMotion')
+      && prefEnabled('tabTransitions')
+    );
+    if (!shouldFlowOut) {
+      renderSubjectTabNow(tab, options);
+      return;
+    }
+
+    const token = ++emStudentSubjectFlowToken;
+    content.classList.remove('enciso-flow-in', 'enciso-flow-out');
+    content.style.setProperty('--enciso-flow-duration', '170ms');
+    void content.offsetWidth;
+    content.classList.add('enciso-flow-out');
+    window.setTimeout(() => {
+      if (token !== emStudentSubjectFlowToken || !content.isConnected) return;
+      content.classList.remove('enciso-flow-out');
+      content.style.removeProperty('--enciso-flow-duration');
+      renderSubjectTabNow(tab, options);
+    }, 175);
   }
   function renderStudentsTab(options = {}) {
     const assignment = state.assignment;
@@ -4343,28 +4371,43 @@
   }
   function studentProgressJourneyStarsHTML(score = 0) {
     const safe = Math.max(0, Math.min(100, Number(score) || 0));
-    const speed = 1 + (safe / 100) * 2.65;
-    const stretch = 1 + (safe / 100) * 3.4;
-    return Array.from({ length: 24 }, (_, index) => {
-      const top = 7 + ((index * 37) % 86);
-      const size = 1.5 + (index % 4) * .7;
-      const baseDuration = 4.2 + (index % 7) * .48;
-      const duration = Math.max(.82, baseDuration / speed).toFixed(2);
-      const delay = (-((index * .37) % Math.max(.9, Number(duration)))).toFixed(2);
-      return `<i style="--em-pj-top:${top}%;--em-pj-size:${size.toFixed(1)}px;--em-pj-duration:${duration}s;--em-pj-delay:${delay}s;--em-pj-stretch:${stretch.toFixed(2)}"></i>`;
+    const speed = 1 + (safe / 100) * 5.8;
+    const stretch = 1 + (safe / 100) * 6.2;
+    return Array.from({ length: 30 }, (_, index) => {
+      const top = 5 + ((index * 37) % 90);
+      const size = 1.2 + (index % 5) * .55;
+      const baseDuration = 3.9 + (index % 8) * .42;
+      const duration = Math.max(.54, baseDuration / speed).toFixed(2);
+      const delay = (-((index * .31) % Math.max(.58, Number(duration)))).toFixed(2);
+      const width = Math.max(size, size * stretch).toFixed(1);
+      return `<i style="--em-pj-top:${top}%;--em-pj-size:${size.toFixed(1)}px;--em-pj-width:${width}px;--em-pj-duration:${duration}s;--em-pj-delay:${delay}s;--em-pj-stretch:${stretch.toFixed(2)}"></i>`;
+    }).join('');
+  }
+  function studentProgressJourneyFireStreaksHTML(score = 0) {
+    const safe = Math.max(0, Math.min(100, Number(score) || 0));
+    const speedBoost = 1 + (safe / 100) * 1.8;
+    return Array.from({ length: 18 }, (_, index) => {
+      const y = 18 + ((index * 29) % 64);
+      const width = 18 + (index % 6) * 8;
+      const duration = Math.max(.22, (.72 + (index % 5) * .08) / speedBoost).toFixed(2);
+      const delay = (-((index * .11) % Math.max(.24, Number(duration)))).toFixed(2);
+      return `<i class="em-progress-fire-streak" style="--em-pf-y:${y}%;--em-pf-w:${width}px;--em-pf-duration:${duration}s;--em-pf-delay:${delay}s"></i>`;
     }).join('');
   }
   function studentProgressJourneyHTML(definitive) {
     const score = Math.max(0, Math.min(100, Number(definitive?.score || 0)));
     const rounded = Math.round(score);
     const speedRatio = score / 100;
-    const shake = (speedRatio * .48).toFixed(2);
-    const starBlur = (speedRatio * .72).toFixed(2);
-    const fireSpeed = Math.max(.24, .72 - speedRatio * .38).toFixed(2);
-    const shakeDuration = Math.max(.24, .58 - speedRatio * .22).toFixed(2);
+    const shake = (speedRatio * .30).toFixed(2);
+    const shakeY = (speedRatio * .10).toFixed(2);
+    const starBlur = (speedRatio * 1.35).toFixed(2);
+    const fireSpeed = Math.max(.16, .62 - speedRatio * .38).toFixed(2);
+    const shakeDuration = Math.max(.18, .46 - speedRatio * .20).toFixed(2);
+    const warpSpeed = Math.max(.38, 1.35 - speedRatio * .92).toFixed(2);
+    const warpOpacity = (.12 + speedRatio * .28).toFixed(2);
     const journeyKey = `${String(state.user?.id || 'student')}:${String(state.assignment?.id || 'assignment')}:${Number(state.activePeriod || 1)}:${rounded}`;
     return `
-      <section class="em-progress-journey ${studentProgressBand(score)}" data-em-progress-journey data-em-progress-journey-key="${escapeAttr(journeyKey)}" style="--em-progress-score:${score};--em-progress-score-pct:${score}%;--em-pj-shake:${shake}px;--em-pj-star-blur:${starBlur}px;--em-pj-fire-speed:${fireSpeed}s;--em-pj-shake-duration:${shakeDuration}s">
+      <section class="em-progress-journey ${studentProgressBand(score)}" data-em-progress-journey data-em-progress-journey-key="${escapeAttr(journeyKey)}" style="--em-progress-score:${score};--em-progress-score-pct:${score}%;--em-pj-shake:${shake}px;--em-pj-shake-neg:-${shake}px;--em-pj-shake-y:${shakeY}px;--em-pj-shake-y-neg:-${shakeY}px;--em-pj-star-blur:${starBlur}px;--em-pj-fire-speed:${fireSpeed}s;--em-pj-shake-duration:${shakeDuration}s;--em-pj-warp-speed:${warpSpeed}s;--em-pj-warp-opacity:${warpOpacity}">
         <div class="em-progress-journey-stage" aria-label="Tu viaje va en ${rounded} de 100">
           <div class="em-progress-journey-stars" aria-hidden="true">${studentProgressJourneyStarsHTML(score)}</div>
           <div class="em-progress-journey-message">
@@ -4372,13 +4415,13 @@
           </div>
           <div class="em-progress-journey-travel" aria-hidden="true">
             <span class="em-progress-journey-base"></span>
-            <span class="em-progress-journey-fire"></span>
+            <span class="em-progress-journey-fire">${studentProgressJourneyFireStreaksHTML(score)}</span>
             <div class="em-progress-rocket-shell">
+              <span class="em-progress-rocket-plume"></span>
               <div class="em-rs-rocket">
                 <span class="em-rs-window"></span>
                 <span class="em-rs-fin em-rs-finLeft"></span>
                 <span class="em-rs-fin em-rs-finRight"></span>
-                <span class="em-rs-flame"></span>
               </div>
             </div>
           </div>
@@ -4408,6 +4451,24 @@
       if (run) run.done = true;
       journey.classList.add('is-settled');
     }, EM_PROGRESS_JOURNEY_ENTRY_MS + 120);
+  }
+  function emPlayStudentProgressEncisoFlowIn(root = document) {
+    if (!root || !prefEnabled('effectsMotion') || !prefEnabled('tabTransitions')) return;
+    const nodes = emUniqueVisibleElements(root, EM_TAB_ENTRANCE_SELECTORS.progress || []);
+    nodes.forEach((node) => {
+      try {
+        node.getAnimations?.().forEach((animation) => {
+          const name = String(animation.animationName || '');
+          if (name === 'encisoFlowIn' || name === 'encisoFlowOut') animation.cancel();
+        });
+      } catch (_) {}
+      node.classList.remove('enciso-flow-in', 'enciso-flow-out');
+      void node.offsetWidth;
+      node.classList.add('enciso-flow-in');
+      node.addEventListener('animationend', () => {
+        node.classList.remove('enciso-flow-in');
+      }, { once: true });
+    });
   }
   function renderStudentProgressTab(options = {}) {
     const assignment = state.assignment;
@@ -4459,7 +4520,10 @@
     });
     emProgressInitHero(root);
     emProgressInitJourney(root);
-    if (options.animate) pulseElement(root, 'tab-enter');
+    if (options.animate) {
+      emPlayStudentProgressEncisoFlowIn(root);
+      pulseElement(root, 'tab-enter');
+    }
   }
   const EM_CONTENT_SHAPE_PAIRS = [
     ['circle', 'x'],
@@ -19042,6 +19106,15 @@
       '#quizLibrary > .em-period-empty > *',
       '#quizLibrary .em-quiz-edit',
       '#quizLibrary .em-quiz-start'
+    ],
+    progress: [
+      '[data-em-rockstars-hero]',
+      '.em-progress-journey',
+      '.em-progress-journey-message > *',
+      '.em-progress-data-notice',
+      '.em-progress-stack > *',
+      '.em-progress-accordion-head',
+      '.em-progress-accordion-body > *'
     ]
   };
 

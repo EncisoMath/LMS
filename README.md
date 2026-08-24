@@ -1,4 +1,23 @@
-# EncisoMath LMS v0.25.095
+# EncisoMath LMS v0.25.097
+
+
+## v0.25.097 — Progreso: viaje espacial reforzado
+
+- El viaje de Progreso mantiene el hero Rockstars, pero la tarjeta de navegación vuelve al azul EncisoMath `#1368CE`.
+- El escenario del cohete queda transparente y sin borde para fundirse con el fondo negro general del LMS.
+- La estela deja de verse como una barra estática: ahora usa flujo continuo, núcleo caliente, turbulencia, destellos y partículas que viajan de derecha a izquierda.
+- El propulsor se separa del morro del cohete y queda fijado detrás del motor, en el lado izquierdo del cohete horizontal.
+- Las estrellas aceleran y se estiran más a medida que la Definitiva se acerca a 100; el blur aumenta progresivamente y la vibración se mantiene subpíxel.
+- El número de `VAS A X VECES` recibe tratamiento astronómico con gradiente, halo, anillo orbital y mayor presencia visual.
+- Progreso fuerza sus animaciones propias incluso cuando Windows informa `prefers-reduced-motion`, evitando que el viaje y su hero queden congelados por desactivar Animaciones en Windows.
+- No requiere SQL nuevo.
+
+## v0.25.096 — Progreso: EncisoFlowIn / EncisoFlowOut
+
+- Progreso ahora usa las transiciones `encisoFlowIn` y `encisoFlowOut` al entrar/salir desde la navegación del estudiante.
+- El `FlowOut` se ejecuta antes de sustituir el contenido y el `FlowIn` se aplica al hero, viaje y bloques de Progreso.
+- Respeta las preferencias de movimiento y transiciones del LMS.
+- Las resincronizaciones silenciosas de Progreso no vuelven a disparar la entrada visual.
 
 ## v0.25.095 — Progreso: hero Rockstars y viaje de alta velocidad
 
