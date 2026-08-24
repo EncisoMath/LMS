@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.089';
+  const APP_VERSION = '0.25.090';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4183,6 +4183,137 @@
     return Array.from({ length: total }, (_, index) => base + (index < remainder ? 1 : 0));
   }
 
+  function notesViewStateKey(assignmentId = state.assignment?.id || '', period = state.activePeriod) {
+    return `${String(assignmentId || '')}|period-${Number(period || 1)}`;
+  }
+
+  function getNotesViewState() {
+    if (!state.notesViewStates || typeof state.notesViewStates !== 'object' || Array.isArray(state.notesViewStates)) {
+      state.notesViewStates = {};
+    }
+    const key = notesViewStateKey();
+    if (!state.notesViewStates[key] || typeof state.notesViewStates[key] !== 'object') {
+      state.notesViewStates[key] = {
+        search: '',
+        selectedStudents: null,
+        gradeFilters: {},
+        attendanceFilters: {},
+        sort: { kind: 'student', key: 'student', direction: 'asc' }
+      };
+    }
+    const view = state.notesViewStates[key];
+    if (!view.gradeFilters || typeof view.gradeFilters !== 'object') view.gradeFilters = {};
+    if (!view.attendanceFilters || typeof view.attendanceFilters !== 'object') view.attendanceFilters = {};
+    if (!view.sort || typeof view.sort !== 'object') view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+    return view;
+  }
+
+  function notesHasActiveFilters(view = getNotesViewState()) {
+    return Boolean(
+      String(view.search || '').trim()
+      || (Array.isArray(view.selectedStudents) && view.selectedStudents.length >= 0)
+      || Object.keys(view.gradeFilters || {}).length
+      || Object.keys(view.attendanceFilters || {}).length
+      || !(view.sort?.kind === 'student' && view.sort?.direction === 'asc')
+    );
+  }
+
+  function notesResetViewFilters() {
+    const view = getNotesViewState();
+    view.search = '';
+    view.selectedStudents = null;
+    view.gradeFilters = {};
+    view.attendanceFilters = {};
+    view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+  }
+
+  function notesFilterOperatorMatches(score, filter = {}) {
+    const value = Number(filter.value);
+    if (!filter.operator || !Number.isFinite(value)) return true;
+    if (score === null || score === undefined || !Number.isFinite(Number(score))) return false;
+    const numeric = Number(score);
+    if (filter.operator === '>') return numeric > value;
+    if (filter.operator === '>=') return numeric >= value;
+    if (filter.operator === '<') return numeric < value;
+    if (filter.operator === '<=') return numeric <= value;
+    if (filter.operator === '=') return Math.abs(numeric - value) < .001;
+    return true;
+  }
+
+  function notesStudentFinalScore(student, columns, context) {
+    let weighted = 0;
+    (columns || []).forEach((column) => {
+      const cell = notesCellScore(column, student, context);
+      if (cell.score === null || cell.score === undefined || !Number.isFinite(Number(cell.score))) return;
+      const score = Math.max(0, Math.min(100, Number(cell.score)));
+      weighted += score * (Number(column.weight || 0) / 100);
+    });
+    return Math.max(0, Math.min(100, Math.floor(weighted + 1e-9)));
+  }
+
+  function notesScoreForFilter(key, student, columns, context) {
+    if (key === 'final') return notesStudentFinalScore(student, columns, context);
+    const column = (columns || []).find((item) => item.key === key);
+    if (!column) return null;
+    return notesCellScore(column, student, context).score;
+  }
+
+  function notesApplyViewFilters(students, columns, sessions, context) {
+    const view = getNotesViewState();
+    let rows = [...(students || [])];
+    const query = normalizeSearch(String(view.search || '').trim());
+    if (query) {
+      rows = rows.filter((student) => {
+        const name = notesStudentNameParts(student);
+        return normalizeSearch(`${student?.fullName || ''} ${name.lastName} ${name.firstName} ${name.code}`).includes(query);
+      });
+    }
+    if (Array.isArray(view.selectedStudents)) {
+      const selected = new Set(view.selectedStudents.map(String));
+      rows = rows.filter((student) => selected.has(String(student.id || '')));
+    }
+    Object.entries(view.gradeFilters || {}).forEach(([key, filter]) => {
+      if (!filter || !filter.operator) return;
+      rows = rows.filter((student) => notesFilterOperatorMatches(notesScoreForFilter(key, student, columns, context), filter));
+    });
+    Object.entries(view.attendanceFilters || {}).forEach(([date, filter]) => {
+      const statuses = Array.isArray(filter?.statuses) ? filter.statuses : [];
+      if (statuses.length >= 3) return;
+      const allowed = new Set(statuses);
+      const session = (sessions || []).find((item) => String(item.date || '') === String(date));
+      if (!session) return;
+      rows = rows.filter((student) => allowed.has(notesAttendanceStatus(session, student.id)));
+    });
+
+    const sort = view.sort || { kind: 'student', direction: 'asc' };
+    const direction = sort.direction === 'desc' ? -1 : 1;
+    const compareNames = (a, b) => {
+      const an = notesStudentNameParts(a);
+      const bn = notesStudentNameParts(b);
+      return `${an.lastName} ${an.firstName} ${an.code}`.localeCompare(`${bn.lastName} ${bn.firstName} ${bn.code}`, 'es', { sensitivity: 'base' });
+    };
+    rows.sort((a, b) => {
+      if (sort.kind === 'grade') {
+        const av = notesScoreForFilter(sort.key, a, columns, context);
+        const bv = notesScoreForFilter(sort.key, b, columns, context);
+        const aMissing = av === null || av === undefined || !Number.isFinite(Number(av));
+        const bMissing = bv === null || bv === undefined || !Number.isFinite(Number(bv));
+        if (aMissing !== bMissing) return aMissing ? 1 : -1;
+        if (!aMissing && Number(av) !== Number(bv)) return (Number(av) - Number(bv)) * direction;
+      } else if (sort.kind === 'attendance') {
+        const session = (sessions || []).find((item) => String(item.date || '') === String(sort.key || ''));
+        if (session) {
+          const rank = { absent: 0, excused: 1, present: 2 };
+          const av = rank[notesAttendanceStatus(session, a.id)] ?? 0;
+          const bv = rank[notesAttendanceStatus(session, b.id)] ?? 0;
+          if (av !== bv) return (av - bv) * direction;
+        }
+      }
+      return compareNames(a, b) * (sort.kind === 'student' ? direction : 1);
+    });
+    return rows;
+  }
+
   function getNotesActivities() {
     const assignmentId = String(state.assignment?.id || '');
     if (!assignmentId) return [];
@@ -4369,7 +4500,7 @@
     });
     // La planilla debe priorizar densidad: los nombres largos ya cuentan con
     // ellipsis y title completo, por lo que no necesitan ensanchar toda la hoja.
-    return Math.round(Math.max(104, Math.min(146, measured + 20)));
+    return Math.round(Math.max(88, Math.min(122, measured + 14)));
   }
 
   function notesAttendanceSessions(assignmentId, period) {
@@ -4428,14 +4559,26 @@
   function notesAttendanceHeaderHTML(session) {
     const date = String(session?.date || '');
     const label = notesAttendanceDateLabel(date);
+    const view = getNotesViewState();
+    const activeFilter = Boolean(view.attendanceFilters?.[date]);
+    const activeSort = view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date;
     return `
-      <th class="em-notes-attendance-header" scope="col" title="${escapeAttr(`${label}. Toca para eliminar esta fecha de asistencia.`)}">
-        <button
-          class="em-notes-attendance-header-trigger"
-          type="button"
-          data-notes-attendance-session-delete="${escapeAttr(date)}"
-          aria-label="${escapeAttr(`Eliminar ${label} y todas las asistencias de ese día en este curso`)}"
-        ><span>${escapeHTML(label)}</span></button>
+      <th class="em-notes-attendance-header ${activeFilter || activeSort ? 'has-filter' : ''}" scope="col" title="${escapeAttr(`${label}. Toca para filtrar; usa la papelera para eliminar esta fecha.`)}">
+        <div class="em-notes-attendance-header-wrap">
+          <button
+            class="em-notes-attendance-filter-trigger"
+            type="button"
+            data-notes-attendance-filter="${escapeAttr(date)}"
+            aria-label="${escapeAttr(`Filtrar por ${label}`)}"
+          ><span>${escapeHTML(label)}</span><i aria-hidden="true">⌄</i></button>
+          <button
+            class="em-notes-attendance-delete-trigger"
+            type="button"
+            data-notes-attendance-session-delete="${escapeAttr(date)}"
+            aria-label="${escapeAttr(`Eliminar ${label} y todas las asistencias de ese día en este curso`)}"
+            title="Eliminar esta fecha"
+          >⌫</button>
+        </div>
       </th>
     `;
   }
@@ -5095,33 +5238,38 @@
   }
 
   function notesColumnHeaderHTML(column) {
+    const view = getNotesViewState();
+    const activeFilter = Boolean(view.gradeFilters?.[column.key]);
+    const activeSort = view.sort?.kind === 'grade' && view.sort?.key === column.key;
     return `
-      <th class="em-notes-grade-header" style="--em-notes-column-color:${escapeAttr(column.color)}">
-        <button type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}">
-          <span class="em-notes-column-code">${escapeHTML(column.code)}</span>
-          <span class="em-notes-column-title">${escapeHTML(column.title)}</span>
-          <span class="em-notes-column-weight">${Number(column.weight)}%</span>
-        </button>
+      <th class="em-notes-grade-header ${activeFilter || activeSort ? 'has-filter' : ''}" style="--em-notes-column-color:${escapeAttr(column.color)}">
+        <div class="em-notes-grade-header-wrap">
+          <button class="em-notes-grade-filter-trigger" type="button" data-notes-grade-filter="${escapeAttr(column.key)}" title="Filtrar ${escapeAttr(column.title)}">
+            <span class="em-notes-column-code">${escapeHTML(column.code)}</span>
+            <span class="em-notes-column-title">${escapeHTML(column.title)}</span>
+            <span class="em-notes-column-weight">${Number(column.weight)}%</span>
+            <i class="em-notes-filter-mark" aria-hidden="true">⌄</i>
+          </button>
+          <button class="em-notes-grade-config-trigger" type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}" aria-label="Configurar ${escapeAttr(column.title)}">⚙</button>
+        </div>
       </th>
     `;
   }
 
   function notesStudentRowHTML(student, columns, attendanceSessions, context) {
-    let weighted = 0;
     const name = notesStudentNameParts(student);
     const attendanceCells = (attendanceSessions || []).map((session) => notesAttendanceCellHTML(student, session)).join('');
     const cells = columns.map((column) => {
       const cell = notesCellScore(column, student, context);
       const score = cell.score === null ? null : Math.max(0, Math.min(100, Number(cell.score || 0)));
-      if (score !== null) weighted += score * (Number(column.weight || 0) / 100);
       const value = score === null ? '—' : Math.round(score);
       const classes = `em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''} ${column.type === 'activity' && cell.interactive ? 'has-detail' : ''}`;
       if (column.type === 'activity' && cell.interactive) {
-        return `<td class="${classes}" title="${escapeAttr(cell.title || '')}"><button class="em-notes-grade-detail-trigger" type="button" data-notes-activity-grade="${escapeAttr(column.activityId)}" data-notes-student-code="${escapeAttr(student.id)}" aria-label="Ver detalle de ${escapeAttr(column.title)} para ${escapeAttr(student.fullName || name.lastName || student.id)}">${value}</button></td>`;
+        return `<td class="${classes}" title="${escapeAttr(cell.title || '')}"><button class="em-notes-grade-detail-trigger" type="button" data-notes-activity-grade="${escapeAttr(column.activityId)}" data-notes-student-code="${escapeAttr(student.id)}" aria-label="Ver actividad o editar nota de ${escapeAttr(column.title)} para ${escapeAttr(student.fullName || name.lastName || student.id)}">${value}</button></td>`;
       }
       return `<td class="${classes}" title="${escapeAttr(cell.title || '')}">${value}</td>`;
     }).join('');
-    const finalScore = Math.max(0, Math.min(100, Math.floor(weighted + 1e-9)));
+    const finalScore = notesStudentFinalScore(student, columns, context);
     return `
       <tr>
         <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
@@ -5228,6 +5376,187 @@
     }
   }
 
+  function notesFilterModalShell({ kicker = 'Filtros de planilla', title = 'Filtrar', body = '', footer = '' } = {}) {
+    return `
+      <section class="modal-card em-notes-filter-modal" role="dialog" aria-modal="true" aria-labelledby="notesFilterModalTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">${escapeHTML(kicker)}</p>
+        <h2 id="notesFilterModalTitle">${escapeHTML(title)}</h2>
+        <div class="em-notes-filter-modal-body">${body}</div>
+        ${footer || ''}
+      </section>
+    `;
+  }
+
+  function openNotesStudentFilterModal(students = []) {
+    const view = getNotesViewState();
+    const allIds = students.map((student) => String(student.id || ''));
+    const selected = Array.isArray(view.selectedStudents) ? new Set(view.selectedStudents.map(String)) : new Set(allIds);
+    const sorted = [...students].sort((a, b) => {
+      const an = notesStudentNameParts(a);
+      const bn = notesStudentNameParts(b);
+      return `${an.lastName} ${an.firstName}`.localeCompare(`${bn.lastName} ${bn.firstName}`, 'es', { sensitivity: 'base' });
+    });
+    openModal(notesFilterModalShell({
+      title: 'Filtrar estudiantes',
+      body: `
+        <label class="em-notes-filter-search"><span>Buscar en la lista</span><input class="input" id="notesFilterStudentSearch" type="search" placeholder="Nombre, apellido o código" autocomplete="off" /></label>
+        <div class="em-notes-filter-actions-row">
+          <button class="ghost-btn" id="notesSelectAllStudentsBtn" type="button">Seleccionar todos</button>
+          <button class="ghost-btn" id="notesSelectNoStudentsBtn" type="button">Ninguno</button>
+        </div>
+        <div class="em-notes-filter-checklist" id="notesStudentFilterList">
+          ${sorted.map((student) => {
+            const name = notesStudentNameParts(student);
+            const id = String(student.id || '');
+            const search = normalizeSearch(`${student.fullName || ''} ${name.lastName} ${name.firstName} ${name.code}`);
+            return `<label data-notes-student-filter-row data-search="${escapeAttr(search)}"><input type="checkbox" value="${escapeAttr(id)}" ${selected.has(id) ? 'checked' : ''}/><span><strong>${escapeHTML(name.lastName)}</strong><small>${escapeHTML(name.firstName)} · ${escapeHTML(name.code)}</small></span></label>`;
+          }).join('')}
+        </div>
+        <fieldset class="em-notes-filter-sort"><legend>Orden</legend>
+          <label><input type="radio" name="notesStudentSort" value="asc" ${view.sort?.kind === 'student' && view.sort?.direction !== 'desc' ? 'checked' : ''}/> A → Z</label>
+          <label><input type="radio" name="notesStudentSort" value="desc" ${view.sort?.kind === 'student' && view.sort?.direction === 'desc' ? 'checked' : ''}/> Z → A</label>
+        </fieldset>
+      `,
+      footer: `<div class="em-activity-modal-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="applyNotesStudentFilterBtn" type="button">Aplicar filtro</button></div>`
+    }), () => {
+      const list = document.getElementById('notesStudentFilterList');
+      document.getElementById('notesFilterStudentSearch')?.addEventListener('input', (event) => {
+        const query = normalizeSearch(event.currentTarget.value || '');
+        list?.querySelectorAll('[data-notes-student-filter-row]').forEach((row) => {
+          row.hidden = Boolean(query && !String(row.dataset.search || '').includes(query));
+        });
+      });
+      document.getElementById('notesSelectAllStudentsBtn')?.addEventListener('click', () => list?.querySelectorAll('input[type="checkbox"]').forEach((input) => { input.checked = true; }));
+      document.getElementById('notesSelectNoStudentsBtn')?.addEventListener('click', () => list?.querySelectorAll('input[type="checkbox"]').forEach((input) => { input.checked = false; }));
+      document.getElementById('applyNotesStudentFilterBtn')?.addEventListener('click', () => {
+        const checked = [...(list?.querySelectorAll('input[type="checkbox"]:checked') || [])].map((input) => String(input.value || ''));
+        view.selectedStudents = checked.length === allIds.length ? null : checked;
+        const direction = document.querySelector('input[name="notesStudentSort"]:checked')?.value === 'desc' ? 'desc' : 'asc';
+        view.sort = { kind: 'student', key: 'student', direction };
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+    });
+  }
+
+  function openNotesGradeFilterModal(columnKey, columns = []) {
+    const view = getNotesViewState();
+    const column = columnKey === 'final' ? { key: 'final', title: 'Definitiva' } : columns.find((item) => item.key === columnKey);
+    if (!column) return;
+    const current = view.gradeFilters?.[columnKey] || {};
+    const currentSort = view.sort?.kind === 'grade' && view.sort?.key === columnKey ? view.sort.direction : '';
+    const opLabels = [
+      ['', 'Sin filtro numérico'], ['>', 'Mayor que'], ['>=', 'Mayor o igual que'], ['<', 'Menor que'], ['<=', 'Menor o igual que'], ['=', 'Igual a']
+    ];
+    openModal(notesFilterModalShell({
+      title: `Filtrar ${column.title}`,
+      body: `
+        <div class="em-notes-filter-number-grid">
+          <label><span>Condición</span><select class="select" id="notesGradeFilterOperator">${opLabels.map(([value, label]) => `<option value="${escapeAttr(value)}" ${String(current.operator || '') === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select></label>
+          <label><span>Nota</span><input class="input" id="notesGradeFilterValue" type="number" min="0" max="100" step="0.1" value="${Number.isFinite(Number(current.value)) ? escapeAttr(String(current.value)) : ''}" placeholder="0–100" /></label>
+        </div>
+        <label class="em-notes-filter-select"><span>Ordenar estudiantes</span><select class="select" id="notesGradeFilterSort">
+          <option value="" ${!currentSort ? 'selected' : ''}>Sin cambiar el orden</option>
+          <option value="asc" ${currentSort === 'asc' ? 'selected' : ''}>Menor → mayor</option>
+          <option value="desc" ${currentSort === 'desc' ? 'selected' : ''}>Mayor → menor</option>
+        </select></label>
+        <p class="em-notes-filter-hint">El filtro se combina con el buscador y con los demás filtros activos de la planilla.</p>
+      `,
+      footer: `<div class="em-activity-modal-actions"><button class="ghost-btn" id="clearNotesGradeFilterBtn" type="button">Limpiar</button><button class="primary-btn" id="applyNotesGradeFilterBtn" type="button">Aplicar</button></div>`
+    }), () => {
+      document.getElementById('clearNotesGradeFilterBtn')?.addEventListener('click', () => {
+        delete view.gradeFilters[columnKey];
+        if (view.sort?.kind === 'grade' && view.sort?.key === columnKey) view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+      document.getElementById('applyNotesGradeFilterBtn')?.addEventListener('click', () => {
+        const operator = document.getElementById('notesGradeFilterOperator')?.value || '';
+        const value = Number(document.getElementById('notesGradeFilterValue')?.value);
+        if (operator && Number.isFinite(value)) view.gradeFilters[columnKey] = { operator, value: Math.max(0, Math.min(100, value)) };
+        else delete view.gradeFilters[columnKey];
+        const sort = document.getElementById('notesGradeFilterSort')?.value || '';
+        if (sort) view.sort = { kind: 'grade', key: columnKey, direction: sort };
+        else if (view.sort?.kind === 'grade' && view.sort?.key === columnKey) view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+    });
+  }
+
+  function openNotesAttendanceFilterModal(session) {
+    if (!session?.date) return;
+    const view = getNotesViewState();
+    const date = String(session.date || '');
+    const current = view.attendanceFilters?.[date] || {};
+    const selected = new Set(Array.isArray(current.statuses) && current.statuses.length ? current.statuses : ['present', 'excused', 'absent']);
+    const currentSort = view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date ? view.sort.direction : '';
+    openModal(notesFilterModalShell({
+      title: notesAttendanceDateLabel(date),
+      body: `
+        <fieldset class="em-notes-filter-statuses"><legend>Mostrar</legend>
+          <label><input type="checkbox" data-notes-attendance-status="present" ${selected.has('present') ? 'checked' : ''}/><span>✅ Asistió</span></label>
+          <label><input type="checkbox" data-notes-attendance-status="excused" ${selected.has('excused') ? 'checked' : ''}/><span>⚠️ Excusa</span></label>
+          <label><input type="checkbox" data-notes-attendance-status="absent" ${selected.has('absent') ? 'checked' : ''}/><span>🔴 No asistió</span></label>
+        </fieldset>
+        <label class="em-notes-filter-select"><span>Ordenar estudiantes</span><select class="select" id="notesAttendanceFilterSort">
+          <option value="" ${!currentSort ? 'selected' : ''}>Sin cambiar el orden</option>
+          <option value="desc" ${currentSort === 'desc' ? 'selected' : ''}>Asistió primero</option>
+          <option value="asc" ${currentSort === 'asc' ? 'selected' : ''}>No asistió primero</option>
+        </select></label>
+      `,
+      footer: `<div class="em-activity-modal-actions"><button class="ghost-btn" id="clearNotesAttendanceFilterBtn" type="button">Limpiar</button><button class="primary-btn" id="applyNotesAttendanceFilterBtn" type="button">Aplicar</button></div>`
+    }), () => {
+      document.getElementById('clearNotesAttendanceFilterBtn')?.addEventListener('click', () => {
+        delete view.attendanceFilters[date];
+        if (view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date) view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+      document.getElementById('applyNotesAttendanceFilterBtn')?.addEventListener('click', () => {
+        const statuses = [...document.querySelectorAll('[data-notes-attendance-status]:checked')].map((input) => String(input.dataset.notesAttendanceStatus || '')).filter(Boolean);
+        if (statuses.length < 3) view.attendanceFilters[date] = { statuses };
+        else delete view.attendanceFilters[date];
+        const sort = document.getElementById('notesAttendanceFilterSort')?.value || '';
+        if (sort) view.sort = { kind: 'attendance', key: date, direction: sort };
+        else if (view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date) view.sort = { kind: 'student', key: 'student', direction: 'asc' };
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+    });
+  }
+
+  function refreshNotesFilteredRows() {
+    const assignment = state.assignment;
+    const content = document.getElementById('tabContent');
+    const body = content?.querySelector('#notesSheetBody');
+    if (!assignment || !content || !body) return;
+    const columns = notesColumnDefinitions();
+    const students = getStudentsForAssignment(assignment);
+    const sessions = notesAttendanceSessions(assignment.id, state.activePeriod);
+    const attendanceByStudent = new Map(students.map((student) => [student.id, notesAttendanceSummary(student.id, sessions)]));
+    const context = {
+      activityGrades: notesActivityGradeMap(assignment.id),
+      quizGrades: notesQuizGradeMap(assignment.id),
+      attendanceByStudent
+    };
+    const filtered = notesApplyViewFilters(students, columns, sessions, context);
+    body.innerHTML = filtered.length
+      ? filtered.map((student) => notesStudentRowHTML(student, columns, sessions, context)).join('')
+      : '<tr><td class="em-notes-empty" colspan="99">No hay estudiantes que coincidan con los filtros.</td></tr>';
+    const result = content.querySelector('#notesFilterResultCount');
+    if (result) result.textContent = `${filtered.length} de ${students.length} estudiante${students.length === 1 ? '' : 's'}`;
+    const clear = content.querySelector('#clearNotesFiltersBtn');
+    if (clear) clear.hidden = !notesHasActiveFilters();
+    body.querySelectorAll('[data-notes-activity-grade]').forEach((button) => {
+      button.addEventListener('click', () => openNotesActivityGradeDetail(button.dataset.notesActivityGrade || '', button.dataset.notesStudentCode || ''));
+    });
+    body.querySelectorAll('[data-notes-attendance-detail]').forEach((button) => {
+      button.addEventListener('click', () => openNotesAttendanceDetail(button.dataset.notesAttendanceStudent || '', button.dataset.notesAttendanceDetail || ''));
+    });
+  }
+
   function renderNotesTab(options = {}) {
     const assignment = state.assignment;
     const content = document.getElementById('tabContent');
@@ -5245,9 +5574,13 @@
       quizGrades: notesQuizGradeMap(assignment.id),
       attendanceByStudent
     };
+    const view = getNotesViewState();
+    const visibleStudents = notesApplyViewFilters(students, columns, sessions, context);
     const totalWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
     const weightStatus = Math.abs(totalWeight - 100) < .001 ? 'is-complete' : 'is-incomplete';
     const studentColumnWidth = notesStudentColumnWidth(students);
+    const studentFilterActive = Array.isArray(view.selectedStudents) || view.sort?.kind === 'student' && view.sort?.direction === 'desc';
+    const finalFilterActive = Boolean(view.gradeFilters?.final) || (view.sort?.kind === 'grade' && view.sort?.key === 'final');
     content.innerHTML = `
       ${notesHeroHTML(assignment)}
       <section class="em-notes-toolbar">
@@ -5262,31 +5595,54 @@
             <span>Peso configurado</span>
             <strong>${Math.round(totalWeight * 10) / 10}%</strong>
             <i><b style="width:${Math.max(0, Math.min(100, totalWeight))}%"></b></i>
-            <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Toca los encabezados para ajustar la ponderación a 100%.'}</small>
+            <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Usa ⚙ en cada nota para ajustar la ponderación a 100%.'}</small>
           </div>
         </div>
+      </section>
+      <section class="em-notes-sheet-tools" aria-label="Buscar y filtrar planilla">
+        <label class="em-notes-sheet-search"><span aria-hidden="true">⌕</span><input id="notesStudentSearchInput" type="search" placeholder="Buscar estudiante por nombre o código" autocomplete="off" value="${escapeAttr(view.search || '')}" /></label>
+        <span class="em-notes-filter-result" id="notesFilterResultCount">${visibleStudents.length} de ${students.length} estudiante${students.length === 1 ? '' : 's'}</span>
+        <button class="ghost-btn em-notes-clear-filters" id="clearNotesFiltersBtn" type="button" ${notesHasActiveFilters(view) ? '' : 'hidden'}>Limpiar filtros</button>
       </section>
       <section class="em-notes-sheet-shell" style="--em-notes-student-width:${studentColumnWidth}px">
         <div class="em-notes-sheet-scroll">
           <table class="em-notes-sheet">
             <thead>
               <tr>
-                <th class="em-notes-student-header" scope="col"><span>Estudiante</span></th>
+                <th class="em-notes-student-header ${studentFilterActive ? 'has-filter' : ''}" scope="col">
+                  <button class="em-notes-student-filter-trigger" type="button" data-notes-student-filter aria-label="Filtrar u ordenar estudiantes"><span>Estudiante</span><i aria-hidden="true">⌄</i></button>
+                </th>
                 ${sessions.map(notesAttendanceHeaderHTML).join('')}
                 ${columns.map(notesColumnHeaderHTML).join('')}
-                <th class="em-notes-final-header" scope="col"><div class="em-notes-final-header-copy"><span>Definitiva</span><small>Periodo</small></div></th>
+                <th class="em-notes-final-header ${finalFilterActive ? 'has-filter' : ''}" scope="col">
+                  <button class="em-notes-final-filter-trigger" type="button" data-notes-grade-filter="final" aria-label="Filtrar u ordenar por definitiva"><div class="em-notes-final-header-copy"><span>Definitiva</span><small>Periodo</small></div><i aria-hidden="true">⌄</i></button>
+                </th>
               </tr>
             </thead>
-            <tbody>
-              ${students.length ? students.map((student) => notesStudentRowHTML(student, columns, sessions, context)).join('') : '<tr><td class="em-notes-empty" colspan="99">Aún no hay estudiantes en este curso.</td></tr>'}
+            <tbody id="notesSheetBody">
+              ${visibleStudents.length ? visibleStudents.map((student) => notesStudentRowHTML(student, columns, sessions, context)).join('') : '<tr><td class="em-notes-empty" colspan="99">No hay estudiantes que coincidan con los filtros.</td></tr>'}
             </tbody>
           </table>
         </div>
-        <p class="em-notes-sheet-help">Las primeras columnas muestran la asistencia por fecha. Toca el título de una fecha para eliminar esa asistencia del curso; toca un icono para verla o cambiarla. Las notas de actividad se pueden editar directamente desde la planilla.</p>
+        <p class="em-notes-sheet-help">La fila superior permanece fija mientras recorres la matriz. Toca un encabezado para filtrar u ordenar; usa ⚙ para configurar una nota y ⌫ para eliminar una fecha de asistencia.</p>
       </section>
     `;
     content.querySelectorAll('[data-notes-column-key]').forEach((button) => {
-      button.addEventListener('click', () => openNotesColumnModal(button.dataset.notesColumnKey || ''));
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        openNotesColumnModal(button.dataset.notesColumnKey || '');
+      });
+    });
+    content.querySelector('[data-notes-student-filter]')?.addEventListener('click', () => openNotesStudentFilterModal(students));
+    content.querySelectorAll('[data-notes-grade-filter]').forEach((button) => {
+      button.addEventListener('click', () => openNotesGradeFilterModal(button.dataset.notesGradeFilter || '', columns));
+    });
+    content.querySelectorAll('[data-notes-attendance-filter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const date = button.dataset.notesAttendanceFilter || '';
+        const session = sessions.find((item) => String(item?.date || '') === String(date));
+        if (session) openNotesAttendanceFilterModal(session);
+      });
     });
     content.querySelectorAll('[data-notes-activity-grade]').forEach((button) => {
       button.addEventListener('click', () => openNotesActivityGradeDetail(
@@ -5301,11 +5657,20 @@
       ));
     });
     content.querySelectorAll('[data-notes-attendance-session-delete]').forEach((button) => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
         const date = button.dataset.notesAttendanceSessionDelete || '';
         const session = sessions.find((item) => String(item?.date || '') === String(date));
         if (session) openNotesAttendanceDateDeleteModal(session);
       });
+    });
+    document.getElementById('notesStudentSearchInput')?.addEventListener('input', (event) => {
+      getNotesViewState().search = event.currentTarget.value || '';
+      refreshNotesFilteredRows();
+    });
+    document.getElementById('clearNotesFiltersBtn')?.addEventListener('click', () => {
+      notesResetViewFilters();
+      renderNotesTab({ preserveScroll: true, silentSync: true });
     });
     document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
       downloadNotesForEducaCity(event.currentTarget);
@@ -15269,6 +15634,17 @@
         <p class="section-kicker">${escapeHTML(options.kicker || 'Calificar actividad')}</p>
         <h2 id="activityGradeTitle">${escapeHTML(options.title || record.fullName)}</h2>
         ${options.subtitle ? `<p class="em-notes-grade-detail-student">${escapeHTML(options.subtitle)}</p>` : ''}
+        ${options.fromNotes ? `
+          <div class="em-notes-grade-main-tabs" role="tablist" aria-label="Actividad y nota">
+            <button type="button" role="tab" aria-selected="false" data-notes-grade-main-tab="activity">Actividad</button>
+            <button class="is-active" type="button" role="tab" aria-selected="true" data-notes-grade-main-tab="grade">Nota</button>
+          </div>
+          <section class="em-notes-grade-main-panel em-notes-grade-activity-preview" data-notes-grade-main-panel="activity" hidden>
+            <div class="em-grade-form-heading"><h3>${escapeHTML(activity.title || 'Actividad')}</h3><p>Consulta aquí el mismo contenido que tiene asignado el estudiante.</p></div>
+            <div class="em-notes-grade-activity-content">${activityContentShellHTML(activity, 'content')}</div>
+          </section>
+          <section class="em-notes-grade-main-panel is-active" data-notes-grade-main-panel="grade">
+        ` : ''}
         <div class="em-activity-grade-tabbar" role="tablist" aria-label="Opciones de calificación">
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega<span class="em-grade-tab-count${existingSubmissionCount ? '' : ' is-zero'}">${existingSubmissionCount}</span></button>
@@ -15363,6 +15739,7 @@
           <p class="em-class-create-error" id="activityGradeError" role="alert"></p>
           <div class="em-activity-grade-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" id="saveActivityGradeBtn" type="submit">Enviar calificación</button></div>
         </form>
+        ${options.fromNotes ? '</section>' : ''}
       </section>
     `, () => initActivityGradeModal(activity, record, currentGroup, options));
   }
@@ -15378,6 +15755,29 @@
     const stickerUploadStatus = document.getElementById('activityStickerUploadStatus');
     gradeModal?.closest('.modal-layer')?.classList.add('em-grade-modal-layer');
     loadActivitySubmissionGalleryForTeacher(activity, record);
+    if (options.fromNotes) {
+      const mainButtons = [...(gradeModal?.querySelectorAll('[data-notes-grade-main-tab]') || [])];
+      const mainPanels = [...(gradeModal?.querySelectorAll('[data-notes-grade-main-panel]') || [])];
+      const setNotesMainTab = (name = 'grade') => {
+        mainButtons.forEach((button) => {
+          const active = button.dataset.notesGradeMainTab === name;
+          button.classList.toggle('is-active', active);
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        mainPanels.forEach((panel) => {
+          const active = panel.dataset.notesGradeMainPanel === name;
+          panel.hidden = !active;
+          panel.classList.toggle('is-active', active);
+        });
+        if (name === 'activity') {
+          const panel = mainPanels.find((item) => item.dataset.notesGradeMainPanel === 'activity');
+          initActivityDetailContent(activity, 'content');
+          initActivityMediaZoom(panel || gradeModal || document);
+        }
+      };
+      mainButtons.forEach((button) => button.addEventListener('click', () => setNotesMainTab(button.dataset.notesGradeMainTab || 'grade')));
+      setNotesMainTab('grade');
+    }
     const existingScores = new Map((currentGroup || []).map((item) => [item.studentCode, Number(item.score ?? record.score ?? 40)]));
     const rubricCriteria = activityRubricForAssignment(activity, state.assignment?.id || '')
       .filter((item) => item && String(item.name || '').trim() && Number(item.percentage || 0) > 0);

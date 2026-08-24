@@ -1,4 +1,19 @@
-# EncisoMath LMS v0.25.089
+# EncisoMath LMS v0.25.090
+
+## v0.25.090 — planilla compacta, fija y filtrable
+
+- La columna `Estudiante` reduce nuevamente su ancho y conserva el nombre completo mediante tooltip/ellipsis.
+- Las columnas de asistencia, notas y definitiva son más angostas para ganar espacio horizontal.
+- La fila de encabezados queda fija dentro de la matriz mientras se recorre verticalmente la planilla.
+- Se añade un buscador superior para mostrar rápidamente uno o varios estudiantes por nombre, apellido o código.
+- El encabezado `Estudiante` permite seleccionar exactamente qué estudiantes mostrar y ordenar A→Z o Z→A.
+- Cada fecha de asistencia permite filtrar por Asistió / Excusa / No asistió y ordenar por estado; la eliminación de la fecha permanece disponible mediante un botón independiente.
+- Cada columna de nota permite filtrar con `>`, `>=`, `<`, `<=` o `=` y ordenar de menor a mayor o de mayor a menor. La `Definitiva` también admite estos filtros.
+- Los filtros se combinan entre sí y pueden limpiarse con un solo botón.
+- La configuración de código/color/ponderación de cada nota se conserva en un botón `⚙` independiente del filtro.
+- Al tocar una celda Estudiante × Actividad, el modal incorpora dos pestañas superiores: `Actividad` para consultar el contenido y `Nota` para editar calificación, entrega, observaciones, seguimiento, grupo y sticker.
+- No requiere SQL nuevo.
+
 
 
 ## v0.25.089 — Rockstars sin pérdida de puntos al resincronizar
