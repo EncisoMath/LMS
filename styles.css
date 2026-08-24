@@ -39131,3 +39131,303 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-journey-travel { left: 24px; right: 24px; }
   .em-progress-rocket-shell { transform: translate(-50%, -50%) rotate(90deg) scale(.49); }
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.095 - PROGRESO / HERO ROCKSTARS + VIAJE
+   El hero estudiantil de Progreso reutiliza el hero docente
+   de Rockstars. El recorrido se comporta como una estela de
+   fuego real y la entrada del cohete no se reinicia al refrescar.
+========================================================= */
+
+/* La tarjeta de Progreso adopta exactamente el azul Rockstars. */
+.em-student-subject-card-progress {
+  --em-section-accent: #10264d !important;
+}
+.em-student-subject-card-progress > .em-student-progress-nav-shape {
+  border-bottom-color: color-mix(in srgb, #10264d 46%, transparent) !important;
+}
+.em-student-subject-card-progress.is-selected > .em-student-progress-nav-shape {
+  border-bottom-color: rgba(0,0,0,.24) !important;
+}
+
+/* Hero de Progreso = mismo componente del hero docente Rockstars. */
+.rockstar-hero.em-rs-hero-host.em-progress-rs-hero-host {
+  background: #10264d !important;
+  border-radius: 4px !important;
+  margin-bottom: 10px !important;
+}
+
+/* Viaje espacial inspirado en una estela, no en una barra convencional. */
+.em-progress-journey {
+  --em-pj-main: #10264d;
+  --em-pj-fire-red: #e21b3c;
+  --em-pj-fire-orange: #ff7a00;
+  --em-pj-fire-gold: #EBB513;
+  --em-pj-fire-hot: #fff3a8;
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 4px !important;
+  background: #071323;
+  color: #fff;
+  isolation: isolate;
+}
+.em-progress-journey-stage {
+  position: relative;
+  height: 142px;
+  overflow: hidden;
+  border-radius: 4px !important;
+  background:
+    radial-gradient(circle at 72% 58%, rgba(16,38,77,.36), transparent 42%),
+    linear-gradient(180deg, #07111f 0%, #08182a 100%);
+  animation: emProgressJourneyMicroShake var(--em-pj-shake-duration, .5s) ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes emProgressJourneyMicroShake {
+  0%, 100% { transform: translate3d(0,0,0); }
+  25% { transform: translate3d(var(--em-pj-shake, 0px), 0, 0); }
+  50% { transform: translate3d(calc(var(--em-pj-shake, 0px) * -.72), calc(var(--em-pj-shake, 0px) * .34), 0); }
+  75% { transform: translate3d(calc(var(--em-pj-shake, 0px) * .44), calc(var(--em-pj-shake, 0px) * -.28), 0); }
+}
+
+/* Estrellas: cuanto mayor es la definitiva, menor es su duración y mayor la estela. */
+.em-progress-journey-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.em-progress-journey-stars i {
+  position: absolute;
+  left: 106%;
+  top: var(--em-pj-top);
+  width: calc(var(--em-pj-size) * var(--em-pj-stretch, 1));
+  height: var(--em-pj-size);
+  border-radius: 999px;
+  background: #ffffff;
+  opacity: .70;
+  box-shadow: 0 0 5px rgba(255,255,255,.30);
+  filter: blur(var(--em-pj-star-blur, 0px));
+  transform-origin: right center;
+  animation: emProgressStarRush095 var(--em-pj-duration) var(--em-pj-delay) linear infinite;
+  will-change: transform;
+}
+.em-progress-journey-stars i:nth-child(3n) { background: #8bd8ff; opacity: .56; }
+.em-progress-journey-stars i:nth-child(4n) { background: #EBB513; opacity: .52; }
+@keyframes emProgressStarRush095 {
+  from { transform: translate3d(0,0,0) scaleX(.72); }
+  to { transform: translate3d(-128vw,0,0) scaleX(1); }
+}
+
+/* Mensaje superior, siguiendo la composición de la referencia. */
+.em-progress-journey-message {
+  position: absolute;
+  z-index: 5;
+  left: 12px;
+  top: 9px;
+  display: block;
+  margin: 0;
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity .42s ease 1.72s, transform .58s cubic-bezier(.16,1,.3,1) 1.72s;
+  pointer-events: none;
+}
+.em-progress-journey-message strong {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: baseline;
+  justify-content: start;
+  column-gap: 6px;
+  row-gap: 0;
+  color: rgba(255,255,255,.94);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(.76rem, 2.8vw, .92rem);
+  font-weight: 1000;
+  line-height: .96;
+  letter-spacing: -.015em;
+}
+.em-progress-journey-message strong b {
+  color: #EBB513;
+  font-size: clamp(2.05rem, 8.7vw, 3rem);
+  line-height: .78;
+  font-weight: 1000;
+  letter-spacing: -.07em;
+}
+.em-progress-journey-message-line {
+  grid-column: 1 / -1;
+  display: block;
+  margin-top: 2px;
+  font-size: .98em;
+  letter-spacing: -.025em;
+}
+.em-progress-journey.is-red .em-progress-journey-message strong b { color: #ff4057; }
+.em-progress-journey.is-orange .em-progress-journey-message strong b { color: #ff8b22; }
+.em-progress-journey.is-yellow .em-progress-journey-message strong b { color: #f6d43a; }
+.em-progress-journey.is-green .em-progress-journey-message strong b { color: #45d66b; }
+.em-progress-journey.is-gold .em-progress-journey-message strong b { color: #EBB513; }
+.em-progress-journey.is-live .em-progress-journey-message {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* La ruta restante es apenas una guía; lo visible hasta el cohete es fuego. */
+.em-progress-journey-travel {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  right: 38px;
+  top: 68%;
+  height: 24px;
+  transform: translateY(-50%);
+}
+.em-progress-journey-base,
+.em-progress-journey-fire {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 999px;
+}
+.em-progress-journey-base {
+  z-index: 0;
+  width: 100%;
+  height: 5px;
+  background: rgba(255,255,255,.08);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
+}
+.em-progress-journey-fire {
+  z-index: 1;
+  width: 0;
+  height: 7px;
+  overflow: visible;
+  background: linear-gradient(90deg,
+    var(--em-pj-fire-red) 0%,
+    var(--em-pj-fire-orange) 46%,
+    var(--em-pj-fire-gold) 82%,
+    var(--em-pj-fire-hot) 100%);
+  box-shadow:
+    0 0 5px rgba(255,122,0,.78),
+    0 0 11px rgba(235,181,19,.34);
+  transition: width 1.8s cubic-bezier(.16,1,.3,1);
+}
+/* Rayas calientes viajando de derecha a izquierda = flujo del fuego. */
+.em-progress-journey-fire::before {
+  content: "";
+  position: absolute;
+  inset: -1px 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    112deg,
+    rgba(255,255,255,.00) 0 8px,
+    rgba(255,246,184,.58) 8px 12px,
+    rgba(255,255,255,.00) 12px 23px
+  );
+  background-size: 46px 100%;
+  opacity: .72;
+  animation: emProgressFireStream095 var(--em-pj-fire-speed, .45s) linear infinite;
+}
+/* Lengua de fuego que conecta visualmente la estela con el motor. */
+.em-progress-journey-fire::after {
+  content: "";
+  position: absolute;
+  right: -15px;
+  top: 50%;
+  width: 28px;
+  height: 18px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255,122,0,.05), #EBB513 56%, #fff4b0 100%);
+  clip-path: polygon(0 50%, 68% 4%, 100% 50%, 68% 96%);
+  filter: drop-shadow(0 0 4px rgba(255,122,0,.55));
+  animation: emProgressFireTip095 .24s ease-in-out infinite alternate;
+}
+@keyframes emProgressFireStream095 {
+  from { background-position: 46px 0; }
+  to { background-position: 0 0; }
+}
+@keyframes emProgressFireTip095 {
+  from { transform: translateY(-50%) scaleX(.90) scaleY(.86); opacity: .76; }
+  to { transform: translateY(-50%) scaleX(1.13) scaleY(1.05); opacity: 1; }
+}
+
+/* Cohete centrado sobre el mismo eje de la estela. Su propia llama se oculta:
+   la línea animada es ahora su fuego. */
+.em-progress-rocket-shell {
+  --em-rs-rojo: #e21b3c;
+  --em-rs-amarillo: #EBB513;
+  --em-rs-naranja: #ff7a00;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 4;
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%) rotate(90deg) scale(.53);
+  transform-origin: center;
+  transition: left 1.8s cubic-bezier(.16,1,.3,1);
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.26));
+  will-change: left;
+}
+.em-progress-rocket-shell .em-rs-rocket {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  margin: 0 !important;
+}
+.em-progress-rocket-shell .em-rs-flame {
+  display: none !important;
+}
+.em-progress-journey.is-live .em-progress-journey-fire {
+  width: var(--em-progress-score-pct);
+}
+.em-progress-journey.is-live .em-progress-rocket-shell {
+  left: var(--em-progress-score-pct);
+}
+
+/* Una resincronización con la misma nota no vuelve a reproducir la entrada. */
+.em-progress-journey.is-settled .em-progress-journey-fire,
+.em-progress-journey.is-settled .em-progress-rocket-shell,
+.em-progress-journey.is-settled .em-progress-journey-message {
+  transition: none !important;
+}
+.em-progress-journey.is-settled .em-progress-journey-fire { width: var(--em-progress-score-pct); }
+.em-progress-journey.is-settled .em-progress-rocket-shell { left: var(--em-progress-score-pct); }
+.em-progress-journey.is-settled .em-progress-journey-message { opacity: 1; transform: translateX(0); }
+
+.em-progress-journey-caption {
+  position: absolute;
+  z-index: 5;
+  left: 12px;
+  bottom: 9px;
+  color: rgba(255,255,255,.70);
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: clamp(.56rem, 2.15vw, .66rem);
+  font-weight: 850;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: .005em;
+  pointer-events: none;
+}
+
+@media (max-width: 560px) {
+  .em-progress-journey-stage { height: 126px; }
+  .em-progress-journey-message { left: 9px; top: 8px; }
+  .em-progress-journey-message strong { column-gap: 5px; font-size: .70rem; }
+  .em-progress-journey-message strong b { font-size: clamp(1.9rem, 9vw, 2.45rem); }
+  .em-progress-journey-travel { left: 9px; right: 31px; top: 68%; }
+  .em-progress-rocket-shell { transform: translate(-50%, -50%) rotate(90deg) scale(.48); }
+  .em-progress-journey-caption { left: 9px; bottom: 8px; font-size: .54rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .em-progress-journey-stage,
+  .em-progress-journey-stars i,
+  .em-progress-journey-fire::before,
+  .em-progress-journey-fire::after {
+    animation: none !important;
+  }
+}

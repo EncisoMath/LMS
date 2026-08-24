@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.094';
+  const APP_VERSION = '0.25.095';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -3149,8 +3149,10 @@
 
     return combined || '113PPAL';
   }
-  function emRsRockstarsHeroHTML(subjectName = 'ESTADÍSTICA', gradeCourse = '113PPAL') {
+  function emRsRockstarsHeroHTML(subjectName = 'ESTADÍSTICA', gradeCourse = '113PPAL', options = {}) {
     const eyebrow = `${emRsEscapeHtml(subjectName)} • ${emRsEscapeHtml(gradeCourse)}`;
+    const title = emRsEscapeHtml(options.title || 'ROCKSTARS');
+    const subtitle = emRsEscapeHtml(options.subtitle || 'Estudiantes destacados de EncisoMath.');
 
     return `
       <div class="em-rs-heroSkin" data-em-rockstars-hero>
@@ -3167,8 +3169,8 @@
 
         <div class="em-rs-content">
           <span class="em-rs-eyebrow">${eyebrow}</span>
-          <h1 class="em-rs-title">ROCKSTARS</h1>
-          <p class="em-rs-subtitle">Estudiantes destacados de EncisoMath.</p>
+          <h1 class="em-rs-title">${title}</h1>
+          <p class="em-rs-subtitle">${subtitle}</p>
         </div>
       </div>
     `;
@@ -4329,47 +4331,46 @@
   }
   function studentProgressHeroHTML() {
     const assignment = state.assignment || {};
-    const eyebrow = `${escapeHTML(assignment.subject || 'ESTADÍSTICA')} • ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}`;
     return `
-      <section class="activity-hero em-act-hero-host em-progress-hero-host" data-em-progress-hero aria-label="Progreso de la asignatura">
-        <div class="em-act-shapes" aria-hidden="true">
-          <span class="em-act-shape em-act-shape-circle"></span>
-          <span class="em-act-shape em-act-shape-square"></span>
-          <span class="em-act-shape em-act-shape-triangle"></span>
-          <span class="em-act-shape em-act-shape-x"></span>
-        </div>
-        <div class="em-progress-grade-stack" aria-hidden="true">
-          <span class="em-progress-grade-card is-60">60</span>
-          <span class="em-progress-grade-card is-80">80</span>
-          <span class="em-progress-grade-card is-100">100</span>
-        </div>
-        <div class="em-act-content em-progress-hero-content">
-          <span class="em-act-eyebrow">${eyebrow}</span>
-          <h1 class="em-act-title">PROGRESO</h1>
-          <p class="em-act-subtitle">Tu viaje académico, nota por nota.</p>
-        </div>
+      <section class="rockstar-hero em-rs-hero-host em-progress-rs-hero-host" aria-label="Progreso de la asignatura">
+        ${emRsRockstarsHeroHTML(
+          assignment.subject || 'ESTADÍSTICA',
+          emRsGetAssignmentGradeCourse(assignment),
+          { title: 'PROGRESO', subtitle: 'Tu avance académico en EncisoMath.' }
+        )}
       </section>
     `;
   }
-  function studentProgressJourneyStarsHTML() {
-    return Array.from({ length: 18 }, (_, index) => {
-      const top = 10 + ((index * 37) % 78);
-      const size = 2 + (index % 4);
-      const duration = (3.8 + (index % 6) * .55).toFixed(2);
-      const delay = (-((index * .47) % 4.8)).toFixed(2);
-      return `<i style="--em-pj-top:${top}%;--em-pj-size:${size}px;--em-pj-duration:${duration}s;--em-pj-delay:${delay}s"></i>`;
+  function studentProgressJourneyStarsHTML(score = 0) {
+    const safe = Math.max(0, Math.min(100, Number(score) || 0));
+    const speed = 1 + (safe / 100) * 2.65;
+    const stretch = 1 + (safe / 100) * 3.4;
+    return Array.from({ length: 24 }, (_, index) => {
+      const top = 7 + ((index * 37) % 86);
+      const size = 1.5 + (index % 4) * .7;
+      const baseDuration = 4.2 + (index % 7) * .48;
+      const duration = Math.max(.82, baseDuration / speed).toFixed(2);
+      const delay = (-((index * .37) % Math.max(.9, Number(duration)))).toFixed(2);
+      return `<i style="--em-pj-top:${top}%;--em-pj-size:${size.toFixed(1)}px;--em-pj-duration:${duration}s;--em-pj-delay:${delay}s;--em-pj-stretch:${stretch.toFixed(2)}"></i>`;
     }).join('');
   }
   function studentProgressJourneyHTML(definitive) {
     const score = Math.max(0, Math.min(100, Number(definitive?.score || 0)));
     const rounded = Math.round(score);
+    const speedRatio = score / 100;
+    const shake = (speedRatio * .48).toFixed(2);
+    const starBlur = (speedRatio * .72).toFixed(2);
+    const fireSpeed = Math.max(.24, .72 - speedRatio * .38).toFixed(2);
+    const shakeDuration = Math.max(.24, .58 - speedRatio * .22).toFixed(2);
+    const journeyKey = `${String(state.user?.id || 'student')}:${String(state.assignment?.id || 'assignment')}:${Number(state.activePeriod || 1)}:${rounded}`;
     return `
-      <section class="em-progress-journey ${studentProgressBand(score)}" data-em-progress-journey style="--em-progress-score:${score};--em-progress-score-pct:${score}%">
+      <section class="em-progress-journey ${studentProgressBand(score)}" data-em-progress-journey data-em-progress-journey-key="${escapeAttr(journeyKey)}" style="--em-progress-score:${score};--em-progress-score-pct:${score}%;--em-pj-shake:${shake}px;--em-pj-star-blur:${starBlur}px;--em-pj-fire-speed:${fireSpeed}s;--em-pj-shake-duration:${shakeDuration}s">
         <div class="em-progress-journey-stage" aria-label="Tu viaje va en ${rounded} de 100">
-          <div class="em-progress-journey-stars" aria-hidden="true">${studentProgressJourneyStarsHTML()}</div>
+          <div class="em-progress-journey-stars" aria-hidden="true">${studentProgressJourneyStarsHTML(score)}</div>
+          <div class="em-progress-journey-message">
+            <strong><span>VAS A</span><b>${rounded}</b><span>VECES</span><span class="em-progress-journey-message-line">LA VELOCIDAD DE LA LUZ</span></strong>
+          </div>
           <div class="em-progress-journey-travel" aria-hidden="true">
-            <span class="em-progress-journey-limit is-start">0</span>
-            <span class="em-progress-journey-limit is-end">100</span>
             <span class="em-progress-journey-base"></span>
             <span class="em-progress-journey-fire"></span>
             <div class="em-progress-rocket-shell">
@@ -4381,30 +4382,32 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="em-progress-journey-message">
-          <strong>VAS A <b>${rounded}</b> VECES LA VELOCIDAD DE LA LUZ</strong>
-          <small>pero calma, aún no has finalizado el viaje xD</small>
+          <small class="em-progress-journey-caption">pero calma, aún no has finalizado el viaje xD</small>
         </div>
       </section>
     `;
   }
   function emProgressInitHero(root = document) {
-    const hero = root.querySelector?.('[data-em-progress-hero]');
-    if (!hero) return;
-    hero.classList.remove('is-live');
-    void hero.offsetWidth;
-    hero.classList.add('is-live');
-    hero.querySelectorAll('.em-act-shape').forEach((shape, index) => {
-      shape.style.setProperty('--em-act-shape-delay', `${-1.3 * (index + 1)}s`);
-      shape.style.setProperty('--em-act-shape-duration', `${7.5 + index * 1.05}s`);
-    });
+    emRsInitRockstarsHero(root);
   }
+  const EM_PROGRESS_JOURNEY_ENTRY_MS = 1900;
+  const emProgressJourneyRuns = new Map();
   function emProgressInitJourney(root = document) {
     const journey = root.querySelector?.('[data-em-progress-journey]');
     if (!journey) return;
-    journey.classList.remove('is-live');
+    const key = String(journey.dataset.emProgressJourneyKey || 'progress');
+    if (emProgressJourneyRuns.has(key)) {
+      journey.classList.add('is-live', 'is-settled');
+      return;
+    }
+    if (emProgressJourneyRuns.size > 24) emProgressJourneyRuns.clear();
+    emProgressJourneyRuns.set(key, { startedAt: Date.now(), done: false });
     requestAnimationFrame(() => requestAnimationFrame(() => journey.classList.add('is-live')));
+    window.setTimeout(() => {
+      const run = emProgressJourneyRuns.get(key);
+      if (run) run.done = true;
+      journey.classList.add('is-settled');
+    }, EM_PROGRESS_JOURNEY_ENTRY_MS + 120);
   }
   function renderStudentProgressTab(options = {}) {
     const assignment = state.assignment;

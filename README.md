@@ -1,4 +1,16 @@
-# EncisoMath LMS v0.25.094
+# EncisoMath LMS v0.25.095
+
+## v0.25.095 — Progreso: hero Rockstars y viaje de alta velocidad
+
+- El hero estudiantil de **Progreso** deja de usar el diseño propio de notas y reutiliza exactamente el componente visual del hero docente de **Rockstars**, cambiando el título a `PROGRESO`.
+- La tarjeta de navegación Progreso adopta también el azul Rockstars `#10264d`.
+- El cohete queda centrado verticalmente sobre el eje de la estela; su llama individual se oculta para que la propia línea de progreso funcione visualmente como el fuego del motor.
+- La estela incorpora flujo animado de derecha a izquierda, punta de fuego y brillo continuo.
+- Las estrellas aceleran progresivamente según la Definitiva; cerca de 100 adquieren una estela/blur mayor y el escenario aplica una vibración subpíxel muy leve.
+- Se eliminan las marcas `0` y `100` del recorrido. El mensaje de velocidad pasa a integrarse dentro del escenario, por encima de la estela, siguiendo la composición de referencia.
+- La animación de entrada del cohete se registra por estudiante/asignatura/periodo/nota para que una resincronización o rerender con la misma Definitiva no vuelva a iniciar el recorrido desde cero.
+- No requiere SQL nuevo; conserva la RPC de Progreso de v0.25.094.
+
 
 ## v0.25.094 — Progreso: viaje de la Definitiva
 
