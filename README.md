@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.109
+# EncisoMath LMS v0.25.110
+
+
+## v0.25.110 — Progreso: historial completo y asistencia visual
+
+- Se eliminan los contadores numéricos de las cabeceras **Tus actividades** y **Tus asistencias y puntos**.
+- La asistencia usa ahora los estados **Asistió**, **No asistió** y **Excusa**, con emoji grande y composición vertical a la derecha de cada fecha.
+- Cada actividad muestra **todos** los seguimientos docentes registrados en `deliveryEvents`, ordenados cronológicamente, con tipo, fecha/hora y observación; el comentario de la calificación se conserva como entrada adicional cuando existe.
+- Los Rockstar Points por fecha cambian de tratamiento visual: `<0` rojo, `0` blanco, `1–3` amarillo, `4–6` plateado con degradado y `>6` dorado con degradado y resplandor. La moneda `R` acompaña la misma categoría cromática.
+- No requiere SQL nuevo.
 
 ## v0.25.109 — Progreso: detalle 50/50 de actividades y jornadas
 

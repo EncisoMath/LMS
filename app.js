@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.109';
+  const APP_VERSION = '0.25.110';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4168,9 +4168,9 @@
   }
   function studentProgressStatusLabel(status) {
     const value = String(status || 'absent').toLowerCase();
-    if (value === 'present') return { label: 'Vino', icon: '✓', className: 'is-present' };
-    if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '!', className: 'is-excused' };
-    return { label: 'No vino', icon: '×', className: 'is-absent' };
+    if (value === 'present') return { label: 'Asistió', icon: '✅', className: 'is-present' };
+    if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '📄', className: 'is-excused' };
+    return { label: 'No asistió', icon: '❌', className: 'is-absent' };
   }
   function studentProgressActivities() {
     const assignmentId = String(state.assignment?.id || '');
@@ -4438,28 +4438,50 @@
     const rounded = Math.round(number * 10) / 10;
     return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
   }
-  function studentProgressActivityFollowup(record) {
+  function studentProgressActivityFollowups(record) {
+    const items = [];
     const events = Array.isArray(record?.deliveryEvents) ? record.deliveryEvents.filter(Boolean) : [];
-    if (events.length) {
-      const latest = events.slice().sort((a, b) => String(a?.occurredAt || '').localeCompare(String(b?.occurredAt || ''))).at(-1) || {};
-      const label = activityDeliveryLabel(latest.status) || 'Seguimiento';
-      const note = String(latest.note || '').trim();
-      return {
-        title: events.length > 1 ? `${label} · ${events.length} seguimientos` : label,
-        text: note || 'Seguimiento registrado sin observación adicional.'
-      };
-    }
+    events
+      .slice()
+      .sort((a, b) => String(a?.occurredAt || '').localeCompare(String(b?.occurredAt || '')))
+      .forEach((event) => {
+        items.push({
+          title: activityDeliveryLabel(event?.status) || 'Seguimiento',
+          date: event?.occurredAt ? formatActivityTrackingDateTime(event.occurredAt) : '',
+          datetime: String(event?.occurredAt || ''),
+          text: String(event?.note || '').trim() || 'Seguimiento registrado sin observación adicional.'
+        });
+      });
     const observation = String(record?.observations || '').trim();
-    if (observation) return { title: 'Comentario docente', text: observation };
-    return { title: 'Seguimiento', text: 'Sin seguimiento registrado.' };
+    if (observation) {
+      items.push({
+        title: 'Comentario de la calificación',
+        date: record?.gradedAt ? formatActivityTrackingDateTime(record.gradedAt) : '',
+        datetime: String(record?.gradedAt || ''),
+        text: observation
+      });
+    }
+    return items.sort((a, b) => String(a?.datetime || '').localeCompare(String(b?.datetime || '')));
   }
-  function studentProgressWorkItemHTML({ type, id, title, score, weight, followup }) {
+  function studentProgressWorkItemHTML({ type, id, title, score, weight, followups }) {
     const empty = score === null || score === undefined || !Number.isFinite(Number(score));
     const safe = empty ? 0 : Math.max(0, Math.min(100, Number(score)));
     const rounded = empty ? '—' : Math.round(safe);
     const band = studentProgressBand(empty ? null : safe);
     const typeLabel = type === 'quiz' ? 'QUIZ' : 'ACTIVIDAD';
-    const follow = followup && typeof followup === 'object' ? followup : { title: 'Seguimiento', text: 'Sin seguimiento registrado.' };
+    const tracking = Array.isArray(followups) ? followups.filter(Boolean) : [];
+    const trackingHTML = tracking.length ? tracking.map((follow, index) => `
+      <article class="em-progress-work-followup-entry">
+        <i aria-hidden="true"></i>
+        <div>
+          <div class="em-progress-work-followup-head">
+            <strong>${escapeHTML(follow?.title || 'Seguimiento')}</strong>
+            ${follow?.date ? `<time datetime="${escapeAttr(follow?.datetime || '')}">${escapeHTML(follow.date)}</time>` : ''}
+          </div>
+          <p>${escapeHTML(follow?.text || 'Seguimiento registrado sin observación adicional.')}</p>
+        </div>
+      </article>
+    `).join('') : '<div class="em-progress-work-followup-empty">Sin seguimiento docente.</div>';
     return `
       <article class="em-progress-work-item ${band}" data-progress-work="${escapeAttr(type)}:${escapeAttr(id)}" style="--em-progress-work-score:${safe}%">
         <div class="em-progress-work-head">
@@ -4475,8 +4497,8 @@
         </div>
         <span class="em-progress-work-bar ${band}" aria-hidden="true"><i></i></span>
         <div class="em-progress-work-followup">
-          <span>${escapeHTML(follow.title || 'Seguimiento')}</span>
-          <p>${escapeHTML(follow.text || 'Sin seguimiento registrado.')}</p>
+          <span>SEGUIMIENTO DOCENTE</span>
+          <div class="em-progress-work-followup-list">${trackingHTML}</div>
         </div>
       </article>
     `;
@@ -4493,7 +4515,7 @@
         title: activity.title || `Actividad ${index + 1}`,
         score: row.graded ? row.score : null,
         weight: column.weight,
-        followup: studentProgressActivityFollowup(row.record)
+        followups: studentProgressActivityFollowups(row.record)
       });
     });
     const quizItems = studentProgressQuizzes().map((quiz, index) => {
@@ -4504,7 +4526,7 @@
         title: quiz.title || `Quiz ${index + 1}`,
         score: studentProgressQuizScore(quiz),
         weight: column.weight,
-        followup: { title: 'Seguimiento', text: 'Sin seguimiento docente.' }
+        followups: []
       });
     });
     const items = [...activityItems, ...quizItems];
@@ -4512,7 +4534,6 @@
       <section class="em-progress-breakdown-card em-progress-breakdown-activities" aria-labelledby="emProgressActivitiesTitle">
         <header class="em-progress-breakdown-heading">
           <div><span>DETALLE DEL PERIODO</span><h3 id="emProgressActivitiesTitle">Tus actividades</h3></div>
-          <b>${items.length}</b>
         </header>
         <div class="em-progress-work-list">
           ${items.join('') || '<div class="em-progress-breakdown-empty">Aún no tienes actividades o quizzes habilitados en este periodo.</div>'}
@@ -4529,17 +4550,26 @@
     const month = date.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '').toUpperCase();
     return `${weekday} ${day} ${month}`;
   }
+  function studentProgressDailyRockstarBand(points) {
+    const value = Number(points || 0);
+    if (value < 0) return 'is-points-negative';
+    if (value === 0) return 'is-points-zero';
+    if (value <= 3) return 'is-points-yellow';
+    if (value <= 6) return 'is-points-silver';
+    return 'is-points-gold';
+  }
   function studentProgressAttendancePointRowHTML(row) {
     const status = studentProgressStatusLabel(row?.status);
     const points = Number(row?.points || 0);
     const pointsLabel = points > 0 ? `+${Math.round(points)}` : String(Math.round(points));
+    const pointsBand = studentProgressDailyRockstarBand(points);
     return `
       <article class="em-progress-attendance-item ${status.className}" data-progress-attendance="${escapeAttr(row?.date || '')}">
         <div class="em-progress-attendance-top">
           <time datetime="${escapeAttr(row?.date || '')}">${escapeHTML(studentProgressDateLabel(row?.date))}</time>
-          <span class="em-progress-attendance-status ${status.className}"><b>${status.icon}</b>${escapeHTML(status.label)}</span>
+          <span class="em-progress-attendance-status ${status.className}"><b>${status.icon}</b><span>${escapeHTML(status.label)}</span></span>
         </div>
-        <div class="em-progress-attendance-points">
+        <div class="em-progress-attendance-points ${pointsBand}">
           <span class="em-progress-mini-r-coin" aria-hidden="true">R</span>
           <strong>${escapeHTML(pointsLabel)}</strong>
           <span>Rockstar Points</span>
@@ -4553,7 +4583,6 @@
       <section class="em-progress-breakdown-card em-progress-breakdown-attendance" aria-labelledby="emProgressAttendanceTitle">
         <header class="em-progress-breakdown-heading">
           <div><span>REGISTRO POR FECHA</span><h3 id="emProgressAttendanceTitle">Tus asistencias y puntos</h3></div>
-          <b>${rows.length}</b>
         </header>
         <div class="em-progress-attendance-list">
           ${rows.length ? rows.slice().reverse().map(studentProgressAttendancePointRowHTML).join('') : '<div class="em-progress-breakdown-empty">Aún no hay jornadas de asistencia registradas en este periodo.</div>'}
