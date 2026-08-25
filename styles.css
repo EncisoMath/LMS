@@ -40678,7 +40678,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* ==========================================================================
-   ENCISOMATH v0.25.107 - PROGRESO / NÚMERO SIN ÓRBITA GEOMÉTRICA
+   ENCISOMATH v0.25.108 - PROGRESO / NÚMERO SIN ÓRBITA GEOMÉTRICA
    Elimina las líneas/polígonos decorativos alrededor de la cifra grande.
    Conserva color, pulso, shimmer y halo de cada rango.
    ========================================================================== */
@@ -40688,4 +40688,16 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   border: 0 !important;
   box-shadow: none !important;
   animation: none !important;
+}
+
+/* ==========================================================================
+   ENCISOMATH v0.25.108 - PROGRESO / CIFRA SIN CONTORNO INTERNO
+   El número grande queda completamente sólido: se elimina el text-stroke
+   gris/blanco heredado del tratamiento astronómico. Los glows externos y
+   las animaciones cromáticas por rango se conservan.
+   ========================================================================== */
+.em-progress-journey-message strong b {
+  -webkit-text-stroke: 0 transparent !important;
+  text-stroke: 0 transparent !important;
+  paint-order: normal !important;
 }
