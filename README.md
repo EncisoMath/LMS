@@ -1,6 +1,10 @@
-# EncisoMath LMS v0.25.106
+# EncisoMath LMS v0.25.107
 
-## v0.25.106 — Progreso: FlowIn estable y sin reinicios
+## v0.25.107 — Progreso: número limpio
+- Se elimina la órbita/línea geométrica decorativa del número grande de velocidad.
+- Se conservan los colores, pulsos, shimmer y resplandores por rango de nota.
+
+## v0.25.107 — Progreso: FlowIn estable y sin reinicios
 
 - Las sincronizaciones silenciosas al recuperar foco ya no vuelven a disparar EncisoFlowIn.
 - Progreso compara una firma de sus valores visibles y solo reconstruye la vista si realmente cambió Calificación/Actividades, Asistencia, Rockstar Points o la Definitiva.

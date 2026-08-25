@@ -40676,3 +40676,16 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-r-coin.is-center { animation:emProgressCoinCenter103 2.8s -.8s ease-in-out infinite !important; }
   .em-progress-r-coin.is-right { animation:emProgressCoinRight103 3.25s -1.55s ease-in-out infinite !important; }
 }
+
+/* ==========================================================================
+   ENCISOMATH v0.25.107 - PROGRESO / NÚMERO SIN ÓRBITA GEOMÉTRICA
+   Elimina las líneas/polígonos decorativos alrededor de la cifra grande.
+   Conserva color, pulso, shimmer y halo de cada rango.
+   ========================================================================== */
+.em-progress-journey-message strong b::before {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
