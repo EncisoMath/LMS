@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.112';
+  const APP_VERSION = '0.25.113';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -5909,8 +5909,11 @@
     const view = getNotesViewState();
     const activeFilter = Boolean(view.gradeFilters?.[column.key]);
     const activeSort = view.sort?.kind === 'grade' && view.sort?.key === column.key;
+    const subjectHeaderClass = column.type === 'attendance'
+      ? 'em-notes-subject-summary-header is-attendance-summary'
+      : (column.type === 'rockstars' ? 'em-notes-subject-summary-header is-rockstars-summary' : '');
     return `
-      <th class="em-notes-grade-header ${activeFilter || activeSort ? 'has-filter' : ''}" style="--em-notes-column-color:${escapeAttr(column.color)}">
+      <th class="em-notes-grade-header ${subjectHeaderClass} ${activeFilter || activeSort ? 'has-filter' : ''}" style="--em-notes-column-color:${escapeAttr(column.color)}">
         <div class="em-notes-grade-header-wrap">
           <button class="em-notes-grade-filter-trigger" type="button" data-notes-column-key="${escapeAttr(column.key)}" title="Configurar ${escapeAttr(column.title)}" aria-label="Configurar ${escapeAttr(column.title)}">
             <span class="em-notes-column-code">${escapeHTML(column.code)}</span>

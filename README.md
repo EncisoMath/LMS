@@ -1,5 +1,16 @@
-# EncisoMath LMS v0.25.112
+# EncisoMath LMS v0.25.113
 
+
+
+## v0.25.113 — Planilla: cabeceras con color de asignatura
+
+- **Estudiante** usa el 50% del color de la asignatura actual.
+- Las **fechas de asistencia** usan el 40% del color de la asignatura actual.
+- Las columnas **Asistencia** y **Rockstars** usan el 50% del color de la asignatura actual.
+- **Definitiva** usa el 60% del color de la asignatura actual.
+- Estas cabeceras ya no mezclan su fondo con `#09111d`: la intensidad se obtiene únicamente desde el color de la asignatura y transparencia.
+- Actividades y Quizzes conservan sus colores configurables.
+- No requiere SQL nuevo.
 
 ## v0.25.112 — Asistencia: nuevo estado Tarde
 
