@@ -1,4 +1,14 @@
-# EncisoMath LMS v0.25.108
+# EncisoMath LMS v0.25.109
+
+## v0.25.109 — Progreso: detalle 50/50 de actividades y jornadas
+
+- Debajo de las tres tarjetas resumen se añaden dos paneles horizontales 50/50: **Tus actividades** y **Tus asistencias y puntos**.
+- **Tus actividades** reúne únicamente actividades y quizzes publicados/habilitados para la carga y periodo actuales. Cada fila muestra calificación, peso real de PLANILLA, barra horizontal con la escala rojo/naranja/amarillo/verde/dorado y el último seguimiento docente disponible.
+- En actividades, si no existe un evento de seguimiento se usa como respaldo el comentario de la calificación; los quizzes muestran `Sin seguimiento docente` porque no tienen el mismo sistema manual de seguimiento.
+- **Tus asistencias y puntos** lista las jornadas de asistencia del curso fecha por fecha, indicando `Vino`, `No vino` o `Excusa` y debajo los Rockstar Points acumulados en esa fecha con la moneda flat `R`.
+- El portal estudiantil conserva `deliveryEvents` cuando la RPC de estados de actividades los entrega, para poder mostrar el seguimiento sin afectar la calificación.
+- EncisoFlowIn incluye los dos nuevos paneles y sus filas.
+- No requiere SQL nuevo.
 
 ## v0.25.108 — Progreso: número limpio
 - Se elimina la órbita/línea geométrica decorativa del número grande de velocidad.

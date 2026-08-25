@@ -1044,6 +1044,9 @@
         studentCode: String(row?.student_code || row?.studentCode || fallbackStudentCode || ''),
         score: gradedAt ? Number(scoreValue ?? 40) : null,
         observations: String(row?.observations || ''),
+        deliveryEvents: Array.isArray(row?.delivery_events)
+          ? row.delivery_events.map((event) => ({ ...event }))
+          : (Array.isArray(row?.deliveryEvents) ? row.deliveryEvents.map((event) => ({ ...event })) : []),
         stickerUrl: String(row?.sticker_url || row?.stickerUrl || ''),
         submissionFile: row?.submission_file && typeof row.submission_file === 'object'
           ? row.submission_file

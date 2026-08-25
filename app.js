@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.108';
+  const APP_VERSION = '0.25.109';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1172,7 +1172,21 @@
       available: state.data.studentProgress?.available === true,
       message: String(state.data.studentProgress?.message || '').trim(),
       activityScore: studentProgressWeightedActivityScore(activities, definitive),
+      activityRows: (activities?.rows || []).map((row) => ({
+        id: row.activity?.id || '',
+        title: row.activity?.title || '',
+        score: row.graded ? Number(row.score) : null,
+        observations: String(row.record?.observations || ''),
+        deliveryEvents: Array.isArray(row.record?.deliveryEvents) ? row.record.deliveryEvents : []
+      })),
+      quizzes: studentProgressQuizzes().map((quiz) => ({
+        id: quiz.id || '',
+        title: quiz.title || '',
+        score: studentProgressQuizScore(quiz)
+      })),
+      weights: (definitive?.columns || []).map((column) => ({ key: column.key, weight: column.weight })),
       attendanceScore: Number.isFinite(Number(attendance?.score)) ? Number(attendance.score) : null,
+      attendanceRows: (rockstars?.rows || []).map((row) => ({ date: row.date, status: row.status, points: row.points })),
       rockstarPoints: Number.isFinite(Number(rockstars?.points)) ? Number(rockstars.points) : null,
       definitiveScore: Number.isFinite(Number(definitive?.score)) ? Number(definitive.score) : null
     });
@@ -4154,9 +4168,9 @@
   }
   function studentProgressStatusLabel(status) {
     const value = String(status || 'absent').toLowerCase();
-    if (value === 'present') return { label: 'Asistió', icon: '✓', className: 'is-present' };
-    if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '●', className: 'is-excused' };
-    return { label: 'No asistió', icon: '●', className: 'is-absent' };
+    if (value === 'present') return { label: 'Vino', icon: '✓', className: 'is-present' };
+    if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '!', className: 'is-excused' };
+    return { label: 'No vino', icon: '×', className: 'is-absent' };
   }
   function studentProgressActivities() {
     const assignmentId = String(state.assignment?.id || '');
@@ -4183,6 +4197,25 @@
       : null;
     return { rows, gradedRows, score };
   }
+  function studentProgressQuizzes() {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    if (!assignmentId) return [];
+    return getBaseQuizzes()
+      .filter((quiz) => Number(quiz.period || 1) === period)
+      .filter((quiz) => String(quiz.status || 'published') === 'published')
+      .filter((quiz) => {
+        const ids = Array.isArray(quiz.assignmentIds) ? quiz.assignmentIds.map(String) : [];
+        return ids.includes(assignmentId);
+      })
+      .sort((a, b) => {
+        const aDate = String(a.availableFrom || a.createdAt || a.openAt || '');
+        const bDate = String(b.availableFrom || b.createdAt || b.openAt || '');
+        if (aDate !== bDate) return aDate.localeCompare(bDate);
+        return String(a.title || '').localeCompare(String(b.title || ''), 'es');
+      });
+  }
+
   function studentProgressAttendanceSessions() {
     const assignmentId = String(state.assignment?.id || '');
     const studentCode = String(state.user?.id || '');
@@ -4263,7 +4296,7 @@
   }
   function studentProgressDefinitiveSummary(activities, attendance, rockstars) {
     const activityRows = Array.isArray(activities?.rows) ? activities.rows : [];
-    const quizzes = getNotesQuizzes();
+    const quizzes = studentProgressQuizzes();
     const baseColumns = [
       ...activityRows.map((row) => ({
         key: `activity:${row.activity?.id || ''}`,
@@ -4394,6 +4427,149 @@
       </div>
     `;
   }
+  function studentProgressColumnMap(definitive) {
+    return new Map((Array.isArray(definitive?.columns) ? definitive.columns : [])
+      .map((column) => [String(column?.key || ''), column])
+      .filter(([key]) => key));
+  }
+  function studentProgressWeightLabel(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0%';
+    const rounded = Math.round(number * 10) / 10;
+    return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+  }
+  function studentProgressActivityFollowup(record) {
+    const events = Array.isArray(record?.deliveryEvents) ? record.deliveryEvents.filter(Boolean) : [];
+    if (events.length) {
+      const latest = events.slice().sort((a, b) => String(a?.occurredAt || '').localeCompare(String(b?.occurredAt || ''))).at(-1) || {};
+      const label = activityDeliveryLabel(latest.status) || 'Seguimiento';
+      const note = String(latest.note || '').trim();
+      return {
+        title: events.length > 1 ? `${label} · ${events.length} seguimientos` : label,
+        text: note || 'Seguimiento registrado sin observación adicional.'
+      };
+    }
+    const observation = String(record?.observations || '').trim();
+    if (observation) return { title: 'Comentario docente', text: observation };
+    return { title: 'Seguimiento', text: 'Sin seguimiento registrado.' };
+  }
+  function studentProgressWorkItemHTML({ type, id, title, score, weight, followup }) {
+    const empty = score === null || score === undefined || !Number.isFinite(Number(score));
+    const safe = empty ? 0 : Math.max(0, Math.min(100, Number(score)));
+    const rounded = empty ? '—' : Math.round(safe);
+    const band = studentProgressBand(empty ? null : safe);
+    const typeLabel = type === 'quiz' ? 'QUIZ' : 'ACTIVIDAD';
+    const follow = followup && typeof followup === 'object' ? followup : { title: 'Seguimiento', text: 'Sin seguimiento registrado.' };
+    return `
+      <article class="em-progress-work-item ${band}" data-progress-work="${escapeAttr(type)}:${escapeAttr(id)}" style="--em-progress-work-score:${safe}%">
+        <div class="em-progress-work-head">
+          <div class="em-progress-work-copy">
+            <span class="em-progress-work-type">${typeLabel}</span>
+            <strong title="${escapeAttr(title)}">${escapeHTML(title)}</strong>
+          </div>
+          <b class="em-progress-work-score ${band}" aria-label="Calificación ${empty ? 'pendiente' : rounded}">${rounded}</b>
+        </div>
+        <div class="em-progress-work-meta">
+          <span>Peso <b>${escapeHTML(studentProgressWeightLabel(weight))}</b></span>
+          <span>${empty ? 'Pendiente' : 'Calificada'}</span>
+        </div>
+        <span class="em-progress-work-bar ${band}" aria-hidden="true"><i></i></span>
+        <div class="em-progress-work-followup">
+          <span>${escapeHTML(follow.title || 'Seguimiento')}</span>
+          <p>${escapeHTML(follow.text || 'Sin seguimiento registrado.')}</p>
+        </div>
+      </article>
+    `;
+  }
+  function studentProgressActivitiesPanelHTML(activities, definitive) {
+    const columns = studentProgressColumnMap(definitive);
+    const activityRows = Array.isArray(activities?.rows) ? activities.rows : [];
+    const activityItems = activityRows.map((row, index) => {
+      const activity = row.activity || {};
+      const column = columns.get(`activity:${activity.id || ''}`) || {};
+      return studentProgressWorkItemHTML({
+        type: 'activity',
+        id: activity.id || index,
+        title: activity.title || `Actividad ${index + 1}`,
+        score: row.graded ? row.score : null,
+        weight: column.weight,
+        followup: studentProgressActivityFollowup(row.record)
+      });
+    });
+    const quizItems = studentProgressQuizzes().map((quiz, index) => {
+      const column = columns.get(`quiz:${quiz.id || ''}`) || {};
+      return studentProgressWorkItemHTML({
+        type: 'quiz',
+        id: quiz.id || index,
+        title: quiz.title || `Quiz ${index + 1}`,
+        score: studentProgressQuizScore(quiz),
+        weight: column.weight,
+        followup: { title: 'Seguimiento', text: 'Sin seguimiento docente.' }
+      });
+    });
+    const items = [...activityItems, ...quizItems];
+    return `
+      <section class="em-progress-breakdown-card em-progress-breakdown-activities" aria-labelledby="emProgressActivitiesTitle">
+        <header class="em-progress-breakdown-heading">
+          <div><span>DETALLE DEL PERIODO</span><h3 id="emProgressActivitiesTitle">Tus actividades</h3></div>
+          <b>${items.length}</b>
+        </header>
+        <div class="em-progress-work-list">
+          ${items.join('') || '<div class="em-progress-breakdown-empty">Aún no tienes actividades o quizzes habilitados en este periodo.</div>'}
+        </div>
+      </section>
+    `;
+  }
+  function studentProgressDateLabel(value) {
+    const raw = String(value || '').slice(0, 10);
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T12:00:00`) : new Date(value);
+    if (Number.isNaN(date.getTime())) return raw || 'Sin fecha';
+    const weekday = date.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '').toUpperCase();
+    const day = date.toLocaleDateString('es-CO', { day: '2-digit' });
+    const month = date.toLocaleDateString('es-CO', { month: 'short' }).replace('.', '').toUpperCase();
+    return `${weekday} ${day} ${month}`;
+  }
+  function studentProgressAttendancePointRowHTML(row) {
+    const status = studentProgressStatusLabel(row?.status);
+    const points = Number(row?.points || 0);
+    const pointsLabel = points > 0 ? `+${Math.round(points)}` : String(Math.round(points));
+    return `
+      <article class="em-progress-attendance-item ${status.className}" data-progress-attendance="${escapeAttr(row?.date || '')}">
+        <div class="em-progress-attendance-top">
+          <time datetime="${escapeAttr(row?.date || '')}">${escapeHTML(studentProgressDateLabel(row?.date))}</time>
+          <span class="em-progress-attendance-status ${status.className}"><b>${status.icon}</b>${escapeHTML(status.label)}</span>
+        </div>
+        <div class="em-progress-attendance-points">
+          <span class="em-progress-mini-r-coin" aria-hidden="true">R</span>
+          <strong>${escapeHTML(pointsLabel)}</strong>
+          <span>Rockstar Points</span>
+        </div>
+      </article>
+    `;
+  }
+  function studentProgressAttendancePanelHTML(rockstars, progressAvailable) {
+    const rows = progressAvailable && Array.isArray(rockstars?.rows) ? rockstars.rows : [];
+    return `
+      <section class="em-progress-breakdown-card em-progress-breakdown-attendance" aria-labelledby="emProgressAttendanceTitle">
+        <header class="em-progress-breakdown-heading">
+          <div><span>REGISTRO POR FECHA</span><h3 id="emProgressAttendanceTitle">Tus asistencias y puntos</h3></div>
+          <b>${rows.length}</b>
+        </header>
+        <div class="em-progress-attendance-list">
+          ${rows.length ? rows.slice().reverse().map(studentProgressAttendancePointRowHTML).join('') : '<div class="em-progress-breakdown-empty">Aún no hay jornadas de asistencia registradas en este periodo.</div>'}
+        </div>
+      </section>
+    `;
+  }
+  function studentProgressBreakdownHTML(activities, rockstars, definitive, progressAvailable) {
+    return `
+      <div class="em-progress-breakdown-grid" aria-label="Detalle de actividades, asistencias y puntos">
+        ${studentProgressActivitiesPanelHTML(activities, definitive)}
+        ${studentProgressAttendancePanelHTML(rockstars, progressAvailable)}
+      </div>
+    `;
+  }
+
   function studentProgressJourneyStarsHTML(score = 0) {
     const safe = Math.max(0, Math.min(100, Number(score) || 0));
     const speed = 1 + (safe / 100) * 5.8;
@@ -4493,6 +4669,7 @@
       ${studentProgressJourneyHTML(definitive)}
       ${notice}
       ${studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable)}
+      ${studentProgressBreakdownHTML(activities, rockstars, definitive, progressAvailable)}
     `;
     emProgressInitJourney(root);
     if (options.animate !== false) emPlayTabEntrance(root, 'progress');
@@ -19087,7 +19264,10 @@
       '.em-progress-summary-grid > *',
       '.em-progress-ring',
       '.em-progress-rockstar-coins',
-      '.em-progress-rockstar-total'
+      '.em-progress-rockstar-total',
+      '.em-progress-breakdown-grid > *',
+      '.em-progress-work-item',
+      '.em-progress-attendance-item'
     ]
   };
 
