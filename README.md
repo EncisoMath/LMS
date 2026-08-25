@@ -1,6 +1,6 @@
-# EncisoMath LMS v0.25.103
+# EncisoMath LMS v0.25.104
 
-## v0.25.103 — Progreso: resumen visual en 3 tarjetas
+## v0.25.104 — Progreso: resumen visual en 3 tarjetas
 
 - Se eliminan del layout los antiguos contenedores/acordeones de **ACTIVIDADES**, **ASISTENCIA** y **ROCKSTAR POINTS**.
 - Se añade un resumen compacto de **3 columnas × 1 fila** inmediatamente después del viaje espacial.

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.103';
+  const APP_VERSION = '0.25.104';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4338,9 +4338,8 @@
     return `
       <section class="em-progress-summary-card em-progress-summary-card-ring ${band}" data-progress-summary="${escapeAttr(key)}" style="--em-summary-score:${safe}">
         <strong class="em-progress-summary-title">${escapeHTML(title)}</strong>
-        <div class="em-progress-ring" role="img" aria-label="${escapeAttr(title)}: ${empty ? 'sin dato' : `${rounded} por ciento`}">
-          <span class="em-progress-ring-track" aria-hidden="true"></span>
-          <span class="em-progress-ring-value">${rounded}${empty ? '' : '<small>%</small>'}</span>
+        <div class="em-progress-ring" role="img" aria-label="${escapeAttr(title)}: ${empty ? 'sin dato' : rounded}">
+          <span class="em-progress-ring-value">${rounded}</span>
         </div>
       </section>
     `;

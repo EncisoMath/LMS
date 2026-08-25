@@ -40346,7 +40346,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* ==========================================================================
-   ENCISOMATH v0.25.103 - PROGRESO / HERO FUERA + DESTELLO VERDE CONTENIDO
+   ENCISOMATH v0.25.104 - PROGRESO / HERO FUERA + DESTELLO VERDE CONTENIDO
    - Progreso comienza directamente en el viaje.
    - En 80–89 el brillo vive dentro de las cifras: no hay rayos/halos externos.
    ========================================================================== */
@@ -40409,7 +40409,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* ==========================================================================
-   ENCISOMATH v0.25.103 - PROGRESO / RESUMEN EN 3 TARJETAS
+   ENCISOMATH v0.25.104 - PROGRESO / RESUMEN EN 3 TARJETAS
    Los acordeones de Actividades, Asistencia y Rockstar Points salen del layout.
    ========================================================================== */
 .em-progress-summary-grid {
@@ -40493,6 +40493,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   box-shadow: inset 0 0 15px rgba(0,0,0,.32);
 }
 .em-progress-ring-track {
+  display:none !important;
   position: absolute;
   z-index: 2;
   width: 9px;
@@ -40506,7 +40507,8 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   transform-origin: 4.5px calc((var(--em-ring-size) / 2) - 1px);
   transform: rotate(calc(var(--em-summary-score) * 3.6deg));
 }
-.em-progress-summary-card.is-empty .em-progress-ring-track { display:none; }
+.em-progress-summary-card.is-empty .em-progress-ring-track {
+  display:none !important; display:none; }
 .em-progress-ring-value {
   position: relative;
   z-index: 3;
@@ -40519,12 +40521,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   line-height: 1;
   letter-spacing: -.055em;
   text-shadow: 0 0 7px color-mix(in srgb, var(--em-summary-accent) 52%, transparent);
-}
-.em-progress-ring-value small {
-  margin-left: 1px;
-  font-size: .44em;
-  font-weight: 950;
-  letter-spacing: -.03em;
 }
 .em-progress-summary-card.is-gold .em-progress-ring-value {
   color: transparent;
@@ -40657,6 +40653,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #000 calc(100% - 7px));
   }
   .em-progress-ring-track {
+  display:none !important;
     width:8px;
     height:8px;
     margin-left:-4px;
