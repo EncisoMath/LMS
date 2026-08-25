@@ -1,7 +1,7 @@
-# EncisoMath LMS v0.25.110
+# EncisoMath LMS v0.25.111
 
 
-## v0.25.110 — Progreso: historial completo y asistencia visual
+## v0.25.111 — Progreso: historial completo y asistencia visual
 
 - Se eliminan los contadores numéricos de las cabeceras **Tus actividades** y **Tus asistencias y puntos**.
 - La asistencia usa ahora los estados **Asistió**, **No asistió** y **Excusa**, con emoji grande y composición vertical a la derecha de cada fecha.

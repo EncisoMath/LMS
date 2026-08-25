@@ -41011,7 +41011,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* ========================================================================== 
-   ENCISOMATH v0.25.110 - PROGRESO / DETALLE DOCENTE + ASISTENCIA VISUAL
+   ENCISOMATH v0.25.111 - PROGRESO / DETALLE DOCENTE + ASISTENCIA VISUAL
    Quita contadores de cabecera, muestra todo el historial de seguimiento,
    agranda el estado de asistencia y clasifica los puntos Rockstar por jornada.
    ========================================================================== */
@@ -41236,4 +41236,110 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-progress-attendance-status b { width:auto; height:auto; font-size:1rem; }
   .em-progress-attendance-status > span { font-size:.43rem; white-space:normal; }
   .em-progress-attendance-points { margin-top:4px; }
+}
+
+/* ========================================================================== 
+   ENCISOMATH v0.25.111 - PROGRESO / ASISTENCIA COMPACTA 2 COLUMNAS
+   Fecha + Rockstar Points a la izquierda; estado grande a la derecha.
+   ========================================================================== */
+.em-progress-attendance-item {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  grid-template-rows:auto auto !important;
+  column-gap:10px !important;
+  row-gap:2px !important;
+  align-items:center !important;
+  padding:7px 10px !important;
+}
+.em-progress-attendance-top {
+  display:contents !important;
+}
+.em-progress-attendance-top time {
+  grid-column:1 !important;
+  grid-row:1 !important;
+  align-self:end !important;
+  padding:0 !important;
+  margin:0 !important;
+  font-size:clamp(.60rem,1.75vw,.73rem) !important;
+  line-height:1.05 !important;
+}
+.em-progress-attendance-status {
+  grid-column:2 !important;
+  grid-row:1 / span 2 !important;
+  align-self:center !important;
+  min-width:66px !important;
+  min-height:44px !important;
+  padding:2px 4px !important;
+  gap:2px !important;
+}
+.em-progress-attendance-status b {
+  font-size:1.15rem !important;
+  line-height:1 !important;
+}
+.em-progress-attendance-status > span {
+  font-size:.53rem !important;
+  line-height:1 !important;
+}
+.em-progress-attendance-points {
+  grid-column:1 !important;
+  grid-row:2 !important;
+  align-self:start !important;
+  margin:2px 0 0 !important;
+  gap:4px !important;
+  min-height:20px !important;
+  line-height:1 !important;
+}
+.em-progress-attendance-points strong {
+  font-size:.68rem !important;
+}
+.em-progress-attendance-points > span:last-child {
+  font-size:.43rem !important;
+}
+.em-progress-mini-r-coin {
+  width:18px !important;
+  height:18px !important;
+  flex-basis:18px !important;
+  font-size:.46rem !important;
+}
+.em-progress-mini-r-coin::after {
+  inset:2.5px !important;
+}
+
+@media (max-width:560px) {
+  .em-progress-attendance-item {
+    column-gap:5px !important;
+    row-gap:1px !important;
+    padding:6px 7px !important;
+  }
+  .em-progress-attendance-top time {
+    font-size:clamp(.50rem,2.55vw,.60rem) !important;
+  }
+  .em-progress-attendance-status {
+    min-width:50px !important;
+    min-height:39px !important;
+    padding:1px 2px !important;
+  }
+  .em-progress-attendance-status b {
+    font-size:.92rem !important;
+  }
+  .em-progress-attendance-status > span {
+    font-size:.40rem !important;
+  }
+  .em-progress-attendance-points {
+    margin-top:1px !important;
+    min-height:17px !important;
+    gap:3px !important;
+  }
+  .em-progress-attendance-points strong {
+    font-size:.58rem !important;
+  }
+  .em-progress-attendance-points > span:last-child {
+    font-size:.34rem !important;
+  }
+  .em-progress-mini-r-coin {
+    width:16px !important;
+    height:16px !important;
+    flex-basis:16px !important;
+    font-size:.40rem !important;
+  }
 }
