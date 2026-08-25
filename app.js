@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.105';
+  const APP_VERSION = '0.25.106';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1159,6 +1159,25 @@
     });
   }
 
+  function studentProgressAutomaticRefreshSignature() {
+    if (!isStudentPortal() || state.activeSubjectTab !== 'progress' || !state.assignment) return '';
+    const activities = studentProgressActivities();
+    const attendanceSessions = studentProgressAttendanceSessions();
+    const attendance = studentProgressAttendanceSummary(attendanceSessions);
+    const rockstars = studentProgressRockstarSummary(attendanceSessions, attendance);
+    const definitive = studentProgressDefinitiveSummary(activities, attendance, rockstars);
+    return syncStableSignature({
+      assignmentId: String(state.assignment?.id || ''),
+      period: Number(state.activePeriod || 1),
+      available: state.data.studentProgress?.available === true,
+      message: String(state.data.studentProgress?.message || '').trim(),
+      activityScore: studentProgressWeightedActivityScore(activities, definitive),
+      attendanceScore: Number.isFinite(Number(attendance?.score)) ? Number(attendance.score) : null,
+      rockstarPoints: Number.isFinite(Number(rockstars?.points)) ? Number(rockstars.points) : null,
+      definitiveScore: Number.isFinite(Number(definitive?.score)) ? Number(definitive.score) : null
+    });
+  }
+
   function bindOfflineSyncEvents() {
     if (bindOfflineSyncEvents.bound) return;
     bindOfflineSyncEvents.bound = true;
@@ -1167,6 +1186,7 @@
       const summary = event.detail?.summary || {};
       const routeScreen = state.appRoute?.screen || '';
       const notesBefore = routeScreen === 'subject' && state.activeSubjectTab === 'notes' ? notesAutomaticRefreshSignature() : '';
+      const progressBefore = routeScreen === 'subject' && state.activeSubjectTab === 'progress' ? studentProgressAutomaticRefreshSignature() : '';
       const activityBefore = routeScreen === 'activity' && !isStudentPortal() ? activityAutomaticRefreshSignature() : '';
       if (!applyCloudSnapshotToState(snapshot, { initializePeriod: false })) return;
       if (routeScreen === 'activity' && !isStudentPortal()) {
@@ -1179,6 +1199,9 @@
         if (state.activeSubjectTab === 'notes') {
           const notesAfter = notesAutomaticRefreshSignature();
           if (notesBefore !== notesAfter) refreshActivePeriodContent(false, { silentSync: true, preserveScroll: true });
+        } else if (state.activeSubjectTab === 'progress') {
+          const progressAfter = studentProgressAutomaticRefreshSignature();
+          if (progressBefore !== progressAfter) refreshActivePeriodContent(false, { silentSync: true, preserveScroll: true });
         } else {
           refreshActivePeriodContent(false);
         }
@@ -4365,7 +4388,7 @@
     const activityScore = studentProgressWeightedActivityScore(activities, definitive);
     return `
       <div class="em-progress-summary-grid" aria-label="Resumen de progreso">
-        ${studentProgressRingCardHTML({ key: 'grade', title: 'CALIFICACIÓN', score: activityScore })}
+        ${studentProgressRingCardHTML({ key: 'grade', title: 'ACTIVIDADES', score: activityScore })}
         ${studentProgressRingCardHTML({ key: 'attendance', title: 'ASISTENCIA', score: progressAvailable ? attendance?.score : null })}
         ${studentProgressRockstarCardHTML(rockstars, progressAvailable)}
       </div>
@@ -4472,7 +4495,7 @@
       ${studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable)}
     `;
     emProgressInitJourney(root);
-    emPlayTabEntrance(root, 'progress');
+    if (options.animate !== false) emPlayTabEntrance(root, 'progress');
     if (options.animate) pulseElement(root, 'tab-enter');
   }
   const EM_CONTENT_SHAPE_PAIRS = [
@@ -19063,7 +19086,7 @@
       '.em-progress-data-notice',
       '.em-progress-summary-grid > *',
       '.em-progress-ring',
-      '.em-progress-r-coin',
+      '.em-progress-rockstar-coins',
       '.em-progress-rockstar-total'
     ]
   };

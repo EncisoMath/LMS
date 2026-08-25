@@ -1,12 +1,12 @@
-# EncisoMath LMS v0.25.105
+# EncisoMath LMS v0.25.106
 
-## v0.25.105 — Progreso: EncisoFlowIn real
+## v0.25.106 — Progreso: FlowIn estable y sin reinicios
 
-- La pestaña **PROGRESO** deja de usar una implementación propia de FlowIn y pasa por el mismo `emPlayTabEntrance(..., 'progress')` que Clases, Actividades y Quizzes.
-- El viaje espacial, las tarjetas resumen, los anillos y las monedas entran con la secuencia escalonada estándar de EncisoFlowIn.
-- Se elimina la condición especial que podía impedir la entrada de Progreso cuando las preferencias de movimiento/transición estaban desactivadas.
+- Las sincronizaciones silenciosas al recuperar foco ya no vuelven a disparar EncisoFlowIn.
+- Progreso compara una firma de sus valores visibles y solo reconstruye la vista si realmente cambió Calificación/Actividades, Asistencia, Rockstar Points o la Definitiva.
+- Las tres monedas Rockstar entran mediante su contenedor; EncisoFlowIn ya no modifica el `transform` individual de cada moneda y no choca con su microanimación permanente.
+- La tarjeta **CALIFICACIÓN** pasa a llamarse **ACTIVIDADES**.
 - No requiere SQL nuevo.
-
 ## v0.25.104 — Progreso: resumen visual en 3 tarjetas
 
 - Se eliminan del layout los antiguos contenedores/acordeones de **ACTIVIDADES**, **ASISTENCIA** y **ROCKSTAR POINTS**.
