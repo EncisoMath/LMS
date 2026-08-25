@@ -1,7 +1,17 @@
-# EncisoMath LMS v0.25.111
+# EncisoMath LMS v0.25.112
 
 
-## v0.25.111 — Progreso: historial completo y asistencia visual
+## v0.25.112 — Asistencia: nuevo estado Tarde
+
+- Se añade **💤 Tarde** como cuarto estado real de asistencia en **Docente > Estudiantes**, con botón azul y cuatro opciones en una sola fila.
+- PLANILLA reconoce `late`, muestra **💤** en la fecha y permite cambiar a Tarde desde el detalle de asistencia y desde los filtros.
+- Para la calificación de **Asistencia**, cada Tarde aporta el **30%** de lo que aporta un Asistió: Asistió = 1.00, Tarde = 0.30, No asistió = 0; las excusas conservan el tratamiento previo.
+- En **Rockstars**, Tarde deja de bloquear al estudiante, pero limita las sumas positivas a un máximo neto de **3 puntos Rockstar por fecha**. Al alcanzar el tope se desactiva `+1`; `-1` permanece disponible.
+- Los eventos Rockstar nuevos se anclan a la fecha de asistencia seleccionada para que el tope y el historial por jornada coincidan.
+- **Estudiante > Progreso** muestra **💤 Tarde** en azul y usa la misma valoración del 30% en el anillo/nota de Asistencia y en la Definitiva.
+- Requiere ejecutar una vez `supabase/migrations/SUPABASE_ATTENDANCE_LATE_v0.25.112.sql` para permitir `late` en `attendance_records.status`.
+
+## v0.25.110 — Progreso: historial completo y asistencia visual
 
 - Se eliminan los contadores numéricos de las cabeceras **Tus actividades** y **Tus asistencias y puntos**.
 - La asistencia usa ahora los estados **Asistió**, **No asistió** y **Excusa**, con emoji grande y composición vertical a la derecha de cada fecha.

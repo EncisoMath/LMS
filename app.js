@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.111';
+  const APP_VERSION = '0.25.112';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -629,6 +629,7 @@
 
   const statusMap = {
     present: { emoji: '✅', label: 'Asistió', className: 'present' },
+    late: { emoji: '💤', label: 'Tarde', className: 'late' },
     absent: { emoji: '🔴', label: 'No asistió', className: 'absent' },
     excused: { emoji: '⚠️', label: 'Excusa', className: 'excused' }
   };
@@ -3015,7 +3016,7 @@
     const visualStatus = emRsStatusToVisual(status);
     const storedStatus = emRsVisualStatusToStored(visualStatus);
     if (card.classList.contains('em-rs-att-card')) {
-      card.classList.remove('present', 'absent', 'excuse', 'none');
+      card.classList.remove('present', 'late', 'absent', 'excuse', 'none');
       card.classList.add(visualStatus);
       card.querySelectorAll('.em-rs-att-btn').forEach((button) => {
         button.classList.toggle('is-active', button.dataset.statusOption === visualStatus);
@@ -3026,7 +3027,7 @@
     }
 
     const info = statusMap[storedStatus] || null;
-    card.classList.remove('present', 'absent', 'excused', 'flash-present', 'flash-absent', 'flash-excused');
+    card.classList.remove('present', 'late', 'absent', 'excused', 'flash-present', 'flash-late', 'flash-absent', 'flash-excused');
     if (info) card.classList.add(info.className, `flash-${info.className}`);
     const meta = card.querySelector('[data-attendance-meta]');
     if (meta) meta.textContent = `📅 Asistencia: ${info ? `${info.emoji} ${info.label}` : 'Sin marcar'}`;
@@ -3876,6 +3877,7 @@
 
   function emRsStatusToVisual(status) {
     if (status === 'present') return 'present';
+    if (status === 'late') return 'late';
     if (status === 'absent') return 'absent';
     if (status === 'excused' || status === 'excuse') return 'excuse';
     return 'none';
@@ -3883,6 +3885,7 @@
 
   function emRsVisualStatusToStored(status) {
     if (status === 'present') return 'present';
+    if (status === 'late') return 'late';
     if (status === 'absent') return 'absent';
     if (status === 'excuse') return 'excused';
     return '';
@@ -3891,6 +3894,7 @@
   function emRsGetAttendanceLabel(status) {
     const visual = emRsStatusToVisual(status);
     if (visual === 'present') return 'Asistió';
+    if (visual === 'late') return 'Tarde';
     if (visual === 'absent') return 'No asistió';
     if (visual === 'excuse') return 'Excusa';
     return 'Sin marcar';
@@ -3899,20 +3903,28 @@
   function emRsGetAttendanceEmoji(status) {
     const visual = emRsStatusToVisual(status);
     if (visual === 'present') return '✅';
+    if (visual === 'late') return '💤';
     if (visual === 'absent') return '🔴';
     if (visual === 'excuse') return '⚠️';
     return '—';
   }
 
   function emRsIsAttendanceLocked(status) {
-    return emRsStatusToVisual(status) !== 'present';
+    const visual = emRsStatusToVisual(status);
+    return visual !== 'present' && visual !== 'late';
   }
 
   function emRsGetPointsSortedStudents(students, attendance) {
-    const presentStudents = students.filter((student) => emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]) === 'present');
-    const lockedStudents = students.filter((student) => emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]) !== 'present');
+    const eligibleStudents = students.filter((student) => {
+      const visual = emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]);
+      return visual === 'present' || visual === 'late';
+    });
+    const lockedStudents = students.filter((student) => {
+      const visual = emRsStatusToVisual(attendance?.[emRsGetStudentId(student)]);
+      return visual !== 'present' && visual !== 'late';
+    });
     return [
-      ...emRsSortStudentsByLastName(presentStudents),
+      ...emRsSortStudentsByLastName(eligibleStudents),
       ...emRsSortStudentsByLastName(lockedStudents)
     ];
   }
@@ -4035,9 +4047,16 @@
   function addRockstarDelta(studentId, delta) {
     const assignment = state.assignment;
     if (!assignment || !studentId || ![-1, 1].includes(Number(delta))) return false;
-    const attendance = getAttendance(assignment.id, getRockstarAttendanceDate());
-    if (isRockstarLocked(attendance[studentId])) {
+    const attendanceDate = getRockstarAttendanceDate();
+    const attendance = getAttendance(assignment.id, attendanceDate);
+    const attendanceStatus = attendance[studentId];
+    if (isRockstarLocked(attendanceStatus)) {
       toast('Estudiante sin puntos hoy por asistencia');
+      return false;
+    }
+    const dailyPoints = getRockstarPointsForDate(assignment.id, studentId, state.rockstarPeriod, attendanceDate);
+    if (emRsStatusToVisual(attendanceStatus) === 'late' && Number(delta) > 0 && dailyPoints >= 3) {
+      toast('Tarde: máximo 3 puntos Rockstar en esta fecha.');
       return false;
     }
     const oldPoints = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
@@ -4047,8 +4066,8 @@
       assignmentId: assignment.id,
       studentId,
       period: Number(state.rockstarPeriod),
-      date: todayISO(),
-      occurredAt: new Date().toISOString(),
+      date: attendanceDate,
+      occurredAt: `${attendanceDate}T${new Date().toISOString().slice(11)}`,
       delta: Number(delta)
     };
 
@@ -4085,21 +4104,29 @@
     const status = attendance[studentId];
     const locked = isRockstarLocked(status);
     const points = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
+    const dailyPoints = getRockstarPointsForDate(assignment.id, studentId, state.rockstarPeriod, getRockstarAttendanceDate());
+    const lateCap = emRsStatusToVisual(status) === 'late' && dailyPoints >= 3;
     const newTier = emRsGetTier(points);
 
     if (card.classList.contains('em-rs-card')) {
-      card.classList.remove('m5', 'm0', 'zero', 'p0', 'p5', 'p10', 'p15', 'attendance-locked');
+      card.classList.remove('m5', 'm0', 'zero', 'p0', 'p5', 'p10', 'p15', 'attendance-locked', 'late-cap');
       card.classList.add(newTier);
       if (locked) card.classList.add('attendance-locked');
+      if (lateCap) card.classList.add('late-cap');
       card.dataset.score = String(points);
 
       const pointsNumber = card.querySelector('.em-rs-points-num');
       const avatar = card.querySelector('.em-rs-avatar');
       const chip = card.querySelector('.em-rs-score-chip');
+      const plusButton = card.querySelector('.em-rs-score-btn.plus');
 
       if (pointsNumber) pointsNumber.textContent = String(points);
       if (avatar) avatar.textContent = locked ? '😴' : emRsGetEmoji(points);
       if (chip) chip.textContent = emRsGetAttendanceLabel(status);
+      if (plusButton) {
+        plusButton.disabled = lateCap;
+        plusButton.title = lateCap ? 'Tarde: máximo 3 puntos Rockstar en esta fecha' : '';
+      }
 
       if (locked) return;
       if (delta !== 0) emRsCreateFloatScore(card, delta);
@@ -4169,6 +4196,7 @@
   function studentProgressStatusLabel(status) {
     const value = String(status || 'absent').toLowerCase();
     if (value === 'present') return { label: 'Asistió', icon: '✅', className: 'is-present' };
+    if (value === 'late') return { label: 'Tarde', icon: '💤', className: 'is-late' };
     if (value === 'excused' || value === 'excuse') return { label: 'Excusa', icon: '📄', className: 'is-excused' };
     return { label: 'No asistió', icon: '❌', className: 'is-absent' };
   }
@@ -4231,20 +4259,22 @@
       .sort((a, b) => String(a.date).localeCompare(String(b.date)));
   }
   function studentProgressAttendanceSummary(sessions = studentProgressAttendanceSessions()) {
-    const summary = { total: sessions.length, present: 0, absent: 0, excused: 0, score: null };
+    const summary = { total: sessions.length, present: 0, late: 0, absent: 0, excused: 0, score: null };
     sessions.forEach((session) => {
       const status = String(session.status || 'absent');
       if (status === 'present') summary.present += 1;
+      else if (status === 'late') summary.late += 1;
       else if (status === 'excused' || status === 'excuse') summary.excused += 1;
       else summary.absent += 1;
     });
     if (!summary.total) return summary;
     let score = 0;
-    if (summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
+    if (summary.late === 0 && summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
       score = Math.max(60, Math.round((summary.present / summary.total) * 100));
     } else {
-      const accountable = summary.present + summary.absent;
-      score = accountable ? Math.round((summary.present / accountable) * 100) : 60;
+      const accountable = summary.present + summary.late + summary.absent;
+      const earned = summary.present + (summary.late * 0.30);
+      score = accountable ? Math.round((earned / accountable) * 100) : 60;
     }
     summary.score = Math.max(0, Math.min(100, score));
     return summary;
@@ -4943,7 +4973,7 @@
       } else if (sort.kind === 'attendance') {
         const session = (sessions || []).find((item) => String(item.date || '') === String(sort.key || ''));
         if (session) {
-          const rank = { absent: 0, excused: 1, present: 2 };
+          const rank = { absent: 0, late: 1, excused: 2, present: 3 };
           const av = rank[notesAttendanceStatus(session, a.id)] ?? 0;
           const bv = rank[notesAttendanceStatus(session, b.id)] ?? 0;
           if (av !== bv) return (av - bv) * direction;
@@ -5186,12 +5216,14 @@
   function notesAttendanceStatus(session, studentCode) {
     const raw = String(session?.attendance?.[studentCode] || 'absent').toLowerCase();
     if (raw === 'present') return 'present';
+    if (raw === 'late') return 'late';
     if (raw === 'excused' || raw === 'excuse') return 'excused';
     return 'absent';
   }
 
   function notesAttendanceStatusMeta(status) {
     if (status === 'present') return { icon: '✅', label: 'Asistió' };
+    if (status === 'late') return { icon: '💤', label: 'Tarde' };
     if (status === 'excused') return { icon: '⚠️', label: 'Excusa' };
     return { icon: '🔴', label: 'No asistió' };
   }
@@ -5318,6 +5350,7 @@
     const dateLabel = notesAttendanceDetailDate(session?.date || '');
     const options = [
       { value: 'present', icon: '✅', label: 'Asistió' },
+      { value: 'late', icon: '💤', label: 'Tarde' },
       { value: 'excused', icon: '⚠️', label: 'Excusa' },
       { value: 'absent', icon: '🔴', label: 'No asistió' }
     ];
@@ -5364,7 +5397,7 @@
   }
 
   async function updateNotesAttendanceStatus(assignmentId, attendanceDate, studentCode, status) {
-    const normalized = status === 'present' ? 'present' : (status === 'excused' ? 'excused' : 'absent');
+    const normalized = status === 'present' ? 'present' : (status === 'late' ? 'late' : (status === 'excused' ? 'excused' : 'absent'));
     if (!isCloudReady()) {
       const attendance = getAttendance(assignmentId, attendanceDate);
       attendance[studentCode] = normalized;
@@ -5443,20 +5476,22 @@
   }
 
   function notesAttendanceSummary(studentCode, sessions = []) {
-    const summary = { total: sessions.length, present: 0, absent: 0, excused: 0, score: null };
+    const summary = { total: sessions.length, present: 0, late: 0, absent: 0, excused: 0, score: null };
     sessions.forEach((session) => {
       const status = String(session.attendance?.[studentCode] || 'absent');
       if (status === 'present') summary.present += 1;
+      else if (status === 'late') summary.late += 1;
       else if (status === 'excused' || status === 'excuse') summary.excused += 1;
       else summary.absent += 1;
     });
     if (!summary.total) return summary;
     let score = 0;
-    if (summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
+    if (summary.late === 0 && summary.absent === 0 && summary.excused > 0 && summary.present < summary.total) {
       score = Math.max(60, Math.round((summary.present / summary.total) * 100));
     } else {
-      const accountable = summary.present + summary.absent;
-      score = accountable ? Math.round((summary.present / accountable) * 100) : 60;
+      const accountable = summary.present + summary.late + summary.absent;
+      const earned = summary.present + (summary.late * 0.30);
+      score = accountable ? Math.round((earned / accountable) * 100) : 60;
     }
     summary.score = Math.max(0, Math.min(100, score));
     return summary;
@@ -5532,7 +5567,7 @@
       return {
         score: attendance.score,
         pending: attendance.score === null,
-        title: `${attendance.present} asistencias · ${attendance.excused} excusas · ${attendance.absent} inasistencias`
+        title: `${attendance.present} asistencias · ${attendance.late} tardes · ${attendance.excused} excusas · ${attendance.absent} inasistencias`
       };
     }
     const rockstar = notesRockstarGrade(student.id, column, context.attendanceByStudent.get(student.id));
@@ -6122,13 +6157,14 @@
     const view = getNotesViewState();
     const date = String(session.date || '');
     const current = view.attendanceFilters?.[date] || {};
-    const selected = new Set(Array.isArray(current.statuses) && current.statuses.length ? current.statuses : ['present', 'excused', 'absent']);
+    const selected = new Set(Array.isArray(current.statuses) && current.statuses.length ? current.statuses : ['present', 'late', 'excused', 'absent']);
     const currentSort = view.sort?.kind === 'attendance' && String(view.sort?.key || '') === date ? view.sort.direction : '';
     openModal(notesFilterModalShell({
       title: notesAttendanceDateLabel(date),
       body: `
         <fieldset class="em-notes-filter-statuses"><legend>Mostrar</legend>
           <label><input type="checkbox" data-notes-attendance-status="present" ${selected.has('present') ? 'checked' : ''}/><span>✅ Asistió</span></label>
+          <label><input type="checkbox" data-notes-attendance-status="late" ${selected.has('late') ? 'checked' : ''}/><span>💤 Tarde</span></label>
           <label><input type="checkbox" data-notes-attendance-status="excused" ${selected.has('excused') ? 'checked' : ''}/><span>⚠️ Excusa</span></label>
           <label><input type="checkbox" data-notes-attendance-status="absent" ${selected.has('absent') ? 'checked' : ''}/><span>🔴 No asistió</span></label>
         </fieldset>
@@ -6157,7 +6193,7 @@
       });
       document.getElementById('applyNotesAttendanceFilterBtn')?.addEventListener('click', () => {
         const statuses = [...document.querySelectorAll('[data-notes-attendance-status]:checked')].map((input) => String(input.dataset.notesAttendanceStatus || '')).filter(Boolean);
-        if (statuses.length < 3) view.attendanceFilters[date] = { statuses };
+        if (statuses.length < 4) view.attendanceFilters[date] = { statuses };
         else delete view.attendanceFilters[date];
         const sort = document.getElementById('notesAttendanceFilterSort')?.value || '';
         if (sort) view.sort = { kind: 'attendance', key: date, direction: sort };
@@ -18247,11 +18283,16 @@
     const visualStatus = emRsStatusToVisual(status);
     const tier = emRsGetTier(points);
     const locked = emRsIsAttendanceLocked(status);
+    const lateDailyPoints = visualStatus === 'late'
+      ? getRockstarPointsForDate(state.assignment?.id || '', emRsGetStudentId(student), state.rockstarPeriod, getRockstarAttendanceDate())
+      : 0;
+    const lateCap = visualStatus === 'late' && lateDailyPoints >= 3;
     const lockedClass = locked ? 'attendance-locked' : '';
+    const lateCapClass = lateCap ? 'late-cap' : '';
     const emoji = locked ? '😴' : emRsGetEmoji(points);
     const id = emRsGetStudentId(student);
     return `
-      <article class="em-rs-card ${tier} ${lockedClass}" data-rockstar-card="${escapeAttr(id)}" data-student-id="${escapeAttr(id)}" data-score="${Number(points) || 0}">
+      <article class="em-rs-card ${tier} ${lockedClass} ${lateCapClass}" data-rockstar-card="${escapeAttr(id)}" data-student-id="${escapeAttr(id)}" data-score="${Number(points) || 0}">
         <div class="em-rs-card-bg-shape ${emRsRandomShape()}"></div>
 
         <div class="em-rs-student-top">
@@ -18272,7 +18313,7 @@
 
         <div class="em-rs-score-actions">
           <button class="em-rs-score-btn minus" type="button" data-rockstar-student="${escapeAttr(id)}" data-rockstar-delta="-1">-1</button>
-          <button class="em-rs-score-btn plus" type="button" data-rockstar-student="${escapeAttr(id)}" data-rockstar-delta="1">+1</button>
+          <button class="em-rs-score-btn plus" type="button" data-rockstar-student="${escapeAttr(id)}" data-rockstar-delta="1" ${lateCap ? 'disabled title="Tarde: máximo 3 puntos Rockstar en esta fecha"' : ''}>+1</button>
         </div>
       </article>
     `;
@@ -18310,6 +18351,7 @@
 
         <div class="em-rs-att-actions">
           <button class="em-rs-att-btn present ${visualStatus === 'present' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="present">✅ Asistió</button>
+          <button class="em-rs-att-btn late ${visualStatus === 'late' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="late">💤 Tarde</button>
           <button class="em-rs-att-btn absent ${visualStatus === 'absent' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="absent">🔴 No asistió</button>
           <button class="em-rs-att-btn excuse ${visualStatus === 'excuse' ? 'is-active' : ''}" type="button" data-student-id="${escapeAttr(id)}" data-status-option="excuse">⚠️ Excusa</button>
         </div>
@@ -18554,6 +18596,14 @@
   function getRockstarPoints(assignmentId, studentId, period) {
     return getRockstarEvents(assignmentId)
       .filter((entry) => entry.studentId === studentId && Number(entry.period) === Number(period))
+      .reduce((total, entry) => total + Number(entry.delta || 0), 0);
+  }
+  function getRockstarPointsForDate(assignmentId, studentId, period, date) {
+    const safeDate = String(date || '').slice(0, 10);
+    return getRockstarEvents(assignmentId)
+      .filter((entry) => String(entry.studentId || '') === String(studentId || ''))
+      .filter((entry) => Number(entry.period || 1) === Number(period || 1))
+      .filter((entry) => String(entry.date || entry.occurredAt || '').slice(0, 10) === safeDate)
       .reduce((total, entry) => total + Number(entry.delta || 0), 0);
   }
   function getAssignmentIcon(assignment) {

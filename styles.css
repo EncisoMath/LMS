@@ -41011,7 +41011,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* ========================================================================== 
-   ENCISOMATH v0.25.111 - PROGRESO / DETALLE DOCENTE + ASISTENCIA VISUAL
+   ENCISOMATH v0.25.112 - PROGRESO / DETALLE DOCENTE + ASISTENCIA VISUAL
    Quita contadores de cabecera, muestra todo el historial de seguimiento,
    agranda el estado de asistencia y clasifica los puntos Rockstar por jornada.
    ========================================================================== */
@@ -41239,7 +41239,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* ========================================================================== 
-   ENCISOMATH v0.25.111 - PROGRESO / ASISTENCIA COMPACTA 2 COLUMNAS
+   ENCISOMATH v0.25.112 - PROGRESO / ASISTENCIA COMPACTA 2 COLUMNAS
    Fecha + Rockstar Points a la izquierda; estado grande a la derecha.
    ========================================================================== */
 .em-progress-attendance-item {
@@ -41341,5 +41341,92 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     height:16px !important;
     flex-basis:16px !important;
     font-size:.40rem !important;
+  }
+}
+
+/* ==========================================================================\n   ENCISOMATH v0.25.112 - ASISTENCIA TARDE\n   Nuevo estado azul: Tarde. Docente 4 columnas, Planilla, Rockstars y Progreso.\n   ========================================================================== */
+:root {
+  --em-rs-status-late: #1368CE;
+}
+
+/* DOCENTE > ESTUDIANTES: cuatro estados en una sola fila. */
+.em-rs-att-card.late {
+  --em-rs-status: var(--em-rs-status-late);
+}
+.em-rs-att-actions,
+.em-rs-att-card .em-rs-att-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+}
+.em-rs-att-btn.late {
+  border-color: rgba(19, 104, 206, .58) !important;
+}
+.em-rs-att-btn.is-active.late {
+  background: var(--em-rs-status-late) !important;
+  border-color: #2f86ef !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(19,104,206,.28);
+}
+.em-rs-att-card .em-rs-att-btn {
+  min-width: 0;
+  padding-inline: 3px;
+  font-size: 8.8px;
+}
+
+/* PLANILLA: Tarde se representa con Zzz/💤 y azul. */
+.em-notes-attendance-cell.is-late {
+  background: color-mix(in srgb, #1368CE 12%, #050b13 88%) !important;
+}
+.em-notes-attendance-detail-summary article.is-status.is-late {
+  background: color-mix(in srgb, #1368CE 17%, #0c1522 83%);
+  border-color: color-mix(in srgb, #1368CE 48%, rgba(255,255,255,.08));
+}
+.em-notes-attendance-status-options {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.em-notes-attendance-status-options label.is-late.is-selected {
+  background: color-mix(in srgb, #1368CE 20%, #0a121e 80%);
+  border-color: #2f86ef;
+  box-shadow: 0 0 0 2px rgba(19,104,206,.10), inset 0 0 24px rgba(19,104,206,.08);
+}
+
+/* ROCKSTARS: Tarde sí participa, pero +1 se bloquea al llegar a 3 puntos del día. */
+.em-rs-card.late-cap .em-rs-score-btn.plus,
+.em-rs-card .em-rs-score-btn.plus:disabled {
+  opacity: .38 !important;
+  cursor: not-allowed !important;
+  filter: saturate(.45) !important;
+  transform: none !important;
+}
+
+/* ESTUDIANTE > PROGRESO: historial de asistencia azul para Tarde. */
+.em-progress-attendance-item.is-late {
+  --em-attendance-accent: #1368CE;
+  --em-attendance-soft: #66aaff;
+}
+.em-progress-status.is-late {
+  background: rgba(19,104,206,.14);
+  color: #66aaff;
+}
+.em-progress-detail-main small.is-late {
+  color: #66aaff;
+}
+
+@media (max-width: 560px) {
+  .em-rs-att-card .em-rs-att-actions {
+    gap: 3px !important;
+  }
+  .em-rs-att-card .em-rs-att-btn {
+    height: 29px;
+    padding-inline: 2px;
+    gap: 2px;
+    font-size: 7.9px;
+  }
+  .em-notes-attendance-status-options {
+    gap: 5px;
+  }
+  .em-notes-attendance-status-options label {
+    min-height: 78px;
+    padding-inline: 3px;
   }
 }
