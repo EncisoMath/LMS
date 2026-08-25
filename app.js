@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.104';
+  const APP_VERSION = '0.25.105';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4451,24 +4451,6 @@
       journey.classList.add('is-settled');
     }, EM_PROGRESS_JOURNEY_ENTRY_MS + 120);
   }
-  function emPlayStudentProgressEncisoFlowIn(root = document) {
-    if (!root || !prefEnabled('effectsMotion') || !prefEnabled('tabTransitions')) return;
-    const nodes = emUniqueVisibleElements(root, EM_TAB_ENTRANCE_SELECTORS.progress || []);
-    nodes.forEach((node) => {
-      try {
-        node.getAnimations?.().forEach((animation) => {
-          const name = String(animation.animationName || '');
-          if (name === 'encisoFlowIn' || name === 'encisoFlowOut') animation.cancel();
-        });
-      } catch (_) {}
-      node.classList.remove('enciso-flow-in', 'enciso-flow-out');
-      void node.offsetWidth;
-      node.classList.add('enciso-flow-in');
-      node.addEventListener('animationend', () => {
-        node.classList.remove('enciso-flow-in');
-      }, { once: true });
-    });
-  }
   function renderStudentProgressTab(options = {}) {
     const assignment = state.assignment;
     const root = document.getElementById('tabContent');
@@ -4490,10 +4472,8 @@
       ${studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable)}
     `;
     emProgressInitJourney(root);
-    if (options.animate) {
-      emPlayStudentProgressEncisoFlowIn(root);
-      pulseElement(root, 'tab-enter');
-    }
+    emPlayTabEntrance(root, 'progress');
+    if (options.animate) pulseElement(root, 'tab-enter');
   }
   const EM_CONTENT_SHAPE_PAIRS = [
     ['circle', 'x'],

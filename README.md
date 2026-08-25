@@ -1,4 +1,11 @@
-# EncisoMath LMS v0.25.104
+# EncisoMath LMS v0.25.105
+
+## v0.25.105 — Progreso: EncisoFlowIn real
+
+- La pestaña **PROGRESO** deja de usar una implementación propia de FlowIn y pasa por el mismo `emPlayTabEntrance(..., 'progress')` que Clases, Actividades y Quizzes.
+- El viaje espacial, las tarjetas resumen, los anillos y las monedas entran con la secuencia escalonada estándar de EncisoFlowIn.
+- Se elimina la condición especial que podía impedir la entrada de Progreso cuando las preferencias de movimiento/transición estaban desactivadas.
+- No requiere SQL nuevo.
 
 ## v0.25.104 — Progreso: resumen visual en 3 tarjetas
 
