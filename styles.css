@@ -30923,7 +30923,7 @@ html body #app .em-pdf-loading {
 
 /* 3 y 5. Cabeceras compactas: títulos verticales y fondos sólidos. */
 .em-notes-grade-header button {
-  background: color-mix(in srgb, var(--em-notes-column-color) 32%, #09111d 68%) !important;
+  background: color-mix(in srgb, var(--em-notes-column-color) 45%, #09111d 55%) !important;
 }
 .em-notes-grade-header button:hover,
 .em-notes-grade-header button:focus-visible {
@@ -41433,54 +41433,80 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* ==========================================================================
-   ENCISOMATH v0.25.113 - PLANILLA / CABECERAS POR ASIGNATURA
-   Estas cabeceras usan exclusivamente el color de la asignatura actual con
-   la intensidad solicitada; no se mezcla con #09111d ni otro azul oscuro.
+   ENCISOMATH v0.25.115 - PLANILLA / CABECERAS OPACAS
+   Los porcentajes representan intensidad cromática, no transparencia.
+   Las cabeceras sticky son 100% opacas para evitar que se mezclen visualmente
+   con columnas, textos o colores que pasan por detrás durante el scroll.
    ========================================================================== */
-/* ESTUDIANTE · 50% */
-.em-notes-sheet thead .em-notes-student-header {
-  background: transparent !important;
-}
-.em-notes-sheet thead .em-notes-student-header .em-notes-student-filter-trigger,
-.em-notes-sheet thead .em-notes-student-header.has-filter .em-notes-student-filter-trigger {
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, transparent) !important;
+.em-notes-sheet thead th {
+  opacity: 1 !important;
+  isolation: isolate;
+  background-clip: padding-box !important;
 }
 
-/* FECHAS DE ASISTENCIA · 40% */
-.em-notes-sheet thead .em-notes-attendance-header {
-  background: transparent !important;
-  box-shadow: inset 0 4px 0 var(--em-current-subject-color, #1368ce) !important;
+/* ESTUDIANTE · 50% del color de la asignatura, oscurecido y sólido. */
+.em-notes-sheet thead .em-notes-student-header,
+.em-notes-sheet thead .em-notes-student-header .em-notes-student-filter-trigger,
+.em-notes-sheet thead .em-notes-student-header.has-filter .em-notes-student-filter-trigger {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, #000 50%) !important;
 }
+
+/* FECHAS DE ASISTENCIA · 40% del color de la asignatura, sólido. */
+.em-notes-sheet thead .em-notes-attendance-header,
+.em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-header-wrap,
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-header-trigger,
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-filter-trigger,
 .em-notes-sheet thead .em-notes-attendance-header.has-filter .em-notes-attendance-filter-trigger {
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 40%, #000 60%) !important;
+}
+.em-notes-sheet thead .em-notes-attendance-header {
+  box-shadow: inset 0 4px 0 var(--em-current-subject-color, #1368ce) !important;
 }
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-header-trigger:hover,
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-header-trigger:focus-visible,
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-filter-trigger:hover,
 .em-notes-sheet thead .em-notes-attendance-header .em-notes-attendance-filter-trigger:focus-visible {
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 48%, #000 52%) !important;
   outline-color: var(--em-current-subject-color, #1368ce) !important;
 }
 
-/* ASISTENCIA y ROCKSTARS · 50% */
-.em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header {
-  --em-notes-column-color: var(--em-current-subject-color, #1368ce) !important;
-  background: transparent !important;
-  box-shadow: inset 0 4px 0 var(--em-current-subject-color, #1368ce) !important;
-}
+/* ASISTENCIA y ROCKSTARS · 50% del color de la asignatura, sólido. */
+.em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header,
+.em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header .em-notes-grade-header-wrap,
 .em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header .em-notes-grade-filter-trigger,
 .em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header.has-filter .em-notes-grade-filter-trigger {
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, transparent) !important;
+  --em-notes-column-color: var(--em-current-subject-color, #1368ce) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, #000 50%) !important;
 }
-
-/* DEFINITIVA · 60% */
-.em-notes-sheet thead .em-notes-final-header {
-  background: transparent !important;
+.em-notes-sheet thead .em-notes-grade-header.em-notes-subject-summary-header {
   box-shadow: inset 0 4px 0 var(--em-current-subject-color, #1368ce) !important;
 }
+
+/* DEFINITIVA · 60% del color de la asignatura, sólido. */
+.em-notes-sheet thead .em-notes-final-header,
 .em-notes-sheet thead .em-notes-final-header .em-notes-final-filter-trigger,
 .em-notes-sheet thead .em-notes-final-header.has-filter .em-notes-final-filter-trigger {
-  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 60%, transparent) !important;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 60%, #000 40%) !important;
+}
+.em-notes-sheet thead .em-notes-final-header {
+  box-shadow: inset 0 4px 0 var(--em-current-subject-color, #1368ce) !important;
+}
+
+/* ACTIVIDADES / TALLERES / QUIZZES · 45% de su color propio + fondo oscuro.
+   La celda, su wrapper y el botón comparten el MISMO fondo opaco para que el
+   sticky header nunca deje ver lo que se desplaza por debajo. */
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header),
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header) .em-notes-grade-header-wrap,
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header) .em-notes-grade-filter-trigger {
+  background: color-mix(in srgb, var(--em-notes-column-color) 45%, #09111d 55%) !important;
+}
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header) .em-notes-grade-filter-trigger:hover,
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header) .em-notes-grade-filter-trigger:focus-visible {
+  background: color-mix(in srgb, var(--em-notes-column-color) 55%, #09111d 45%) !important;
+  outline: 2px solid var(--em-notes-column-color) !important;
+  outline-offset: -2px !important;
+}
+.em-notes-sheet thead .em-notes-grade-header:not(.em-notes-subject-summary-header).has-filter .em-notes-grade-filter-trigger {
+  background: color-mix(in srgb, var(--em-notes-column-color) 45%, #09111d 55%) !important;
+  box-shadow: inset 0 4px 0 #fff !important;
 }

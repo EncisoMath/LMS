@@ -1,5 +1,18 @@
-# EncisoMath LMS v0.25.113
+# EncisoMath LMS v0.25.115
 
+## v0.25.115 — Planilla: cabeceras sólidas sin transparencias
+
+- Los porcentajes de color de **Estudiante, fechas de asistencia, Asistencia, Rockstars y Definitiva** ahora se interpretan como intensidad/oscurecimiento del color de la asignatura, no como alpha/transparencia.
+- Todas esas cabeceras son **100% opacas**, evitando que textos, columnas y colores se vean a través durante el desplazamiento de la Planilla.
+- **Actividades, Talleres y Quizzes** conservan 45% de su color configurado + 55% del fondo oscuro, pero ahora la celda completa, wrapper y botón comparten un fondo sólido.
+- Se mantiene el hover/focus y las marcas de filtro sin introducir transparencia.
+
+## v0.25.115 — Planilla: actividades, talleres y quizzes al 45%
+
+- Las cabeceras de **Actividades, Talleres y Quizzes** usan ahora el **45% de su color configurado** y el **55% del fondo oscuro `#09111d`**.
+- Se conserva el resto del comportamiento visual de esas cabeceras: franja de color, filtros, hover/focus y configuración individual.
+- Las reglas especiales de **Estudiante, fechas de asistencia, Asistencia, Rockstars y Definitiva** permanecen como en v0.25.113.
+- No requiere SQL nuevo.
 
 
 ## v0.25.113 — Planilla: cabeceras con color de asignatura
