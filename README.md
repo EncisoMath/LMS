@@ -1,12 +1,23 @@
-# EncisoMath LMS v0.25.116
+# EncisoMath LMS v0.25.117
+
+## v0.25.117 — Planilla: componente ACADEMICO
+
+- Se añade **ACADEMICO** inmediatamente a la izquierda de **ASISTENCIA**, con el mismo lenguaje visual de los componentes resumen.
+- ACADEMICO es el ponderado de Actividades, Talleres y Quizzes habilitados. Sus pesos pasan a ser internos y deben sumar 100% dentro de ACADEMICO.
+- La **DEFINITIVA** se calcula únicamente con tres componentes finales: **ACADEMICO + ASISTENCIA + ROCKSTARS**.
+- Valores iniciales para planillas nuevas: **ACADEMICO 60%**, **ASISTENCIA 20%** y **ROCKSTARS 20%**; los tres continúan siendo configurables.
+- Las configuraciones anteriores se migran lógicamente: la suma que antes ocupaban las notas académicas se convierte en el peso de ACADEMICO y sus proporciones se normalizan internamente, preservando la Definitiva existente cuando la ponderación anterior ya estaba configurada.
+- El Excel para EducaCity exporta **solamente ACADEMICO, ASISTENCIA y ROCKSTARS**.
+- Estudiante > Progreso calcula la Definitiva con el mismo modelo de dos niveles para mantener consistencia con PLANILLA.
+- Se conserva la paginación completa de calificaciones introducida en v0.25.116.
+- No requiere SQL nuevo.
 
 ## v0.25.116 — Planilla: carga completa de calificaciones
 
 - Corrige notas reales que podían aparecer como pendientes/40 en PLANILLA aunque el detalle de la actividad y Progreso del estudiante sí mostraran la calificación correcta.
-- `activity_student_records` ahora se carga por páginas de 500 filas con orden estable, evitando el límite de filas de PostgREST/Supabase al reunir las calificaciones de todos los cursos.
-- Los intentos de quizzes también se cargan por páginas para que la mejor nota y la Definitiva no queden incompletas al crecer el historial.
+- `activity_student_records` se carga por páginas de 500 filas con orden estable para evitar cortes de PostgREST/Supabase.
+- Los intentos de quizzes también se cargan por páginas.
 - No requiere SQL nuevo.
-
 
 ## v0.25.115 — Planilla: cabeceras sólidas sin transparencias
 

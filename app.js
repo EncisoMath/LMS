@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.116';
+  const APP_VERSION = '0.25.117';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4327,7 +4327,7 @@
   function studentProgressDefinitiveSummary(activities, attendance, rockstars) {
     const activityRows = Array.isArray(activities?.rows) ? activities.rows : [];
     const quizzes = studentProgressQuizzes();
-    const baseColumns = [
+    const academicBaseColumns = [
       ...activityRows.map((row) => ({
         key: `activity:${row.activity?.id || ''}`,
         type: 'activity',
@@ -4337,61 +4337,42 @@
         key: `quiz:${quiz.id || ''}`,
         type: 'quiz',
         score: studentProgressQuizScore(quiz)
-      })),
-      { key: 'attendance', type: 'attendance', score: attendance?.score ?? null },
-      { key: 'rockstars', type: 'rockstars', score: rockstars?.score ?? null }
+      }))
     ].filter((column) => column.key && !column.key.endsWith(':'));
 
-    const defaults = notesDefaultWeights(baseColumns.length);
     const config = studentProgressGradebookConfig();
     const savedColumns = config.columns && typeof config.columns === 'object' && !Array.isArray(config.columns) ? config.columns : {};
-    const activeKeys = new Set(baseColumns.map((column) => column.key));
-    const activeSavedKeys = Object.keys(savedColumns).filter((key) => activeKeys.has(key));
-    const hasSavedColumns = activeSavedKeys.length > 0;
-    const columns = baseColumns.map((column, index) => {
-      const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
-      const hasSavedWeight = Object.prototype.hasOwnProperty.call(saved, 'weight');
-      const savedWeight = Number(saved.weight);
-      return {
-        ...column,
-        weight: hasSavedWeight && Number.isFinite(savedWeight)
-          ? Math.max(0, Math.min(100, savedWeight))
-          : (hasSavedColumns ? 0 : defaults[index])
-      };
-    });
+    const weightModel = notesResolveWeightModel(academicBaseColumns, savedColumns);
+    const academicColumns = academicBaseColumns.map((column, index) => ({
+      ...column,
+      weight: Math.max(0, Math.min(100, Number(weightModel.internalWeights[index] || 0)))
+    }));
 
-    const hasWeightedHiddenActivity = Object.entries(savedColumns).some(([key, value]) => (
-      key.startsWith('activity:')
-      && !activeKeys.has(key)
-      && Number(value?.weight || 0) > 0
-    ));
-    const activeWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
-    if (hasWeightedHiddenActivity && activeWeight > 0 && Math.abs(activeWeight - 100) > .001) {
-      const factor = 100 / activeWeight;
-      let accumulated = 0;
-      let lastWeightedIndex = -1;
-      columns.forEach((column, index) => {
-        if (Number(column.weight || 0) > 0) lastWeightedIndex = index;
-      });
-      columns.forEach((column, index) => {
-        if (index === lastWeightedIndex) return;
-        column.weight = Math.round(Number(column.weight || 0) * factor * 10) / 10;
-        accumulated += Number(column.weight || 0);
-      });
-      if (lastWeightedIndex >= 0) {
-        columns[lastWeightedIndex].weight = Math.max(0, Math.round((100 - accumulated) * 10) / 10);
-      }
-    }
+    let academicWeighted = 0;
+    let hasAcademicItems = academicColumns.length > 0;
+    academicColumns.forEach((column) => {
+      const score = Number(column.score);
+      if (!Number.isFinite(score)) return;
+      academicWeighted += Math.max(0, Math.min(100, score)) * (Number(column.weight || 0) / 100);
+    });
+    const academicScore = hasAcademicItems ? Math.max(0, Math.min(100, academicWeighted)) : null;
+
+    const componentColumns = [
+      { key: 'academic', type: 'academic', score: academicScore, weight: weightModel.components.academic },
+      { key: 'attendance', type: 'attendance', score: attendance?.score ?? null, weight: weightModel.components.attendance },
+      { key: 'rockstars', type: 'rockstars', score: rockstars?.score ?? null, weight: weightModel.components.rockstars }
+    ];
 
     let weighted = 0;
-    columns.forEach((column) => {
+    componentColumns.forEach((column) => {
       if (column.score === null || column.score === undefined || !Number.isFinite(Number(column.score))) return;
       const score = Math.max(0, Math.min(100, Number(column.score)));
       weighted += score * (Number(column.weight || 0) / 100);
     });
     return {
       score: Math.max(0, Math.min(100, Math.floor(weighted + 1e-9))),
-      columns,
+      academicScore,
+      columns: [...academicColumns, ...componentColumns],
       hasServerConfig: Object.keys(config).length > 0
     };
   }
@@ -4448,7 +4429,8 @@
     `;
   }
   function studentProgressSummaryCardsHTML(activities, attendance, rockstars, definitive, progressAvailable) {
-    const activityScore = studentProgressWeightedActivityScore(activities, definitive);
+    const academicScore = Number(definitive?.academicScore);
+    const activityScore = Number.isFinite(academicScore) ? academicScore : studentProgressWeightedActivityScore(activities, definitive);
     return `
       <div class="em-progress-summary-grid" aria-label="Resumen de progreso">
         ${studentProgressRingCardHTML({ key: 'grade', title: 'ACTIVIDADES', score: activityScore })}
@@ -4853,6 +4835,107 @@
     return Array.from({ length: total }, (_, index) => base + (index < remainder ? 1 : 0));
   }
 
+  function notesIsAcademicDetailColumn(column) {
+    return column?.type === 'activity' || column?.type === 'quiz';
+  }
+
+  function notesAcademicDetailColumns(columns = []) {
+    return (columns || []).filter(notesIsAcademicDetailColumn);
+  }
+
+  function notesFinalComponentColumns(columns = []) {
+    return (columns || []).filter((column) => ['academic', 'attendance', 'rockstars'].includes(column?.type));
+  }
+
+  function notesResolveWeightModel(academicBaseColumns = [], savedColumns = {}) {
+    const detailColumns = Array.isArray(academicBaseColumns) ? academicBaseColumns : [];
+    const saved = savedColumns && typeof savedColumns === 'object' && !Array.isArray(savedColumns) ? savedColumns : {};
+    const detailKeys = new Set(detailColumns.map((column) => String(column.key || '')).filter(Boolean));
+    const savedAcademic = saved.academic && typeof saved.academic === 'object' ? saved.academic : null;
+    const hasNewModel = Boolean(savedAcademic && Object.prototype.hasOwnProperty.call(savedAcademic, 'weight'));
+    const defaultInternal = notesDefaultWeights(detailColumns.length);
+    const hasAnySavedDetail = detailColumns.some((column) => Object.prototype.hasOwnProperty.call(saved[column.key] || {}, 'weight'));
+    const hiddenWeightedDetail = Object.entries(saved).some(([key, value]) => (
+      (key.startsWith('activity:') || key.startsWith('quiz:'))
+      && !detailKeys.has(key)
+      && Number(value?.weight || 0) > 0
+    ));
+
+    let internalWeights = [];
+    let academicWeight = 60;
+    let attendanceWeight = 20;
+    let rockstarsWeight = 20;
+
+    if (hasNewModel) {
+      internalWeights = detailColumns.map((column, index) => {
+        const row = saved[column.key] && typeof saved[column.key] === 'object' ? saved[column.key] : {};
+        const value = Number(row.weight);
+        if (Object.prototype.hasOwnProperty.call(row, 'weight') && Number.isFinite(value)) return Math.max(0, Math.min(100, value));
+        return hasAnySavedDetail ? 0 : (defaultInternal[index] || 0);
+      });
+      academicWeight = Math.max(0, Math.min(100, Number(savedAcademic.weight ?? 60)));
+      const savedAttendance = Number(saved.attendance?.weight);
+      const savedRockstars = Number(saved.rockstars?.weight);
+      attendanceWeight = Number.isFinite(savedAttendance) ? Math.max(0, Math.min(100, savedAttendance)) : 20;
+      rockstarsWeight = Number.isFinite(savedRockstars) ? Math.max(0, Math.min(100, savedRockstars)) : 20;
+
+      // Si se ocultó/eliminó una actividad que tenía peso, redistribuimos solo
+      // la ponderación interna de ACADEMICO entre los ítems que siguen visibles.
+      const activeInternal = internalWeights.reduce((sum, value) => sum + Number(value || 0), 0);
+      if (hiddenWeightedDetail && activeInternal > 0 && Math.abs(activeInternal - 100) > .001) {
+        const factor = 100 / activeInternal;
+        internalWeights = internalWeights.map((value) => Math.round(Number(value || 0) * factor * 10) / 10);
+        const correction = 100 - internalWeights.reduce((sum, value) => sum + Number(value || 0), 0);
+        let last = -1;
+        internalWeights.forEach((value, index) => { if (Number(value) > 0) last = index; });
+        if (last >= 0) internalWeights[last] = Math.max(0, Math.round((internalWeights[last] + correction) * 10) / 10);
+      }
+    } else {
+      // Compatibilidad automática con planillas anteriores: las actividades y
+      // quizzes antes pesaban directamente sobre la DEFINITIVA. Su suma pasa a
+      // ser el peso de ACADEMICO, y sus proporciones se normalizan dentro de él.
+      const legacyDetailWeights = detailColumns.map((column) => {
+        const row = saved[column.key] && typeof saved[column.key] === 'object' ? saved[column.key] : {};
+        const value = Number(row.weight);
+        return Object.prototype.hasOwnProperty.call(row, 'weight') && Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+      });
+      const legacyAcademicTotal = legacyDetailWeights.reduce((sum, value) => sum + Number(value || 0), 0);
+      const savedAttendance = Number(saved.attendance?.weight);
+      const savedRockstars = Number(saved.rockstars?.weight);
+      const hasLegacyConfig = Object.keys(saved).length > 0;
+
+      if (hasLegacyConfig) {
+        academicWeight = legacyAcademicTotal > 0 ? legacyAcademicTotal : 60;
+        attendanceWeight = Number.isFinite(savedAttendance) ? Math.max(0, Math.min(100, savedAttendance)) : 20;
+        rockstarsWeight = Number.isFinite(savedRockstars) ? Math.max(0, Math.min(100, savedRockstars)) : 20;
+        internalWeights = legacyAcademicTotal > 0
+          ? legacyDetailWeights.map((value) => Math.round((Number(value || 0) / legacyAcademicTotal) * 1000) / 10)
+          : defaultInternal;
+
+        // Replica la vieja protección para actividades ocultas, pero ahora a
+        // nivel de los tres componentes finales.
+        const topTotal = academicWeight + attendanceWeight + rockstarsWeight;
+        if (hiddenWeightedDetail && topTotal > 0 && Math.abs(topTotal - 100) > .001) {
+          const factor = 100 / topTotal;
+          academicWeight = Math.round(academicWeight * factor * 10) / 10;
+          attendanceWeight = Math.round(attendanceWeight * factor * 10) / 10;
+          rockstarsWeight = Math.max(0, Math.round((100 - academicWeight - attendanceWeight) * 10) / 10);
+        }
+      } else {
+        internalWeights = defaultInternal;
+      }
+    }
+
+    return {
+      internalWeights,
+      components: {
+        academic: Number.isFinite(Number(academicWeight)) ? Number(academicWeight) : 60,
+        attendance: Number.isFinite(Number(attendanceWeight)) ? Number(attendanceWeight) : 20,
+        rockstars: Number.isFinite(Number(rockstarsWeight)) ? Number(rockstarsWeight) : 20
+      }
+    };
+  }
+
   function notesViewStateKey(assignmentId = state.assignment?.id || '', period = state.activePeriod) {
     return `${String(assignmentId || '')}|period-${Number(period || 1)}`;
   }
@@ -4912,7 +4995,7 @@
 
   function notesStudentFinalScore(student, columns, context) {
     let weighted = 0;
-    (columns || []).forEach((column) => {
+    notesFinalComponentColumns(columns).forEach((column) => {
       const cell = notesCellScore(column, student, context);
       if (cell.score === null || cell.score === undefined || !Number.isFinite(Number(cell.score))) return;
       const score = Math.max(0, Math.min(100, Number(cell.score)));
@@ -5029,7 +5112,7 @@
     const period = Number(state.activePeriod || 1);
     const activities = getNotesActivities();
     const quizzes = getNotesQuizzes();
-    const baseColumns = [
+    const academicBaseColumns = [
       ...activities.map((activity, index) => ({
         key: `activity:${activity.id}`,
         type: 'activity',
@@ -5045,68 +5128,41 @@
         title: quiz.title || `Quiz ${index + 1}`,
         defaultCode: `Q${index + 1}`,
         defaultColor: NOTES_COLUMN_COLORS[(activities.length + index) % NOTES_COLUMN_COLORS.length]
-      })),
-      {
-        key: 'attendance',
-        type: 'attendance',
-        title: 'Asistencia',
-        defaultCode: 'ASI',
-        defaultColor: '#24b49a'
-      },
-      {
-        key: 'rockstars',
-        type: 'rockstars',
-        title: 'Rockstars',
-        defaultCode: 'RKS',
-        defaultColor: '#EBB513'
-      }
+      }))
     ];
-    const defaults = notesDefaultWeights(baseColumns.length);
     const root = getNotesConfigStore()[notesConfigKey(assignmentId, period)] || {};
     const savedColumns = root.columns && typeof root.columns === 'object' ? root.columns : {};
-    const activeKeys = new Set(baseColumns.map((column) => column.key));
-    const activeSavedKeys = Object.keys(savedColumns).filter((key) => activeKeys.has(key));
-    const hasSavedColumns = activeSavedKeys.length > 0;
-    const columns = baseColumns.map((column, index) => {
+    const weightModel = notesResolveWeightModel(academicBaseColumns, savedColumns);
+
+    const academicColumns = academicBaseColumns.map((column, index) => {
       const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
-      const hasSavedWeight = Object.prototype.hasOwnProperty.call(saved, 'weight');
-      const savedWeight = Number(saved.weight);
       return {
         ...column,
         code: String(saved.code || column.defaultCode).trim().toUpperCase().slice(0, 8),
         color: /^#[0-9a-f]{6}$/i.test(String(saved.color || '')) ? saved.color : column.defaultColor,
-        weight: hasSavedWeight && Number.isFinite(savedWeight) ? Math.max(0, Math.min(100, savedWeight)) : (hasSavedColumns ? 0 : defaults[index]),
+        weight: Math.max(0, Math.min(100, Number(weightModel.internalWeights[index] || 0))),
+        target: null
+      };
+    });
+
+    const summaryBaseColumns = [
+      { key: 'academic', type: 'academic', title: 'Académico', defaultCode: 'ACA', defaultColor: '#1368ce', weight: weightModel.components.academic },
+      { key: 'attendance', type: 'attendance', title: 'Asistencia', defaultCode: 'ASI', defaultColor: '#24b49a', weight: weightModel.components.attendance },
+      { key: 'rockstars', type: 'rockstars', title: 'Rockstars', defaultCode: 'RKS', defaultColor: '#EBB513', weight: weightModel.components.rockstars }
+    ];
+    const summaryColumns = summaryBaseColumns.map((column) => {
+      const saved = savedColumns[column.key] && typeof savedColumns[column.key] === 'object' ? savedColumns[column.key] : {};
+      return {
+        ...column,
+        code: String(saved.code || column.defaultCode).trim().toUpperCase().slice(0, 8),
+        color: /^#[0-9a-f]{6}$/i.test(String(saved.color || '')) ? saved.color : column.defaultColor,
+        weight: Math.max(0, Math.min(100, Number(column.weight || 0))),
         target: column.type === 'rockstars' ? Math.max(1, Number(saved.target || 15)) : null
       };
     });
 
-    // Compatibilidad con planillas guardadas antes de v0.25.084: si una
-    // actividad oculta había quedado almacenada como columna con peso, ese
-    // porcentaje ya no debe reservarse. Conservamos la proporción configurada
-    // entre las columnas visibles y la normalizamos nuevamente a 100%.
-    const hasWeightedHiddenActivity = Object.entries(savedColumns).some(([key, value]) => (
-      key.startsWith('activity:')
-      && !activeKeys.has(key)
-      && Number(value?.weight || 0) > 0
-    ));
-    const activeWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
-    if (hasWeightedHiddenActivity && activeWeight > 0 && Math.abs(activeWeight - 100) > .001) {
-      const factor = 100 / activeWeight;
-      let accumulated = 0;
-      let lastWeightedIndex = -1;
-      columns.forEach((column, index) => {
-        if (Number(column.weight || 0) > 0) lastWeightedIndex = index;
-      });
-      columns.forEach((column, index) => {
-        if (index === lastWeightedIndex) return;
-        column.weight = Math.round(Number(column.weight || 0) * factor * 10) / 10;
-        accumulated += Number(column.weight || 0);
-      });
-      if (lastWeightedIndex >= 0) {
-        columns[lastWeightedIndex].weight = Math.max(0, Math.round((100 - accumulated) * 10) / 10);
-      }
-    }
-    return columns;
+    // ACADEMICO queda siempre inmediatamente a la izquierda de ASISTENCIA.
+    return [...academicColumns, ...summaryColumns];
   }
 
   function saveNotesColumnConfig(columnKey, values) {
@@ -5535,6 +5591,26 @@
     });
   }
 
+  function notesAcademicGrade(student, context) {
+    const columns = Array.isArray(context?.academicColumns) ? context.academicColumns : [];
+    if (!columns.length) return { score: null, pending: true, configuredWeight: 0, itemCount: 0 };
+    let weighted = 0;
+    let pending = false;
+    columns.forEach((column) => {
+      const cell = notesCellScore(column, student, context);
+      const weight = Math.max(0, Math.min(100, Number(column.weight || 0)));
+      if (cell.pending) pending = true;
+      if (cell.score === null || cell.score === undefined || !Number.isFinite(Number(cell.score))) return;
+      weighted += Math.max(0, Math.min(100, Number(cell.score))) * (weight / 100);
+    });
+    return {
+      score: Math.max(0, Math.min(100, weighted)),
+      pending,
+      configuredWeight: columns.reduce((sum, column) => sum + Number(column.weight || 0), 0),
+      itemCount: columns.length
+    };
+  }
+
   function notesRockstarGrade(studentCode, column, attendanceSummary) {
     const target = Math.max(1, Number(column.target || 15));
     const points = getRockstarPoints(state.assignment?.id || '', studentCode, state.activePeriod);
@@ -5560,6 +5636,16 @@
         score: record ? Number(record.score ?? 0) : null,
         pending: !record,
         title: record ? `Mejor intento: ${Number(record.score ?? 0).toFixed(1)}/100` : 'Quiz pendiente o sin intento enviado'
+      };
+    }
+    if (column.type === 'academic') {
+      const academic = notesAcademicGrade(student, context);
+      return {
+        score: academic.score,
+        pending: academic.score === null,
+        title: academic.itemCount
+          ? `Ponderado académico · ${academic.itemCount} componente${academic.itemCount === 1 ? '' : 's'} · pesos internos ${Math.round(academic.configuredWeight * 10) / 10}%${academic.pending ? ' · contiene notas pendientes' : ''}`
+          : 'Sin actividades, talleres o quizzes habilitados en este periodo'
       };
     }
     if (column.type === 'attendance') {
@@ -5836,7 +5922,8 @@
     const context = {
       activityGrades: notesActivityGradeMap(assignment.id),
       quizGrades: notesQuizGradeMap(assignment.id),
-      attendanceByStudent
+      attendanceByStudent,
+      academicColumns: notesAcademicDetailColumns(columns)
     };
     const originalText = button?.textContent || 'Descargar Excel listo para EducaCity';
     if (button) {
@@ -5844,7 +5931,8 @@
       button.textContent = 'Preparando Excel…';
     }
     try {
-      const workbook = await createEducaCityWorkbook(columns, students, context);
+      const exportColumns = notesFinalComponentColumns(columns);
+      const workbook = await createEducaCityWorkbook(exportColumns, students, context);
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = URL.createObjectURL(blob);
@@ -5885,7 +5973,7 @@
         <div class="em-act-content em-notes-hero-content">
           <span class="em-act-eyebrow">${escapeHTML(assignment.subject || 'Asignatura')} • ${escapeHTML(emRsGetAssignmentGradeCourse(assignment))}</span>
           <h1 class="em-act-title">PLANILLA</h1>
-          <p class="em-act-subtitle">Actividades, quizzes, asistencia y Rockstars.</p>
+          <p class="em-act-subtitle">Académico, asistencia y Rockstars.</p>
         </div>
       </section>
     `;
@@ -5909,9 +5997,11 @@
     const view = getNotesViewState();
     const activeFilter = Boolean(view.gradeFilters?.[column.key]);
     const activeSort = view.sort?.kind === 'grade' && view.sort?.key === column.key;
-    const subjectHeaderClass = column.type === 'attendance'
-      ? 'em-notes-subject-summary-header is-attendance-summary'
-      : (column.type === 'rockstars' ? 'em-notes-subject-summary-header is-rockstars-summary' : '');
+    const subjectHeaderClass = column.type === 'academic'
+      ? 'em-notes-subject-summary-header is-academic-summary'
+      : (column.type === 'attendance'
+        ? 'em-notes-subject-summary-header is-attendance-summary'
+        : (column.type === 'rockstars' ? 'em-notes-subject-summary-header is-rockstars-summary' : ''));
     return `
       <th class="em-notes-grade-header ${subjectHeaderClass} ${activeFilter || activeSort ? 'has-filter' : ''}" style="--em-notes-column-color:${escapeAttr(column.color)}">
         <div class="em-notes-grade-header-wrap">
@@ -6219,7 +6309,8 @@
     const context = {
       activityGrades: notesActivityGradeMap(assignment.id),
       quizGrades: notesQuizGradeMap(assignment.id),
-      attendanceByStudent
+      attendanceByStudent,
+      academicColumns: notesAcademicDetailColumns(columns)
     };
     const filtered = notesApplyViewFilters(students, columns, sessions, context);
     body.innerHTML = filtered.length
@@ -6252,11 +6343,12 @@
     const context = {
       activityGrades: notesActivityGradeMap(assignment.id),
       quizGrades: notesQuizGradeMap(assignment.id),
-      attendanceByStudent
+      attendanceByStudent,
+      academicColumns: notesAcademicDetailColumns(columns)
     };
     const view = getNotesViewState();
     const visibleStudents = notesApplyViewFilters(students, columns, sessions, context);
-    const totalWeight = columns.reduce((sum, column) => sum + Number(column.weight || 0), 0);
+    const totalWeight = notesFinalComponentColumns(columns).reduce((sum, column) => sum + Number(column.weight || 0), 0);
     const weightStatus = Math.abs(totalWeight - 100) < .001 ? 'is-complete' : 'is-incomplete';
     const studentColumnWidth = notesStudentColumnWidth(students);
     const studentFilterActive = Array.isArray(view.selectedStudents) || view.sort?.kind === 'student' && view.sort?.direction === 'desc';
@@ -6267,7 +6359,7 @@
         <div>
           <p class="section-kicker">Periodo ${Number(state.activePeriod || 1)}</p>
           <h2>Planilla de calificaciones</h2>
-          <span>${students.length} estudiantes · ${columns.length} componentes · ${sessions.length} registros de clase</span>
+          <span>${students.length} estudiantes · ${notesAcademicDetailColumns(columns).length} notas académicas · ${sessions.length} registros de clase</span>
         </div>
         <div class="em-notes-toolbar-actions">
           <button class="em-notes-excel-btn" id="downloadEducaCityExcelBtn" type="button">Descargar Excel listo para EducaCity</button>
@@ -6275,7 +6367,7 @@
             <span>Peso configurado</span>
             <strong>${Math.round(totalWeight * 10) / 10}%</strong>
             <i><b style="width:${Math.max(0, Math.min(100, totalWeight))}%"></b></i>
-            <small>${weightStatus === 'is-complete' ? 'La ponderación suma 100%.' : 'Usa ⚙ en cada nota para ajustar la ponderación a 100%.'}</small>
+            <small>${weightStatus === 'is-complete' ? 'Académico + Asistencia + Rockstars suman 100%.' : 'Ajusta Académico, Asistencia y Rockstars hasta completar 100%.'}</small>
           </div>
         </div>
       </section>
@@ -6376,7 +6468,13 @@
     const columns = notesColumnDefinitions();
     const column = columns.find((item) => item.key === columnKey);
     if (!column) return;
-    const currentTotal = columns.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    const weightScope = notesIsAcademicDetailColumn(column) ? notesAcademicDetailColumns(columns) : notesFinalComponentColumns(columns);
+    const currentTotal = weightScope.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    const weightLabel = notesIsAcademicDetailColumn(column) ? 'Peso dentro de Académico' : 'Peso sobre la Definitiva';
+    const weightSummaryLabel = notesIsAcademicDetailColumn(column) ? 'Ponderación interna de Académico' : 'Ponderación final';
+    const weightSummaryHelp = notesIsAcademicDetailColumn(column)
+      ? 'Las actividades, talleres y quizzes deben sumar 100% dentro de Académico.'
+      : 'Académico, Asistencia y Rockstars deben sumar 100% para calcular la Definitiva.';
     openModal(`
       <section class="modal-card em-activity-create-modal em-notes-column-modal" role="dialog" aria-modal="true" aria-labelledby="notesColumnModalTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -6389,7 +6487,7 @@
             <div class="em-notes-column-preview" id="notesColumnPreview" style="--em-notes-column-color:${escapeAttr(column.color)}"><span>${escapeHTML(column.code)}</span><strong>${escapeHTML(column.title)}</strong><small>${Number(column.weight)}%</small></div>
             <div class="em-notes-config-grid">
               <label><span>Código</span><input class="input" id="notesColumnCode" maxlength="8" value="${escapeAttr(column.code)}" required /></label>
-              <label><span>Peso sobre 100%</span><input class="input" id="notesColumnWeight" type="number" min="0" max="100" step="0.5" value="${Number(column.weight)}" required /></label>
+              <label><span>${escapeHTML(weightLabel)}</span><input class="input" id="notesColumnWeight" type="number" min="0" max="100" step="0.5" value="${Number(column.weight)}" required /></label>
             </div>
           </section>
           <section class="em-activity-form-block">
@@ -6405,7 +6503,7 @@
               <label><span>Meta de puntos Rockstar</span><input class="input" id="notesRockstarTarget" type="number" min="1" max="999" step="1" value="${Number(column.target || 15)}" required /></label>
             </section>
           ` : ''}
-          <div class="em-notes-weight-preview ${Math.abs(currentTotal - 100) < .001 ? 'is-complete' : ''}" id="notesWeightPreview"><span>Total de la ponderación</span><strong>${Math.round(currentTotal * 10) / 10}%</strong><small>El total ideal es 100%.</small></div>
+          <div class="em-notes-weight-preview ${Math.abs(currentTotal - 100) < .001 ? 'is-complete' : ''}" id="notesWeightPreview"><span>${escapeHTML(weightSummaryLabel)}</span><strong>${Math.round(currentTotal * 10) / 10}%</strong><small>${escapeHTML(weightSummaryHelp)}</small></div>
           <p class="em-class-create-error" id="notesColumnError" role="alert"></p>
           <div class="em-activity-modal-actions"><button class="ghost-btn" type="button" data-close-modal>Cancelar</button><button class="primary-btn" type="submit">Guardar configuración</button></div>
         </form>
@@ -6421,7 +6519,8 @@
     const preview = document.getElementById('notesColumnPreview');
     const weightPreview = document.getElementById('notesWeightPreview');
     const originalWeight = Number(column.weight || 0);
-    const currentTotal = columns.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    const weightScope = notesIsAcademicDetailColumn(column) ? notesAcademicDetailColumns(columns) : notesFinalComponentColumns(columns);
+    const currentTotal = weightScope.reduce((sum, item) => sum + Number(item.weight || 0), 0);
 
     const refresh = () => {
       const code = String(codeInput?.value || column.code).trim().toUpperCase().slice(0, 8);
