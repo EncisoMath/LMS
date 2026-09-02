@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.115
+# EncisoMath LMS v0.25.116
+
+## v0.25.116 — Planilla: carga completa de calificaciones
+
+- Corrige notas reales que podían aparecer como pendientes/40 en PLANILLA aunque el detalle de la actividad y Progreso del estudiante sí mostraran la calificación correcta.
+- `activity_student_records` ahora se carga por páginas de 500 filas con orden estable, evitando el límite de filas de PostgREST/Supabase al reunir las calificaciones de todos los cursos.
+- Los intentos de quizzes también se cargan por páginas para que la mejor nota y la Definitiva no queden incompletas al crecer el historial.
+- No requiere SQL nuevo.
+
 
 ## v0.25.115 — Planilla: cabeceras sólidas sin transparencias
 

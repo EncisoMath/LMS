@@ -939,6 +939,73 @@
     return { data: rows, error: null };
   }
 
+  async function loadAllActivityProgressRows(supabaseClient, assignmentIds = []) {
+    const safeAssignmentIds = [...new Set((assignmentIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
+    if (!safeAssignmentIds.length) return { data: [], error: null };
+
+    // La PLANILLA necesita todos los activity_student_records del docente.
+    // Una consulta única puede quedar truncada por el límite de filas de
+    // PostgREST (habitualmente 1000), haciendo que una nota existente parezca
+    // pendiente/40 aunque el detalle de la actividad sí la encuentre.
+    // Cargamos en páginas con orden estable por id para no saltar ni repetir
+    // registros entre páginas.
+    const pageSize = 500;
+    const rowsById = new Map();
+    let from = 0;
+
+    while (true) {
+      const result = await supabaseClient
+        .from('activity_student_records')
+        .select('id,activity_id,assignment_id,student_id,score,graded_at,grading_group_id,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
+        .in('assignment_id', safeAssignmentIds)
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (result.error) return result;
+      const page = Array.isArray(result.data) ? result.data : [];
+      page.forEach((row) => {
+        const key = String(row?.id || `${row?.activity_id || ''}|${row?.assignment_id || ''}|${row?.student_id || ''}`);
+        rowsById.set(key, row);
+      });
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { data: [...rowsById.values()], error: null };
+  }
+
+  async function loadAllQuizAttemptRows(supabaseClient, quizAssignmentIds = []) {
+    const safeQuizAssignmentIds = [...new Set((quizAssignmentIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
+    if (!safeQuizAssignmentIds.length) return { data: [], error: null };
+
+    // La Definitiva también depende de los quizzes. Los intentos pueden superar
+    // el mismo límite de PostgREST, así que se paginan por id para que la mejor
+    // nota de cada estudiante se calcule sobre el conjunto completo.
+    const pageSize = 500;
+    const rowsById = new Map();
+    let from = 0;
+
+    while (true) {
+      const result = await supabaseClient
+        .from('quiz_attempts')
+        .select('id,quiz_assignment_id,student_id,status,score,max_score,submitted_at,started_at')
+        .in('quiz_assignment_id', safeQuizAssignmentIds)
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (result.error) return result;
+      const page = Array.isArray(result.data) ? result.data : [];
+      page.forEach((row) => {
+        const key = String(row?.id || `${row?.quiz_assignment_id || ''}|${row?.student_id || ''}|${row?.submitted_at || row?.started_at || ''}`);
+        rowsById.set(key, row);
+      });
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { data: [...rowsById.values()], error: null };
+  }
+
   async function loadAllRockstarRows(supabaseClient, assignmentIds = []) {
     const safeAssignmentIds = [...new Set((assignmentIds || []).map((value) => String(value || '').trim()).filter(Boolean))];
     if (!safeAssignmentIds.length) return { data: [], error: null };
@@ -1416,10 +1483,7 @@
           .from('activities')
           .select('id,owner_id,title,lesson_id,period,starts_at,due_at,content_type,content_payload,review_type,review_payload,rubric,status,created_at')
           .eq('owner_id', activeSession.user.id), 'Biblioteca de actividades cargada...'),
-        trackAcademicQuery(supabaseClient
-          .from('activity_student_records')
-          .select('activity_id,assignment_id,student_id,score,graded_at,grading_group_id,submission_file,delivery_events:activity_delivery_events(status,occurred_at)')
-          .in('assignment_id', assignmentIds), 'Avances de actividades cargados...'),
+        trackAcademicQuery(loadAllActivityProgressRows(supabaseClient, assignmentIds), 'Avances de actividades cargados...'),
         trackAcademicQuery(supabaseClient
           .from('quiz_assignments')
           .select('id,quiz_id,assignment_id,status,available_from,due_at,max_attempts,settings,quiz:quizzes(id,owner_id,title,emoji,mode,period,subject_name,area,status,payload)')
@@ -1473,10 +1537,7 @@
 
       const quizAssignmentIds = quizAssignmentRows.map((row) => row.id).filter(Boolean);
       if (quizAssignmentIds.length) {
-        const quizAttemptsResult = await supabaseClient
-          .from('quiz_attempts')
-          .select('id,quiz_assignment_id,student_id,status,score,max_score,submitted_at,started_at')
-          .in('quiz_assignment_id', quizAssignmentIds);
+        const quizAttemptsResult = await loadAllQuizAttemptRows(supabaseClient, quizAssignmentIds);
         if (quizAttemptsResult.error) {
           console.warn('No se pudieron cargar las notas de quizzes para la planilla.', quizAttemptsResult.error);
         } else {
