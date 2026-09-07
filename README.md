@@ -1,4 +1,12 @@
-# EncisoMath LMS v0.25.117
+# EncisoMath LMS v0.25.118
+
+## v0.25.118 — Rockstar: escala desde 60 y penalización doble
+
+- La nota Rockstar parte de **60 cuando el estudiante tiene 0 puntos**.
+- Los puntos positivos reparten los 40 puntos restantes hasta llegar a 100 al cumplir la meta del periodo.
+- Los puntos negativos descuentan el **doble** de lo que suma un punto positivo, con límites de 0 a 100.
+- PLANILLA y Estudiante > Progreso comparten exactamente la misma fórmula para evitar diferencias en Rockstar y en la Definitiva.
+
 
 ## v0.25.117 — Planilla: componente ACADEMICO
 

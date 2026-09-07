@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.117';
+  const APP_VERSION = '0.25.118';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -4286,6 +4286,16 @@
     const direct = Number(targets?.[`${assignmentId}|period-${period}`]);
     return Number.isFinite(direct) && direct > 0 ? direct : 15;
   }
+  function rockstarGradeFromPoints(points, target) {
+    const safeTarget = Math.max(1, Number(target || 15));
+    const safePoints = Number.isFinite(Number(points)) ? Number(points) : 0;
+    const positivePointValue = 40 / safeTarget;
+    const rawScore = safePoints >= 0
+      ? 60 + (safePoints * positivePointValue)
+      : 60 + (safePoints * positivePointValue * 2);
+    return Math.max(0, Math.min(100, Math.round(rawScore)));
+  }
+
   function studentProgressRockstarSummary(sessions = studentProgressAttendanceSessions(), attendanceSummary = studentProgressAttendanceSummary(sessions)) {
     const assignmentId = String(state.assignment?.id || '');
     const studentCode = String(state.user?.id || '');
@@ -4300,8 +4310,7 @@
       byDate.set(date, (byDate.get(date) || 0) + Number(entry.delta || 0));
     });
     const points = events.reduce((sum, entry) => sum + Number(entry.delta || 0), 0);
-    const proportional = Math.max(0, Math.min(100, Math.round((points / Math.max(1, target)) * 100)));
-    const score = attendanceSummary.present > 0 ? Math.max(60, proportional) : proportional;
+    const score = rockstarGradeFromPoints(points, target);
     const rows = sessions.map((session) => ({ ...session, points: byDate.get(session.date) || 0 }));
     return { points, target, score, rows };
   }
@@ -5614,8 +5623,7 @@
   function notesRockstarGrade(studentCode, column, attendanceSummary) {
     const target = Math.max(1, Number(column.target || 15));
     const points = getRockstarPoints(state.assignment?.id || '', studentCode, state.activePeriod);
-    const proportional = Math.max(0, Math.min(100, Math.round((points / target) * 100)));
-    const score = attendanceSummary.present > 0 ? Math.max(60, proportional) : proportional;
+    const score = rockstarGradeFromPoints(points, target);
     return { score, points, target };
   }
 
