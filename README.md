@@ -1,6 +1,6 @@
-# EncisoMath LMS v0.25.121
+# EncisoMath LMS v0.25.122
 
-## v0.25.121 — Corrección de guardado individual y grupal
+## v0.25.122 — Corrección de guardado individual y grupal
 
 - Corrige el botón **Enviar calificación** después de elegir **Modificar individualmente** o **Modificar grupalmente**.
 - El modo de edición ahora se inicializa también dentro del controlador real del formulario, evitando el error de JavaScript que detenía el guardado antes de llegar a Supabase.

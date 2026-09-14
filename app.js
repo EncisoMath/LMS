@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.121';
+  const APP_VERSION = '0.25.122';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -5249,18 +5249,22 @@
     const rows = (columns || []).filter((column) => ['academic', 'attendance', 'rockstars'].includes(column.type));
     return `
       <section class="modal-card em-activity-create-modal em-notes-column-modal em-notes-educacity-modal" role="dialog" aria-modal="true" aria-labelledby="notesEducaCityModalTitle">
-        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
-        <p class="section-kicker">Exportar a EducaCity</p>
-        <h2 id="notesEducaCityModalTitle">Códigos de los ítems</h2>
-        <p class="em-notes-educacity-copy">Confirma o modifica los códigos que llevará el Excel. Los cambios también quedarán guardados en la configuración de la PLANILLA.</p>
+        <button class="modal-close em-notes-educacity-close" data-close-modal aria-label="Cerrar">×</button>
+        <header class="em-notes-educacity-head">
+          <p class="section-kicker">Exportar a EducaCity</p>
+          <h2 id="notesEducaCityModalTitle">Configura los códigos del Excel</h2>
+          <p class="em-notes-educacity-copy">Ajusta aquí los códigos de <strong>Académico</strong>, <strong>Asistencia</strong> y <strong>Rockstars</strong>. Los cambios también quedarán guardados en la configuración de la PLANILLA.</p>
+        </header>
         <form id="notesEducaCityCodeForm" class="em-notes-educacity-form">
           <div class="em-notes-educacity-code-list">
             ${rows.map((column) => `
               <label class="em-notes-educacity-code-row" style="--em-notes-export-color:${escapeAttr(column.color)}">
                 <span class="em-notes-educacity-item">
-                  <i aria-hidden="true"></i>
-                  <strong>${escapeHTML(column.title)}</strong>
-                  <small>${Number(column.weight || 0)}% de la definitiva</small>
+                  <span class="em-notes-educacity-badge" aria-hidden="true">${escapeHTML(String(column.code || column.title || '').slice(0,3).toUpperCase())}</span>
+                  <span class="em-notes-educacity-meta">
+                    <strong>${escapeHTML(column.title)}</strong>
+                    <small>${Number(column.weight || 0)}% de la definitiva</small>
+                  </span>
                 </span>
                 <span class="em-notes-educacity-code-field">
                   <small>Código</small>
@@ -5270,10 +5274,16 @@
             `).join('')}
           </div>
           <p class="em-class-create-error" id="notesEducaCityCodeError" role="alert"></p>
-          <div class="em-activity-modal-actions em-notes-educacity-actions">
-            <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
-            <button class="em-notes-educacity-download-btn" id="confirmEducaCityDownloadBtn" type="submit">Descargar Excel</button>
-          </div>
+          <footer class="em-notes-educacity-footer">
+            <div class="em-notes-educacity-tip">El archivo se descargará listo para importar en EducaCity.</div>
+            <div class="em-activity-modal-actions em-notes-educacity-actions">
+              <button class="ghost-btn em-notes-educacity-cancel" type="button" data-close-modal>Cancelar</button>
+              <button class="em-notes-educacity-download-btn" id="confirmEducaCityDownloadBtn" type="submit">
+                <span aria-hidden="true">⬇</span>
+                <span>Descargar Excel</span>
+              </button>
+            </div>
+          </footer>
         </form>
       </section>
     `;
