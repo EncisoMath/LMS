@@ -1,4 +1,13 @@
-# EncisoMath LMS v0.25.123
+# EncisoMath LMS v0.25.124
+
+## v0.25.124 — Escritorio ancho responsive
+
+- En pantallas de escritorio desde 1200 px, el shell principal puede expandirse hasta **1680 px** dejando márgenes laterales razonables.
+- `screen`, `topbar` y `bottom-nav` comparten exactamente el mismo ancho para mantener alineación.
+- El home docente aprovecha el ancho con hasta **4 tarjetas de asignatura por fila**.
+- Móvil y tablet conservan la geometría previa; el cambio se activa únicamente en escritorio amplio.
+- Se entrega un ZIP de recuperación independiente para volver a **v0.25.123** si se desea.
+
 
 ## v0.25.123 — Modal Individual / Grupal con tema del curso
 

@@ -41786,7 +41786,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.123 - MODAL INDIVIDUAL / GRUPAL PRO
+   ENCISOMATH v0.25.124 - MODAL INDIVIDUAL / GRUPAL PRO
    ========================================================= */
 .em-grade-scope-modal {
   position: relative;
@@ -41940,4 +41940,51 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 @media (max-width: 520px) {
   .em-grade-scope-choice { min-height: 92px; }
+}
+
+
+/* =========================================================
+   ENCISOMATH v0.25.124 - DESKTOP WIDE RESPONSIVE SHELL
+   Expande la app en monitores grandes sin alterar móvil/tablet.
+   ========================================================= */
+@media (min-width: 1200px) {
+  :root {
+    --em-desktop-shell-width: min(calc(100vw - 72px), 1680px);
+  }
+
+  html body {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  html body .screen {
+    width: var(--em-desktop-shell-width) !important;
+    max-width: none !important;
+  }
+
+  html body .topbar,
+  html body .bottom-nav,
+  html body .topbar.fixed-lock,
+  html body .subject-screen .topbar,
+  html body .class-screen .topbar {
+    width: var(--em-desktop-shell-width) !important;
+    max-width: none !important;
+  }
+
+  html body .home-screen .profile-info,
+  html body .home-screen .section {
+    padding-left: clamp(28px, 2.4vw, 42px);
+    padding-right: clamp(28px, 2.4vw, 42px);
+  }
+
+  html body .em-sub-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1780px) {
+  html body .em-sub-grid {
+    gap: 14px;
+  }
 }
