@@ -41784,3 +41784,160 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-notes-educacity-code-field .input { height: 44px; }
   .em-notes-educacity-actions { grid-template-columns: 1fr; }
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.123 - MODAL INDIVIDUAL / GRUPAL PRO
+   ========================================================= */
+.em-grade-scope-modal {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--em-current-subject-color, #1368ce) 68%, rgba(255,255,255,.10)) !important;
+  background:
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--em-current-subject-color, #1368ce) 18%, transparent), transparent 31%),
+    radial-gradient(circle at 10% 100%, color-mix(in srgb, var(--em-current-subject-color, #1368ce) 10%, transparent), transparent 38%),
+    linear-gradient(180deg, #09111d 0%, #05080e 100%) !important;
+  box-shadow:
+    0 28px 90px rgba(0,0,0,.62),
+    0 0 34px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 34%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 16%, transparent) inset !important;
+}
+.em-grade-scope-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--em-current-subject-color, #1368ce) 18%,
+    color-mix(in srgb, var(--em-current-subject-color, #1368ce) 62%, #fff 38%) 50%,
+    var(--em-current-subject-color, #1368ce) 82%,
+    transparent 100%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 50%, transparent);
+  pointer-events: none;
+}
+.em-grade-scope-modal .section-kicker {
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 82%, #fff 18%) !important;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 30%, transparent);
+}
+.em-grade-scope-modal #activityGradeScopeTitle {
+  color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 72%, #fff 28%) !important;
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 28%, transparent),
+    0 0 24px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 16%, transparent);
+}
+.em-grade-scope-copy {
+  color: #c0cad8 !important;
+}
+.em-grade-scope-copy strong {
+  color: #fff !important;
+}
+.em-grade-scope-actions {
+  gap: 11px !important;
+}
+.em-grade-scope-choice {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 126px;
+  padding: 15px;
+  border-radius: 4px !important;
+  color: #fff !important;
+  transform: translateZ(0);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+}
+.em-grade-scope-choice::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  opacity: 1;
+}
+.em-grade-scope-choice::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -28%;
+  top: -90%;
+  width: 44%;
+  height: 270%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+  transition: transform .45s cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.em-grade-scope-choice:hover,
+.em-grade-scope-choice:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+  filter: brightness(1.05);
+}
+.em-grade-scope-choice:hover::after,
+.em-grade-scope-choice:focus-visible::after {
+  transform: translateX(315%) rotate(18deg);
+}
+.em-grade-scope-choice > span {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.10) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 8px 18px rgba(0,0,0,.18);
+  font-size: 1.35rem;
+}
+.em-grade-scope-choice strong {
+  color: #fff !important;
+  font-size: .82rem;
+  font-weight: 950;
+  line-height: 1.2;
+  text-shadow: 0 1px 8px rgba(0,0,0,.22);
+}
+.em-grade-scope-choice small {
+  color: rgba(255,255,255,.84) !important;
+  font-size: .66rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+.em-grade-scope-choice.is-individual {
+  border-color: #4198ff !important;
+  background: linear-gradient(145deg, #1268d3 0%, #0b4da7 58%, #083779 100%) !important;
+  box-shadow:
+    0 13px 28px rgba(19,104,206,.22),
+    inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+.em-grade-scope-choice.is-individual::before {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(126,194,255,.22), transparent 28%),
+    linear-gradient(145deg, rgba(255,255,255,.045), transparent 55%);
+}
+.em-grade-scope-choice.is-individual:hover,
+.em-grade-scope-choice.is-individual:focus-visible {
+  border-color: #8bc7ff !important;
+  box-shadow:
+    0 16px 36px rgba(19,104,206,.34),
+    0 0 0 2px rgba(65,152,255,.16),
+    inset 0 1px 0 rgba(255,255,255,.16) !important;
+}
+.em-grade-scope-choice.is-group {
+  border-color: #57dc83 !important;
+  background: linear-gradient(145deg, #1ea957 0%, #167f43 58%, #0e5930 100%) !important;
+  box-shadow:
+    0 13px 28px rgba(30,169,87,.22),
+    inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+.em-grade-scope-choice.is-group::before {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(147,255,184,.20), transparent 28%),
+    linear-gradient(145deg, rgba(255,255,255,.045), transparent 55%);
+}
+.em-grade-scope-choice.is-group:hover,
+.em-grade-scope-choice.is-group:focus-visible {
+  border-color: #98f0b6 !important;
+  box-shadow:
+    0 16px 36px rgba(30,169,87,.34),
+    0 0 0 2px rgba(87,220,131,.16),
+    inset 0 1px 0 rgba(255,255,255,.16) !important;
+}
+@media (max-width: 520px) {
+  .em-grade-scope-choice { min-height: 92px; }
+}

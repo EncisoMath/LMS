@@ -1,6 +1,13 @@
-# EncisoMath LMS v0.25.122
+# EncisoMath LMS v0.25.123
 
-## v0.25.122 — Corrección de guardado individual y grupal
+## v0.25.123 — Modal Individual / Grupal con tema del curso
+
+- El modal de alcance de calificación toma el color activo de la asignatura para título, kicker, borde y resplandor exterior.
+- **Modificar individualmente** usa una tarjeta azul de alto contraste con texto blanco.
+- **Modificar grupalmente** usa una tarjeta verde de alto contraste con texto blanco.
+- Se mejoran iconos, profundidad, hover/focus y contraste sin tocar la lógica de guardado.
+
+## v0.25.123 — Corrección de guardado individual y grupal
 
 - Corrige el botón **Enviar calificación** después de elegir **Modificar individualmente** o **Modificar grupalmente**.
 - El modo de edición ahora se inicializa también dentro del controlador real del formulario, evitando el error de JavaScript que detenía el guardado antes de llegar a Supabase.
