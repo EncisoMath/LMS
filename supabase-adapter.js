@@ -173,6 +173,115 @@
   const STUDENT_SUBMISSIONS_BUCKET = 'student-submissions';
   const STUDENT_SUBMISSIONS_SQL = 'SUPABASE_STUDENT_SUBMISSIONS_SQL_ONLY_v0.25.077.sql';
   const STUDENT_SUBMISSION_SIGNED_URL_SECONDS = 60 * 60;
+  const AVATARS_BUCKET = 'avatars';
+  const AVATARS_SQL = 'SUPABASE_PROFILE_AVATARS_v0.25.126.sql';
+
+  function resolveProfilePhotoUrl(value, fallback = './assets/default-avatar.svg') {
+    const raw = String(value || '').trim();
+    if (!raw) return fallback;
+    if (/^(?:https?:|data:|blob:|\.\/|\/)/i.test(raw)) return raw;
+    if (/^(?:students|teachers)\//i.test(raw)) {
+      try {
+        const [path, query = ''] = raw.split('?', 2);
+        const publicUrl = getClient().storage.from(AVATARS_BUCKET).getPublicUrl(path).data?.publicUrl || '';
+        return publicUrl ? `${publicUrl}${query ? `?${query}` : ''}` : fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+    return raw;
+  }
+
+  function studentAvatarServiceError(error, fallback = 'No se pudo actualizar la foto de perfil.') {
+    const message = String(error?.message || error?.error || '').trim();
+    const lower = message.toLowerCase();
+    if (error?.code === 'PGRST202' || lower.includes('encisomath_student_avatar_')) {
+      return new Error(`Falta ejecutar ${AVATARS_SQL} en Supabase.`);
+    }
+    return normalizeError(error, fallback);
+  }
+
+  async function invokeStudentAvatarRpc(functionName, params = {}, fallback = 'No se pudo actualizar la foto de perfil.') {
+    try {
+      const { data, error } = await getStudentClient().rpc(functionName, params);
+      if (error) throw error;
+      if (data?.ok === false) throw new Error(data?.message || fallback);
+      return data || { ok: true };
+    } catch (error) {
+      throw studentAvatarServiceError(error, fallback);
+    }
+  }
+
+  async function prepareStudentProfileAvatar({ studentCode = '', contentType = 'image/webp', size = 0 } = {}) {
+    return invokeStudentAvatarRpc('encisomath_student_avatar_prepare', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_content_type: String(contentType || 'image/webp'),
+      p_size: Math.max(0, Number(size) || 0)
+    }, 'No se pudo preparar la foto de perfil.');
+  }
+
+  async function uploadPreparedStudentProfileAvatar({ path = '', file } = {}) {
+    if (!(file instanceof Blob)) throw new Error('No se encontró la foto preparada para subir.');
+    const safePath = String(path || '').trim();
+    if (!safePath) throw new Error('Supabase no devolvió la ruta del avatar.');
+    const result = await getClient().storage.from(AVATARS_BUCKET).upload(safePath, file, {
+      contentType: 'image/webp',
+      cacheControl: '3600',
+      upsert: true
+    });
+    if (result.error) throw studentAvatarServiceError(result.error, 'No se pudo subir la foto de perfil.');
+    return result.data || { path: safePath };
+  }
+
+  async function commitStudentProfileAvatar({ studentCode = '', path = '' } = {}) {
+    const safePath = String(path || '').trim();
+    const data = await invokeStudentAvatarRpc('encisomath_student_avatar_commit', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_path: safePath
+    }, 'La foto se subió, pero no se pudo guardar en el perfil.');
+    const storedPhoto = String(data?.photoUrl || data?.photo_url || data?.path || safePath);
+    return {
+      ...data,
+      path: String(data?.path || safePath),
+      photoUrl: storedPhoto,
+      url: resolveProfilePhotoUrl(storedPhoto, './assets/default-avatar.svg')
+    };
+  }
+
+  async function cancelStudentProfileAvatar({ studentCode = '', path = '' } = {}) {
+    return invokeStudentAvatarRpc('encisomath_student_avatar_cancel', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_path: String(path || '')
+    }, 'No se pudo limpiar la preparación del avatar.').catch(() => null);
+  }
+
+  async function prepareRemoveStudentProfileAvatar({ studentCode = '' } = {}) {
+    return invokeStudentAvatarRpc('encisomath_student_avatar_remove_prepare', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || '')
+    }, 'No se pudo preparar la eliminación de la foto.');
+  }
+
+  async function removePreparedStudentProfileAvatar({ path = '' } = {}) {
+    const safePath = String(path || '').trim();
+    if (!safePath) return { path: '' };
+    const result = await getClient().storage.from(AVATARS_BUCKET).remove([safePath]);
+    if (result.error) throw studentAvatarServiceError(result.error, 'No se pudo eliminar la foto almacenada.');
+    return { path: safePath };
+  }
+
+  async function commitRemoveStudentProfileAvatar({ studentCode = '', path = '' } = {}) {
+    return invokeStudentAvatarRpc('encisomath_student_avatar_remove_commit', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_path: String(path || '')
+    }, 'No se pudo retirar la foto del perfil.');
+  }
+
+  async function cancelRemoveStudentProfileAvatar({ studentCode = '', path = '' } = {}) {
+    return invokeStudentAvatarRpc('encisomath_student_avatar_remove_cancel', {
+      p_student_code: String(studentCode || readStoredStudentPortalCode() || ''),
+      p_path: String(path || '')
+    }, 'No se pudo cancelar la eliminación del avatar.').catch(() => null);
+  }
 
   function studentSubmissionServiceError(error, fallback = 'No se pudo consultar la entrega.') {
     const message = String(error?.message || error?.error || '').trim();
@@ -663,7 +772,7 @@
       role: row?.role || 'student',
       fullName: row?.full_name || authUser?.email || 'Usuario',
       email: row?.email || authUser?.email || '',
-      photo: row?.photo_url || './assets/default-profile.svg',
+      photo: resolveProfilePhotoUrl(row?.photo_url, './assets/default-profile.svg'),
       active: row?.active !== false
     };
   }
@@ -709,7 +818,7 @@
       groupId: enrollment?.group_id || group?.id || '',
       enrollmentId: enrollment?.id || '',
       enrollmentStatus: enrollment?.status || 'active',
-      photo: student.photo_url || './assets/default-avatar.svg',
+      photo: resolveProfilePhotoUrl(student.photo_url, './assets/default-avatar.svg'),
       active: student.active !== false && enrollment?.status === 'active'
     };
   }
@@ -1860,7 +1969,7 @@
       groupId,
       enrollmentId: enrollmentResult.data?.id || '',
       enrollmentStatus: 'active',
-      photo: student.photo_url || './assets/default-avatar.svg',
+      photo: resolveProfilePhotoUrl(student.photo_url, './assets/default-avatar.svg'),
       active: true
     };
   }
@@ -3378,6 +3487,14 @@
     loadConnectionReport,
     loadStudentNotifications,
     markStudentNotificationsRead,
+    prepareStudentProfileAvatar,
+    uploadPreparedStudentProfileAvatar,
+    commitStudentProfileAvatar,
+    cancelStudentProfileAvatar,
+    prepareRemoveStudentProfileAvatar,
+    removePreparedStudentProfileAvatar,
+    commitRemoveStudentProfileAvatar,
+    cancelRemoveStudentProfileAvatar,
     resolveStudentDbId
   });
 })();

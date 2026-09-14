@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.125';
+  const APP_VERSION = '0.25.126';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -12,6 +12,7 @@
   const QUIZ_SECURITY_ENABLED = false; // v0.24.166: modo seguro de Quizzes desactivado temporalmente
   const STUDENT_NOTIFICATION_POLL_MS = 45000;
   const STUDENT_NOTIFICATION_ANNOUNCED_PREFIX = 'encisomath:announced-grade-notifications:';
+  const studentAvatarHintShown = new Set();
 
   const DATA_FILES = {
     users: './data/users.json',
@@ -18234,6 +18235,258 @@
     await renderPage(1, 'none', { zoom: 1 });
   }
 
+  function studentHasCustomProfilePhoto(student = state.user || {}) {
+    const photo = String(student?.photo || '').trim();
+    return Boolean(photo && !/default-(?:avatar|profile)\.svg(?:$|[?#])/i.test(photo));
+  }
+
+  function studentProfileAvatarModalHTML(student = state.user || {}) {
+    const photo = String(student?.photo || './assets/default-avatar.svg');
+    const hasPhoto = studentHasCustomProfilePhoto(student);
+    return `
+      <section class="modal-card em-student-avatar-modal" role="dialog" aria-modal="true" aria-labelledby="studentAvatarModalTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <header class="em-student-avatar-modal-head">
+          <p class="section-kicker">Tu perfil</p>
+          <h2 id="studentAvatarModalTitle">Foto de perfil</h2>
+          <p>Haz que tu perfil se sienta más tuyo.</p>
+        </header>
+        <div class="em-student-avatar-preview-wrap">
+          <div class="em-student-avatar-preview-ring">
+            <img class="em-student-avatar-preview" data-student-avatar-preview src="${escapeAttr(photo)}" alt="Foto de perfil actual" />
+          </div>
+        </div>
+        <div class="em-student-avatar-main-actions">
+          <button class="em-student-avatar-action is-add" id="studentAvatarAddBtn" type="button"><span aria-hidden="true">📸</span><strong>Agregar nueva foto de perfil</strong></button>
+          <button class="em-student-avatar-action is-remove" id="studentAvatarRemoveBtn" type="button" ${hasPhoto ? '' : 'disabled'}><span aria-hidden="true">🗑️</span><strong>Eliminar foto de perfil</strong></button>
+        </div>
+        <div class="em-student-avatar-source-choices" id="studentAvatarSourceChoices" hidden>
+          <button class="em-student-avatar-source" id="studentAvatarCameraBtn" type="button"><span aria-hidden="true">📷</span><strong>Tomar foto</strong><small>Usar la cámara</small></button>
+          <button class="em-student-avatar-source" id="studentAvatarGalleryBtn" type="button"><span aria-hidden="true">🖼️</span><strong>Galería</strong><small>Elegir una imagen</small></button>
+        </div>
+        <input class="em-hidden-file" id="studentAvatarCameraInput" type="file" accept="image/*" capture="user" />
+        <input class="em-hidden-file" id="studentAvatarGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" />
+        <div class="em-student-avatar-upload-progress" data-student-avatar-progress hidden>
+          <div class="em-student-avatar-upload-track"><span data-student-avatar-progress-bar></span></div>
+          <p data-student-avatar-progress-label>Preparando foto…</p>
+        </div>
+        <p class="em-student-avatar-message" id="studentAvatarMessage" role="status" aria-live="polite"></p>
+      </section>
+    `;
+  }
+
+  function setStudentAvatarUploadProgress(modal, percent = 0, label = '', visible = true) {
+    const host = modal?.querySelector('[data-student-avatar-progress]');
+    const bar = modal?.querySelector('[data-student-avatar-progress-bar]');
+    const text = modal?.querySelector('[data-student-avatar-progress-label]');
+    if (!host) return;
+    host.hidden = !visible;
+    const safe = Math.max(0, Math.min(100, Number(percent) || 0));
+    if (bar) bar.style.width = `${safe}%`;
+    if (text) text.textContent = label || `${Math.round(safe)}%`;
+  }
+
+  async function optimizeStudentProfileAvatar(file) {
+    if (!(file instanceof Blob)) throw new Error('Selecciona una fotografía válida.');
+    const type = String(file.type || '').toLowerCase();
+    if (type && !type.startsWith('image/')) throw new Error('Selecciona una imagen válida.');
+    if (file.size > 30 * 1024 * 1024) throw new Error('La fotografía es demasiado pesada para procesarla en este dispositivo.');
+    const decoded = await decodeStudentSubmissionImage(file);
+    try {
+      if (!decoded.width || !decoded.height) throw new Error('No se pudieron leer las dimensiones de la fotografía.');
+      const side = Math.min(decoded.width, decoded.height);
+      const sx = Math.max(0, Math.round((decoded.width - side) / 2));
+      const sy = Math.max(0, Math.round((decoded.height - side) / 2));
+      const canvas = document.createElement('canvas');
+      canvas.width = 384;
+      canvas.height = 384;
+      const context = canvas.getContext('2d', { alpha: false });
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, 384, 384);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(decoded.source, sx, sy, side, side, 0, 0, 384, 384);
+      let quality = .86;
+      let blob = await canvasToSubmissionWebp(canvas, quality);
+      while (blob.size > 180 * 1024 && quality > .64) {
+        quality -= .05;
+        blob = await canvasToSubmissionWebp(canvas, quality);
+      }
+      return new File([blob], 'avatar.webp', { type: 'image/webp', lastModified: Date.now() });
+    } finally {
+      decoded.close?.();
+    }
+  }
+
+  function applyStudentProfilePhoto(url = '') {
+    const next = String(url || './assets/default-avatar.svg');
+    if (state.user) state.user.photo = next;
+    [state.data?.users, state.data?.students].forEach((list) => {
+      if (!Array.isArray(list)) return;
+      list.forEach((item) => {
+        if (String(item?.id || '') === String(state.user?.id || '')) item.photo = next;
+      });
+    });
+    document.querySelectorAll('[data-student-profile-photo]').forEach((image) => {
+      image.src = next;
+    });
+    document.querySelectorAll('[data-student-avatar-preview]').forEach((image) => {
+      image.src = next;
+    });
+  }
+
+  function launchStudentAvatarEmojiConfetti() {
+    const layer = document.createElement('div');
+    layer.className = 'em-student-avatar-confetti';
+    const emojis = ['📸', '📷', '🖼️', '✨', '📸', '🌟'];
+    for (let index = 0; index < 22; index += 1) {
+      const item = document.createElement('span');
+      item.textContent = emojis[index % emojis.length];
+      item.style.setProperty('--x', `${8 + Math.random() * 84}vw`);
+      item.style.setProperty('--dx', `${-80 + Math.random() * 160}px`);
+      item.style.setProperty('--delay', `${Math.random() * .28}s`);
+      item.style.setProperty('--spin', `${-220 + Math.random() * 440}deg`);
+      item.style.setProperty('--size', `${18 + Math.random() * 15}px`);
+      layer.appendChild(item);
+    }
+    document.body.appendChild(layer);
+    window.setTimeout(() => layer.remove(), 1900);
+  }
+
+  function scheduleStudentAvatarHomeHint(root = document) {
+    const button = root.querySelector('#studentProfilePhotoButton');
+    const hint = root.querySelector('#studentProfilePhotoHint');
+    const key = String(state.user?.id || 'student');
+    if (!button || !hint || studentAvatarHintShown.has(key)) return;
+    studentAvatarHintShown.add(key);
+    window.setTimeout(() => {
+      if (!button.isConnected) return;
+      button.classList.add('is-avatar-hint-glow');
+    }, 500);
+    window.setTimeout(() => {
+      if (!hint.isConnected) return;
+      hint.classList.add('is-visible');
+    }, 1500);
+    window.setTimeout(() => hint?.classList.remove('is-visible'), 6200);
+    window.setTimeout(() => button?.classList.remove('is-avatar-hint-glow'), 8000);
+  }
+
+  function openStudentProfileAvatarModal() {
+    if (!isStudentPortal()) return;
+    openModal(studentProfileAvatarModalHTML(state.user || {}), () => {
+      const modal = document.querySelector('.em-student-avatar-modal');
+      const addButton = document.getElementById('studentAvatarAddBtn');
+      const removeButton = document.getElementById('studentAvatarRemoveBtn');
+      const choices = document.getElementById('studentAvatarSourceChoices');
+      const cameraButton = document.getElementById('studentAvatarCameraBtn');
+      const galleryButton = document.getElementById('studentAvatarGalleryBtn');
+      const cameraInput = document.getElementById('studentAvatarCameraInput');
+      const galleryInput = document.getElementById('studentAvatarGalleryInput');
+      const message = document.getElementById('studentAvatarMessage');
+      let busy = false;
+
+      const setBusy = (value) => {
+        busy = Boolean(value);
+        [addButton, removeButton, cameraButton, galleryButton].forEach((node) => {
+          if (node) node.disabled = busy || (node === removeButton && !studentHasCustomProfilePhoto(state.user));
+        });
+      };
+
+      const uploadFile = async (file) => {
+        if (!file || busy) return;
+        if (!cloudAPI()?.prepareStudentProfileAvatar || !cloudAPI()?.uploadPreparedStudentProfileAvatar || !cloudAPI()?.commitStudentProfileAvatar) {
+          if (message) message.textContent = 'Actualiza Supabase para activar las fotos de perfil.';
+          return;
+        }
+        let preparedPath = '';
+        try {
+          setBusy(true);
+          if (message) message.textContent = '';
+          if (choices) choices.hidden = true;
+          setStudentAvatarUploadProgress(modal, 8, 'Preparando fotografía…', true);
+          const optimized = await optimizeStudentProfileAvatar(file);
+          setStudentAvatarUploadProgress(modal, 34, 'Optimizando a 384 × 384…', true);
+          const prepared = await cloudAPI().prepareStudentProfileAvatar({
+            studentCode: state.user?.id || '',
+            contentType: optimized.type,
+            size: optimized.size
+          });
+          preparedPath = String(prepared?.path || '');
+          setStudentAvatarUploadProgress(modal, 58, 'Subiendo foto de perfil…', true);
+          await cloudAPI().uploadPreparedStudentProfileAvatar({ path: preparedPath, file: optimized });
+          setStudentAvatarUploadProgress(modal, 88, 'Guardando en tu perfil…', true);
+          const committed = await cloudAPI().commitStudentProfileAvatar({
+            studentCode: state.user?.id || '',
+            path: preparedPath
+          });
+          const url = String(committed?.url || './assets/default-avatar.svg');
+          applyStudentProfilePhoto(url);
+          setStudentAvatarUploadProgress(modal, 100, '¡Foto lista!', true);
+          if (message) message.textContent = 'Foto de perfil actualizada';
+          if (removeButton) removeButton.disabled = false;
+          launchStudentAvatarEmojiConfetti();
+          toast('Foto de perfil actualizada 📸');
+          window.setTimeout(() => setStudentAvatarUploadProgress(modal, 100, '', false), 1200);
+        } catch (error) {
+          if (preparedPath) await cloudAPI()?.cancelStudentProfileAvatar?.({ studentCode: state.user?.id || '', path: preparedPath });
+          if (message) message.textContent = error?.message || 'No se pudo actualizar la foto de perfil.';
+          setStudentAvatarUploadProgress(modal, 0, '', false);
+        } finally {
+          setBusy(false);
+          if (cameraInput) cameraInput.value = '';
+          if (galleryInput) galleryInput.value = '';
+        }
+      };
+
+      addButton?.addEventListener('click', () => {
+        if (choices) choices.hidden = !choices.hidden;
+      });
+      cameraButton?.addEventListener('click', () => cameraInput?.click());
+      galleryButton?.addEventListener('click', () => galleryInput?.click());
+      cameraInput?.addEventListener('change', () => uploadFile(cameraInput.files?.[0]));
+      galleryInput?.addEventListener('change', () => uploadFile(galleryInput.files?.[0]));
+
+      removeButton?.addEventListener('click', async () => {
+        if (busy || !studentHasCustomProfilePhoto(state.user)) return;
+        if (!cloudAPI()?.prepareRemoveStudentProfileAvatar || !cloudAPI()?.commitRemoveStudentProfileAvatar) {
+          if (message) message.textContent = 'Actualiza Supabase para activar las fotos de perfil.';
+          return;
+        }
+        let path = '';
+        try {
+          setBusy(true);
+          if (message) message.textContent = '';
+          setStudentAvatarUploadProgress(modal, 22, 'Preparando eliminación…', true);
+          const prepared = await cloudAPI().prepareRemoveStudentProfileAvatar({ studentCode: state.user?.id || '' });
+          path = String(prepared?.path || '');
+          if (path) {
+            setStudentAvatarUploadProgress(modal, 58, 'Eliminando fotografía…', true);
+            await cloudAPI().removePreparedStudentProfileAvatar({ path });
+          }
+          setStudentAvatarUploadProgress(modal, 86, 'Actualizando perfil…', true);
+          await cloudAPI().commitRemoveStudentProfileAvatar({ studentCode: state.user?.id || '', path });
+          applyStudentProfilePhoto('./assets/default-avatar.svg');
+          setStudentAvatarUploadProgress(modal, 100, 'Foto eliminada', true);
+          if (message) message.textContent = 'Foto de perfil eliminada';
+          removeButton.disabled = true;
+          toast('Foto de perfil eliminada.');
+          window.setTimeout(() => setStudentAvatarUploadProgress(modal, 100, '', false), 1000);
+        } catch (error) {
+          if (path) await cloudAPI()?.cancelRemoveStudentProfileAvatar?.({ studentCode: state.user?.id || '', path });
+          if (message) message.textContent = error?.message || 'No se pudo eliminar la foto de perfil.';
+          setStudentAvatarUploadProgress(modal, 0, '', false);
+        } finally {
+          setBusy(false);
+        }
+      });
+    });
+  }
+
+  function bindStudentProfileAvatarHome(root = document) {
+    root.querySelector('#studentProfilePhotoButton')?.addEventListener('click', openStudentProfileAvatarModal);
+    scheduleStudentAvatarHomeHint(root);
+  }
+
   function renderStudentHome(options = {}) {
     commitAppRoute({ screen: 'student' }, options);
     state.assignment = null;
@@ -18249,7 +18502,12 @@
               ${studentNotificationButtonHTML('round')}
               <button class="logout-pill" id="logoutBtn">Cerrar sesión</button>
             </div>
-            <img class="profile-avatar" src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
+            <div class="em-student-profile-photo-wrap">
+              <button class="em-student-profile-photo-button" id="studentProfilePhotoButton" type="button" aria-label="Abrir foto de perfil">
+                <img class="profile-avatar" data-student-profile-photo src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
+              </button>
+              <div class="em-student-profile-photo-hint" id="studentProfilePhotoHint" role="status">Ya puedes agregar fotos de perfil</div>
+            </div>
             <div class="profile-copy">
               <span class="profile-kicker">Bienvenido</span>
               <h1>${escapeHTML(student.fullName || 'Estudiante')}</h1>
@@ -18281,6 +18539,7 @@
     mount(markup, () => {
       document.getElementById('logoutBtn')?.addEventListener('click', logout);
       bindStudentNotificationButtons(document);
+      bindStudentProfileAvatarHome(document);
       bindAssignmentCards(assignments);
     });
   }
@@ -19078,6 +19337,7 @@
   }
   async function logout() {
     const leavingStudentPortal = isStudentPortal();
+    if (leavingStudentPortal) studentAvatarHintShown.clear();
     stopStudentNotificationPolling();
     state.notifications = { items: [], unreadCount: 0, loading: false, initialized: false, disabled: false, error: '' };
     await stopConnectionPresence({ end: true });

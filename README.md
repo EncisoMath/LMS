@@ -1,4 +1,15 @@
-# EncisoMath LMS v0.25.125
+# EncisoMath LMS v0.25.126
+
+## v0.25.126 — Fotos de perfil de estudiantes
+
+- El avatar del home del estudiante ahora es interactivo y abre un modal dedicado de foto de perfil.
+- A los 0,5 s del primer home de la sesión aparece un halo multicolor; 1 s después aparece el aviso **“Ya puedes agregar fotos de perfil”**.
+- El modal muestra la foto en grande y permite **Tomar foto**, elegir desde **Galería** o **Eliminar foto de perfil**.
+- Las fotos se recortan al centro en 1:1, se optimizan a **384×384 WebP** y se limitan antes de subirlas.
+- Se añade barra de progreso por etapas y confirmación con confeti de emojis 📸📷🖼️✨ al actualizar.
+- Supabase usa un bucket dedicado `avatars` y rutas estables `students/<id>/avatar.webp`; también queda reservada la estructura `teachers/<auth-id>/...` para una futura versión docente.
+- La URL guardada incluye un token de versión para evitar que el navegador muestre una foto antigua desde caché.
+- Requiere ejecutar una vez `supabase/migrations/SUPABASE_PROFILE_AVATARS_v0.25.126.sql`.
 
 ## v0.25.125 — Escritorio ancho responsive
 
