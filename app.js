@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.119';
+  const APP_VERSION = '0.25.121';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -5220,6 +5220,100 @@
     savePreferencesToCloud();
   }
 
+
+  function saveNotesSummaryCodes(codeMap = {}) {
+    const assignmentId = String(state.assignment?.id || '');
+    const period = Number(state.activePeriod || 1);
+    const key = notesConfigKey(assignmentId, period);
+    const store = getNotesConfigStore();
+    const current = store[key] && typeof store[key] === 'object' ? store[key] : {};
+    const definitions = notesColumnDefinitions();
+    const columns = Object.fromEntries(definitions.map((column) => [column.key, {
+      code: column.code,
+      color: column.color,
+      weight: Number(column.weight || 0),
+      ...(column.type === 'rockstars' ? { target: Number(column.target || 15) } : {})
+    }]));
+    ['academic', 'attendance', 'rockstars'].forEach((columnKey) => {
+      if (!Object.prototype.hasOwnProperty.call(codeMap, columnKey)) return;
+      const code = String(codeMap[columnKey] || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 8);
+      if (!code || !columns[columnKey]) return;
+      columns[columnKey] = { ...columns[columnKey], code };
+    });
+    store[key] = { ...current, columns, updatedAt: new Date().toISOString() };
+    localStorage.setItem('encisomath:prefs', JSON.stringify(state.prefs));
+    savePreferencesToCloud();
+  }
+
+  function notesEducaCityCodeModalHTML(columns = notesFinalComponentColumns(notesColumnDefinitions())) {
+    const rows = (columns || []).filter((column) => ['academic', 'attendance', 'rockstars'].includes(column.type));
+    return `
+      <section class="modal-card em-activity-create-modal em-notes-column-modal em-notes-educacity-modal" role="dialog" aria-modal="true" aria-labelledby="notesEducaCityModalTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Exportar a EducaCity</p>
+        <h2 id="notesEducaCityModalTitle">Códigos de los ítems</h2>
+        <p class="em-notes-educacity-copy">Confirma o modifica los códigos que llevará el Excel. Los cambios también quedarán guardados en la configuración de la PLANILLA.</p>
+        <form id="notesEducaCityCodeForm" class="em-notes-educacity-form">
+          <div class="em-notes-educacity-code-list">
+            ${rows.map((column) => `
+              <label class="em-notes-educacity-code-row" style="--em-notes-export-color:${escapeAttr(column.color)}">
+                <span class="em-notes-educacity-item">
+                  <i aria-hidden="true"></i>
+                  <strong>${escapeHTML(column.title)}</strong>
+                  <small>${Number(column.weight || 0)}% de la definitiva</small>
+                </span>
+                <span class="em-notes-educacity-code-field">
+                  <small>Código</small>
+                  <input class="input" type="text" maxlength="8" autocomplete="off" spellcheck="false" data-notes-educacity-code="${escapeAttr(column.key)}" value="${escapeAttr(column.code)}" aria-label="Código de ${escapeAttr(column.title)}" required />
+                </span>
+              </label>
+            `).join('')}
+          </div>
+          <p class="em-class-create-error" id="notesEducaCityCodeError" role="alert"></p>
+          <div class="em-activity-modal-actions em-notes-educacity-actions">
+            <button class="ghost-btn" type="button" data-close-modal>Cancelar</button>
+            <button class="em-notes-educacity-download-btn" id="confirmEducaCityDownloadBtn" type="submit">Descargar Excel</button>
+          </div>
+        </form>
+      </section>
+    `;
+  }
+
+  function openNotesEducaCityExportModal() {
+    const columns = notesFinalComponentColumns(notesColumnDefinitions());
+    openModal(notesEducaCityCodeModalHTML(columns), () => {
+      const form = document.getElementById('notesEducaCityCodeForm');
+      const errorBox = document.getElementById('notesEducaCityCodeError');
+      const submitButton = document.getElementById('confirmEducaCityDownloadBtn');
+      const inputs = Array.from(document.querySelectorAll('[data-notes-educacity-code]'));
+      inputs.forEach((input) => input.addEventListener('input', () => {
+        input.value = String(input.value || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 8);
+        if (errorBox) errorBox.textContent = '';
+      }));
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (errorBox) errorBox.textContent = '';
+        const codes = {};
+        for (const input of inputs) {
+          const key = String(input.dataset.notesEducacityCode || '');
+          const code = String(input.value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 8);
+          input.value = code;
+          if (!code) {
+            if (errorBox) errorBox.textContent = 'Todos los componentes deben tener un código antes de descargar.';
+            input.focus();
+            return;
+          }
+          codes[key] = code;
+        }
+        saveNotesSummaryCodes(codes);
+        const downloaded = await downloadNotesForEducaCity(submitButton);
+        if (!downloaded) return;
+        closeModal(false);
+        renderNotesTab({ preserveScroll: true, silentSync: true });
+      });
+    });
+  }
+
   function notesStudentNameParts(student) {
     const code = String(student?.id || student?.studentCode || '').trim();
     let lastName = String(student?.lastName || '').trim();
@@ -5949,7 +6043,7 @@
 
   async function downloadNotesForEducaCity(button) {
     const assignment = state.assignment;
-    if (!assignment) return;
+    if (!assignment) return false;
     const columns = notesColumnDefinitions();
     const students = getStudentsForAssignment(assignment);
     const sessions = notesAttendanceSessions(assignment.id, state.activePeriod);
@@ -5979,9 +6073,11 @@
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1500);
       toast(`Excel de ${students.length} estudiantes listo para EducaCity.`);
+      return true;
     } catch (error) {
       console.error('No se pudo exportar la planilla EducaCity:', error);
       toast(error?.message || 'No se pudo generar el Excel para EducaCity.');
+      return false;
     } finally {
       if (button) {
         button.disabled = false;
@@ -6479,8 +6575,8 @@
       notesResetViewFilters();
       renderNotesTab({ preserveScroll: true, silentSync: true });
     });
-    document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', (event) => {
-      downloadNotesForEducaCity(event.currentTarget);
+    document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', () => {
+      openNotesEducaCityExportModal();
     });
     emNotesInitHero(content, { replay: !options.silentSync });
     if (!options.silentSync) emPlayTabEntrance(content, 'notes');
@@ -16585,6 +16681,7 @@
   }
 
   function initActivityGradeModal(activity, record, currentGroup, options = {}) {
+    const individualEdit = options.editScope === 'individual' && Boolean(record.gradingGroupId);
     const form = document.getElementById('activityGradeForm');
     const groupOptions = document.getElementById('activityGroupOptions');
     const mainScore = document.getElementById('activityScoreInput');

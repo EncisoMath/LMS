@@ -1,4 +1,17 @@
-# EncisoMath LMS v0.25.119
+# EncisoMath LMS v0.25.121
+
+## v0.25.121 — Corrección de guardado individual y grupal
+
+- Corrige el botón **Enviar calificación** después de elegir **Modificar individualmente** o **Modificar grupalmente**.
+- El modo de edición ahora se inicializa también dentro del controlador real del formulario, evitando el error de JavaScript que detenía el guardado antes de llegar a Supabase.
+- Se conserva la edición individual sin modificar a los demás integrantes del grupo, y la edición grupal sigue aplicándose al grupo seleccionado.
+
+
+- **PLANILLA → Descargar Excel listo para EducaCity** ahora abre un modal previo con los tres componentes finales: **Académico, Asistencia y Rockstars**.
+- Cada componente permite editar su **código** directamente antes de generar el archivo (por defecto `ACA`, `ASI` y `RKS`).
+- Los códigos del modal de exportación usan exactamente la misma configuración que **CONFIGURAR NOTA**; cambiar uno en cualquiera de los dos lugares actualiza el mismo valor guardado.
+- El modal incluye un botón verde **Descargar Excel** que genera el archivo final con los códigos confirmados.
+- La exportación sigue incluyendo únicamente **Académico, Asistencia y Rockstars**.
 
 ## v0.25.119 — Rockstars estables y edición de grupos
 - Rockstars: cada toque +1/-1 recibe un `clientMutationId` estable desde la UI. Los snapshots remotos ya no pueden pisar puntos que todavía están en vuelo; se conservan hasta que Supabase devuelve el mismo evento.
