@@ -41786,7 +41786,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.124 - MODAL INDIVIDUAL / GRUPAL PRO
+   ENCISOMATH v0.25.125 - MODAL INDIVIDUAL / GRUPAL PRO
    ========================================================= */
 .em-grade-scope-modal {
   position: relative;
@@ -41944,7 +41944,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 
 
 /* =========================================================
-   ENCISOMATH v0.25.124 - DESKTOP WIDE RESPONSIVE SHELL
+   ENCISOMATH v0.25.125 - DESKTOP WIDE RESPONSIVE SHELL
    Expande la app en monitores grandes sin alterar móvil/tablet.
    ========================================================= */
 @media (min-width: 1200px) {
@@ -41986,5 +41986,33 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 @media (min-width: 1780px) {
   html body .em-sub-grid {
     gap: 14px;
+  }
+}
+
+
+/* =========================================================
+   ENCISOMATH v0.25.125 · PAN REAL AL HACER ZOOM EN ACTIVIDADES
+   A escala 1 las imágenes conservan el flujo vertical normal.
+   Al ampliar, el viewport se convierte en una superficie desplazable.
+========================================================= */
+.em-activity-media-viewport.is-zoomed {
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: none !important;
+  cursor: grab !important;
+}
+.em-activity-media-viewport.is-zoomed.is-panning {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+.em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-media-viewport.is-zoomed {
+  max-height: min(78vh, 920px) !important;
+  overflow: auto !important;
+  touch-action: none !important;
+}
+@media (max-width: 600px) {
+  .em-activity-media-viewer:not(.em-submission-media-viewer):not(:fullscreen):not(.is-pseudo-fullscreen)[data-activity-media-type="image"] .em-activity-media-viewport.is-zoomed {
+    max-height: 72vh !important;
   }
 }

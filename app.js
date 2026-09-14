@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.124';
+  const APP_VERSION = '0.25.125';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -14578,6 +14578,15 @@
       let pinchStartScale = 1;
       let pinchAnchorX = 0;
       let pinchAnchorY = 0;
+      let touchPanX = 0;
+      let touchPanY = 0;
+      let touchPanScrollLeft = 0;
+      let touchPanScrollTop = 0;
+      let mousePanActive = false;
+      let mousePanX = 0;
+      let mousePanY = 0;
+      let mousePanScrollLeft = 0;
+      let mousePanScrollTop = 0;
       const minScale = 1;
       const maxScale = 4;
 
@@ -14662,34 +14671,88 @@
         applyScale(scale + (event.deltaY < 0 ? .2 : -.2), { clientX: event.clientX, clientY: event.clientY });
       }, { passive: false });
       viewport.addEventListener('touchstart', (event) => {
-        if (event.touches.length !== 2) return;
-        const [a, b] = event.touches;
-        const rect = viewport.getBoundingClientRect();
-        const centerX = (a.clientX + b.clientX) / 2 - rect.left;
-        const centerY = (a.clientY + b.clientY) / 2 - rect.top;
-        pinchStartDistance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1;
-        pinchStartScale = scale;
-        pinchAnchorX = (viewport.scrollLeft + centerX) / scale;
-        pinchAnchorY = (viewport.scrollTop + centerY) / scale;
+        if (event.touches.length === 2) {
+          const [a, b] = event.touches;
+          const rect = viewport.getBoundingClientRect();
+          const centerX = (a.clientX + b.clientX) / 2 - rect.left;
+          const centerY = (a.clientY + b.clientY) / 2 - rect.top;
+          pinchStartDistance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1;
+          pinchStartScale = scale;
+          pinchAnchorX = (viewport.scrollLeft + centerX) / scale;
+          pinchAnchorY = (viewport.scrollTop + centerY) / scale;
+          return;
+        }
+        if (event.touches.length === 1 && scale > 1.01) {
+          const point = event.touches[0];
+          touchPanX = point.clientX;
+          touchPanY = point.clientY;
+          touchPanScrollLeft = viewport.scrollLeft;
+          touchPanScrollTop = viewport.scrollTop;
+          viewport.classList.add('is-panning');
+        }
       }, { passive: true });
       viewport.addEventListener('touchmove', (event) => {
-        if (event.touches.length !== 2 || !pinchStartDistance) return;
-        event.preventDefault();
-        const [a, b] = event.touches;
-        const rect = viewport.getBoundingClientRect();
-        const centerX = (a.clientX + b.clientX) / 2 - rect.left;
-        const centerY = (a.clientY + b.clientY) / 2 - rect.top;
-        const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || pinchStartDistance;
-        applyScale(pinchStartScale * (distance / pinchStartDistance), {
-          clientX: rect.left + centerX,
-          clientY: rect.top + centerY,
-          anchorX: pinchAnchorX,
-          anchorY: pinchAnchorY
-        });
+        if (event.touches.length === 2 && pinchStartDistance) {
+          event.preventDefault();
+          const [a, b] = event.touches;
+          const rect = viewport.getBoundingClientRect();
+          const centerX = (a.clientX + b.clientX) / 2 - rect.left;
+          const centerY = (a.clientY + b.clientY) / 2 - rect.top;
+          const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || pinchStartDistance;
+          applyScale(pinchStartScale * (distance / pinchStartDistance), {
+            clientX: rect.left + centerX,
+            clientY: rect.top + centerY,
+            anchorX: pinchAnchorX,
+            anchorY: pinchAnchorY
+          });
+          return;
+        }
+        if (event.touches.length === 1 && scale > 1.01) {
+          event.preventDefault();
+          const point = event.touches[0];
+          viewport.scrollLeft = touchPanScrollLeft - (point.clientX - touchPanX);
+          viewport.scrollTop = touchPanScrollTop - (point.clientY - touchPanY);
+        }
       }, { passive: false });
-      const finishPinch = () => { pinchStartDistance = 0; };
-      viewport.addEventListener('touchend', finishPinch, { passive: true });
-      viewport.addEventListener('touchcancel', finishPinch, { passive: true });
+      const finishTouchGesture = (event) => {
+        if (event.touches?.length < 2) pinchStartDistance = 0;
+        if (!event.touches?.length) viewport.classList.remove('is-panning');
+        if (event.touches?.length === 1 && scale > 1.01) {
+          const point = event.touches[0];
+          touchPanX = point.clientX;
+          touchPanY = point.clientY;
+          touchPanScrollLeft = viewport.scrollLeft;
+          touchPanScrollTop = viewport.scrollTop;
+        }
+      };
+      viewport.addEventListener('touchend', finishTouchGesture, { passive: true });
+      viewport.addEventListener('touchcancel', finishTouchGesture, { passive: true });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0 || scale <= 1.01) return;
+        mousePanActive = true;
+        mousePanX = event.clientX;
+        mousePanY = event.clientY;
+        mousePanScrollLeft = viewport.scrollLeft;
+        mousePanScrollTop = viewport.scrollTop;
+        viewport.classList.add('is-panning');
+        try { viewport.setPointerCapture(event.pointerId); } catch (_) {}
+        event.preventDefault();
+      });
+      viewport.addEventListener('pointermove', (event) => {
+        if (!mousePanActive || event.pointerType !== 'mouse') return;
+        viewport.scrollLeft = mousePanScrollLeft - (event.clientX - mousePanX);
+        viewport.scrollTop = mousePanScrollTop - (event.clientY - mousePanY);
+        event.preventDefault();
+      });
+      const finishMousePan = (event) => {
+        if (!mousePanActive || event.pointerType !== 'mouse') return;
+        mousePanActive = false;
+        viewport.classList.remove('is-panning');
+        try { viewport.releasePointerCapture(event.pointerId); } catch (_) {}
+      };
+      viewport.addEventListener('pointerup', finishMousePan);
+      viewport.addEventListener('pointercancel', finishMousePan);
     });
   }
 

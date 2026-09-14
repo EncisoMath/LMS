@@ -1,6 +1,6 @@
-# EncisoMath LMS v0.25.124
+# EncisoMath LMS v0.25.125
 
-## v0.25.124 — Escritorio ancho responsive
+## v0.25.125 — Escritorio ancho responsive
 
 - En pantallas de escritorio desde 1200 px, el shell principal puede expandirse hasta **1680 px** dejando márgenes laterales razonables.
 - `screen`, `topbar` y `bottom-nav` comparten exactamente el mismo ancho para mantener alineación.
