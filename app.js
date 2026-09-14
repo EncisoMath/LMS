@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.118';
+  const APP_VERSION = '0.25.119';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -1033,9 +1033,31 @@
     cloudAPI().savePreferences(state.prefs).catch((error) => reportCloudError('No se sincronizaron las preferencias', error, { silent: true }));
   }
 
+  function mergePendingRockstarEvents(incomingSource, currentSource) {
+    const incoming = normalizeRockstarEvents(Array.isArray(incomingSource) ? incomingSource : (incomingSource?.events || []));
+    const current = normalizeRockstarEvents(Array.isArray(currentSource) ? currentSource : (currentSource?.events || []));
+    const ids = new Set(incoming.map((entry) => String(entry.id || '')).filter(Boolean));
+    const mutationIds = new Set(incoming.map((entry) => String(entry.clientMutationId || '')).filter(Boolean));
+    current.forEach((entry) => {
+      const mutationId = String(entry.clientMutationId || '');
+      const id = String(entry.id || '');
+      const mustPreserve = Boolean(mutationId || entry.pendingSync);
+      if (!mustPreserve) return;
+      if ((mutationId && mutationIds.has(mutationId)) || (id && ids.has(id))) return;
+      incoming.push({ ...entry });
+      if (mutationId) mutationIds.add(mutationId);
+      if (id) ids.add(id);
+    });
+    return incoming;
+  }
+
   function applyCloudSnapshotToState(cloudData, options = {}) {
     if (!cloudData?.user || !cloudData?.data) return false;
     const cleanCloudData = removeLegacyDemoContent(cloudData.data || {});
+    // Un refresco del servidor puede llegar mientras varios +1 Rockstar siguen
+    // en vuelo. Conservamos esas mutaciones locales hasta que el snapshot
+    // remoto contenga el mismo id/clientMutationId, evitando 5 -> 4 -> 3.
+    cleanCloudData.rockstars = mergePendingRockstarEvents(cleanCloudData.rockstars, state.data?.rockstars);
     clearLegacyDemoBrowserState();
     state.cloud.enabled = true;
     state.cloud.loading = false;
@@ -4061,8 +4083,12 @@
     }
     const oldPoints = getRockstarPoints(assignment.id, studentId, state.rockstarPeriod);
     const oldTier = emRsGetTier(oldPoints);
+    const clientMutationId = globalThis.crypto?.randomUUID?.()
+      || `rs-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
     const event = {
-      id: `rs-pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `rs-pending-${clientMutationId}`,
+      clientMutationId,
+      pendingSync: true,
       assignmentId: assignment.id,
       studentId,
       period: Number(state.rockstarPeriod),
@@ -4078,7 +4104,8 @@
       cloudAPI().addRockstarEvent(event).then((saved) => {
         event.id = saved?.id || event.id;
         event.occurredAt = saved?.occurred_at || event.occurredAt;
-        if (String(saved?.id || '').startsWith('offline-')) {
+        event.pendingSync = String(saved?.id || '').startsWith('offline-');
+        if (event.pendingSync) {
           toast('Punto Rockstar guardado localmente. Se sincronizará automáticamente.');
         }
       }).catch((error) => {
@@ -16391,12 +16418,36 @@
     return `${dateLabel} · ${timeLabel}`;
   }
 
+  function openActivityGradeScopeModal(activity, record, currentGroup, options = {}) {
+    const members = (currentGroup || []).map((item) => item.fullName || item.studentCode).filter(Boolean);
+    openModal(`
+      <section class="modal-card em-grade-scope-modal" role="dialog" aria-modal="true" aria-labelledby="activityGradeScopeTitle">
+        <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
+        <p class="section-kicker">Modificar calificación</p>
+        <h2 id="activityGradeScopeTitle">¿Individual o grupal?</h2>
+        <p class="em-grade-scope-copy"><strong>${escapeHTML(record.fullName || record.studentCode || 'Estudiante')}</strong> pertenece a un grupo de ${members.length} integrantes. Escoge a quién quieres aplicar los cambios.</p>
+        <div class="em-grade-scope-actions">
+          <button class="em-grade-scope-choice is-individual" id="activityGradeScopeIndividual" type="button"><span>👤</span><div><strong>Modificar individualmente</strong><small>Solo cambia a este estudiante y conserva su grupo.</small></div></button>
+          <button class="em-grade-scope-choice is-group" id="activityGradeScopeGroup" type="button"><span>👥</span><div><strong>Modificar grupalmente</strong><small>Abre el grupo completo y permite ajustar a todos sus integrantes.</small></div></button>
+        </div>
+      </section>
+    `, () => {
+      document.getElementById('activityGradeScopeIndividual')?.addEventListener('click', () => openActivityGradeModal(activity, record, { ...options, editScope: 'individual', skipScopePrompt: true }));
+      document.getElementById('activityGradeScopeGroup')?.addEventListener('click', () => openActivityGradeModal(activity, record, { ...options, editScope: 'group', skipScopePrompt: true }));
+    });
+  }
+
   function openActivityGradeModal(activity, record, options = {}) {
     const gradebook = state.activityGradebook || [];
     const currentGroup = record.gradingGroupId
       ? gradebook.filter((item) => item.gradingGroupId === record.gradingGroupId)
       : [record];
-    const currentCodes = new Set(currentGroup.map((item) => item.studentCode));
+    if (record.gradingGroupId && currentGroup.length > 1 && !options.skipScopePrompt && !options.editScope) {
+      openActivityGradeScopeModal(activity, record, currentGroup, options);
+      return;
+    }
+    const individualEdit = options.editScope === 'individual' && Boolean(record.gradingGroupId);
+    const currentCodes = new Set((individualEdit ? [record] : currentGroup).map((item) => item.studentCode));
     const eligibleGroupRows = gradebook
       .filter((item) => currentCodes.has(item.studentCode) || !item.gradingGroupId)
       .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'es'));
@@ -16435,7 +16486,7 @@
         <div class="em-activity-grade-tabbar" role="tablist" aria-label="Opciones de calificación">
           <button class="is-active" type="button" role="tab" aria-selected="true" data-grade-modal-tab="score">Calificación</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="delivery">Entrega<span class="em-grade-tab-count${existingSubmissionCount ? '' : ' is-zero'}">${existingSubmissionCount}</span></button>
-          <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>
+          ${individualEdit ? '' : '<button type="button" role="tab" aria-selected="false" data-grade-modal-tab="group">Grupo</button>'}
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="sticker">Sticker</button>
           <button type="button" role="tab" aria-selected="false" data-grade-modal-tab="tracking">Seguimiento${trackingCount ? `<span class="em-grade-tab-count">${trackingCount}</span>` : ''}</button>
         </div>
@@ -16487,6 +16538,7 @@
             </div>
           </section>
 
+          ${individualEdit ? '' : `
           <section class="em-grade-form-section" data-grade-modal-panel="group" hidden>
             <div class="em-grade-form-heading"><h3>Grupo</h3><p>Solo aparecen estudiantes sin grupo y los integrantes del grupo actual.</p></div>
             <label class="em-grade-group-search"><span>⌕</span><input id="activityGroupSearch" type="search" placeholder="Buscar estudiante" /></label>
@@ -16495,6 +16547,7 @@
             </div>
             <div class="em-group-score-overrides" id="activityGroupScoreOverrides"></div>
           </section>
+          `}
 
           <section class="em-grade-form-section em-activity-sticker-panel" data-grade-modal-panel="sticker" hidden>
             <div class="em-grade-form-heading"><h3>Sticker</h3><p>El sticker es opcional. Si calificas en grupo, se asignará automáticamente a todos sus integrantes.</p></div>
@@ -16806,7 +16859,11 @@
     groupOptions?.querySelectorAll('[data-group-student]').forEach((input) => input.addEventListener('change', refreshOverrides));
     document.getElementById('activityGroupSearch')?.addEventListener('input', (event) => {
       const query = normalizeSearch(event.target.value || '');
-      groupOptions?.querySelectorAll('[data-group-option]').forEach((label) => { label.hidden = Boolean(query) && !String(label.dataset.search || '').includes(query); });
+      groupOptions?.querySelectorAll('[data-group-option]').forEach((label) => {
+        const matches = !query || String(label.dataset.search || '').includes(query);
+        label.classList.toggle('is-search-hidden', !matches);
+        label.setAttribute('aria-hidden', matches ? 'false' : 'true');
+      });
     });
     gradeModal?.querySelectorAll('[data-quick-grade]').forEach((button) => button.addEventListener('click', () => {
       const value = Number(button.dataset.quickGrade || 40);
@@ -16843,10 +16900,12 @@
             })
           }
         : { mode: 'normal', calculatedScore: primaryScore, criteria: [] };
-      const selectedCodes = [...new Set([
-        record.studentCode,
-        ...[...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent)
-      ].filter(Boolean))];
+      const selectedCodes = individualEdit
+        ? [record.studentCode]
+        : [...new Set([
+            record.studentCode,
+            ...[...gradeModal.querySelectorAll('[data-group-student]:checked')].map((input) => input.dataset.groupStudent)
+          ].filter(Boolean))];
       const selectedStickerUrl = normalizeActivityStickerUrl(document.getElementById('activityStickerUrlInput')?.value || '');
       const scores = { [record.studentCode]: primaryScore };
       gradeModal.querySelectorAll('[data-group-score]').forEach((input) => { scores[input.dataset.groupScore] = Number(input.value || primaryScore); });
@@ -16869,8 +16928,9 @@
           assignmentId: state.assignment?.id || '',
           primaryStudentCode: record.studentCode,
           selectedStudentCodes: selectedCodes,
-          previousGroupStudentCodes: (currentGroup || []).map((item) => item.studentCode),
+          previousGroupStudentCodes: individualEdit ? [] : (currentGroup || []).map((item) => item.studentCode),
           gradingGroupId: record.gradingGroupId || '',
+          preserveExistingGroup: individualEdit,
           scores,
           rubricScores,
           stickerUrl: selectedStickerUrl,
@@ -18671,14 +18731,20 @@
     return [];
   }
   function normalizeRockstarEvents(events) {
-    return events.map((entry) => ({
-      id: entry.id || `base-${entry.assignmentId || 'assignment'}-${entry.studentId || 'student'}-${entry.date || 'date'}-${entry.delta || 0}`,
-      assignmentId: entry.assignmentId || entry.assignment || '',
-      studentId: entry.studentId || entry.student || entry.idStudent || '',
-      period: Number(entry.period || entry.periodo || 1),
-      date: entry.date || entry.fecha || todayISO(),
-      delta: Number(entry.delta ?? entry.points ?? entry.puntos ?? 0)
-    })).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && [-1, 1].includes(entry.delta));
+    return events.map((entry) => {
+      const occurredAt = entry.occurredAt || entry.occurred_at || '';
+      return {
+        id: entry.id || `base-${entry.assignmentId || 'assignment'}-${entry.studentId || 'student'}-${entry.date || 'date'}-${entry.delta || 0}`,
+        clientMutationId: entry.clientMutationId || entry.client_mutation_id || entry.mutationId || '',
+        pendingSync: Boolean(entry.pendingSync),
+        assignmentId: entry.assignmentId || entry.assignment || '',
+        studentId: entry.studentId || entry.student || entry.idStudent || '',
+        period: Number(entry.period || entry.periodo || 1),
+        date: entry.date || entry.fecha || String(occurredAt || '').slice(0, 10) || todayISO(),
+        occurredAt,
+        delta: Number(entry.delta ?? entry.points ?? entry.puntos ?? 0)
+      };
+    }).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && [-1, 1].includes(entry.delta));
   }
   function getLocalRockstarEvents(assignmentId) {
     if (isCloudReady()) return [];

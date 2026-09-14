@@ -41510,3 +41510,68 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   background: color-mix(in srgb, var(--em-notes-column-color) 45%, #09111d 55%) !important;
   box-shadow: inset 0 4px 0 #fff !important;
 }
+
+/* ========================================================================== 
+   ENCISOMATH v0.25.119 - CALIFICACIÓN GRUPAL / BUSCADOR
+   ========================================================================== */
+.em-grade-group-options [data-group-option].is-search-hidden {
+  display: none !important;
+}
+
+.em-grade-scope-modal {
+  width: min(560px, calc(100vw - 24px));
+  border-radius: 4px !important;
+}
+.em-grade-scope-copy {
+  margin: 8px 0 16px;
+  color: #aebbd0;
+  font-size: .82rem;
+  line-height: 1.55;
+}
+.em-grade-scope-copy strong { color: #fff; }
+.em-grade-scope-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.em-grade-scope-choice {
+  min-width: 0;
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 4px;
+  background: #0a1019;
+  color: #fff;
+  text-align: left;
+  font-family: "Montserrat", Arial, sans-serif;
+  cursor: pointer;
+}
+.em-grade-scope-choice > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 22%, #07101a);
+  font-size: 1.25rem;
+}
+.em-grade-scope-choice > div { min-width: 0; display: grid; gap: 5px; }
+.em-grade-scope-choice strong { font-size: .78rem; line-height: 1.25; }
+.em-grade-scope-choice small { color: #9fb0c9; font-size: .66rem; line-height: 1.4; }
+.em-grade-scope-choice:hover,
+.em-grade-scope-choice:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 70%, #fff);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--em-current-subject-color, #1368ce) 18%, transparent);
+}
+.em-grade-scope-choice.is-group {
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 16%, #0a1019);
+}
+@media (max-width: 520px) {
+  .em-grade-scope-actions { grid-template-columns: 1fr; }
+  .em-grade-scope-choice { min-height: 86px; }
+}

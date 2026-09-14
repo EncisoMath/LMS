@@ -1,6 +1,14 @@
-# EncisoMath LMS v0.25.118
+# EncisoMath LMS v0.25.119
 
-## v0.25.118 — Rockstar: escala desde 60 y penalización doble
+## v0.25.119 — Rockstars estables y edición de grupos
+- Rockstars: cada toque +1/-1 recibe un `clientMutationId` estable desde la UI. Los snapshots remotos ya no pueden pisar puntos que todavía están en vuelo; se conservan hasta que Supabase devuelve el mismo evento.
+- La carga de `rockstar_events` conserva `client_mutation_id`, `occurredAt` y el estado pendiente para reconciliar sin perder puntos durante sincronizaciones rápidas.
+- El buscador del selector de grupo ahora oculta realmente las filas que no coinciden; antes el CSS `display:flex` anulaba visualmente el atributo `hidden`.
+- Al modificar una nota que ya pertenece a un grupo, el LMS pregunta primero **Modificar individualmente** o **Modificar grupalmente**. La edición individual conserva al estudiante dentro del grupo y cambia únicamente su registro.
+- No requiere SQL nuevo.
+
+
+## v0.25.119 — Rockstar: escala desde 60 y penalización doble
 
 - La nota Rockstar parte de **60 cuando el estudiante tiene 0 puntos**.
 - Los puntos positivos reparten los 40 puntos restantes hasta llegar a 100 al cumplir la meta del periodo.

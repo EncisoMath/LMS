@@ -1792,7 +1792,8 @@
     let rows = await gradebookGet(payload.activityId, payload.assignmentId);
     if (!rows) rows = seedOfflineGradebook(payload.activityId, payload.assignmentId);
     const codes = [...new Set([payload.primaryStudentCode, ...(payload.selectedStudentCodes || [])].filter(Boolean))];
-    const groupId = codes.length > 1 ? (payload.gradingGroupId || `offline-group-${mutationId}`) : '';
+    const preservedGroupId = payload.preserveExistingGroup ? String(payload.gradingGroupId || '') : '';
+    const groupId = preservedGroupId || (codes.length > 1 ? (payload.gradingGroupId || `offline-group-${mutationId}`) : '');
     if (groupId) payload.gradingGroupId = groupId;
     const submittedAt = nowIso();
     let submission = payload.existingSubmissionFile && typeof payload.existingSubmissionFile === 'object' ? { ...payload.existingSubmissionFile } : {};
@@ -1821,7 +1822,9 @@
         row.latestDeliveryStatus = payload.deliveryStatus;
       }
     });
-    const removed = [...new Set(payload.previousGroupStudentCodes || [])].filter((code) => !codes.includes(code));
+    const removed = payload.preserveExistingGroup
+      ? []
+      : [...new Set(payload.previousGroupStudentCodes || [])].filter((code) => !codes.includes(code));
     rows.forEach((row) => {
       if (removed.includes(String(row.studentCode))) row.gradingGroupId = '';
     });
@@ -2350,7 +2353,8 @@
     },
     addRockstarEvent(event) {
       return executeMutation('addRockstarEvent', { event }, ({ event: safeEvent, clientMutationId }) => cloud.addRockstarEvent({ ...safeEvent, clientMutationId }), ({ event: safeEvent }, mutationId) => optimisticRockstar(safeEvent, mutationId), {
-        fallbackResult: { id: `offline-${uuid()}`, occurred_at: event.occurredAt || nowIso() },
+        mutationId: event?.clientMutationId || undefined,
+        fallbackResult: { id: `offline-${event?.clientMutationId || uuid()}`, occurred_at: event.occurredAt || nowIso() },
         queueOnAnyError: true
       });
     },

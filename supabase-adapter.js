@@ -1017,7 +1017,7 @@
     while (true) {
       const result = await supabaseClient
         .from('rockstar_events')
-        .select('id,assignment_id,student_id,period,points,category,reason,occurred_at')
+        .select('id,assignment_id,student_id,period,points,category,reason,occurred_at,client_mutation_id')
         .in('assignment_id', safeAssignmentIds)
         .order('occurred_at', { ascending: true })
         .order('id', { ascending: true })
@@ -1048,6 +1048,8 @@
         period: Number(row.period || 1),
         date: String(row.occurred_at || '').slice(0, 10),
         occurredAt: row.occurred_at,
+        clientMutationId: row.client_mutation_id || '',
+        pendingSync: false,
         delta: Number(row.points || 0),
         category: row.category || '',
         reason: row.reason || ''
@@ -2846,14 +2848,15 @@
     };
   }
 
-  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', scores = {}, rubricScores = {}, stickerUrl = '', observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
+  async function saveActivityGrades({ activityId, assignmentId, primaryStudentCode, selectedStudentCodes = [], previousGroupStudentCodes = [], gradingGroupId = '', preserveExistingGroup = false, scores = {}, rubricScores = {}, stickerUrl = '', observations = '', existingSubmissionFile = {}, submissionFile = null, deliveryStatus = '', deliveryNote = '', mutationId = '', clientMutationId = '' }) {
     const supabaseClient = getClient();
     const activeSession = await requireAuthenticatedSession();
     if (!activeSession?.user?.id) throw new Error('No hay una sesión activa.');
     const codes = [...new Set([primaryStudentCode, ...(selectedStudentCodes || [])].filter(Boolean))];
     const dbRows = codes.map((code) => ({ code, studentId: resolveStudentDbId(code) }));
     if (dbRows.some((row) => !row.studentId)) throw new Error('No se encontró uno de los estudiantes seleccionados.');
-    const groupId = codes.length > 1 ? (String(gradingGroupId || '').trim() || globalThis.crypto?.randomUUID?.() || null) : null;
+    const preservedGroupId = preserveExistingGroup ? String(gradingGroupId || '').trim() : '';
+    const groupId = preservedGroupId || (codes.length > 1 ? (String(gradingGroupId || '').trim() || globalThis.crypto?.randomUUID?.() || null) : null);
     const stableMutationId = mutationId || clientMutationId || '';
     const selectedStudentIds = dbRows.map((row) => row.studentId);
     const currentSubmissionResult = await supabaseClient
@@ -2904,7 +2907,9 @@
       throw normalizeError(upsertResult.error, 'No se pudo guardar la calificación.');
     }
 
-    const removedCodes = [...new Set(previousGroupStudentCodes || [])].filter((code) => !codes.includes(code));
+    const removedCodes = preserveExistingGroup
+      ? []
+      : [...new Set(previousGroupStudentCodes || [])].filter((code) => !codes.includes(code));
     const removedIds = removedCodes.map(resolveStudentDbId).filter(Boolean);
     if (removedIds.length) {
       const ungroupResult = await supabaseClient
