@@ -42018,7 +42018,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.129 - FOTO DE PERFIL / HALO ANDROID
+   ENCISOMATH v0.25.130 - FOTO DE PERFIL / HALO PEGADO AL AVATAR
    ========================================================= */
 .em-student-profile-photo-wrap {
   position: relative;
@@ -42062,31 +42062,28 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   opacity: 0;
   transition:
     opacity .56s cubic-bezier(.22,.61,.36,1),
-    transform .56s cubic-bezier(.22,.61,.36,1),
-    border-color .34s linear,
     box-shadow .34s linear;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
-  will-change: opacity, transform, box-shadow;
+  will-change: opacity, box-shadow;
 }
 .em-student-avatar-glow-layer.is-outer {
-  inset: -7px;
+  /* Mismo rectángulo del avatar: el glow sale del borde, no desde un marco separado. */
+  inset: 0;
   z-index: 1;
-  border: 2px solid transparent;
-  border-radius: 11px;
-  transform: translateZ(0) scale(.92);
+  border: 0;
+  border-radius: var(--radius);
 }
 .em-student-avatar-glow-layer.is-inner {
-  inset: 3px;
+  /* Se monta apenas dentro de la foto para que el resplandor interior nazca del borde. */
+  inset: 2px;
   z-index: 3;
-  border: 2px solid transparent;
-  border-radius: 3px;
-  transform: translateZ(0) scale(.96);
+  border: 0;
+  border-radius: max(1px, calc(var(--radius) - 2px));
 }
 .em-student-avatar-glow-layer.is-visible {
   opacity: 1 !important;
-  transform: translateZ(0) scale(1) !important;
 }
 
 .em-student-profile-photo-hint {
@@ -42315,8 +42312,6 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-student-avatar-glow-layer {
     transition:
       opacity .56s cubic-bezier(.22,.61,.36,1) !important,
-      transform .56s cubic-bezier(.22,.61,.36,1) !important,
-      border-color .34s linear !important,
       box-shadow .34s linear !important;
   }
   .em-student-avatar-confetti span {

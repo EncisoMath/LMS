@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.129';
+  const APP_VERSION = '0.25.130';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -18373,10 +18373,10 @@
     let cleanupTimer = 0;
 
     const paint = (color) => {
-      outer.style.borderColor = color;
-      outer.style.boxShadow = `0 0 0 2px ${color}, 0 0 12px ${color}, 0 0 26px ${color}`;
-      inner.style.borderColor = color;
-      inner.style.boxShadow = `inset 0 0 0 2px ${color}, inset 0 0 15px ${color}`;
+      // El halo exterior nace exactamente desde el borde del avatar.
+      // Sin contorno separado ni "foso" transparente entre foto y glow.
+      outer.style.boxShadow = `0 0 6px 1px ${color}, 0 0 15px 4px ${color}b8, 0 0 28px 7px ${color}70`;
+      inner.style.boxShadow = `inset 0 0 0 2px ${color}, inset 0 0 12px 3px ${color}c8`;
     };
 
     paint(colors[0]);

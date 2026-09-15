@@ -1,4 +1,10 @@
-# EncisoMath LMS v0.25.129
+# EncisoMath LMS v0.25.130
+
+## v0.25.130 — Halo pegado al borde del avatar
+- Corrige el marco/espacio transparente que aparecía entre la foto y el resplandor exterior en Android.
+- El glow exterior ahora nace desde el mismo borde del avatar y se difumina directamente hacia afuera.
+- El glow interior permanece pegado al borde interno, conservando fade-in, ciclo de colores y fade-out.
+
 
 ## v0.25.129 — Halo de avatar compatible con Android
 - El onboarding de foto de perfil usa capas DOM reales para el resplandor exterior e interior, evitando fallos de renderizado de pseudo-elementos en Chrome/PWA Android.
