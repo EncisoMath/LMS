@@ -42018,13 +42018,14 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.128 - FOTO DE PERFIL / HALO RESTAURADO
+   ENCISOMATH v0.25.129 - FOTO DE PERFIL / HALO ANDROID
    ========================================================= */
 .em-student-profile-photo-wrap {
   position: relative;
   width: max-content;
   margin-top: -34px;
   z-index: 4;
+  overflow: visible !important;
 }
 .em-student-profile-photo-button {
   position: relative;
@@ -42037,6 +42038,8 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   background: transparent;
   cursor: pointer;
   isolation: isolate;
+  overflow: visible !important;
+  -webkit-tap-highlight-color: transparent;
 }
 .em-student-profile-photo-button .profile-avatar {
   position: relative;
@@ -42047,81 +42050,58 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   display: block;
   border-radius: var(--radius);
 }
-.em-student-profile-photo-button::before,
-.em-student-profile-photo-button::after {
-  content: "";
+/*
+  Capas DOM reales en vez de ::before/::after.
+  Chrome/PWA Android renderiza de forma mucho más fiable los box-shadow
+  animados/transicionados cuando pertenecen a elementos reales.
+*/
+.em-student-avatar-glow-layer {
   position: absolute;
+  display: block;
   pointer-events: none;
   opacity: 0;
+  transition:
+    opacity .56s cubic-bezier(.22,.61,.36,1),
+    transform .56s cubic-bezier(.22,.61,.36,1),
+    border-color .34s linear,
+    box-shadow .34s linear;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: opacity, transform, box-shadow;
 }
-/* Halo exterior: entra y sale con fade, sin apagarse de golpe. */
-.em-student-profile-photo-button::before {
-  inset: -8px;
+.em-student-avatar-glow-layer.is-outer {
+  inset: -7px;
   z-index: 1;
+  border: 2px solid transparent;
   border-radius: 11px;
-  filter: blur(9px);
-  transform: scale(.92);
-  transform-origin: center;
+  transform: translateZ(0) scale(.92);
 }
-/* Halo interior: se dibuja encima del borde interno de la foto. */
-.em-student-profile-photo-button::after {
+.em-student-avatar-glow-layer.is-inner {
   inset: 3px;
   z-index: 3;
+  border: 2px solid transparent;
   border-radius: 3px;
-  background: transparent !important;
-  box-shadow: inset 0 0 0 2px transparent, inset 0 0 16px transparent;
+  transform: translateZ(0) scale(.96);
 }
-.em-student-profile-photo-button.is-avatar-hint-glow::before {
-  animation:
-    emStudentAvatarRainbow127 2.35s linear infinite !important,
-    emStudentAvatarGlowEnvelope128 7.5s ease-in-out both !important;
+.em-student-avatar-glow-layer.is-visible {
+  opacity: 1 !important;
+  transform: translateZ(0) scale(1) !important;
 }
-.em-student-profile-photo-button.is-avatar-hint-glow::after {
-  animation:
-    emStudentAvatarInnerRainbow127 2.35s linear infinite !important,
-    emStudentAvatarInnerEnvelope128 7.5s ease-in-out both !important;
-}
-@keyframes emStudentAvatarGlowEnvelope128 {
-  0% { opacity: 0; transform: scale(.90); }
-  12% { opacity: 1; transform: scale(1); }
-  82% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(.94); }
-}
-@keyframes emStudentAvatarInnerEnvelope128 {
-  0% { opacity: 0; }
-  12% { opacity: 1; }
-  82% { opacity: 1; }
-  100% { opacity: 0; }
-}
-@keyframes emStudentAvatarRainbow127 {
-  0%,100% { background:#e21b3c; box-shadow:0 0 14px #e21b3c,0 0 26px rgba(226,27,60,.55); }
-  16% { background:#1368ce; box-shadow:0 0 14px #1368ce,0 0 26px rgba(19,104,206,.55); }
-  33% { background:#24b45a; box-shadow:0 0 14px #24b45a,0 0 26px rgba(36,180,90,.55); }
-  50% { background:#f1c40f; box-shadow:0 0 14px #f1c40f,0 0 26px rgba(241,196,15,.55); }
-  67% { background:#d9e2ec; box-shadow:0 0 14px #d9e2ec,0 0 26px rgba(217,226,236,.52); }
-  84% { background:#EBB513; box-shadow:0 0 14px #EBB513,0 0 28px rgba(235,181,19,.62); }
-}
-@keyframes emStudentAvatarInnerRainbow127 {
-  0%,100% { box-shadow:inset 0 0 0 2px rgba(226,27,60,.92),inset 0 0 14px rgba(226,27,60,.55); }
-  16% { box-shadow:inset 0 0 0 2px rgba(19,104,206,.94),inset 0 0 14px rgba(19,104,206,.58); }
-  33% { box-shadow:inset 0 0 0 2px rgba(36,180,90,.94),inset 0 0 14px rgba(36,180,90,.58); }
-  50% { box-shadow:inset 0 0 0 2px rgba(241,196,15,.94),inset 0 0 14px rgba(241,196,15,.58); }
-  67% { box-shadow:inset 0 0 0 2px rgba(217,226,236,.94),inset 0 0 14px rgba(217,226,236,.55); }
-  84% { box-shadow:inset 0 0 0 2px rgba(235,181,19,.96),inset 0 0 15px rgba(235,181,19,.64); }
-}
+
 .em-student-profile-photo-hint {
   position: absolute;
   left: 0;
   top: calc(100% + 10px);
   width: max-content;
   max-width: min(250px, calc(100vw - 28px));
-  padding: 7px 10px;
-  border: 1px solid rgba(255,255,255,.13);
+  padding: 8px 11px;
+  border: 1px solid rgba(255,255,255,.22);
   border-radius: 4px;
-  background: #0b1420;
-  color: #f7fbff;
-  box-shadow: 0 12px 30px rgba(0,0,0,.36), 0 0 18px rgba(19,104,206,.18);
-  font: 800 .68rem/1.25 Montserrat, Arial, sans-serif;
+  background: #1368CE;
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,.38), 0 0 22px rgba(19,104,206,.38);
+  font: 850 .68rem/1.25 Montserrat, Arial, sans-serif;
   text-align: left;
   opacity: 0;
   transform: translateY(9px) scale(.96);
@@ -42137,9 +42117,9 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   top:-5px;
   width:9px;
   height:9px;
-  background:#0b1420;
-  border-left:1px solid rgba(255,255,255,.13);
-  border-top:1px solid rgba(255,255,255,.13);
+  background:#1368CE;
+  border-left:1px solid rgba(255,255,255,.22);
+  border-top:1px solid rgba(255,255,255,.22);
   transform:rotate(45deg);
 }
 .em-student-profile-photo-hint.is-visible {
@@ -42331,16 +42311,13 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-student-avatar-source-choices { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  /* Este onboarding se conserva incluso si Windows reduce las animaciones. */
-  .em-student-profile-photo-button.is-avatar-hint-glow::before {
-    animation:
-      emStudentAvatarRainbow127 2.35s linear infinite !important,
-      emStudentAvatarGlowEnvelope128 7.5s ease-in-out both !important;
-  }
-  .em-student-profile-photo-button.is-avatar-hint-glow::after {
-    animation:
-      emStudentAvatarInnerRainbow127 2.35s linear infinite !important,
-      emStudentAvatarInnerEnvelope128 7.5s ease-in-out both !important;
+  /* El onboarding del avatar se conserva: su transición es parte de la guía visual. */
+  .em-student-avatar-glow-layer {
+    transition:
+      opacity .56s cubic-bezier(.22,.61,.36,1) !important,
+      transform .56s cubic-bezier(.22,.61,.36,1) !important,
+      border-color .34s linear !important,
+      box-shadow .34s linear !important;
   }
   .em-student-avatar-confetti span {
     animation:emStudentAvatarConfetti126 1.55s cubic-bezier(.15,.72,.23,1) var(--delay) both !important;

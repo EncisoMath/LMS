@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.128';
+  const APP_VERSION = '0.25.129';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -18353,6 +18353,75 @@
     window.setTimeout(() => layer.remove(), 1900);
   }
 
+  function runStudentAvatarHomeGlow(button) {
+    if (!button?.isConnected) return;
+    const outer = button.querySelector('[data-student-avatar-glow="outer"]');
+    const inner = button.querySelector('[data-student-avatar-glow="inner"]');
+    if (!outer || !inner) return;
+
+    const colors = [
+      '#e21b3c', // rojo
+      '#1368ce', // azul EncisoMath
+      '#24b45a', // verde
+      '#f1c40f', // amarillo
+      '#d9e2ec', // plateado
+      '#EBB513'  // dorado
+    ];
+    let index = 0;
+    let colorTimer = 0;
+    let fadeTimer = 0;
+    let cleanupTimer = 0;
+
+    const paint = (color) => {
+      outer.style.borderColor = color;
+      outer.style.boxShadow = `0 0 0 2px ${color}, 0 0 12px ${color}, 0 0 26px ${color}`;
+      inner.style.borderColor = color;
+      inner.style.boxShadow = `inset 0 0 0 2px ${color}, inset 0 0 15px ${color}`;
+    };
+
+    paint(colors[0]);
+    button.classList.add('is-avatar-hint-glow');
+
+    // Dos frames garantizan que Android pinte primero el estado 0 y luego
+    // ejecute la transición de opacidad, incluso dentro de una PWA instalada.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (!button.isConnected) return;
+        outer.classList.add('is-visible');
+        inner.classList.add('is-visible');
+      });
+    });
+
+    colorTimer = window.setInterval(() => {
+      if (!button.isConnected) {
+        window.clearInterval(colorTimer);
+        return;
+      }
+      index = (index + 1) % colors.length;
+      paint(colors[index]);
+    }, 720);
+
+    // Fade-out real antes de retirar el efecto.
+    fadeTimer = window.setTimeout(() => {
+      window.clearInterval(colorTimer);
+      outer.classList.remove('is-visible');
+      inner.classList.remove('is-visible');
+    }, 7000);
+
+    cleanupTimer = window.setTimeout(() => {
+      window.clearTimeout(fadeTimer);
+      button.classList.remove('is-avatar-hint-glow');
+      outer.removeAttribute('style');
+      inner.removeAttribute('style');
+    }, 7800);
+
+    button._encisoAvatarGlowCleanup = () => {
+      window.clearInterval(colorTimer);
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(cleanupTimer);
+    };
+  }
+
   function scheduleStudentAvatarHomeHint(root = document) {
     const button = root.querySelector('#studentProfilePhotoButton');
     const hint = root.querySelector('#studentProfilePhotoHint');
@@ -18361,14 +18430,13 @@
     studentAvatarHintShown.add(key);
     window.setTimeout(() => {
       if (!button.isConnected) return;
-      button.classList.add('is-avatar-hint-glow');
+      runStudentAvatarHomeGlow(button);
     }, 500);
     window.setTimeout(() => {
       if (!hint.isConnected) return;
       hint.classList.add('is-visible');
     }, 1500);
     window.setTimeout(() => hint?.classList.remove('is-visible'), 6200);
-    window.setTimeout(() => button?.classList.remove('is-avatar-hint-glow'), 8300);
   }
 
   function openStudentProfileAvatarModal() {
@@ -18504,7 +18572,9 @@
             </div>
             <div class="em-student-profile-photo-wrap">
               <button class="em-student-profile-photo-button" id="studentProfilePhotoButton" type="button" aria-label="Abrir foto de perfil">
+                <span class="em-student-avatar-glow-layer is-outer" data-student-avatar-glow="outer" aria-hidden="true"></span>
                 <img class="profile-avatar" data-student-profile-photo src="${escapeAttr(student.photo || './assets/default-avatar.svg')}" alt="Foto de perfil" />
+                <span class="em-student-avatar-glow-layer is-inner" data-student-avatar-glow="inner" aria-hidden="true"></span>
               </button>
               <div class="em-student-profile-photo-hint" id="studentProfilePhotoHint" role="status">Ya puedes agregar fotos de perfil</div>
             </div>

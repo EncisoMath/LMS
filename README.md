@@ -1,4 +1,10 @@
-# EncisoMath LMS v0.25.128
+# EncisoMath LMS v0.25.129
+
+## v0.25.129 — Halo de avatar compatible con Android
+- El onboarding de foto de perfil usa capas DOM reales para el resplandor exterior e interior, evitando fallos de renderizado de pseudo-elementos en Chrome/PWA Android.
+- Fade-in y fade-out controlados por JavaScript, con ciclo rojo, azul, verde, amarillo, plateado y dorado.
+- La burbuja informativa ahora usa azul EncisoMath `#1368CE`, texto blanco y conserva el anclaje a la izquierda.
+
 
 ## v0.25.128 — Fotos de perfil de estudiantes
 
