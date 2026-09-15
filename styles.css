@@ -42018,7 +42018,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.126 - FOTO DE PERFIL DEL ESTUDIANTE
+   ENCISOMATH v0.25.127 - FOTO DE PERFIL DEL ESTUDIANTE
    ========================================================= */
 .em-student-profile-photo-wrap {
   position: relative;
@@ -42044,21 +42044,45 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   margin-top: 0;
   display: block;
 }
-.em-student-profile-photo-button::before {
+.em-student-profile-photo-button::before,
+.em-student-profile-photo-button::after {
   content: "";
   position: absolute;
-  inset: -5px;
-  z-index: -1;
-  border-radius: 8px;
-  opacity: 0;
-  filter: blur(8px);
   pointer-events: none;
+  opacity: 0;
+}
+/* Halo exterior: entra y sale con fade, sin apagarse de golpe. */
+.em-student-profile-photo-button::before {
+  inset: -6px;
+  z-index: -1;
+  border-radius: 9px;
+  filter: blur(8px);
+}
+/* Halo interior: se dibuja encima del borde interno de la foto. */
+.em-student-profile-photo-button::after {
+  inset: 3px;
+  z-index: 2;
+  border-radius: 3px;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 2px transparent, inset 0 0 14px transparent;
 }
 .em-student-profile-photo-button.is-avatar-hint-glow::before {
-  opacity: 1;
-  animation: emStudentAvatarRainbow126 2.35s linear infinite !important;
+  animation:
+    emStudentAvatarRainbow127 2.35s linear infinite !important,
+    emStudentAvatarGlowEnvelope127 7.5s ease-in-out both !important;
 }
-@keyframes emStudentAvatarRainbow126 {
+.em-student-profile-photo-button.is-avatar-hint-glow::after {
+  animation:
+    emStudentAvatarInnerRainbow127 2.35s linear infinite !important,
+    emStudentAvatarGlowEnvelope127 7.5s ease-in-out both !important;
+}
+@keyframes emStudentAvatarGlowEnvelope127 {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes emStudentAvatarRainbow127 {
   0%,100% { background:#e21b3c; box-shadow:0 0 14px #e21b3c,0 0 26px rgba(226,27,60,.55); }
   16% { background:#1368ce; box-shadow:0 0 14px #1368ce,0 0 26px rgba(19,104,206,.55); }
   33% { background:#24b45a; box-shadow:0 0 14px #24b45a,0 0 26px rgba(36,180,90,.55); }
@@ -42066,12 +42090,20 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   67% { background:#d9e2ec; box-shadow:0 0 14px #d9e2ec,0 0 26px rgba(217,226,236,.52); }
   84% { background:#EBB513; box-shadow:0 0 14px #EBB513,0 0 28px rgba(235,181,19,.62); }
 }
+@keyframes emStudentAvatarInnerRainbow127 {
+  0%,100% { box-shadow:inset 0 0 0 2px rgba(226,27,60,.92),inset 0 0 14px rgba(226,27,60,.55); }
+  16% { box-shadow:inset 0 0 0 2px rgba(19,104,206,.94),inset 0 0 14px rgba(19,104,206,.58); }
+  33% { box-shadow:inset 0 0 0 2px rgba(36,180,90,.94),inset 0 0 14px rgba(36,180,90,.58); }
+  50% { box-shadow:inset 0 0 0 2px rgba(241,196,15,.94),inset 0 0 14px rgba(241,196,15,.58); }
+  67% { box-shadow:inset 0 0 0 2px rgba(217,226,236,.94),inset 0 0 14px rgba(217,226,236,.55); }
+  84% { box-shadow:inset 0 0 0 2px rgba(235,181,19,.96),inset 0 0 15px rgba(235,181,19,.64); }
+}
 .em-student-profile-photo-hint {
   position: absolute;
-  left: 50%;
+  left: 0;
   top: calc(100% + 10px);
   width: max-content;
-  max-width: min(250px, 74vw);
+  max-width: min(250px, calc(100vw - 28px));
   padding: 7px 10px;
   border: 1px solid rgba(255,255,255,.13);
   border-radius: 4px;
@@ -42079,28 +42111,29 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   color: #f7fbff;
   box-shadow: 0 12px 30px rgba(0,0,0,.36), 0 0 18px rgba(19,104,206,.18);
   font: 800 .68rem/1.25 Montserrat, Arial, sans-serif;
-  text-align: center;
+  text-align: left;
   opacity: 0;
-  transform: translate(-50%, 9px) scale(.96);
+  transform: translateY(9px) scale(.96);
+  transform-origin: top left;
   pointer-events: none;
-  transition: opacity .28s ease, transform .36s cubic-bezier(.16,1,.3,1);
+  transition: opacity .32s ease, transform .40s cubic-bezier(.16,1,.3,1);
   z-index: 8;
 }
 .em-student-profile-photo-hint::before {
   content:"";
   position:absolute;
-  left:50%;
+  left:24px;
   top:-5px;
   width:9px;
   height:9px;
   background:#0b1420;
   border-left:1px solid rgba(255,255,255,.13);
   border-top:1px solid rgba(255,255,255,.13);
-  transform:translateX(-50%) rotate(45deg);
+  transform:rotate(45deg);
 }
 .em-student-profile-photo-hint.is-visible {
   opacity:1;
-  transform:translate(-50%,0) scale(1);
+  transform:translateY(0) scale(1);
 }
 
 .em-student-avatar-modal {
