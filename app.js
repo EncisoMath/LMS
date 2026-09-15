@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.127';
+  const APP_VERSION = '0.25.128';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -18368,7 +18368,7 @@
       hint.classList.add('is-visible');
     }, 1500);
     window.setTimeout(() => hint?.classList.remove('is-visible'), 6200);
-    window.setTimeout(() => button?.classList.remove('is-avatar-hint-glow'), 8000);
+    window.setTimeout(() => button?.classList.remove('is-avatar-hint-glow'), 8300);
   }
 
   function openStudentProfileAvatarModal() {

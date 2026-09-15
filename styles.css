@@ -42018,7 +42018,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 
 /* =========================================================
-   ENCISOMATH v0.25.127 - FOTO DE PERFIL DEL ESTUDIANTE
+   ENCISOMATH v0.25.128 - FOTO DE PERFIL / HALO RESTAURADO
    ========================================================= */
 .em-student-profile-photo-wrap {
   position: relative;
@@ -42039,10 +42039,13 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   isolation: isolate;
 }
 .em-student-profile-photo-button .profile-avatar {
+  position: relative;
+  z-index: 2;
   width: 72px;
   height: 72px;
   margin-top: 0;
   display: block;
+  border-radius: var(--radius);
 }
 .em-student-profile-photo-button::before,
 .em-student-profile-photo-button::after {
@@ -42053,33 +42056,41 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 }
 /* Halo exterior: entra y sale con fade, sin apagarse de golpe. */
 .em-student-profile-photo-button::before {
-  inset: -6px;
-  z-index: -1;
-  border-radius: 9px;
-  filter: blur(8px);
+  inset: -8px;
+  z-index: 1;
+  border-radius: 11px;
+  filter: blur(9px);
+  transform: scale(.92);
+  transform-origin: center;
 }
 /* Halo interior: se dibuja encima del borde interno de la foto. */
 .em-student-profile-photo-button::after {
   inset: 3px;
-  z-index: 2;
+  z-index: 3;
   border-radius: 3px;
   background: transparent !important;
-  box-shadow: inset 0 0 0 2px transparent, inset 0 0 14px transparent;
+  box-shadow: inset 0 0 0 2px transparent, inset 0 0 16px transparent;
 }
 .em-student-profile-photo-button.is-avatar-hint-glow::before {
   animation:
     emStudentAvatarRainbow127 2.35s linear infinite !important,
-    emStudentAvatarGlowEnvelope127 7.5s ease-in-out both !important;
+    emStudentAvatarGlowEnvelope128 7.5s ease-in-out both !important;
 }
 .em-student-profile-photo-button.is-avatar-hint-glow::after {
   animation:
     emStudentAvatarInnerRainbow127 2.35s linear infinite !important,
-    emStudentAvatarGlowEnvelope127 7.5s ease-in-out both !important;
+    emStudentAvatarInnerEnvelope128 7.5s ease-in-out both !important;
 }
-@keyframes emStudentAvatarGlowEnvelope127 {
+@keyframes emStudentAvatarGlowEnvelope128 {
+  0% { opacity: 0; transform: scale(.90); }
+  12% { opacity: 1; transform: scale(1); }
+  82% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.94); }
+}
+@keyframes emStudentAvatarInnerEnvelope128 {
   0% { opacity: 0; }
-  10% { opacity: 1; }
-  84% { opacity: 1; }
+  12% { opacity: 1; }
+  82% { opacity: 1; }
   100% { opacity: 0; }
 }
 @keyframes emStudentAvatarRainbow127 {
@@ -42312,7 +42323,7 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
 @media (min-width: 720px) {
   .em-student-profile-photo-wrap { margin-top:-38px; }
   .em-student-profile-photo-button,
-  .em-student-profile-photo-button .profile-avatar { width:82px; height:82px; }
+ .em-student-profile-photo-button .profile-avatar { width:82px; height:82px; }
 }
 @media (max-width: 520px) {
   .em-student-avatar-modal { width:calc(100vw - 20px) !important; }
@@ -42320,8 +42331,16 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   .em-student-avatar-source-choices { grid-template-columns:1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* Este onboarding se conserva incluso si Windows reduce las animaciones. */
   .em-student-profile-photo-button.is-avatar-hint-glow::before {
-    animation:emStudentAvatarRainbow126 2.35s linear infinite !important;
+    animation:
+      emStudentAvatarRainbow127 2.35s linear infinite !important,
+      emStudentAvatarGlowEnvelope128 7.5s ease-in-out both !important;
+  }
+  .em-student-profile-photo-button.is-avatar-hint-glow::after {
+    animation:
+      emStudentAvatarInnerRainbow127 2.35s linear infinite !important,
+      emStudentAvatarInnerEnvelope128 7.5s ease-in-out both !important;
   }
   .em-student-avatar-confetti span {
     animation:emStudentAvatarConfetti126 1.55s cubic-bezier(.15,.72,.23,1) var(--delay) both !important;
