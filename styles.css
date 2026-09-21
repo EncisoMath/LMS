@@ -32228,6 +32228,64 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   margin-top: 18px;
 }
 
+.em-edit-student-photo-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.em-edit-student-photo-preview {
+  width: 52px;
+  height: 52px;
+  display: block;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #ffffff;
+  border: 1px solid #d0d5dd;
+}
+
+.em-edit-student-photo-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.em-edit-student-photo-copy strong {
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.em-edit-student-photo-copy small {
+  color: var(--muted, #667085);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.em-edit-student-photo-remove {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid #e21b3c;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #b42318;
+  font-family: "Montserrat", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.em-edit-student-photo-remove:disabled {
+  opacity: .42;
+  cursor: default;
+}
+
 .em-edit-student-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -32369,6 +32427,20 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
 }
 
 @media (max-width: 560px) {
+  .em-edit-student-photo-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .em-edit-student-photo-preview {
+    width: 46px;
+    height: 46px;
+  }
+
+  .em-edit-student-photo-remove {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .em-edit-student-grid {
     grid-template-columns: 1fr;
   }

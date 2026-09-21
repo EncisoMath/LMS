@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.131';
+  const APP_VERSION = '0.25.133';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2900,6 +2900,8 @@
     if (!student || !isTeacherPortal()) return;
     const groups = teacherStudentGroups();
     const currentUsername = cleanStudentUsername(student.username) || suggestedStudentUsername(student.firstName, student.lastName, student.id);
+    const currentPhoto = String(student.photo || './assets/default-avatar.svg');
+    const hasCustomPhoto = studentHasCustomProfilePhoto(student);
     openModal(`
       <section class="modal-card em-edit-student-modal" role="dialog" aria-modal="true" aria-labelledby="editStudentTitle">
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
@@ -2907,6 +2909,14 @@
         <h2 id="editStudentTitle">Editar estudiante</h2>
         <p class="card-sub">Los cambios se aplicarán en Supabase y en todas las asignaturas del curso.</p>
         <form id="editStudentForm" class="em-edit-student-form">
+          <div class="em-edit-student-photo-row">
+            <img class="em-edit-student-photo-preview" id="editStudentPhotoPreview" src="${escapeAttr(currentPhoto)}" alt="Foto de perfil de ${escapeAttr(student.fullName || 'estudiante')}" />
+            <div class="em-edit-student-photo-copy">
+              <strong>Foto de perfil</strong>
+              <small id="editStudentPhotoStatus">${hasCustomPhoto ? 'Foto personalizada del estudiante.' : 'Este estudiante no tiene una foto personalizada.'}</small>
+            </div>
+            <button class="em-edit-student-photo-remove" id="editStudentPhotoRemoveBtn" type="button" ${hasCustomPhoto ? '' : 'disabled'}>🗑️ Eliminar foto</button>
+          </div>
           <div class="em-edit-student-grid">
             <label class="em-edit-student-field">
               <span>Nombres</span>
@@ -2945,8 +2955,13 @@
       const usernameInput = document.getElementById('editStudentUsername');
       const codeInput = document.getElementById('editStudentCode');
       const errorBox = document.getElementById('editStudentError');
+      const photoPreview = document.getElementById('editStudentPhotoPreview');
+      const photoStatus = document.getElementById('editStudentPhotoStatus');
+      const removePhotoButton = document.getElementById('editStudentPhotoRemoveBtn');
       const originalSuggested = suggestedStudentUsername(student.firstName, student.lastName, student.id);
       let usernameWasManuallyEdited = currentUsername !== originalSuggested;
+      let hasEditablePhoto = hasCustomPhoto;
+      let removingPhoto = false;
 
       usernameInput.addEventListener('input', () => {
         usernameWasManuallyEdited = true;
@@ -2960,6 +2975,52 @@
       firstNameInput.addEventListener('input', updateSuggestedUsername);
       lastNameInput.addEventListener('input', updateSuggestedUsername);
       codeInput.addEventListener('input', updateSuggestedUsername);
+
+      removePhotoButton?.addEventListener('click', async () => {
+        if (removingPhoto || !hasEditablePhoto) return;
+        if (!window.confirm(`¿Eliminar la foto de perfil de ${student.fullName || 'este estudiante'}?`)) return;
+        if (!cloudAPI()?.prepareRemoveStudentProfileAvatar || !cloudAPI()?.removePreparedStudentProfileAvatar || !cloudAPI()?.commitRemoveStudentProfileAvatar) {
+          errorBox.textContent = 'Actualiza el LMS para activar la eliminación de fotos de perfil.';
+          return;
+        }
+        let path = '';
+        try {
+          removingPhoto = true;
+          removePhotoButton.disabled = true;
+          removePhotoButton.textContent = 'Eliminando…';
+          errorBox.textContent = '';
+          if (photoStatus) photoStatus.textContent = 'Eliminando foto de perfil…';
+
+          const prepared = await cloudAPI().prepareRemoveStudentProfileAvatar({ studentCode: student.id || '' });
+          path = String(prepared?.path || '');
+          if (path) await cloudAPI().removePreparedStudentProfileAvatar({ path });
+          await cloudAPI().commitRemoveStudentProfileAvatar({ studentCode: student.id || '', path });
+
+          const fallbackPhoto = './assets/default-avatar.svg';
+          student.photo = fallbackPhoto;
+          (state.data?.students || []).forEach((item) => {
+            if ((student.dbId && String(item?.dbId || '') === String(student.dbId)) || String(item?.id || '') === String(student.id || '')) item.photo = fallbackPhoto;
+          });
+          document.querySelectorAll(`[data-teacher-student-photo="${CSS.escape(String(student.id || ''))}"]`).forEach((image) => {
+            image.src = fallbackPhoto;
+          });
+          if (photoPreview) photoPreview.src = fallbackPhoto;
+          if (photoStatus) photoStatus.textContent = 'Foto eliminada. El estudiante volverá a ver el avatar predeterminado.';
+          hasEditablePhoto = false;
+          removePhotoButton.textContent = '🗑️ Eliminar foto';
+          toast('Foto de perfil eliminada.');
+        } catch (error) {
+          if (path) await cloudAPI()?.cancelRemoveStudentProfileAvatar?.({ studentCode: student.id || '', path });
+          errorBox.textContent = error?.message || 'No se pudo eliminar la foto de perfil.';
+          if (photoStatus) photoStatus.textContent = 'No se pudo eliminar la foto.';
+          removePhotoButton.disabled = false;
+          removePhotoButton.textContent = '🗑️ Eliminar foto';
+        } finally {
+          removingPhoto = false;
+          removePhotoButton.disabled = !hasEditablePhoto;
+        }
+      });
+
       firstNameInput.focus();
 
       document.getElementById('editStudentForm').addEventListener('submit', async (event) => {
@@ -6177,7 +6238,7 @@
       <tr>
         <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
           <div class="em-notes-student-identity">
-            <img class="em-notes-student-avatar" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
+            <img class="em-notes-student-avatar" data-teacher-student-photo="${escapeAttr(student.id)}" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
             <span class="em-notes-student-copy">
               <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
               <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
@@ -18432,14 +18493,14 @@
     const button = root.querySelector('#studentProfilePhotoButton');
     const hint = root.querySelector('#studentProfilePhotoHint');
     const key = String(state.user?.id || 'student');
-    if (!button || !hint || studentAvatarHintShown.has(key)) return;
+    if (!button || !hint || studentAvatarHintShown.has(key) || studentHasCustomProfilePhoto(state.user)) return;
     studentAvatarHintShown.add(key);
     window.setTimeout(() => {
-      if (!button.isConnected) return;
+      if (!button.isConnected || studentHasCustomProfilePhoto(state.user)) return;
       runStudentAvatarHomeGlow(button);
     }, 500);
     window.setTimeout(() => {
-      if (!hint.isConnected) return;
+      if (!hint.isConnected || studentHasCustomProfilePhoto(state.user)) return;
       hint.classList.add('is-visible');
     }, 1500);
     window.setTimeout(() => hint?.classList.remove('is-visible'), 6200);
@@ -19013,7 +19074,7 @@
 
         <div class="em-rs-student-top">
           <div class="em-rs-avatar em-rs-avatar-person">
-            <img class="em-rs-avatar-photo" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
+            <img class="em-rs-avatar-photo" data-teacher-student-photo="${escapeAttr(id)}" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
           </div>
 
           <div class="em-rs-info">
