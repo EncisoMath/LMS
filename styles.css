@@ -32228,6 +32228,7 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   margin-top: 18px;
 }
 
+/* v0.25.134 · Foto del estudiante integrada al tema oscuro del LMS */
 .em-edit-student-photo-row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) auto;
@@ -32235,9 +32236,13 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   align-items: center;
   margin-bottom: 14px;
   padding: 10px;
-  border: 1px solid #d0d5dd;
+  border: 1px solid color-mix(in srgb, var(--maincolor) 28%, rgba(255,255,255,.11));
   border-radius: 8px;
-  background: #f8fafc;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--maincolor) 9%, rgba(255,255,255,.035)),
+      rgba(255,255,255,.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
 }
 
 .em-edit-student-photo-preview {
@@ -32246,8 +32251,9 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
   display: block;
   border-radius: 8px;
   object-fit: cover;
-  background: #ffffff;
-  border: 1px solid #d0d5dd;
+  background: rgba(255,255,255,.055);
+  border: 1px solid color-mix(in srgb, var(--maincolor) 38%, rgba(255,255,255,.14));
+  box-shadow: 0 5px 16px rgba(0,0,0,.28);
 }
 
 .em-edit-student-photo-copy {
@@ -32257,13 +32263,14 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
 }
 
 .em-edit-student-photo-copy strong {
+  color: var(--ink);
   font-family: "Montserrat", Arial, sans-serif;
   font-size: 12px;
   font-weight: 900;
 }
 
 .em-edit-student-photo-copy small {
-  color: var(--muted, #667085);
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.35;
 }
@@ -32271,14 +32278,29 @@ html[data-bg-mode="black"] .login-screen .math-bg-login .shape {
 .em-edit-student-photo-remove {
   min-height: 36px;
   padding: 0 11px;
-  border: 1px solid #e21b3c;
+  border: 1px solid rgba(248,113,113,.32);
   border-radius: 7px;
-  background: #ffffff;
-  color: #b42318;
+  background: var(--red-soft);
+  color: #fecaca;
   font-family: "Montserrat", Arial, sans-serif;
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.em-edit-student-photo-remove:hover:not(:disabled) {
+  background: rgba(239,68,68,.22);
+  border-color: rgba(248,113,113,.48);
+}
+
+.em-edit-student-photo-remove:active:not(:disabled) {
+  transform: translateY(1px) scale(.99);
+}
+
+.em-edit-student-photo-remove:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--maincolor) 72%, white);
+  outline-offset: 2px;
 }
 
 .em-edit-student-photo-remove:disabled {
