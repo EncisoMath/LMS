@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.130';
+  const APP_VERSION = '0.25.131';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -6160,6 +6160,7 @@
 
   function notesStudentRowHTML(student, columns, attendanceSessions, context) {
     const name = notesStudentNameParts(student);
+    const photo = String(student?.photo || './assets/default-avatar.svg');
     const attendanceCells = (attendanceSessions || []).map((session) => notesAttendanceCellHTML(student, session)).join('');
     const cells = columns.map((column) => {
       const cell = notesCellScore(column, student, context);
@@ -6175,9 +6176,14 @@
     return `
       <tr>
         <th class="em-notes-student-cell" scope="row" title="${escapeAttr(student.fullName || '')}">
-          <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
-          <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
-          <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
+          <div class="em-notes-student-identity">
+            <img class="em-notes-student-avatar" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
+            <span class="em-notes-student-copy">
+              <small class="em-notes-student-code">${escapeHTML(name.code)}</small>
+              <strong class="em-notes-student-lastname">${escapeHTML(name.lastName)}</strong>
+              <span class="em-notes-student-firstname">${escapeHTML(name.firstName)}</span>
+            </span>
+          </div>
         </th>
         ${attendanceCells}
         ${cells}
@@ -19000,12 +19006,15 @@
   function studentCardHTML(student, status) {
     const visualStatus = emRsStatusToVisual(status);
     const id = emRsGetStudentId(student);
+    const photo = String(student?.photo || './assets/default-avatar.svg');
     return `
       <article class="em-rs-att-card ${visualStatus}" data-student-card="${escapeAttr(id)}" data-student-id="${escapeAttr(id)}">
         <div class="em-rs-card-bg-shape ${emRsRandomShape()}"></div>
 
         <div class="em-rs-student-top">
-          <div class="em-rs-avatar em-rs-avatar-person"></div>
+          <div class="em-rs-avatar em-rs-avatar-person">
+            <img class="em-rs-avatar-photo" src="${escapeAttr(photo)}" alt="" loading="lazy" decoding="async" />
+          </div>
 
           <div class="em-rs-info">
             <h2 class="em-rs-name">${escapeHTML(emRsGetStudentName(student))}</h2>

@@ -823,6 +823,27 @@
     };
   }
 
+  async function loadStudentProfilePhotos({ studentIds = [] } = {}) {
+    const ids = [...new Set((studentIds || []).map((id) => String(id || '').trim()).filter(Boolean))];
+    if (!ids.length) return {};
+    const supabaseClient = getClient();
+    await requireAuthenticatedSession();
+    const photos = {};
+    const chunkSize = 200;
+    for (let offset = 0; offset < ids.length; offset += chunkSize) {
+      const chunk = ids.slice(offset, offset + chunkSize);
+      const { data, error } = await supabaseClient
+        .from('students')
+        .select('id,photo_url')
+        .in('id', chunk);
+      if (error) throw normalizeError(error, 'No se pudieron cargar las fotos de perfil de los estudiantes.');
+      (data || []).forEach((row) => {
+        photos[String(row.id)] = resolveProfilePhotoUrl(row.photo_url, './assets/default-avatar.svg');
+      });
+    }
+    return photos;
+  }
+
   function mapLesson(row) {
     const lesson = Array.isArray(row?.lesson) ? row.lesson[0] : row?.lesson;
     if (!lesson) return null;
@@ -3449,6 +3470,7 @@
     signOut,
     onAuthStateChange,
     loadApplicationData,
+    loadStudentProfilePhotos,
     normalizeStudentContentPayload,
     saveAttendanceStatus,
     deleteAttendanceDate,

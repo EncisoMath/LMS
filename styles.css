@@ -42318,3 +42318,48 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
     animation:emStudentAvatarConfetti126 1.55s cubic-bezier(.15,.72,.23,1) var(--delay) both !important;
   }
 }
+
+/* =========================================================
+   ENCISOMATH v0.25.131 - AVATARES DOCENTE / ESTUDIANTES + PLANILLA
+   Reutiliza students.photo_url ya cargado por Supabase sin alterar
+   las dimensiones base de las tarjetas ni de la primera columna.
+   ========================================================= */
+.em-rs-avatar-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  object-position: center;
+  background: #ecffd8;
+}
+
+.em-notes-student-identity {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.em-notes-student-avatar {
+  display: block;
+  width: 30px;
+  height: 30px;
+  aspect-ratio: 1 / 1;
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 5px;
+  object-fit: cover;
+  object-position: center;
+  background: #101a27;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .22);
+}
+
+.em-notes-student-copy {
+  display: block;
+  min-width: 0;
+}
+

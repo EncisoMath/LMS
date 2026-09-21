@@ -1,4 +1,11 @@
-# EncisoMath LMS v0.25.130
+# EncisoMath LMS v0.25.131
+
+
+## v0.25.131 — Fotos de estudiantes visibles para docente
+
+- **Docente > Estudiantes:** la lista de asistencia muestra la foto de perfil real del estudiante usando `student.photo`, con el avatar predeterminado como respaldo.
+- **Docente > Planilla:** se añadió una miniatura 1:1 a la izquierda del nombre de cada estudiante, sin ampliar la columna fija ni alterar el cálculo de notas.
+- **PWA:** se actualizó la versión de caché para que `app.js` y `styles.css` nuevos se distribuyan a instalaciones existentes.
 
 ## v0.25.130 — Halo pegado al borde del avatar
 - Corrige el marco/espacio transparente que aparecía entre la foto y el resplandor exterior en Android.
