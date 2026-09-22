@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.135';
+  const APP_VERSION = '0.25.136';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -2438,6 +2438,36 @@
       </nav>
     `;
   }
+  function teacherSubjectSectionCardsHTML(tab = 'students') {
+    const activeTab = normalizeSubjectTab(tab);
+    const items = [
+      { tab: 'students', label: 'Estudiantes', emoji: '👥' },
+      { tab: 'classes', label: 'Clases', emoji: '📚' },
+      { tab: 'activities', label: 'Actividades', emoji: '📝' },
+      { tab: 'notes', label: 'Planilla', emoji: '📊' },
+      { tab: 'rockstars', label: 'Rockstars', emoji: '🚀' },
+      { tab: 'quizzes', label: 'Quizzes', emoji: '🎮' }
+    ];
+    return `
+      <nav class="em-student-subject-sections em-teacher-subject-sections" role="tablist" aria-label="Secciones de la asignatura">
+        ${items.map((item, index) => `
+          <button
+            class="em-student-subject-card em-student-subject-card-${item.tab} em-teacher-subject-card ${activeTab === item.tab ? 'is-selected' : ''}"
+            type="button"
+            role="tab"
+            data-teacher-subject-tab="${item.tab}"
+            aria-selected="${activeTab === item.tab ? 'true' : 'false'}"
+          >
+            <span class="em-teacher-section-shape em-teacher-section-shape-${(index % 4) + 1}" aria-hidden="true"></span>
+            <span class="em-student-subject-card-copy">
+              <span class="em-student-subject-card-emoji" aria-hidden="true">${item.emoji}</span>
+              <span class="em-student-subject-card-label">${item.label}</span>
+            </span>
+          </button>
+        `).join('')}
+      </nav>
+    `;
+  }
   function syncStudentSubjectSectionCards(tab = 'classes') {
     const activeTab = normalizeSubjectTab(tab);
     document.querySelectorAll('[data-student-subject-tab]').forEach((button) => {
@@ -2446,11 +2476,35 @@
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
     });
   }
+  function syncTeacherSubjectSectionCards(tab = 'students') {
+    const activeTab = normalizeSubjectTab(tab);
+    document.querySelectorAll('[data-teacher-subject-tab]').forEach((button) => {
+      const selected = button.dataset.teacherSubjectTab === activeTab;
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      if (selected) {
+        const strip = button.closest('.em-teacher-subject-sections');
+        if (strip) {
+          const left = button.offsetLeft - Math.max(0, (strip.clientWidth - button.offsetWidth) / 2);
+          strip.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+        }
+      }
+    });
+  }
   function bindStudentSubjectSectionCards(root = document) {
     root.querySelectorAll('[data-student-subject-tab]').forEach((button) => {
       button.addEventListener('click', () => {
         const nextTab = normalizeSubjectTab(button.dataset.studentSubjectTab || 'classes');
         syncStudentSubjectSectionCards(nextTab);
+        setSubjectTab(nextTab);
+      });
+    });
+  }
+  function bindTeacherSubjectSectionCards(root = document) {
+    root.querySelectorAll('[data-teacher-subject-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextTab = normalizeSubjectTab(button.dataset.teacherSubjectTab || 'students');
+        syncTeacherSubjectSectionCards(nextTab);
         setSubjectTab(nextTab);
       });
     });
@@ -2491,23 +2545,7 @@
           </div>
         </section>
         <div class="em-subject-workspace">
-          ${studentMode ? studentSubjectSectionCardsHTML(tab) : `
-            <nav class="em-subject-section-picker" aria-label="Sección de la asignatura">
-              <label class="em-subject-section-select-wrap" for="subjectSectionSelect">
-                <span class="em-subject-section-label">Sección</span>
-                <span class="em-subject-section-current" id="subjectSectionCurrent">${escapeHTML(subjectTabDisplayLabel(tab))}</span>
-                <select class="em-subject-section-select" id="subjectSectionSelect" aria-label="Seleccionar sección">
-                  <option value="students" ${tab === 'students' ? 'selected' : ''}>👥 Estudiantes</option>
-                  <option value="classes" ${tab === 'classes' ? 'selected' : ''}>📚 Clases</option>
-                  <option value="activities" ${tab === 'activities' ? 'selected' : ''}>📝 Actividades</option>
-                  <option value="notes" ${tab === 'notes' ? 'selected' : ''}>📊 Planilla</option>
-                  <option value="rockstars" ${tab === 'rockstars' ? 'selected' : ''}>🚀 Rockstars</option>
-                  <option value="quizzes" ${tab === 'quizzes' ? 'selected' : ''}>🎮 Quizzes</option>
-                </select>
-                <span class="em-subject-section-chevron" aria-hidden="true">⌄</span>
-              </label>
-            </nav>
-          `}
+          ${studentMode ? studentSubjectSectionCardsHTML(tab) : teacherSubjectSectionCardsHTML(tab)}
           <section id="tabContent" class="section tab-section"></section>
         </div>
       </main>
@@ -2518,6 +2556,8 @@
       if (studentMode) {
         bindStudentNotificationButtons(document);
         bindStudentSubjectSectionCards(document);
+      } else {
+        bindTeacherSubjectSectionCards(document);
       }
       document.getElementById('globalPeriodSelect')?.addEventListener('change', (event) => setGlobalAcademicPeriod(Number(event.target.value), { refresh: true, animate: true }));
       const subjectSectionSelect = document.getElementById('subjectSectionSelect');
@@ -2584,6 +2624,7 @@
     if (state.activeSubjectTab === tab && content?.dataset.activeTab === tab) return;
     const previousTab = normalizeSubjectTab(state.activeSubjectTab || content?.dataset.activeTab || 'classes');
     syncStudentSubjectSectionCards(tab);
+    syncTeacherSubjectSectionCards(tab);
 
     const shouldFlowOut = Boolean(
       isStudentPortal()

@@ -42457,3 +42457,121 @@ html body #app .em-pdf-notebook.is-native .em-pdf-back {
   min-width: 0;
 }
 
+
+/* =========================================================
+   ENCISOMATH v0.25.136 - NAVEGACIÓN DOCENTE EN TARJETAS
+   Replica el patrón visual del portal estudiante y mantiene
+   las seis secciones docentes en una tira horizontal desplazable.
+========================================================= */
+.em-teacher-subject-sections {
+  display: flex !important;
+  grid-template-columns: none !important;
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 10px;
+  padding: 0 0 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 44%, transparent) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.em-teacher-subject-sections::-webkit-scrollbar {
+  height: 4px;
+}
+.em-teacher-subject-sections::-webkit-scrollbar-track {
+  background: transparent;
+}
+.em-teacher-subject-sections::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--em-current-subject-color, #1368ce) 44%, transparent);
+}
+.em-teacher-subject-card {
+  flex: 0 0 clamp(112px, 16vw, 142px);
+  width: auto !important;
+  min-width: 112px !important;
+  scroll-snap-align: start;
+}
+.em-student-subject-card-students {
+  --em-section-accent: #8b5cf6;
+}
+.em-student-subject-card-notes {
+  --em-section-accent: #1368ce;
+}
+.em-student-subject-card-rockstars {
+  --em-section-accent: #a96f00;
+}
+.em-teacher-section-shape {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+  opacity: .24;
+  background: color-mix(in srgb, var(--em-section-accent) 42%, transparent);
+  transition: background .18s ease, opacity .18s ease;
+}
+.em-teacher-subject-card.is-selected .em-teacher-section-shape {
+  background: rgba(0,0,0,.22);
+  opacity: 1;
+}
+.em-teacher-section-shape-1 {
+  width: 45px;
+  height: 45px;
+  right: -10px;
+  top: -12px;
+  border-radius: 50%;
+  animation: emAct306ShapeFloat 7.8s -2.2s ease-in-out infinite;
+}
+.em-teacher-section-shape-2 {
+  width: 39px;
+  height: 39px;
+  right: 9px;
+  bottom: -17px;
+  border-radius: 9px;
+  transform: rotate(18deg);
+  animation: emAct306ShapeFloat 8.4s -3.1s ease-in-out infinite;
+}
+.em-teacher-section-shape-3 {
+  width: 0;
+  height: 0;
+  right: -2px;
+  top: 5px;
+  border-left: 24px solid transparent;
+  border-right: 24px solid transparent;
+  border-bottom: 42px solid color-mix(in srgb, var(--em-section-accent) 42%, transparent);
+  background: transparent !important;
+  animation: emAct306ShapeFloat 8s -2.7s ease-in-out infinite;
+}
+.em-teacher-subject-card.is-selected .em-teacher-section-shape-3 {
+  border-bottom-color: rgba(0,0,0,.22);
+}
+.em-teacher-section-shape-4 {
+  width: 42px;
+  height: 9px;
+  right: -4px;
+  top: 21px;
+  border-radius: 999px;
+  transform: rotate(45deg);
+  animation: emAct306ShapeFloat 8.8s -3.4s ease-in-out infinite;
+}
+.em-teacher-section-shape-4::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  transform: rotate(90deg);
+}
+@media (max-width: 760px) {
+  .em-teacher-subject-sections {
+    gap: 5px;
+    margin-bottom: 9px;
+  }
+  .em-teacher-subject-card {
+    flex-basis: 108px;
+    min-width: 108px !important;
+  }
+}
