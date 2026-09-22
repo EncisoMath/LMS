@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.134';
+  const APP_VERSION = '0.25.135';
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -14028,6 +14028,15 @@
     const direct = contentLibraryMetadata(item).grade;
     if (direct) grades.add(direct);
 
+    // Una clase visible en 10-2 sigue perteneciendo a la biblioteca docente
+    // de grado 10. Los enlaces visibles sirven para recuperar ese grado y así
+    // mostrar la misma clase como bloqueada en 10-1/10-3, sin exponerla a sus
+    // estudiantes hasta que esos cursos se seleccionen explícitamente.
+    contentAssignmentIds(item).forEach((assignmentId) => {
+      const assignedGrade = contentGradeFromAssignmentId(assignmentId);
+      if (assignedGrade) grades.add(assignedGrade);
+    });
+
     contentLibraryAssignmentIds(item).forEach((libraryAssignmentId) => {
       const directAssignmentGrade = contentGradeFromAssignmentId(libraryAssignmentId);
       if (directAssignmentGrade) grades.add(directAssignmentGrade);
@@ -14061,12 +14070,14 @@
   }
 
   function classMatchesCurrentLibrary(item, assignment = state.assignment) {
-    if (!assignment || contentAssignmentIds(item).length) return false;
+    if (!assignment) return false;
     const currentGrade = normalizeContentGrade(assignment.grade);
 
-    // En CLASES el alcance de la biblioteca es estrictamente el grado. Una
-    // clase oculta desde cualquier 10-* debe verse en todos los 10-* y nunca
-    // en 8-*, 9-* u 11-*, aunque los textos históricos de materia/área varíen.
+    // En la vista DOCENTE, CLASES funciona como una biblioteca por grado:
+    // toda clase de 10 debe seguir apareciendo en 10-1, 10-2 y 10-3. El enlace
+    // al curso solo decide el candado (abierta/cerrada), no si la tarjeta existe.
+    // El portal ESTUDIANTE se filtra antes y continúa viendo únicamente las
+    // clases asignadas explícitamente a su curso.
     return Boolean(currentGrade && classLibraryGradeCandidates(item).has(currentGrade));
   }
 
