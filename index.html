@@ -29,6 +29,106 @@
   <script src="./background-content-sync.js?v=0.25.136"></script>
   <script src="./supabase-adapter.js?v=0.25.136"></script>
   <script src="./offline-engine.js?v=0.25.136"></script>
+  <!-- Parche temporal web móvil: solo actúa sobre el aviso de instalación. -->
+  <style>
+    .em-install-gate-screen .em-install-gate-actions.em-install-gate-optional {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .em-install-gate-screen #emTryLaterButton {
+      box-sizing: border-box;
+      display: block;
+      width: min(100%, 340px);
+      min-height: 46px;
+      padding: 11px 18px;
+      border: 1px solid rgba(255, 255, 255, .36);
+      border-radius: 13px;
+      background: rgba(6, 47, 79, .5);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 700;
+      line-height: 1.25;
+      text-align: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color .18s ease, border-color .18s ease;
+    }
+    .em-install-gate-screen #emTryLaterButton:hover,
+    .em-install-gate-screen #emTryLaterButton:focus-visible {
+      background: rgba(19, 104, 206, .66);
+      border-color: rgba(255, 255, 255, .84);
+    }
+    .em-install-gate-screen #emTryLaterButton:focus-visible {
+      outline: 3px solid #8ad4ff;
+      outline-offset: 3px;
+    }
+  </style>
+  <script>
+    (() => {
+      'use strict';
+      const KEY = 'encisomath:install-deferred-mobile:v0.25.136';
+      const DEFER_MS = 7 * 24 * 60 * 60 * 1000;
+      let deferredUntil = 0;
+      try { deferredUntil = Number(localStorage.getItem(KEY) || 0); } catch (_) {}
+
+      if (deferredUntil > Date.now() && typeof window.matchMedia === 'function') {
+        // Sólo durante el arranque: deja superar la comprobación de instalación.
+        // Se restaura la función real ANTES de utilizar los módulos/sesiones.
+        const nativeMatchMedia = window.matchMedia;
+        window.matchMedia = function (query) {
+          if (String(query).trim() === '(display-mode: standalone)') {
+            return { matches: true, media: String(query) };
+          }
+          return nativeMatchMedia.call(window, query);
+        };
+        document.addEventListener('DOMContentLoaded', () => {
+          // app.js también escucha DOMContentLoaded y evalúa el requisito
+          // sincrónicamente. Este temporizador corre al acabar esos listeners.
+          window.setTimeout(() => { window.matchMedia = nativeMatchMedia; }, 0);
+        }, { once: true });
+        return;
+      }
+
+      // Sin postergación activa, preserva la pantalla de instalación original.
+      if (deferredUntil && deferredUntil <= Date.now()) {
+        try { localStorage.removeItem(KEY); } catch (_) {}
+      }
+      const root = document.getElementById('app');
+      if (!root || typeof MutationObserver !== 'function') return;
+      const observer = new MutationObserver(() => {
+        const gate = root.querySelector('.em-install-gate-screen');
+        const actions = gate?.querySelector('.em-install-gate-actions');
+        if (!actions || actions.querySelector('#emTryLaterButton')) return;
+
+        const button = document.createElement('button');
+        button.id = 'emTryLaterButton';
+        button.type = 'button';
+        button.textContent = 'Intentar más tarde';
+        button.setAttribute('aria-label', 'Intentar más tarde y continuar en el navegador');
+        button.addEventListener('click', () => {
+          try {
+            localStorage.setItem(KEY, String(Date.now() + DEFER_MS));
+          } catch (_) {
+            const status = gate.querySelector('#installGateStatus');
+            if (status) status.textContent = 'No se pudo guardar tu elección en este navegador.';
+            return;
+          }
+          window.location.reload();
+        });
+        actions.classList.add('em-install-gate-optional');
+        actions.appendChild(button);
+        const kicker = gate.querySelector('.em-install-gate-heading .section-kicker');
+        if (kicker && kicker.textContent.trim() === 'Instalación requerida') {
+          kicker.textContent = 'Instalación recomendada';
+        }
+        observer.disconnect();
+      });
+      observer.observe(root, { childList: true, subtree: true });
+    })();
+  </script>
   <script src="./app.js?v=0.25.136"></script>
 </body>
 </html>
