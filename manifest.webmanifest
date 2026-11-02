@@ -1,7 +1,7 @@
 {
-  "name": "EncisoMath AVA",
+  "name": "EncisoMath | Plataforma Educativa de Matemáticas",
   "short_name": "EncisoMath",
-  "description": "AVA/LMS móvil para clases, asistencia y contenidos interactivos.",
+  "description": "Plataforma educativa de matemáticas con actividades, talleres, evaluaciones y herramientas para estudiantes. Aprende y sigue tu progreso con EncisoMath.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
