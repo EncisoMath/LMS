@@ -609,7 +609,29 @@ Deno.serve(async req=>{
  if(req.method!=="POST")return result({ok:false,error:"Método no permitido"},405);
  try{
   if(req.headers.get("origin")!==ORIGIN)throw Error("Origen no permitido.");
-  const body=await req.json();const credentials=parseInput(body);
+  const body=await req.json();
+  // A connection check is independent from the current gradebook and never writes grades.
+  if(body?.op==="connection_check"){
+   const cred=body.credentials||{};
+   if(!idok(cred.login)||typeof cred.password!=="string"||!cred.password||cred.password.length>240)
+    throw Error("Debes configurar un usuario y contraseña válidos en Herramientas.");
+   const schoolUrl=String(cred.school_url||REMOTE).trim();
+   let u;try{u=new URL(schoolUrl)}catch{throw Error("La dirección del colegio no es válida.")}
+   if(u.protocol!=="https:"||u.hostname!=="insroque.educa.city"||u.port||u.username||u.password||u.pathname!=="/"&&u.pathname!=="")
+    throw Error("La URL institucional debe ser https://insroque.educa.city/");
+   const token=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
+   if(!token)throw Error("Inicia sesión como docente en EncisoLMS.");
+   const supa=createClient(Deno.env.get("SUPABASE_URL")||"",Deno.env.get("SUPABASE_ANON_KEY")||"",
+     {global:{headers:{Authorization:"Bearer "+token}}});
+   const currentUser=await supa.auth.getUser(token);
+   if(currentUser.error||!currentUser.data?.user?.id)throw Error("La sesión de EncisoLMS ha caducado.");
+   const teaching=await supa.from("teaching_assignments").select("id").eq("teacher_id",currentUser.data.user.id).limit(1);
+   if(teaching.error||!teaching.data?.length)throw Error("No se encontró una carga académica autorizada para este docente.");
+   const testClient=new EducaHTTP();
+   await testClient.login(cred);
+   return result({ok:true,connection:true,school_url:REMOTE,verified_at:new Date().toISOString()});
+  }
+  const credentials=parseInput(body);
   const course=await trustedClient(req,body.snapshot.assignment_id);
   const http=new EducaHTTP();
   await http.login(credentials);
