@@ -61,7 +61,7 @@ class EducaHTTP{
   await this.request(FRONT+"/es/");
   let school=String(credentials.school_id||"").trim();
   if(!school){
-   const find=await this.request(FRONT+"/school_search.php?q=insroque",{headers:{Accept:"application/json"}});
+   const find=await this.request(FRONT+"/school_search.php?q=insroque",{headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest",Referer:FRONT+"/es/",Origin:FRONT}});
    let schools=[];try{schools=JSON.parse(find.text).schools||[]}catch{throw Error("El buscador de instituciones no devolvió un JSON verificable.")}
    const matching=schools.filter(s=>idok(s.school_id)&&/roque|insroque/i.test([s.school_name,s.subdomain,s.domain,s.url].join(" ")));
    const ids=[...new Set(matching.map(s=>String(s.school_id)))];
@@ -281,7 +281,7 @@ Deno.serve(async req=>{
   const responses=await Promise.all(targets.map(async url=>{
     const host=new URL(url).hostname;
     try{
-      const http=new EducaHTTP(),r=await http.request(url);
+      const http=new EducaHTTP(); if(url.includes("/school_search.php"))await http.request(FRONT+"/es/"); const r=await http.request(url,url.includes("/school_search.php")?{headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest",Referer:FRONT+"/es/",Origin:FRONT}}:{});
       return {host,reachable:true,bytes:r.text.length,is_json:r.text.trim().startsWith("{"),has_html:/<html|<!doctype/i.test(r.text.slice(0,1200))};
     }catch(e){return {host,reachable:false,error:e instanceof Error?e.message.slice(0,130):"Error"}}
   }));
