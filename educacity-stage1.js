@@ -8,7 +8,7 @@
  const SCHOOL='https://insroque.educa.city/';
  const COMPONENTS={academic:'Académico',attendance:'Actitudinal',rockstars:'Aptitudinal'};
  const ORDER=['academic','attendance','rockstars'];
- const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const by=id=>document.getElementById(id);
  const client=()=>window.EncisoSupabase?.getClient?.();
  let layer=null,busy=false,credential=null,preview=null,snapshot=null,replies=[],tab='summary';
@@ -237,7 +237,7 @@
  }
  function displayPreview(){
   const p=preview,changes=p.changes||[],acts=p.components||[],missing=p.unmatched||[];
-  const count=changes.length;
+  const count=changes.length,activityChanges=acts.filter(x=>x.action!=='reuse').length;
   by('ec1Body').innerHTML=
    '<div class="ec1-summary-strip"><div><strong>Período '+esc(snapshot.period)+'</strong><span>'+esc(snapshot.assignment_id.replace('mat-est-',''))+'</span></div>'+
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
@@ -248,8 +248,8 @@
    '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
    '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="grades" id="ec1TabGrades" aria-controls="ec1PanelGrades">Calificaciones</button></div>'+
    '<section class="ec1-tab-panel" id="ec1PanelSummary" role="tabpanel" aria-labelledby="ec1TabSummary">'+
-    '<h3>'+(!count&&!p.needs_creation?'La planilla está al día':'Cambios preparados para cargar')+'</h3>'+
-    '<p>'+(!count&&!p.needs_creation?'Los datos ya coinciden. Puedes comprobar nuevamente las tres actividades sin modificar notas.':'Se sincronizarán únicamente las diferencias con educa.city, conservando las demás notas.')+'</p>'+
+    '<h3>'+(!count&&!activityChanges?'La planilla está al día':'Cambios preparados para cargar')+'</h3>'+
+    '<p>'+(!count&&!activityChanges?'Los datos ya coinciden. Puedes comprobar nuevamente las tres actividades sin modificar notas.':'Se sincronizarán únicamente las diferencias con educa.city, conservando las demás notas.')+'</p>'+
     (missing.length?'<p class="ec1-warning">'+missing.length+' estudiante(s) sin correspondencia. No se enviarán sus calificaciones.</p>':'')+
     '<div class="ec1-legend">'+pill('Académico · '+snapshot.weights.academic+' %')+pill('Actitudinal · '+snapshot.weights.attendance+' %')+pill('Aptitudinal · '+snapshot.weights.rockstars+' %')+'</div></section>'+
    '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities" hidden>'+
@@ -260,7 +260,7 @@
    '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades">'+
     '<h3>Notas que cambiarán</h3><p>Una fila por estudiante. Las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
-   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button">'+(count||p.needs_creation?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
+   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button">'+(count||activityChanges?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
   by('ec1Cancel').onclick=()=>close();
   by('ec1Apply').onclick=apply;
   by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
