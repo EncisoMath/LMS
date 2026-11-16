@@ -379,7 +379,7 @@ Deno.serve(async req=>{
  if(req.method==="GET"){
   const basic={ok:true,service:"encisolms-educacity-edge",local_dependency:false,supported_operations:["preview","sync"],credentials_stored:false};
   if(new URL(req.url).searchParams.get("selftest")==="1"){
-   const testHtml='<html><script>const _data = {"ar_axe":{"10209":{"k":{"e_id":"10209","a_id":"159973","score":70}}},"ar_enrollments":{"10209":{"e_id":"10209","first_name":"Carlos","last_name":"Lopez"}}};</script></html>';
+   const testHtml='<html><script>const _data = {"ar_axe":{"987654321":{"k":{"e_id":"987654321","a_id":"987654322","score":70}}},"ar_enrollments":{"987654321":{"e_id":"987654321","first_name":"Estudiante","last_name":"Ficticio"}}};</script></html>';
    const {payload,diagnostic}=bootstrapModel(docOf(testHtml));
    const resultMatrix=scoreSource(payload);
    const formText='<form id="form_sheet_students_vs_assignments">'+
@@ -388,10 +388,10 @@ Deno.serve(async req=>{
      '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
      '</form>';
    const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
-   const ok=resultMatrix.get("10209_159973")===70&&
-     sheet.matrix.get("10209_159973")===70&&
-     sheet.byCode.get("10209")?.name==="Carlos Lopez"&&
-     sheet.f.str_cell_values==="10209_159973_70";
+   const ok=resultMatrix.get("987654321_987654322")===70&&
+     sheet.matrix.get("987654321_987654322")===70&&
+     sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
+     sheet.f.str_cell_values==="987654321_987654322_70";
    return result({ok,test:"json_bootstrap_and_gradebook_parser",cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
