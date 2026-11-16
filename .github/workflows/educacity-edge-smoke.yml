@@ -34,3 +34,20 @@ jobs:
             | tee /tmp/educacity-probe.json \
             | jq '.'
           jq -e '.ok == true and (.probe | map(.reachable) | all)' /tmp/educacity-probe.json
+      - name: Inspect public EducaCity gradebook bootstrapping
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 \
+             'https://insroque.educa.city/app/web/control/evaluation/sheets/grading_book/res/module_scripts.cied.js' -o /tmp/ec-module.js
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('/tmp/ec-module.js','utf8');
+          console.log('length',s.length,'prefix',s.slice(0,100));
+          const keys=['_data.ar_enrollments','_data.ar_assignments','_gbook.init','_gbook.load','gbook.init','get_enrollments','get_assignments','$.ajax','$.getJSON','$.post','_data =','ar_axe','module_scripts','gbook._load','load_data'];
+          for(const key of keys){
+            let p=-1,n=0;
+            while((p=s.indexOf(key,p+1))>=0 && n++<4){
+              console.log('\nSEARCH',key,'OCCURRENCE',n,'at',p);
+              console.log(s.slice(Math.max(0,p-300),Math.min(s.length,p+550)).replace(/\s+/g,' '));
+            }
+          }
+          NODE
