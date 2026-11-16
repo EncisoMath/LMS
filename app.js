@@ -6496,8 +6496,9 @@
           }
           saving = false;
           controls.forEach(item => {if(item)item.disabled = false;});
+          update();
           validation.textContent = failure?.message || 'No se pudo guardar el movimiento Rockstar.';
-          validation.hidden = false;update();
+          validation.hidden = false;
           reportCloudError('No se guardaron los puntos Rockstar', failure, {silent:true});
         }
       });
