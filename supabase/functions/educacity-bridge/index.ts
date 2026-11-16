@@ -237,6 +237,44 @@ function bootstrapModel(doc){
   parsed_keys:Object.keys(payload).sort()
  }};
 }
+
+/* Official EducaCity activity catalog can contain ungraded activities that are
+   absent from ar_axe / str_cell_values. Do not infer created IDs from grades. */
+function verifiedAssignmentIds(collection){
+ if(!collection||typeof collection!=="object"||Array.isArray(collection))return [];
+ const out=new Set();
+ for(const [key,value] of Object.entries(collection)){
+  if(!value||typeof value!=="object"||Array.isArray(value))continue;
+  const id=String(value.a_id??key);
+  if(!idok(id))continue;
+  if(idok(key)&&key!==id)throw Error("El listado de actividades contiene IDs contradictorios.");
+  out.add(id);
+ }
+ if(out.size>160)throw Error("La respuesta institucional contiene demasiadas actividades para esta planilla.");
+ return [...out];
+}
+function hasActivityCells(matrix,id){
+ const suffix="_"+id;
+ for(const key of matrix.keys())if(key.endsWith(suffix))return true;
+ return false;
+}
+/* Complete only a freshly created, officially catalogued *empty* column.
+   This mirrors the blank cells the EducaCity JS gradebook creates in Chrome.
+   Every pre-existing grade token remains byte-for-byte unchanged. */
+function materializeEmptyColumn(remote,id){
+ const activityId=String(id);
+ if(!remote.assignmentIds.includes(activityId))throw Error("No se puede preparar la actividad: falta del catálogo oficial en vivo.");
+ if(hasActivityCells(remote.matrix,activityId))return remote;
+ const students=[...remote.byCode.keys()];
+ if(!students.length||students.some(x=>!idok(x)))throw Error("Los estudiantes de la actividad no se pudieron verificar.");
+ const blanks=students.map(student=>student+"_"+activityId+"_");
+ const raw=(remote.raw?remote.raw+",":"")+blanks.join(",");
+ const matrix=readMatrix(raw);
+ if(matrix.size!==remote.matrix.size+students.length)throw Error("La preparación de celdas nuevas alteraría celdas existentes.");
+ for(const [key,v] of remote.matrix)if(!matrix.has(key)||matrix.get(key)!==v)throw Error("La matriz cambió durante la preparación de celdas vacías.");
+ return {...remote,raw,matrix,f:{...remote.f,str_cell_values:raw,str_new_cell_values:raw}};
+}
+
 function scoreSource(payload){
  const out=new Map();
  const axe=payload.ar_axe;
@@ -271,6 +309,8 @@ function parseSheet(txt,course,period){
  }
  if(f.str_cell_values&&f.str_cell_values!==f.str_new_cell_values)
   throw Error("Hay modificaciones sin guardar en la planilla REAL de educa.city. No se sobrescribió ninguna nota.");
+ const {payload,diagnostic}=bootstrapModel(document);
+ const assignmentIds=verifiedAssignmentIds(payload.ar_assignments);
  let matrix,byCode=new Map(),raw=f.str_cell_values||"";
  const domStudents=[...document.querySelectorAll(".students_list .gbook_row .one_student")];
  const students=domStudents.length?domStudents:[...document.querySelectorAll(".gbook_row .one_student")];
@@ -288,7 +328,6 @@ function parseSheet(txt,course,period){
  if(raw){
   matrix=readMatrix(raw);
  }else{
-  const {payload,diagnostic}=bootstrapModel(document);
   const saved=scoreSource(payload);
   if(saved.size){
    matrix=saved;
@@ -322,7 +361,7 @@ function parseSheet(txt,course,period){
  const validStudents=new Set(byCode.keys());
  if([...matrix.keys()].some(k=>!validStudents.has(k.split("_")[0])))
   throw Error("La matriz de educa.city contiene alumnos ajenos al listado verificado.");
- return {document,form,f,matrix,byCode,raw};
+ return {document,form,f,matrix,byCode,raw,assignmentIds};
 }
 function sheetUrl(c,period){
  const q=new URLSearchParams({mode:"gxc",a:"1",filter_et_id:PERIOD[period],et_id:PERIOD[period],
@@ -355,7 +394,8 @@ function componentFor(title){
 async function readRemote(http,course,period){
  const page=await http.request(sheetUrl(course,period));
  const sheet=parseSheet(page.text,course,period);
- const aids=[...new Set([...sheet.matrix.keys()].map(k=>k.split("_")[1]))];
+ const aids=[...new Set([...sheet.matrix.keys()].map(k=>k.split("_")[1]).concat(sheet.assignmentIds))];
+ if(!aids.length)throw Error("La planilla no devolvió actividades identificables.");
  const activities=[];
  // Metadata must come from EducaCity's live update forms, never from saved IDs.
  for(let i=0;i<aids.length;i+=6){
@@ -395,7 +435,8 @@ async function makePlan(remote,snapshot){
    if(original===null||original===undefined)continue;
    const v=scoreInt(original);
    const old=a?remote.matrix.get(st.code+"_"+a.id):null;
-   if(a&&!remote.matrix.has(st.code+"_"+a.id))throw Error("La matriz no contiene la celda de "+st.name+" / "+a.title);
+   if(a&&!remote.matrix.has(st.code+"_"+a.id)&&hasActivityCells(remote.matrix,a.id))
+    throw Error("La matriz contiene algunas celdas de "+a.title+" pero falta la de "+st.name);
    if(old===null||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:v});
   }
  }
@@ -513,21 +554,40 @@ Deno.serve(async req=>{
   const changes=plan.changes.filter(x=>x.component===key),part=previous;
   // Each invocation writes at most one component. Other components remain intact.
   if(part.action!=="reuse"){
+   // For creation require the live activity catalog. Otherwise a successful
+   // POST with zero scores could look absent, and retries could duplicate it.
+   if(part.action==="create"&&!remote.assignmentIds.length)
+    throw Error("No se obtuvo el catálogo de actividades de educa.city; no es seguro crear una nueva.");
    await postActivity(http,course,body.snapshot.period,remote.root,part);
-   const after=await readRemote(http,course,body.snapshot.period);
-   const linked=after.found[key];
-   if(!linked||!idok(linked.id)||Math.abs(linked.weight-part.weight_new)>.01||norm(linked.title)!==norm(part.title))
-    throw Error("La actividad no se pudo verificar tras el guardado. No se enviaron notas.");
+   let after=null,linked=null,readingError="";
+   for(let attempt=0;attempt<3;attempt++){
+    if(attempt)await new Promise(resolve=>setTimeout(resolve,800));
+    try{
+     after=await readRemote(http,course,body.snapshot.period);
+     linked=after.found[key]||null;
+     if(linked)break;
+    }catch(err){readingError=err instanceof Error?err.message:"Error al releer"}
+   }
+   if(!linked)
+    throw Error("La actividad se intentó guardar, pero no se localizó en la lista actual de educa.city"+
+      (readingError?" ("+readingError.slice(0,130)+")":"")+
+      ". NO se repetirá la creación: vuelve a leer y comprobar antes de intentarlo otra vez.");
+   if(!idok(linked.id)||Math.abs(linked.weight-part.weight_new)>.01||norm(linked.title)!==norm(part.title))
+    throw Error("La actividad "+linked.title+" aparece con ID "+linked.id+
+      " y peso "+linked.weight+" %, pero se esperaba "+part.weight_new+
+      " %. Corrige su configuración antes de enviar notas.");
   }
   let current=await readRemote(http,course,body.snapshot.period);
   const target=current.found[key];
   if(!target)throw Error("No se encontró la actividad recién creada.");
+  // New EducaCity activities may not have any serialized grade cells yet.
+  current=materializeEmptyColumn(current,target.id);
   const edits=changes.filter(x=>current.matrix.has(x.student_id+"_"+target.id) &&
     current.matrix.get(x.student_id+"_"+target.id)!==x.after);
   if(edits.length!==changes.length)throw Error("Cambió la matriz de alumnos entre la vista previa y el guardado; deteniendo el envío.");
   for(let i=0;i<edits.length;i+=25){
    const group=edits.slice(i,i+25);
-   if(i){current=await readRemote(http,course,body.snapshot.period);}
+   if(i){current=materializeEmptyColumn(await readRemote(http,course,body.snapshot.period),target.id);}
    await postGrades(http,current,course,body.snapshot.period,target.id,group);
    // Allow a short propagation delay; NEVER repeat the POST automatically.
    let observed=null,unconfirmed=[];
