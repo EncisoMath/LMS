@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.143';
+const SW_VERSION = 'encisomath-offline-v0.25.144';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -174,6 +174,31 @@ async function networkFirstNavigation(request) {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
   }
+}
+
+// El código y CSS de la aplicación deben solicitar siempre su versión más nueva.
+// Nunca entregar scripts obsoletos solo porque ignoreSearch encuentra otra versión.
+const LIVE_SHELL_FILES = new Set([
+ 'app.js','educacity-stage1.js','educacity-stage1.css','styles.css',
+ 'supabase-adapter.js','supabase-config.js','offline-engine.js','background-content-sync.js'
+]);
+async function networkFirstShellAsset(request) {
+ const cache = await caches.open(APP_CACHE);
+ const controller = new AbortController();
+ const timer = setTimeout(() => controller.abort(), 6500);
+ try {
+  const response = await fetch(new Request(request, {cache:'no-store'}), {signal:controller.signal});
+  clearTimeout(timer);
+  if (!response.ok) throw new Error('No se pudo descargar el recurso');
+  await cache.put(request, response.clone());
+  return response;
+ } catch (_) {
+  clearTimeout(timer);
+  const fallback = await cache.match(request, {ignoreSearch:false})
+    || await cache.match(request, {ignoreSearch:true})
+    || await cacheMatchIgnoringSearch(RUNTIME_CACHE, request);
+  return fallback || new Response('', {status:503,statusText:'Recurso no disponible sin conexión'});
+ }
 }
 
 async function staleWhileRevalidate(request) {
@@ -535,6 +560,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.origin === self.location.origin) {
+    if (LIVE_SHELL_FILES.has(url.pathname.split('/').pop())) {
+      event.respondWith(networkFirstShellAsset(request));
+      return;
+    }
     event.respondWith(staleWhileRevalidate(request));
     return;
   }
