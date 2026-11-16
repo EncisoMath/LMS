@@ -51,3 +51,10 @@ jobs:
             }
           }
           NODE
+      - name: Probar reconstrucción de matriz JSON desde Supabase
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 \
+            'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge?selftest=1' \
+            | tee /tmp/educacity-selftest.json \
+            | jq -e '.ok == true and .cells == 1 and .students == 1'
