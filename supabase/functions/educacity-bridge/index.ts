@@ -437,7 +437,7 @@ async function makePlan(remote,snapshot){
    const old=a?remote.matrix.get(st.code+"_"+a.id):null;
    if(a&&!remote.matrix.has(st.code+"_"+a.id)&&hasActivityCells(remote.matrix,a.id))
     throw Error("La matriz contiene algunas celdas de "+a.title+" pero falta la de "+st.name);
-   if(old===null||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:v});
+   if(old===null||old===undefined||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:v});
   }
  }
  return {matched:matched.length,matched_students:matched,unmatched,changes,components,needs_creation:components.filter(x=>x.action==="create").length};
