@@ -11,7 +11,7 @@
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const by=id=>document.getElementById(id);
  const client=()=>window.EncisoSupabase?.getClient?.();
- let layer=null,busy=false,credential=null,preview=null,snapshot=null,replies=[],tab='summary';
+ let layer=null,busy=false,credential=null,preview=null,snapshot=null,replies=[],tab='activities';
  let ephemeral=null;
  function vault(){
   let pending;
@@ -88,7 +88,7 @@
   return {login,password,school_url:SCHOOL};
  }
  function modal(mode){
-  close(true);busy=false;preview=null;snapshot=null;replies=[];tab='summary';
+  close(true);busy=false;preview=null;snapshot=null;replies=[];tab='activities';
   const isSettings=mode==='settings';
   layer=document.createElement('dialog');layer.id='ec1-layer';layer.className='ec1-overlay';
   layer.innerHTML='<section class="ec1-dialog '+(isSettings?'ec1-dialog-settings':'ec1-dialog-sync')+'" role="dialog" aria-modal="true" aria-labelledby="ec1Title" tabindex="-1">'+
@@ -190,28 +190,68 @@
     status('Acceso configurado. Puedes comprobar la conexión o modificar los datos.')}
   }catch(e){status('No se pudo recuperar el acceso: '+e.message,true)}
  }
- function progressView(message,percentage,items=[]){
-  by('ec1Body').innerHTML='<section class="ec1-progress-panel" aria-live="polite">'+
-   '<div class="ec1-spinner" aria-hidden="true"></div>'+
-   '<h3 id="ec1ProgressTitle">'+esc(message)+'</h3>'+
-   '<p class="ec1-progress-description" id="ec1ProgressDescription">Conexión segura desde EncisoLMS. La planilla permanecerá intacta hasta confirmar.</p>'+
-   '<div class="ec1-progress-track" role="progressbar" aria-label="Progreso de sincronización" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+percentage+'"><span style="width:'+percentage+'%"></span></div>'+
-   '<ul class="ec1-progress-steps" id="ec1Steps">'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
+ const PROGRESS_TASKS={
+  preview:[
+   {id:'access',title:'Acceso institucional'},
+   {id:'local',title:'Preparar las calificaciones del LMS'},
+   {id:'remote',title:'Conectar y leer EducaCity'},
+   {id:'compare',title:'Comparar actividades y notas'}
+  ],
+  sync:[
+   {id:'academic',title:'Académico'},
+   {id:'attendance',title:'Actitudinal · Asistencia'},
+   {id:'rockstars',title:'Aptitudinal · Rockstars'},
+   {id:'finish',title:'Comprobar resultado final'}
+  ]
+ };
+ let progressMode='',progressCurrent='';
+ function progressView(mode){
+  progressMode=mode;progressCurrent='';
+  const definitions=PROGRESS_TASKS[mode]||PROGRESS_TASKS.preview;
+  const text=mode==='sync'?'Cargando a EducaCity':'Conectando con EducaCity';
+  by('ec1Body').innerHTML='<section class="ec1-progress-panel" aria-label="Estado de la conexión">'+
+   '<h3 id="ec1ProgressTitle">'+text+'</h3>'+
+   '<p class="ec1-progress-description">Cada operación se comprueba antes de continuar.</p>'+
+   '<div class="ec1-progress-track" role="progressbar" aria-label="Tareas terminadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>'+
+   '<ol class="ec1-progress-steps" id="ec1Steps">'+definitions.map(step=>
+     '<li class="ec1-progress-step is-waiting" data-ec1-step="'+step.id+'" data-state="waiting">'+
+     '<span class="ec1-step-icon" aria-hidden="true"><span class="ec1-step-dot"></span></span>'+
+     '<span class="ec1-step-copy">'+esc(step.title)+'</span></li>').join('')+'</ol>'+
+   '<div class="ec1-progress-outcome" id="ec1ProgressOutcome" aria-live="polite"></div>'+
    '</section>';
-  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button" '+(busy?'disabled':'')+'>Cancelar</button>';
+  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button" disabled>Cancelar</button>';
   by('ec1Cancel').onclick=()=>close();
  }
- function advance(message,percent,items=[]){
-  const title=by('ec1ProgressTitle'),bar=by('ec1Body')?.querySelector('.ec1-progress-track'),steps=by('ec1Steps');
-  if(title)title.textContent=message;
+ function updateProgress(id,status,detail=''){
+  if(id)progressCurrent=id;
+  const row=by('ec1Steps')?.querySelector('[data-ec1-step="'+id+'"]');
+  if(row){
+   row.dataset.state=status;
+   row.className='ec1-progress-step is-'+status;
+   const icon=row.querySelector('.ec1-step-icon');
+   if(icon)icon.innerHTML=status==='active'?'<span class="ec1-step-spinner"></span>':
+    status==='done'?'✅':status==='error'?'❌':status==='warning'?'⚠️':'<span class="ec1-step-dot"></span>';
+  }
+  const definitions=PROGRESS_TASKS[progressMode]||[];
+  const completed=definitions.filter(step=>{
+   const state=by('ec1Steps')?.querySelector('[data-ec1-step="'+step.id+'"]')?.dataset.state;
+   return state==='done'||state==='warning'||state==='error';
+  }).length;
+  const percent=Math.round(100*completed/Math.max(1,definitions.length));
+  const bar=by('ec1Body')?.querySelector('.ec1-progress-track');
   if(bar){bar.setAttribute('aria-valuenow',String(percent));bar.querySelector('span').style.width=percent+'%'}
-  if(steps)steps.innerHTML=items.map(x=>'<li>'+esc(x)+'</li>').join('');
+  if(detail&&by('ec1ProgressTitle'))by('ec1ProgressTitle').textContent=detail;
  }
  function showFailure(error,context='Lectura detenida'){
   setBusy(false);
-  by('ec1Body').innerHTML='<section class="ec1-result ec1-error" role="alert"><div class="ec1-result-icon">!</div>'+
-   '<h3>'+esc(context)+'</h3><p>'+esc(error?.message||error||'No fue posible completar la solicitud.')+'</p>'+
-   '<small>Verifica la conexión y vuelve a leer antes de intentar otro envío. Si se interrumpió una escritura, algunas notas pueden haber quedado guardadas.</small></section>';
+  if(by('ec1Steps')&&progressCurrent){
+   updateProgress(progressCurrent,'error',context);
+   const slot=by('ec1ProgressOutcome');
+   if(slot)slot.innerHTML='<div class="ec1-progress-alert is-error" role="alert"><strong>'+esc(context)+'</strong><span>'+esc(error?.message||error||'No fue posible completar la solicitud.')+'</span>'+
+     '<small>Si una escritura se interrumpió, vuelve a leer las notas antes de reintentar.</small></div>';
+  }else{
+   by('ec1Body').innerHTML='<section class="ec1-result ec1-error" role="alert"><h3>'+esc(context)+'</h3><p>'+esc(error?.message||error||'Error de conexión')+'</p></section>';
+  }
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cerrar</button>'+
    '<button class="ec1-btn ec1-primary" id="ec1Retry" type="button">Volver a leer</button>';
   by('ec1Cancel').onclick=()=>close();
@@ -244,28 +284,24 @@
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
    '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>Por crear</span></div>'+
    '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
-   '<div class="ec1-tabs" role="tablist" aria-label="Detalle de sincronización">'+
-   '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="summary" id="ec1TabSummary" aria-controls="ec1PanelSummary">Resumen</button>'+
-   '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
+   (!count&&!activityChanges?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
+   (missing.length?'<p class="ec1-warning">⚠️ '+missing.length+' estudiante(s) sin correspondencia, no se enviarán sus notas.</p>':'')+
+   '<div class="ec1-tabs" role="tablist" aria-label="Detalles de la sincronización">'+
+   '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
    '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="grades" id="ec1TabGrades" aria-controls="ec1PanelGrades">Calificaciones</button></div>'+
-   '<section class="ec1-tab-panel" id="ec1PanelSummary" role="tabpanel" aria-labelledby="ec1TabSummary">'+
-    '<h3>'+(!count&&!activityChanges?'La planilla está al día':'Cambios preparados para cargar')+'</h3>'+
-    '<p>'+(!count&&!activityChanges?'Los datos ya coinciden. Puedes comprobar nuevamente las tres actividades sin modificar notas.':'Se sincronizarán únicamente las diferencias con educa.city, conservando las demás notas.')+'</p>'+
-    (missing.length?'<p class="ec1-warning">'+missing.length+' estudiante(s) sin correspondencia. No se enviarán sus calificaciones.</p>':'')+
-    '<div class="ec1-legend">'+pill('Académico · '+snapshot.weights.academic+' %')+pill('Actitudinal · '+snapshot.weights.attendance+' %')+pill('Aptitudinal · '+snapshot.weights.rockstars+' %')+'</div></section>'+
-   '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities" hidden>'+
-    '<h3>Actividades en educa.city</h3>'+
+   '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities">'+
+    '<h3>Actividades en EducaCity</h3>'+
     '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
     acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+formatComponent(a)+'</td></tr>').join('')+
     '</tbody></table></div></section>'+
-   '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades">'+
-    '<h3>Notas que cambiarán</h3><p>Una fila por estudiante. Las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
+   '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades" hidden>'+
+    '<h3>Notas que cambiarán</h3><p>Un estudiante por fila; las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
    '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button">'+(count||activityChanges?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
   by('ec1Cancel').onclick=()=>close();
   by('ec1Apply').onclick=apply;
   by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
-  selectTab('summary');
+  selectTab('activities');
  }
  function selectTab(name){
   tab=name;
@@ -273,7 +309,7 @@
    const active=b.dataset.tab===name;
    b.classList.toggle('is-active',active);b.setAttribute('aria-selected',String(active));
   });
-  for(const key of ['summary','activities','grades']){
+  for(const key of ['activities','grades']){
    const pane=by('ec1Panel'+key[0].toUpperCase()+key.slice(1));
    if(pane)pane.hidden=key!==name;
   }
@@ -305,25 +341,30 @@
  async function startPreview(){
   if(busy)return;
   replies=[];preview=null;snapshot=null;
-  progressView('Preparando conexión institucional',6,['Recuperando configuración segura…']);
+  progressView('preview');
   setBusy(true);
   try{
+   updateProgress('access','active','Comprobando el acceso guardado');
    const {uid}=await currentIdentity();
    credential=ephemeral?.uid===uid?ephemeral.entry:await storage.load(uid);
    if(!credential)throw Error('Primero guarda tu acceso en Inicio → Herramientas → EducaCity.');
    credential=validate(credential);
-   advance('Leyendo la planilla del LMS',24,['Acceso institucional configurado','Preparando calificaciones…']);
+   updateProgress('access','done');
+   updateProgress('local','active','Preparando calificaciones del período');
    if(typeof window.EncisoEducaCitySnapshot!=='function')throw Error('Recarga EncisoLMS para actualizar la PLANILLA.');
    snapshot=window.EncisoEducaCitySnapshot();
    if(!snapshot?.students?.length)throw Error('La planilla seleccionada no tiene estudiantes.');
-   advance('Conectando con educa.city',55,['Acceso institucional configurado','Validando matrícula y actividades…']);
+   updateProgress('local','done');
+   updateProgress('remote','active','Leyendo la planilla de EducaCity');
    const response=await send('preview',credential);
+   updateProgress('remote','done');
+   updateProgress('compare','active','Comprobando diferencias');
    preview=response.data;
-   advance('Comparación terminada',100,['Conexión comprobada','Actividades y calificaciones comparadas']);
+   updateProgress('compare','done');
    displayPreview();
   }catch(err){
    if(String(err.message||'').includes('Primero guarda'))showSettingsRequired(err.message);
-   else showFailure(err,'No se pudo leer educa.city');
+   else showFailure(err,'No se pudo leer EducaCity');
   }finally{setBusy(false)}
  }
  function showSettingsRequired(message){
@@ -337,32 +378,36 @@
  async function apply(){
   if(busy||!preview||!credential)return;
   replies=[];const issues=[];let verified=0;
-  progressView('Iniciando sincronización',4,['Conservando notas no modificadas…']);
+  progressView('sync');
   setBusy(true);
   try{
-   for(let i=0;i<ORDER.length;i++){
-    const k=ORDER[i],part=preview.components.find(x=>x.key===k);
+   for(const k of ORDER){
+    const part=preview.components.find(x=>x.key===k);
+    updateProgress(k,'active','Sincronizando '+COMPONENTS[k]);
     if(!part)throw Error('Falta el componente '+COMPONENTS[k]+' en la lectura inicial.');
-    advance('Sincronizando '+COMPONENTS[k],12+i*27,
-     ORDER.slice(0,i).map(key=>'✓ '+COMPONENTS[key]+' completado').concat(['Comprobando '+COMPONENTS[k]+' en educa.city…']));
     const outcome=await send('sync',credential,k,part.baseline_hash);
     replies.push(outcome);
     verified+=Number(outcome.notes_verified||0);
-    issues.push(...(outcome.failed_notes||[]),...(outcome.not_sent_notes||[]));
-    try{await persistVerified(outcome)}catch(e){issues.push({student_name:'Vínculos de '+COMPONENTS[k],reason:'Sin guardar vínculo en LMS: '+e.message})}
-    advance(COMPONENTS[k]+' comprobado',Math.min(95,36+i*30),
-     ORDER.slice(0,i+1).map(key=>'✓ '+COMPONENTS[key]+' comprobado'));
+    const pending=[...(outcome.failed_notes||[]),...(outcome.not_sent_notes||[])];
+    issues.push(...pending);
+    let linkWarning=false;
+    try{await persistVerified(outcome)}
+    catch(e){
+     linkWarning=true;
+     issues.push({student_name:'Vínculos de '+COMPONENTS[k],reason:'No se guardó el vínculo en LMS: '+e.message});
+    }
+    updateProgress(k,pending.length||linkWarning?'warning':'done',COMPONENTS[k]+' comprobado');
    }
+   updateProgress('finish','active','Verificando resultado final');
    const partial=issues.length>0;
-   by('ec1Body').innerHTML='<section class="ec1-result '+(partial?'ec1-partial':'ec1-ok')+'">'+
-    '<div class="ec1-result-icon">'+(partial?'!':'✓')+'</div>'+
-    '<h3>'+(partial?'Sincronización con pendientes':'Sincronización completada')+'</h3>'+
-    '<p>Se comprobaron las tres actividades y sus calificaciones en educa.city.</p>'+
-    '<div class="ec1-result-stats"><div><strong>'+verified+'</strong><span>Notas guardadas y verificadas</span></div>'+
-    '<div><strong>'+issues.length+'</strong><span>Pendientes de revisión</span></div></div>'+
-    (partial?'<details class="ec1-issues"><summary>Ver detalles de los pendientes ('+issues.length+')</summary><ul>'+
-     issues.map(x=>'<li>'+esc(x.student_name||'Registro')+': '+esc(x.reason||'No confirmado')+'</li>').join('')+
-    '</ul></details>':'')+'</section>';
+   updateProgress('finish',partial?'warning':'done',partial?'Sincronización con pendientes':'Sincronización completada');
+   const slot=by('ec1ProgressOutcome');
+   if(slot)slot.innerHTML='<div class="ec1-progress-alert '+(partial?'is-warning':'is-success')+'">'+
+    '<strong>'+(partial?'⚠️ Sincronización parcial':'✅ Sincronización completada')+'</strong>'+
+    '<span>'+verified+' nota(s) guardada(s) y verificada(s) · '+issues.length+' pendiente(s)</span>'+
+    (partial?'<details class="ec1-issues"><summary>Ver pendientes</summary><ul>'+
+      issues.map(x=>'<li>'+esc(x.student_name||'Registro')+': '+esc(x.reason||'No confirmado')+'</li>').join('')+
+      '</ul></details>':'')+'</div>';
    by('ec1Footer').innerHTML=(partial?'<button class="ec1-btn ec1-secondary" id="ec1Retry" type="button">Volver a leer</button>':'')+
     '<button class="ec1-btn ec1-primary" id="ec1Done" type="button">Finalizar</button>';
    by('ec1Done').onclick=()=>close();
