@@ -274,7 +274,19 @@ async function trustedClient(req,assignment){
 }
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
- if(req.method==="GET")return result({ok:true,service:"encisolms-educacity-edge",local_dependency:false,supported_operations:["preview","sync"],credentials_stored:false});
+ if(req.method==="GET"){
+  const basic={ok:true,service:"encisolms-educacity-edge",local_dependency:false,supported_operations:["preview","sync"],credentials_stored:false};
+  if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
+  const targets=[FRONT+"/es/",FRONT+"/school_search.php?q=insroque",REMOTE+"/"];
+  const responses=await Promise.all(targets.map(async url=>{
+    const host=new URL(url).hostname;
+    try{
+      const http=new EducaHTTP(),r=await http.request(url);
+      return {host,reachable:true,bytes:r.text.length,is_json:r.text.trim().startsWith("{"),has_html:/<html|<!doctype/i.test(r.text.slice(0,1200))};
+    }catch(e){return {host,reachable:false,error:e instanceof Error?e.message.slice(0,130):"Error"}}
+  }));
+  return result({...basic,probe:responses});
+ }
  if(req.method!=="POST")return result({ok:false,error:"Método no permitido"},405);
  try{
   if(req.headers.get("origin")!==ORIGIN)throw Error("Origen no permitido.");
