@@ -378,6 +378,13 @@ Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method==="GET"){
   const basic={ok:true,service:"encisolms-educacity-edge",local_dependency:false,supported_operations:["preview","sync"],credentials_stored:false};
+  if(new URL(req.url).searchParams.get("selftest")==="1"){
+   const testHtml='<html><script>const _data = {"ar_axe":{"10209":{"k":{"e_id":"10209","a_id":"159973","score":70}}},"ar_enrollments":{"10209":{"e_id":"10209","first_name":"Carlos","last_name":"Lopez"}}};</script></html>';
+   const {payload,diagnostic}=bootstrapModel(docOf(testHtml));
+   const resultMatrix=scoreSource(payload);
+   return result({ok:resultMatrix.get("10209_159973")===70&&Object.keys(payload.ar_enrollments||{}).length===1,
+    test:"json_bootstrap_parser",cells:resultMatrix.size,students:Object.keys(payload.ar_enrollments||{}).length,model_keys:diagnostic.parsed_keys});
+  }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
   const targets=[FRONT+"/es/",FRONT+"/school_search.php?q=insroque",REMOTE+"/"];
   const responses=await Promise.all(targets.map(async url=>{
