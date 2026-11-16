@@ -382,8 +382,18 @@ Deno.serve(async req=>{
    const testHtml='<html><script>const _data = {"ar_axe":{"10209":{"k":{"e_id":"10209","a_id":"159973","score":70}}},"ar_enrollments":{"10209":{"e_id":"10209","first_name":"Carlos","last_name":"Lopez"}}};</script></html>';
    const {payload,diagnostic}=bootstrapModel(docOf(testHtml));
    const resultMatrix=scoreSource(payload);
-   return result({ok:resultMatrix.get("10209_159973")===70&&Object.keys(payload.ar_enrollments||{}).length===1,
-    test:"json_bootstrap_parser",cells:resultMatrix.size,students:Object.keys(payload.ar_enrollments||{}).length,model_keys:diagnostic.parsed_keys});
+   const formText='<form id="form_sheet_students_vs_assignments">'+
+     '<input name="gxc_id" value="14899"><input name="c_id" value="1955">'+
+     '<input name="ar_id" value="208"><input name="et_id" value="54">'+
+     '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
+     '</form>';
+   const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
+   const ok=resultMatrix.get("10209_159973")===70&&
+     sheet.matrix.get("10209_159973")===70&&
+     sheet.byCode.get("10209")?.name==="Carlos Lopez"&&
+     sheet.f.str_cell_values==="10209_159973_70";
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",cells:sheet.matrix.size,
+    students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
   const targets=[FRONT+"/es/",FRONT+"/school_search.php?q=insroque",REMOTE+"/"];
