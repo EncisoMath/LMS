@@ -6236,6 +6236,7 @@
       assignment_id: String(assignment.id),
       period: Number(state.activePeriod),
       weights: Object.fromEntries(components.map(col => [col.type, Number(col.weight)])),
+      rockstar_target: Number(components.find(col => col.type === 'rockstars')?.target || 15),
       students: scored,
       generated_at: new Date().toISOString()
     };
