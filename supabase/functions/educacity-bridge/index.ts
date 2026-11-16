@@ -571,7 +571,8 @@ Deno.serve(async req=>{
      partiallyExpanded.matrix.get("987654324_987654323")===null&&
      partiallyExpanded.matrix.get("987654321_987654322")===70&&
      partiallyExpanded.matrix.size===partialRemote.matrix.size+1;
-   const pendingRemote={...partialRemote,assignmentIds:["987654322","987654323"]};
+   const pendingRemote={...partialRemote,assignmentIds:["987654322","987654323"],
+    found:{academic:{id:"987654323",title:"COMP. ACADÉMICO",weight:60}}};
    const pendingPreview=await makePlan(pendingRemote,{
     students:[{code:"987654321",name:"Estudiante Ficticio",scores:{academic:54,attendance:null,rockstars:null}},
       {code:"987654324",name:"Segundo Alumno",scores:{academic:67,attendance:null,rockstars:null}}],
