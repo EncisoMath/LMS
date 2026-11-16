@@ -192,7 +192,10 @@ function bootstrapModel(doc){
   ["ar_assignments",/(?:window\.|top\.)?_data(?:\.ar_assignments|\s*\[\s*['"]ar_assignments['"]\s*\])\s*=\s*/g],
   ["ar_axe",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_axe\s*=\s*/g],
   ["ar_enrollments",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_enrollments\s*=\s*/g],
-  ["ar_assignments",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_assignments\s*=\s*/g]
+  ["ar_assignments",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_assignments\s*=\s*/g],
+  ["ar_axe",/(?:^|[,\{\n])\s*[\x27\x22]?ar_axe[\x27\x22]?\s*:\s*/g],
+  ["ar_enrollments",/(?:^|[,\{\n])\s*[\x27\x22]?ar_enrollments[\x27\x22]?\s*:\s*/g],
+  ["ar_assignments",/(?:^|[,\{\n])\s*[\x27\x22]?ar_assignments[\x27\x22]?\s*:\s*/g]
  ];
  for(const script of scripts){
   if(!script.trim())continue;
@@ -450,13 +453,15 @@ Deno.serve(async req=>{
    const resultMatrix=scoreSource(payload);
    const json5Html='<html><script>var _data={ar_axe:{\"987654321\":{a:{e_id:\"987654321\",a_id:\"987654322\",score:70}}}, ar_enrollments:{\"987654321\":{e_id:\"987654321\",first_name:\"Estudiante\",last_name:\"Ficticio\"}}}</script></html>';
    const json5Map=scoreSource(bootstrapModel(docOf(json5Html)).payload);
+   const nestedHtml='<html><script>const bootstrap={ar_axe:{\"987654321\":{a:{e_id:\"987654321\",a_id:\"987654322\",score:70}}},ar_enrollments:{\"987654321\":{e_id:\"987654321\",first_name:\"Estudiante\",last_name:\"Ficticio\"}},custom:undefined}</script></html>';
+   const nestedMap=scoreSource(bootstrapModel(docOf(nestedHtml)).payload);
    const formText='<form id="form_sheet_students_vs_assignments">'+
      '<input name="gxc_id" value="14899"><input name="c_id" value="1955">'+
      '<input name="ar_id" value="208"><input name="et_id" value="54">'+
      '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
      '</form>';
    const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
-   const ok=json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
