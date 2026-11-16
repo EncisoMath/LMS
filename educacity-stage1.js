@@ -113,6 +113,7 @@
  async function apply(){
   if(busy||!preview)return;
   try{
+   connections=[];linked=[];
    const c=credentials();busyControl(true);let done=0;
    for(const p of preview.components){
     announce('Verificando y sincronizando '+TYPES[p.key]+' ('+(done+1)+'/3)…');
@@ -120,14 +121,31 @@
     connections.push(out);done++;
     try{await persistVerified(out)}catch(e){console.warn('Vínculo EducaCity pendiente:',e.message);linked.push(e.message)}
    }
-   byId('ec1Preview').innerHTML='<section class="ec1-panel"><h3>Sincronización terminada</h3>'+
-    '<p>Actividades comprobadas: '+connections.length+'</p>'+
-    '<p>Notas enviadas y verificadas: '+connections.reduce((s,x)=>s+Number(x.notes_verified||0),0)+'</p>'+
-    '<p>Alumnos sin coincidencia: '+Number(preview.unmatched?.length||0)+'</p>'+
+   const verified=connections.reduce((n,x)=>n+Number(x.notes_verified||0),0);
+   const missing=connections.flatMap(x=>x.failed_notes||[]);
+   const untouched=connections.flatMap(x=>x.not_sent_notes||[]);
+   const partial=missing.length>0||untouched.length>0;
+   const outstanding=missing.concat(untouched);
+   byId('ec1Preview').innerHTML='<section class="ec1-panel"><h3>'+
+    (partial?'Sincronización parcial · revisar pendientes':'Sincronización completada')+'</h3>'+
+    '<p>Actividades verificadas: '+connections.length+' de 3</p>'+
+    '<p>Notas guardadas y verificadas: <strong>'+verified+'</strong></p>'+
+    '<p>Notas que educa.city no confirmó: <strong>'+missing.length+'</strong></p>'+
+    '<p>Notas que no se intentaron enviar: <strong>'+untouched.length+'</strong></p>'+
+    '<p>Estudiantes sin coincidencia: '+Number(preview.unmatched?.length||0)+'</p>'+
+    (partial?'<p class="ec1-muted">Las notas pendientes no se reenviaron. Relee la planilla actual antes de intentar corregirlas.</p>'+
+      '<div class="ec1-students"><table class="ec1-table"><thead><tr><th>Estudiante</th><th>Componente</th><th>Esperada</th><th>Encontrada</th><th>Estado</th></tr></thead><tbody>'+
+      outstanding.map(x=>'<tr><td>'+esc(x.student_name)+'</td><td>'+esc(TYPES[x.component]||x.component)+'</td>'+
+        '<td>'+esc(x.expected)+'</td><td>'+esc(x.observed??'—')+'</td>'+
+        '<td>'+esc(x.reason||'Pendiente')+'</td></tr>').join('')+
+      '</tbody></table></div>':'')+
     (linked.length?'<p>Advertencia al registrar vínculos en Supabase: '+esc(linked.join('; '))+'</p>':'')+
-    '<button class="ec1-btn" id="ec1Done">Cerrar</button></section>';
+    (partial?'<button type="button" class="ec1-btn" id="ec1Review">Volver a leer</button> ':'')+
+    '<button type="button" class="ec1-btn ec1-secondary" id="ec1Done">Cerrar</button></section>';
    byId('ec1Done').onclick=close;
-   announce('educa.city verificó los envíos completados.');
+   if(partial)byId('ec1Review').onclick=()=>{connections=[];linked=[];previewLive()};
+   announce(partial?'Sincronización parcial: '+verified+' notas confirmadas; '+outstanding.length+
+      ' pendientes, detalladas abajo. Ninguna nota pendiente se reenvió.':'educa.city verificó todas las notas enviadas.',partial);
   }catch(ex){
    announce('SINCRONIZACIÓN DETENIDA: '+ex.message,true);
    byId('ec1Preview').innerHTML='<section class="ec1-panel"><h3>Operación incompleta</h3>'+
