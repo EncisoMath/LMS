@@ -32,3 +32,7 @@ Nunca se considera que el POST HTTP confirme por sí solo una modificación: se 
 - 11 cursos y 132 configuraciones por curso, período y componente.
 - IDs históricos de actividades limpiados; referencias antiguas no se usan para escritura.
 - IDs de alumnos sugeridos no se consideran confirmados sin lectura en vivo.
+
+## Limitación identificada en el lector de notas
+
+En una respuesta HTTP auténtica de `grading_book/list.php` capturada el 15 de noviembre de 2026, los campos `str_cell_values` y `str_new_cell_values` estaban vacíos en el HTML inicial; la interfaz los completó posteriormente con JavaScript. Por tanto, **la comprobación pública de conectividad no prueba todavía que la Edge Function pueda leer la matriz de notas**. El código actual tiene un bloqueo que impide enviar notas si esos valores no están presentes y validados. La lectura y el POST autenticados desde la nube siguen sin demostrarse; para completar la integración podría ser necesario utilizar la API de terceros que anuncia educa.city o identificar su fuente de datos estructurada en el servidor.
