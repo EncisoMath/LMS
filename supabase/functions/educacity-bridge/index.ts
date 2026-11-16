@@ -539,10 +539,16 @@ Deno.serve(async req=>{
    const mockRemote=await readRemote(mockClient,mockCourse,4);
    const mockPlan=await makePlan(mockRemote,{students:[{code:"987654321",name:"Estudiante Ficticio",
     scores:{academic:54,attendance:null,rockstars:null}}],weights:{academic:60,attendance:20,rockstars:20}});
-   const discoveryOK=mockRemote.found.academic?.id==="987654323"&&
-    !hasActivityCells(mockRemote.matrix,"987654323")&&
-    mockPlan.components.find(c=>c.key==="academic")?.action==="reuse"&&
-    mockPlan.changes.some(c=>c.component==="academic"&&c.after===54);
+   const discoveryParts={
+    found_id:mockRemote.found.academic?.id??null,
+    catalog:mockRemote.assignmentIds,
+    new_column_has_cells:hasActivityCells(mockRemote.matrix,"987654323"),
+    action:mockPlan.components.find(c=>c.key==="academic")?.action??null,
+    change_count:mockPlan.changes.filter(c=>c.component==="academic"&&c.after===54).length
+   };
+   const discoveryOK=discoveryParts.found_id==="987654323"&&
+    !discoveryParts.new_column_has_cells&&
+    discoveryParts.action==="reuse"&&discoveryParts.change_count===1;
 
    const expanded=materializeEmptyColumn(emptySheet,"987654323");
    const blankColumnOK=catalogOK&&expanded.matrix.get("987654321_987654323")===null&&
@@ -556,7 +562,7 @@ Deno.serve(async req=>{
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
