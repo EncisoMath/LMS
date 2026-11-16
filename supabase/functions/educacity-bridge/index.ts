@@ -121,31 +121,133 @@ function readMatrix(raw){
  if(!map.size)throw Error("educa.city devolvió una matriz de notas vacía.");
  return map;
 }
+// La interfaz oficial calcula str_cell_values DESPUÉS de inicializar JavaScript.
+// Intentamos recuperar solamente el modelo JSON original, sin ejecutar código externo.
+function parseJsonLiteral(script,start){
+ let i=start;
+ while(/\s/.test(script[i]||""))i++;
+ if(script[i]!=="{"&&script[i]!=="[")return null;
+ const stack=[],open={"{":"}","[":"]"};
+ let quoted=false,escaped=false;
+ for(let j=i;j<script.length && j-i<900000;j++){
+  const c=script[j];
+  if(quoted){if(escaped)escaped=false;else if(c==="\\")escaped=true;else if(c==='"')quoted=false;continue}
+  if(c==='"'){quoted=true;continue}
+  if(c==="{"||c==="["){stack.push(open[c]);continue}
+  if(c==="}"||c==="]"){if(stack.pop()!==c)return null;if(!stack.length){
+    try{return JSON.parse(script.slice(i,j+1))}catch{return null}
+  }}
+ }
+ return null;
+}
+function bootstrapModel(doc){
+ const scripts=[...doc.querySelectorAll("script")].map(s=>String(s.textContent||""));
+ const payload={},patterns=[
+  ["whole",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?(?:window\.|top\.)?_data\s*=\s*/g],
+  ["ar_axe",/(?:window\.|top\.)?_data\.ar_axe\s*=\s*/g],
+  ["ar_enrollments",/(?:window\.|top\.)?_data\.ar_enrollments\s*=\s*/g],
+  ["ar_assignments",/(?:window\.|top\.)?_data\.ar_assignments\s*=\s*/g]
+ ];
+ for(const script of scripts){
+  for(const [key,pattern] of patterns){
+   pattern.lastIndex=0;let m,counter=0;
+   while((m=pattern.exec(script))&&counter++<10){
+    const val=parseJsonLiteral(script,m.index+m[0].length);
+    if(val&&typeof val==="object"&&!Array.isArray(val)){
+     if(key==="whole"&&val.ar_axe&&val.ar_enrollments){Object.assign(payload,val);break}
+     if(key!=="whole")payload[key]=val;
+    }
+   }
+  }
+ }
+ return {payload,diagnostic:{scripts:scripts.length,
+  embeds_ar_axe:scripts.some(s=>s.includes("ar_axe")),
+  embeds_ar_enrollments:scripts.some(s=>s.includes("ar_enrollments")),
+  embeds_ar_assignments:scripts.some(s=>s.includes("ar_assignments")),
+  parsed_keys:Object.keys(payload).sort()}};
+}
+function scoreSource(payload){
+ const out=new Map();
+ const axe=payload.ar_axe;
+ if(!axe||typeof axe!=="object"||Array.isArray(axe))return out;
+ for(const nested of Object.values(axe)){
+  if(!nested||typeof nested!=="object")continue;
+  for(const row of Object.values(nested)){
+   if(!row||typeof row!=="object"||!idok(row.e_id)||!idok(row.a_id))continue;
+   const val=row.score===null||row.score===undefined||row.score===""?null:Number(row.score);
+   if(val!==null&&(!Number.isFinite(val)||val<0||val>100))throw Error("educa.city contiene una calificación fuera de rango.");
+   const key=String(row.e_id)+"_"+String(row.a_id);
+   if(out.has(key))throw Error("educa.city contiene valores duplicados para una celda.");
+   out.set(key,val);
+  }
+ }
+ return out;
+}
+function enrollmentName(row){
+ if(!row||typeof row!=="object")return "";
+ const data=row.student&&typeof row.student==="object"?row.student:row;
+ const first=String(data.first_name||data.first_names||data.names||data.given_names||"").trim();
+ const last=String(data.last_name||data.last_names||data.surnames||data.family_names||"").trim();
+ return (first+" "+last).trim();
+}
 function parseSheet(txt,course,period){
  const document=docOf(txt);
  const form=document.querySelector("#form_sheet_students_vs_assignments");
- if(!form)throw Error("La planilla de educa.city requiere ejecución JavaScript y no contiene el formulario en la respuesta del servidor. La integración necesita acceso a la API oficial de educa.city.");
+ if(!form)throw Error("educa.city no devolvió el formulario de la planilla; comprueba que la sesión docente está activa.");
  const f=fields(form);
  for(const [key,val] of Object.entries({gxc_id:course.educacity_group_id,c_id:course.educacity_subject_id,ar_id:course.educacity_area_id,et_id:PERIOD[period]})){
-  if(String(f[key])!==String(val))throw Error("educa.city devolvió otro contexto de curso/periodo ("+key+").");
+  if(String(f[key])!==String(val))throw Error("educa.city devolvió otro contexto de curso o período ("+key+").");
  }
- if(!f.str_cell_values||f.str_cell_values!==f.str_new_cell_values)throw Error("La planilla actual tiene cambios sin guardar o no incluye una matriz íntegra.");
- const matrix=readMatrix(f.str_cell_values);
- const people=[...document.querySelectorAll(".students_list .gbook_row .one_student")];
- const students=people.length?people:[...document.querySelectorAll(".gbook_row .one_student")];
+ if(f.str_cell_values&&f.str_cell_values!==f.str_new_cell_values)
+  throw Error("Hay modificaciones sin guardar en la planilla REAL de educa.city. No se sobrescribió ninguna nota.");
+ let matrix,byCode=new Map(),raw=f.str_cell_values||"";
+ const domStudents=[...document.querySelectorAll(".students_list .gbook_row .one_student")];
+ const students=domStudents.length?domStudents:[...document.querySelectorAll(".gbook_row .one_student")];
  const rows=[...document.querySelectorAll(".gbook__cells_grid__row")];
- if(!students.length||students.length!==rows.length)throw Error("No se pudo verificar la identidad y posición de los estudiantes con el HTML real.");
- const byCode=new Map();
- for(let i=0;i<students.length;i++){
-  const sid=(rows[i].getAttribute("id")||"").match(/(\d{2,12})$/)?.[1];
-  if(!sid||byCode.has(sid))throw Error("ID de fila inexistente o duplicado en educa.city.");
-  const first=students[i].querySelector(".first_name")?.textContent||"";
-  const last=students[i].querySelector(".last_name")?.textContent||"";
-  const name=(first+" "+last).trim();
-  if(!name)throw Error("Falta un nombre verificable en la planilla.");
-  byCode.set(sid,{code:sid,name});
+ if(students.length&&students.length===rows.length){
+  for(let i=0;i<students.length;i++){
+   const sid=(rows[i].getAttribute("id")||"").match(/(\d{2,12})$/)?.[1];
+   if(!sid||byCode.has(sid))throw Error("No se pudo identificar una fila única de estudiante en educa.city.");
+   const first=students[i].querySelector(".first_name")?.textContent||"";
+   const last=students[i].querySelector(".last_name")?.textContent||"";
+   const name=(first+" "+last).trim();
+   if(name)byCode.set(sid,{code:sid,name});
+  }
  }
- return {document,form,f,matrix,byCode,raw:f.str_cell_values};
+ if(raw){
+  matrix=readMatrix(raw);
+ }else{
+  const {payload,diagnostic}=bootstrapModel(document);
+  const saved=scoreSource(payload);
+  if(saved.size){
+   matrix=saved;
+   raw=[...saved].map(([key,v])=>key+"_"+(v??"")).sort().join(",");
+   f.str_cell_values=raw;
+   f.str_new_cell_values=raw;
+  }
+  if(!byCode.size&&payload.ar_enrollments){
+   for(const [key,data] of Object.entries(payload.ar_enrollments)){
+    const id=String(data?.e_id||key),name=enrollmentName(data);
+    if(idok(id)&&name&& !byCode.has(id))byCode.set(id,{code:id,name});
+   }
+  }
+  if(!matrix||!matrix.size||!byCode.size){
+   const fingerprint=[
+    "HTML="+txt.length,
+    "scripts="+diagnostic.scripts,
+    "modelo="+diagnostic.parsed_keys.join(","),
+    "ejes="+Number(matrix?.size||0),
+    "alumnos="+byCode.size
+   ].join(" · ");
+   throw Error("La planilla llegó sin datos inicializados por JavaScript. "+fingerprint+
+    ". No hay cambios pendientes ni se enviaron notas. Debe recuperarse la fuente de datos original o utilizar la API de educa.city.");
+  }
+ }
+ if(!byCode.size)throw Error("Se cargaron notas, pero no nombres verificables de estudiantes; envío detenido.");
+ const validStudents=new Set(byCode.keys());
+ if([...matrix.keys()].some(k=>!validStudents.has(k.split("_")[0])))
+  throw Error("La matriz de educa.city contiene alumnos ajenos al listado verificado.");
+ return {document,form,f,matrix,byCode,raw};
 }
 function sheetUrl(c,period){
  const q=new URLSearchParams({mode:"gxc",a:"1",filter_et_id:PERIOD[period],et_id:PERIOD[period],
