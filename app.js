@@ -1363,7 +1363,7 @@
         <button class="modal-close" data-close-modal aria-label="Cerrar">×</button>
         <p class="section-kicker">Perfil docente</p>
         <h2 id="teacherToolsTitle">Herramientas</h2>
-        <p class="card-sub">Configura el calendario académico o consulta el registro de acceso a EncisoMath.</p>
+        <p class="card-sub">Calendario académico, conexiones y servicios institucionales.</p>
         <div class="em-teacher-tools-list">
           <button class="ghost-btn em-teacher-tool-button" id="openAcademicPeriodsBtn" type="button">
             <strong>Calendario académico</strong>
@@ -1372,6 +1372,10 @@
           <button class="ghost-btn em-teacher-tool-button" id="openTeacherConnectionsBtn" type="button">
             <strong>Conexiones</strong>
             <span>Usuarios, horas, dispositivos y duración aproximada.</span>
+          </button>
+          <button class="ghost-btn em-teacher-tool-button" id="openTeacherEducaCityBtn" type="button">
+            <strong>EducaCity</strong>
+            <span>Acceso institucional y comprobación de conexión.</span>
           </button>
         </div>
       </section>
@@ -1383,6 +1387,10 @@
       document.getElementById('openTeacherConnectionsBtn')?.addEventListener('click', () => {
         closeModal(false, { restoreFocus: false });
         renderConnectionsDashboard();
+      });
+      document.getElementById('openTeacherEducaCityBtn')?.addEventListener('click', () => {
+        closeModal(false, { restoreFocus: false });
+        window.EncisoEducaCity?.openSettings?.();
       });
     });
   }
@@ -6655,7 +6663,7 @@
           <span>${students.length} estudiantes · ${notesAcademicDetailColumns(columns).length} notas académicas · ${sessions.length} registros de clase</span>
         </div>
         <div class="em-notes-toolbar-actions">
-          <button class="em-notes-excel-btn" id="downloadEducaCityExcelBtn" type="button">Descargar Excel listo para EducaCity</button>
+          <button class="em-notes-excel-btn" id="syncEducaCityBtn" type="button">Cargar a EducaCity</button>
           <div class="em-notes-weight-summary ${weightStatus}">
             <span>Peso configurado</span>
             <strong>${Math.round(totalWeight * 10) / 10}%</strong>
@@ -6737,8 +6745,8 @@
       notesResetViewFilters();
       renderNotesTab({ preserveScroll: true, silentSync: true });
     });
-    document.getElementById('downloadEducaCityExcelBtn')?.addEventListener('click', () => {
-      openNotesEducaCityExportModal();
+    document.getElementById('syncEducaCityBtn')?.addEventListener('click', () => {
+      window.EncisoEducaCity?.openSync?.();
     });
     emNotesInitHero(content, { replay: !options.silentSync });
     if (!options.silentSync) emPlayTabEntrance(content, 'notes');
