@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.136';
+const SW_VERSION = 'encisomath-offline-v0.25.137';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -16,6 +16,8 @@ const PRECACHE_URLS = [
   './',
   './index.html',
   './app.js',
+  './educacity-stage1.js',
+  './educacity-stage1.css',
   './styles.css',
   './supabase-config.js',
   './supabase-adapter.js',
