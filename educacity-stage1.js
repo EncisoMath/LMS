@@ -75,7 +75,7 @@ const year=2026,assignment=snapshot.assignment_id,period=snapshot.period;
 const config=Object.keys(names).map(key=>({
 assignment_id:assignment,academic_year:year,period,component:key,
 educacity_activity_id:Number(out.remote_ids[key]),educacity_title:names[key],
-weight:snapshot.weights[key],rockstar_target:key==='rockstars'?15:null,
+weight:snapshot.weights[key],rockstar_target:key==='rockstars'?Number(snapshot.rockstar_target||15):null,
 status:'verified',source:'lectura_real_confirmada',updated_at:new Date().toISOString()
 }));
 const a=await client.from('educacity_component_links').upsert(config,{onConflict:'assignment_id,academic_year,period,component'});
