@@ -90,7 +90,7 @@
  function modal(mode){
   close(true);busy=false;preview=null;snapshot=null;replies=[];tab='summary';
   const isSettings=mode==='settings';
-  layer=document.createElement('div');layer.id='ec1-layer';layer.className='ec1-overlay';
+  layer=document.createElement('dialog');layer.id='ec1-layer';layer.className='ec1-overlay';
   layer.innerHTML='<section class="ec1-dialog '+(isSettings?'ec1-dialog-settings':'ec1-dialog-sync')+'" role="dialog" aria-modal="true" aria-labelledby="ec1Title" tabindex="-1">'+
    '<header class="ec1-head"><div><p class="section-kicker">'+(isSettings?'PERFIL DOCENTE · HERRAMIENTAS':'PLANILLA · EDUCA.CITY')+'</p>'+
    '<h2 id="ec1Title">'+(isSettings?'EducaCity':'Cargar a EducaCity')+'</h2>'+
@@ -98,9 +98,10 @@
    '<button type="button" class="ec1-close" id="ec1Close" aria-label="Cerrar">×</button></header>'+
    '<div class="ec1-body" id="ec1Body"></div>'+
    '<footer class="ec1-footer" id="ec1Footer"></footer></section>';
-  document.body.appendChild(layer);document.body.classList.add('ec1-is-open');
+  document.body.appendChild(layer);layer.showModal();document.body.classList.add('ec1-is-open');
   by('ec1Close').addEventListener('click',()=>close());
   layer.addEventListener('click',e=>{if(e.target===layer)close()});
+  layer.addEventListener('cancel',e=>{e.preventDefault();if(!busy)close()});
   document.addEventListener('keydown',escKey);
   requestAnimationFrame(()=>layer?.classList.add('is-visible'));
   return layer;
@@ -109,7 +110,7 @@
  function close(force=false){
   if(busy&&!force)return;
   document.removeEventListener('keydown',escKey);
-  if(layer){layer.remove();layer=null}
+  if(layer){if(layer.open)layer.close();layer.remove();layer=null}
   document.body.classList.remove('ec1-is-open');
   credential=null;preview=null;snapshot=null;replies=[];busy=false;
  }
