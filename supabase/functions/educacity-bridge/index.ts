@@ -512,13 +512,27 @@ Deno.serve(async req=>{
      '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
      '</form>';
    const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
+   // Regression: a created activity exists in ar_assignments before it gets
+   // any row in ar_axe. Reproduce the original false-negative in isolation.
+   const newlyCreated='<script>const _data={ar_axe:{"987654321":{old:{e_id:"987654321",a_id:"987654322",score:70}}},'+
+      'ar_enrollments:{"987654321":{e_id:"987654321",first_name:"Estudiante",last_name:"Ficticio"}},'+
+      'ar_assignments:{"987654322":{a_id:"987654322",title:"DEFINITIVA",parent_a_id:"987654322"},'+
+        '"987654323":{a_id:"987654323",title:"COMP. ACADÉMICO",parent_a_id:"987654322"}}};</script>';
+   const emptySheet=parseSheet(formText+newlyCreated,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
+   const catalogOK=emptySheet.assignmentIds.includes("987654323")&&!hasActivityCells(emptySheet.matrix,"987654323");
+   const expanded=materializeEmptyColumn(emptySheet,"987654323");
+   const blankColumnOK=catalogOK&&expanded.matrix.get("987654321_987654323")===null&&
+     expanded.matrix.get("987654321_987654322")===70&&
+     expanded.raw.includes("987654321_987654322_70")&&
+     expanded.raw.includes("987654321_987654323_")&&
+     expanded.matrix.size===emptySheet.matrix.size+1;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
