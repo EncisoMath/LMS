@@ -35,7 +35,7 @@
   activities=value(results[2],'Vínculos de actividades')||[];
   if(!courses.length)throw Error('No hay cursos vinculados para este docente.');
   const hero=document.querySelector('.em-notes-hero-host')?.innerText||'';
-  const m=hero.match(/(?:^|[^\d])(8|9|10|11)\s*[°º]?\s*[-–]\s*([1-6])(?:[^\d]|$)/);
+  const m=hero.match(/(?:^|[^\d])(8|9|10|11)\s*[°º]?\s*[-–]\s*([1-6])(?:[^\d]|$)/)||hero.match(/\b(8|9|10|11)([1-6])PPAL\b/i);
   const preferred=m?'mat-est-'+m[1]+'-'+m[2]:'';
   if(preferred&&courses.some(x=>x.assignment_id===preferred))assignment=preferred;
   if(!courses.some(x=>x.assignment_id===assignment))assignment=courses[0].assignment_id;
