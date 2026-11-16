@@ -34,17 +34,3 @@ jobs:
             | tee /tmp/educacity-probe.json \
             | jq '.'
           jq -e '.ok == true and (.probe | map(.reachable) | all)' /tmp/educacity-probe.json
-      - name: Verificar carga pública de JavaScript de planillas
-        run: |
-          set -euo pipefail
-          curl --fail --show-error --silent --location --max-time 25 \
-            'https://insroque.educa.city/app/web/control/evaluation/sheets/grading_book/res/module_scripts.cied.js' -o /tmp/educacity-script.js
-          node - <<'NODE'
-          const fs=require('fs');
-          const s=fs.readFileSync('/tmp/educacity-script.js','utf8');
-          console.log('Bytes de módulo:',s.length);
-          for (const q of ['ar_enrollments','ar_assignments','ar_cells','init_data','get_data','$.ajax','_data =']) {
-            const pos=s.indexOf(q);
-            console.log(q+': '+(pos<0?'ausente':s.slice(Math.max(0,pos-100),pos+210).replace(/\s+/g,' ')));
-          }
-          NODE
