@@ -6319,9 +6319,12 @@
       const cell = notesCellScore(column, student, context);
       const score = cell.score === null ? null : Math.max(0, Math.min(100, Number(cell.score || 0)));
       const value = score === null ? '—' : Math.round(score);
-      const classes = `em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''} ${column.type === 'activity' && cell.interactive ? 'has-detail' : ''}`;
+      const classes = `em-notes-score-cell ${score === null ? 'is-empty' : notesScoreClass(score)} ${cell.pending ? 'is-pending' : ''} ${(column.type === 'activity' && cell.interactive) || column.type === 'rockstars' ? 'has-detail' : ''}`;
       if (column.type === 'activity' && cell.interactive) {
         return `<td class="${classes}" title="${escapeAttr(cell.title || '')}"><button class="em-notes-grade-detail-trigger" type="button" data-notes-activity-grade="${escapeAttr(column.activityId)}" data-notes-student-code="${escapeAttr(student.id)}" aria-label="Ver actividad o editar nota de ${escapeAttr(column.title)} para ${escapeAttr(student.fullName || name.lastName || student.id)}">${value}</button></td>`;
+      }
+      if (column.type === 'rockstars') {
+        return '<td class="'+classes+'" title="'+escapeAttr(cell.title || '')+'"><button type="button" class="em-notes-grade-detail-trigger em-notes-rockstar-trigger" data-notes-rockstar-student="'+escapeAttr(student.id)+'" aria-label="Editar puntos Rockstar de '+escapeAttr(student.fullName || student.id)+'">'+value+'</button></td>';
       }
       return `<td class="${classes}" title="${escapeAttr(cell.title || '')}">${value}</td>`;
     }).join('');
@@ -6627,6 +6630,9 @@
     body.querySelectorAll('[data-notes-attendance-detail]').forEach((button) => {
       button.addEventListener('click', () => openNotesAttendanceDetail(button.dataset.notesAttendanceStudent || '', button.dataset.notesAttendanceDetail || ''));
     });
+    body.querySelectorAll('[data-notes-rockstar-student]').forEach((button) => {
+      button.addEventListener('click', () => openNotesRockstarDetail(button.dataset.notesRockstarStudent || ''));
+    });
   }
 
   function renderNotesTab(options = {}) {
@@ -6728,6 +6734,9 @@
         button.dataset.notesAttendanceStudent || '',
         button.dataset.notesAttendanceDetail || ''
       ));
+    });
+    content.querySelectorAll('[data-notes-rockstar-student]').forEach((button) => {
+      button.addEventListener('click', () => openNotesRockstarDetail(button.dataset.notesRockstarStudent || ''));
     });
     const notesHeader = content.querySelector('.em-notes-sheet thead');
     notesHeader?.addEventListener('wheel', (event) => {
@@ -19416,7 +19425,7 @@
         occurredAt,
         delta: Number(entry.delta ?? entry.points ?? entry.puntos ?? 0)
       };
-    }).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && [-1, 1].includes(entry.delta));
+    }).filter((entry) => entry.assignmentId && entry.studentId && [1, 2, 3, 4].includes(entry.period) && Number.isInteger(entry.delta) && entry.delta !== 0 && Math.abs(entry.delta) <= 100);
   }
   function getLocalRockstarEvents(assignmentId) {
     if (isCloudReady()) return [];
