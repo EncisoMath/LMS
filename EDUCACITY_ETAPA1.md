@@ -1,28 +1,34 @@
-# Educa.city ↔ EncisoLMS: lectura en vivo y sincronización
+# EncisoLMS ↔ educa.city — sincronización sin aplicaciones locales
 
-## Qué hace el botón de PLANILLA
+## Lo implementado
 
-1. Obtiene de la **PLANILLA de EncisoLMS** los tres valores por alumno y los porcentajes del período activo.
-2. Contacta el **conector local v20** (se inicia con `INICIAR_PANEL.bat` y mantiene una sesión privada de Chrome con `insroque.educa.city`).
-3. Consulta la **planilla actual de educa.city**: estudiantes, nombres, matrículas, matriz real, actividades existentes y porcentajes en sus formularios.
-4. Busca los componentes **Académico → Académico**, **Asistencia → Actitudinal** y **Rockstars → Aptitudinal**. Si existe exactamente uno, lo reutiliza; si falta, prepara crearlo. Ante duplicados o componentes ajenos con peso, detiene la operación sin escribir.
-5. Verifica por **código de matrícula y nombre** a cada estudiante. Los que no coinciden quedan omitidos y visibles en la vista previa.
-6. Compara nota por nota y muestra solo las diferencias. Únicamente tras pulsar **«Crear/reutilizar y sincronizar»**, crea las actividades ausentes con el formulario actual, obtiene y comprueba el **ID devuelto por la nueva lectura de educa.city**, ajusta porcentajes y envía solo las notas diferentes.
-7. Comprueba la respuesta y relee la planilla después de cada envío. Los IDs reales comprobados se guardan en Supabase **solo después de un resultado exitoso**. En usos futuros vuelve a leer la planilla actual, sin confiar en esos IDs guardados como fuente de verdad.
+- **Interfaz**: `educacity-stage1.js`, disponible desde la pestaña PLANILLA de EncisoLMS.
+- **Backend remoto**: Supabase Edge Function `educacity-bridge` del proyecto LMS.
+- **Código fuente del backend**: `supabase/functions/educacity-bridge/index.ts`.
+- El botón utiliza HTTPS a Supabase, **sin abrir CMD, instalar Python ni descargar ZIP**.
+- Primero obtiene las tres calificaciones usando las funciones originales de PLANILLA, luego inicia sesión desde el servidor y consulta los datos vivos de educa.city.
+- Busca o crea **Académico**, **Actitudinal = Asistencia** y **Aptitudinal = Rockstars**, comprueba nombres y matrículas, aplica porcentajes de cada curso/período y envía solo notas nuevas o cambiadas.
+- Se requieren el usuario y la contraseña de educa.city dentro de PLANILLA. Se transmiten por HTTPS y **no se guardan en GitHub, localStorage ni Supabase**. El ID institucional se busca automáticamente.
+- El servidor verifica el JWT docente de Supabase antes de consultar datos de cursos y escribir.
+- Las actividades y sus IDs se comprueban **en vivo**; los IDs recuperados de capturas anteriores no se utilizan para decidir escrituras.
 
-## Instalación
+## Cómo se usa
 
-Descargar el paquete `EducaCity_Conector_LMS_v20.zip`, descomprimir y ejecutar `INICIAR_PANEL.bat` en el computador con Chrome/Python. Con el conector abierto, entrar a EncisoLMS → curso → PLANILLA → **Sincronizar con educa.city**.
+1. Abrir EncisoLMS en su web → curso → PLANILLA.
+2. Pulsar **Sincronizar con educa.city**.
+3. Introducir las credenciales institucionales en el modal (sin instalar nada en el PC).
+4. Pulsar **Leer y comparar**; revisar la identidad, los pesos y las diferencias.
+5. Pulsar **Crear/reutilizar y enviar notas**. El sistema procesa Académico, Actitudinal y Aptitudinal por separado, con verificación entre envíos.
+6. Si una etapa falla, detenerse y releer: puede haber cambios parciales ya guardados.
+
+## Límites y verificación requerida
+
+**Se desplegó el backend y su frontend, pero aún NO se ha probado una lectura y escritura autenticada desde el servidor remoto de Supabase contra una planilla real de educa.city.** La versión anterior con Playwright funcionaba en una máquina local; en cambio este backend usa peticiones HTTPS a PHP y un parser HTML. Si el servidor de educa.city entrega la planilla únicamente mediante JavaScript en un navegador, o bloquea solicitudes desde centros de datos, el nuevo backend *debe detenerse antes de escribir* y mostrar el error. En ese caso se necesita su API de integración oficial. La existencia de una API pública se anuncia en su sitio, pero los endpoints y permisos exactos de notas no están publicados en la información consultada.
+
+Nunca se considera que el POST HTTP confirme por sí solo una modificación: se relee la planilla y se comprueban los valores. No se borra una nota vacía automáticamente. No se almacenan contraseñas en la base de datos. Las tres tablas de vinculación tienen RLS por docente.
 
 ## Estado de datos
 
-- Tres tablas Supabase: `educacity_course_links`, `educacity_student_links`, `educacity_component_links` con RLS docente.
-- Todos los **IDs de actividades históricos fueron borrados** como fuente operativa. Los vínculos de alumnos quedaron sin confirmar hasta hacer la comparación en vivo.
-- El lector conserva el catálogo histórico de grupos **solo para navegar**; la planilla y los formularios se comprueban en educa.city al momento de cada operación.
-- **No hay sincronización automática en segundo plano**. Cada envío requiere abrir PLANILLA, revisar la vista previa y pulsar el botón de confirmación.
-- No borra automáticamente una calificación en educa.city si EncisoLMS la muestra vacía.
-- Las escrituras de v20 aún necesitan la primera comprobación con una sesión real: pasaron tests locales de validación, identidad, CORS, peso y verificación, pero no se emitió ninguna orden de escritura durante el desarrollo.
-
-## Seguridad
-
-El sitio web no recibe la contraseña de educa.city; la sesión se mantiene dentro del navegador controlado por el conector local. Las llamadas desde EncisoLMS a `127.0.0.1` están limitadas al origen `https://encisomath.github.io`, necesitan el token emitido por el conector, generan respaldos locales y bloquean escrituras si la verificación remota no se cumple.
+- 11 cursos y 132 configuraciones por curso, período y componente.
+- IDs históricos de actividades limpiados; referencias antiguas no se usan para escritura.
+- IDs de alumnos sugeridos no se consideran confirmados sin lectura en vivo.
