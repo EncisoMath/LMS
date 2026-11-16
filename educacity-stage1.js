@@ -1,187 +1,377 @@
-/* Sincronización directa EncisoLMS -> EducaCity con Supabase Edge. Sin CMD ni Python.
-   Las credenciales institucionales solo viajan al servidor HTTPS durante cada solicitud.
-   La contraseña nunca se guarda en localStorage ni se sube a GitHub o a Supabase DB.
-*/
+/* EducaCity · integrada en EncisoLMS. Presentación separada del motor de notas.
+ * Los datos de acceso se cifran con WebCrypto en IndexedDB por usuario de EncisoLMS.
+ * La Edge Function autentica, lee y escribe. Este archivo no envía notas directamente.
+ */
 (() => {
  'use strict';
- const ENDPOINT='https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge';
- const TYPES={academic:'Académico',attendance:'Actitudinal (Asistencia)',rockstars:'Aptitudinal (Rockstars)'};
- let modal=null,snapshot=null,preview=null,busy=false,connections=[],linked=[];
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const byId=id=>modal?.querySelector('#'+id);
- const announce=(msg,isError=false)=>{const x=byId('ec1Status');if(x){x.textContent=msg;x.style.color=isError?'#b42318':'#155b84'}};
+ const API='https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge';
+ const SCHOOL='https://insroque.educa.city/';
+ const COMPONENTS={academic:'Académico',attendance:'Actitudinal',rockstars:'Aptitudinal'};
+ const ORDER=['academic','attendance','rockstars'];
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));
+ const by=id=>document.getElementById(id);
  const client=()=>window.EncisoSupabase?.getClient?.();
- async function send(op,cred,component='',baseline_hash=''){
-  const c=client();if(!c)throw Error('Inicia sesión de docente en EncisoLMS.');
-  const auth=await c.auth.getSession();
-  const jwt=auth?.data?.session?.access_token;
-  if(auth.error||!jwt)throw Error('Tu sesión de EncisoLMS ha caducado. Vuelve a iniciar sesión.');
-  let response;
-  try{
-   response=await fetch(ENDPOINT,{method:'POST',cache:'no-store',mode:'cors',
-    headers:{'Content-Type':'application/json',Authorization:'Bearer '+jwt,
-      'apikey':window.ENCISOMATH_SUPABASE?.publishableKey||''},
-    body:JSON.stringify({op,credentials:cred,snapshot,component,baseline_hash})});
-  }catch(_){throw Error('No se pudo contactar el servidor de Supabase. Verifica tu conexión a Internet.')}
-  let data;try{data=await response.json()}catch{throw Error('El servidor devolvió una respuesta no válida (HTTP '+response.status+').')}
-  if(!response.ok||!data.ok)throw Error(data.error||'La operación no pudo comprobarse en educa.city.');
+ let layer=null,busy=false,credential=null,preview=null,snapshot=null,replies=[],tab='summary';
+ let ephemeral=null;
+ function vault(){
+  let pending;
+  const open=()=>{
+   if(!window.indexedDB||!window.crypto?.subtle)throw Error('Este navegador no admite almacenamiento cifrado. Utiliza Chrome actualizado.');
+   if(!pending)pending=new Promise((resolve,reject)=>{
+    const req=indexedDB.open('encisomath-educacity-vault',1);
+    req.onupgradeneeded=()=>{
+     if(!req.result.objectStoreNames.contains('keys'))req.result.createObjectStore('keys');
+     if(!req.result.objectStoreNames.contains('profiles'))req.result.createObjectStore('profiles');
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||Error('No se pudo abrir el almacenamiento.'));
+   }).catch(err=>{pending=null;throw err});
+   return pending;
+  };
+  async function get(store,key){const db=await open();return new Promise((resolve,reject)=>{
+   const q=db.transaction(store,'readonly').objectStore(store).get(key);
+   q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+  })}
+  async function put(store,key,value){const db=await open();return new Promise((resolve,reject)=>{
+   const t=db.transaction(store,'readwrite');t.objectStore(store).put(value,key);
+   t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);
+  })}
+  async function drop(store,key){const db=await open();return new Promise((resolve,reject)=>{
+   const t=db.transaction(store,'readwrite');t.objectStore(store).delete(key);
+   t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);
+  })}
+  return {
+   async save(uid,entry){
+    let key=await get('keys',uid);
+    if(!key){key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);await put('keys',uid,key)}
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const plain=new TextEncoder().encode(JSON.stringify(entry));
+    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:new TextEncoder().encode(uid)},key,plain);
+    await put('profiles',uid,{iv:Array.from(iv),cipher:Array.from(new Uint8Array(cipher))});
+   },
+   async load(uid){
+    const [key,row]=await Promise.all([get('keys',uid),get('profiles',uid)]);
+    if(!key||!row)return null;
+    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(row.iv),additionalData:new TextEncoder().encode(uid)},key,new Uint8Array(row.cipher));
+    return JSON.parse(new TextDecoder().decode(plain));
+   },
+   async clear(uid){await drop('profiles',uid);await drop('keys',uid)}
+  };
+ }
+ const storage=vault();
+ async function currentIdentity(){
+  const c=client();if(!c)throw Error('Inicia sesión como docente en EncisoLMS.');
+  const res=await c.auth.getSession();
+  const session=res?.data?.session;
+  if(res.error||!session?.access_token||!session.user?.id)throw Error('Inicia sesión nuevamente en EncisoLMS.');
+  return {jwt:session.access_token,uid:String(session.user.id)};
+ }
+ async function send(op,creds,part='',hash=''){
+  const auth=await currentIdentity();
+  let reply;
+  try{reply=await fetch(API,{method:'POST',cache:'no-store',mode:'cors',
+   headers:{'Content-Type':'application/json',Authorization:'Bearer '+auth.jwt,
+    apikey:window.ENCISOMATH_SUPABASE?.publishableKey||''},
+   body:JSON.stringify({op,credentials:creds,snapshot:op==='connection_check'?undefined:snapshot,component:part,baseline_hash:hash})});
+  }catch(_){throw Error('No fue posible comunicarse con Supabase. Revisa tu conexión a Internet.')}
+  let data;try{data=await reply.json()}catch(_){throw Error('Supabase devolvió una respuesta no válida (HTTP '+reply.status+').')}
+  if(!reply.ok||!data?.ok)throw Error(data?.error||'La operación no pudo comprobarse en educa.city.');
   return data;
  }
- function close(){if(busy)return;modal?.remove();modal=null;snapshot=null;preview=null;connections=[]}
- function credentials(){
-  const user=byId('ec1Login')?.value.trim()||'';
-  const pass=byId('ec1Password')?.value||'';
-  const school=byId('ec1School')?.value.trim()||'';
-  if(!/^[1-9][0-9]{0,14}$/.test(user)||!pass)throw Error('Introduce tu usuario y contraseña reales de educa.city.');
-  return {login:user,password:pass,...(school?{school_id:school}:{})};
+ function validate(entry){
+  const login=String(entry.login||'').trim(),password=String(entry.password||'');
+  let school;
+  try{school=new URL(String(entry.school_url||SCHOOL).trim())}catch(_){throw Error('Escribe una URL institucional válida.')}
+  if(school.protocol!=='https:'||school.hostname!=='insroque.educa.city'||school.port||school.username||school.password||!['','/'].includes(school.pathname)||school.search||school.hash)
+   throw Error('La dirección institucional autorizada es https://insroque.educa.city/');
+  if(!/^[1-9]\d{0,14}$/.test(login)||!password||password.length>240)throw Error('Revisa el usuario y la contraseña institucional.');
+  return {login,password,school_url:SCHOOL};
  }
- async function loadSnapshot(){
-  if(typeof window.EncisoEducaCitySnapshot!=='function')throw Error('Recarga EncisoLMS para obtener la versión actualizada de PLANILLA.');
-  const value=window.EncisoEducaCitySnapshot();
-  if(!value?.students?.length)throw Error('No hay estudiantes en la PLANILLA elegida.');
-  return value;
+ function modal(mode){
+  close(true);busy=false;preview=null;snapshot=null;replies=[];tab='summary';
+  const isSettings=mode==='settings';
+  layer=document.createElement('div');layer.id='ec1-layer';layer.className='ec1-overlay';
+  layer.innerHTML='<section class="ec1-dialog modal-card '+(isSettings?'ec1-dialog-settings':'ec1-dialog-sync')+'" role="dialog" aria-modal="true" aria-labelledby="ec1Title" tabindex="-1">'+
+   '<header class="ec1-head"><div><p class="section-kicker">'+(isSettings?'PERFIL DOCENTE · HERRAMIENTAS':'PLANILLA · EDUCA.CITY')+'</p>'+
+   '<h2 id="ec1Title">'+(isSettings?'EducaCity':'Cargar a EducaCity')+'</h2>'+
+   '<p class="ec1-subtitle">'+(isSettings?'Conexión institucional de tu cuenta docente.':'Sincronización de las calificaciones del periodo.')+'</p></div>'+
+   '<button type="button" class="ec1-close" id="ec1Close" aria-label="Cerrar">×</button></header>'+
+   '<div class="ec1-body" id="ec1Body"></div>'+
+   '<footer class="ec1-footer" id="ec1Footer"></footer></section>';
+  document.body.appendChild(layer);document.body.classList.add('ec1-is-open');
+  by('ec1Close').addEventListener('click',()=>close());
+  layer.addEventListener('click',e=>{if(e.target===layer)close()});
+  document.addEventListener('keydown',escKey);
+  requestAnimationFrame(()=>layer?.classList.add('is-visible'));
+  return layer;
  }
- function busyControl(value){busy=value;
-  modal?.querySelectorAll('.ec1-btn,.ec1-close').forEach(b=>b.disabled=value);
-  if(value&&byId('ec1Read'))byId('ec1Read').textContent='Leyendo educa.city…';
-  else if(byId('ec1Read'))byId('ec1Read').textContent='Leer y comparar';
+ function escKey(e){if(e.key==='Escape'&&!busy)close()}
+ function close(force=false){
+  if(busy&&!force)return;
+  document.removeEventListener('keydown',escKey);
+  if(layer){layer.remove();layer=null}
+  document.body.classList.remove('ec1-is-open');
+  credential=null;preview=null;snapshot=null;replies=[];busy=false;
  }
- async function previewLive(){
+ function setBusy(value){
+  busy=value;
+  if(layer)layer.querySelectorAll('button').forEach(b=>{
+   if(b.id==='ec1Close'||b.id==='ec1Cancel')b.disabled=value;
+  });
+ }
+ function status(message,bad=false){
+  const node=by('ec1Message');
+  if(node){node.textContent=message;node.classList.toggle('is-error',bad)}
+ }
+ function settingsMarkup(){
+  by('ec1Body').innerHTML='<form class="ec1-settings-form" id="ec1SettingsForm" autocomplete="off">'+
+   '<label for="ec1Login">Usuario de educa.city<input id="ec1Login" type="text" inputmode="numeric" autocomplete="off" required placeholder="Número de usuario"></label>'+
+   '<label for="ec1Password">Contraseña<input id="ec1Password" type="password" autocomplete="new-password" required placeholder="Contraseña institucional"></label>'+
+   '<label for="ec1School">URL del colegio<input id="ec1School" type="url" inputmode="url" spellcheck="false" value="'+SCHOOL+'" required></label>'+
+   '<label class="ec1-remember"><input id="ec1Remember" type="checkbox" checked><span>Recordar acceso cifrado en este dispositivo</span></label>'+
+   '<p class="ec1-help">La contraseña se guarda cifrada en este navegador, asociada a tu sesión de EncisoLMS. No se almacena en la base de datos. En dispositivos compartidos, desmarca esta opción.</p>'+
+   '</form>'+
+   '<div class="ec1-connection-line" id="ec1Message" role="status">Configura el acceso o comprueba la conexión.</div>';
+  by('ec1Footer').innerHTML='<button type="button" class="ec1-btn ec1-muted-btn" id="ec1Remove">Olvidar acceso</button>'+
+   '<div class="ec1-footer-end"><button type="button" class="ec1-btn ec1-muted-btn" id="ec1Cancel">Cancelar</button>'+
+   '<button type="button" class="ec1-btn ec1-secondary" id="ec1Save">Guardar</button>'+
+   '<button type="button" class="ec1-btn ec1-primary" id="ec1Check">Comprobar conexión</button></div>';
+  by('ec1Cancel').onclick=()=>close();
+  by('ec1Save').onclick=()=>saveSettings(false);
+  by('ec1Check').onclick=()=>saveSettings(true);
+  by('ec1Remove').onclick=forgetSettings;
+  by('ec1SettingsForm').onsubmit=e=>{e.preventDefault();saveSettings(true)};
+ }
+ function readSettingsForm(){
+  return validate({login:by('ec1Login').value,password:by('ec1Password').value,school_url:by('ec1School').value});
+ }
+ async function storeEntry(uid,entry,remember){
+  if(remember){await storage.save(uid,entry);ephemeral=null}
+  else{await storage.clear(uid);ephemeral={uid,entry}}
+ }
+ async function saveSettings(check){
   if(busy)return;
+  let entry;try{entry=readSettingsForm()}catch(e){status(e.message,true);return}
+  setBusy(true);
+  const submit=by(check?'ec1Check':'ec1Save');
+  const original=submit?.textContent;
+  if(submit)submit.textContent=check?'Comprobando…':'Guardando…';
+  status(check?'Autenticando con educa.city…':'Guardando configuración cifrada…');
   try{
-   busyControl(true);announce('Leyendo la PLANILLA de EncisoLMS…');
-   const cred=credentials();snapshot=await loadSnapshot();
-   announce('Iniciando sesión y leyendo actividades, matrícula y notas REALES de educa.city…');
-   const outcome=await send('preview',cred);
-   preview=outcome.data;
-   displayPreview(preview);
-   announce('Lectura completada. Revisa las diferencias antes de guardar.');
-  }catch(ex){announce('Lectura detenida: '+ex.message,true);preview=null}
-  finally{busyControl(false)}
+   const auth=await currentIdentity();
+   if(check)await send('connection_check',entry);
+   await storeEntry(auth.uid,entry,by('ec1Remember').checked);
+   credential=entry;
+   status(check?'Conexión comprobada con insroque.educa.city. Acceso listo para sincronizar.':'Acceso guardado. Ya puedes cargar notas desde PLANILLA.');
+  }catch(e){status('No se pudo '+(check?'comprobar la conexión':'guardar el acceso')+': '+e.message,true)}
+  finally{setBusy(false);if(submit)submit.textContent=original}
  }
- function displayPreview(data){
-  const container=byId('ec1Preview');if(!container)return;
-  const components=data.components||[],changes=data.changes||[],missing=data.unmatched||[];
-  container.innerHTML=
-   '<section class="ec1-panel"><h3>'+esc(snapshot.assignment_id.replace('mat-est-',''))+' · Período '+esc(snapshot.period)+'</h3>'+
-   '<div class="ec1-grid">'+
-    '<div><strong>'+Number(data.matched||0)+'</strong><p class="ec1-muted">Estudiantes verificados</p></div>'+
-    '<div><strong>'+missing.length+'</strong><p class="ec1-muted">Estudiantes omitidos</p></div>'+
-    '<div><strong>'+Number(data.needs_creation||0)+'</strong><p class="ec1-muted">Actividades que faltan</p></div>'+
-    '<div><strong>'+changes.length+'</strong><p class="ec1-muted">Notas que cambiarán</p></div>'+
-   '</div></section>'+
-   '<section class="ec1-panel"><h3>Actividades obtenidas en vivo de educa.city</h3>'+
-   '<table class="ec1-table"><thead><tr><th>Componente</th><th>ID real</th><th>Peso EncisoLMS</th><th>Acción</th></tr></thead><tbody>'+
-   components.map(p=>'<tr><td>'+esc(TYPES[p.key])+'</td><td>'+esc(p.remote_id??'Se creará')+'</td>'+
-    '<td>'+esc(p.weight_new)+' %</td><td>'+esc(p.action==='create'?'Crear':p.action==='update_weight'?'Actualizar peso':'Reutilizar')+'</td></tr>').join('')+
-   '</tbody></table></section>'+
-   (missing.length?'<section class="ec1-panel"><h3>Estudiantes que NO se enviarán</h3><div class="ec1-students">'+
-    missing.map(p=>'<p>'+esc(p.code)+' · '+esc(p.name)+' — '+esc(p.cause)+'</p>').join('')+'</div></section>':'')+
-   '<section class="ec1-panel"><h3>Notas diferentes en educa.city ('+changes.length+')</h3>'+ 
-   '<p class="ec1-muted">Las notas se redondean al entero más cercano antes de comparar y enviar (53,5 → 54). Si ya coincide el entero, no se modifica.</p><div class="ec1-students">'+
-   '<table class="ec1-table"><thead><tr><th>Alumno</th><th>Componente</th><th>Anterior</th><th>Nueva</th></tr></thead><tbody>'+
-   changes.slice(0,45).map(p=>'<tr><td>'+esc(p.student_name)+'</td><td>'+esc(TYPES[p.component])+'</td>'+
-    '<td>'+esc(p.before??'—')+'</td><td>'+esc(p.after)+'</td></tr>').join('')+
-   '</tbody></table></div>'+(changes.length>45?'<p class="ec1-muted">Y '+(changes.length-45)+' registros adicionales.</p>':'')+
-   '<div class="ec1-controls"><button type="button" class="ec1-btn" id="ec1Apply">Crear/reutilizar y enviar notas</button>'+
-   '<button type="button" class="ec1-btn ec1-secondary" id="ec1Back">Volver</button></div></section>';
-  byId('ec1Apply').onclick=apply;
-  byId('ec1Back').onclick=()=>{preview=null;byId('ec1Preview').innerHTML='';announce('Puedes volver a leer sin enviar notas.')};
+ async function forgetSettings(){
+  if(busy)return;
+  setBusy(true);
+  try{
+   const {uid}=await currentIdentity();
+   await storage.clear(uid);
+   ephemeral=null;credential=null;
+   by('ec1Login').value='';by('ec1Password').value='';by('ec1School').value=SCHOOL;
+   status('Acceso eliminado de este navegador.');
+  }catch(e){status('No se pudo borrar: '+e.message,true)}
+  finally{setBusy(false)}
  }
- async function persistVerified(result){
-  const c=client(),component=result.component;
+ async function openSettings(){
+  modal('settings');settingsMarkup();
+  try{
+   const {uid}=await currentIdentity();
+   const saved=ephemeral?.uid===uid?ephemeral.entry:await storage.load(uid);
+   if(!layer||!by('ec1Login'))return;
+   if(saved){by('ec1Login').value=saved.login||'';by('ec1Password').value=saved.password||'';by('ec1School').value=saved.school_url||SCHOOL;
+    by('ec1Remember').checked=!(ephemeral?.uid===uid);
+    status('Acceso configurado. Puedes comprobar la conexión o modificar los datos.')}
+  }catch(e){status('No se pudo recuperar el acceso: '+e.message,true)}
+ }
+ function progressView(message,percentage,items=[]){
+  by('ec1Body').innerHTML='<section class="ec1-progress-panel" aria-live="polite">'+
+   '<div class="ec1-spinner" aria-hidden="true"></div>'+
+   '<h3 id="ec1ProgressTitle">'+esc(message)+'</h3>'+
+   '<p class="ec1-progress-description" id="ec1ProgressDescription">Conexión segura desde EncisoLMS. La planilla permanecerá intacta hasta confirmar.</p>'+
+   '<div class="ec1-progress-track" role="progressbar" aria-label="Progreso de sincronización" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+percentage+'"><span style="width:'+percentage+'%"></span></div>'+
+   '<ul class="ec1-progress-steps" id="ec1Steps">'+items.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
+   '</section>';
+  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button" '+(busy?'disabled':'')+'>Cancelar</button>';
+  by('ec1Cancel').onclick=()=>close();
+ }
+ function advance(message,percent,items=[]){
+  const title=by('ec1ProgressTitle'),bar=by('ec1Body')?.querySelector('.ec1-progress-track'),steps=by('ec1Steps');
+  if(title)title.textContent=message;
+  if(bar){bar.setAttribute('aria-valuenow',String(percent));bar.querySelector('span').style.width=percent+'%'}
+  if(steps)steps.innerHTML=items.map(x=>'<li>'+esc(x)+'</li>').join('');
+ }
+ function showFailure(error,context='Lectura detenida'){
+  setBusy(false);
+  by('ec1Body').innerHTML='<section class="ec1-result ec1-error" role="alert"><div class="ec1-result-icon">!</div>'+
+   '<h3>'+esc(context)+'</h3><p>'+esc(error?.message||error||'No fue posible completar la solicitud.')+'</p>'+
+   '<small>Verifica la conexión y vuelve a leer antes de intentar otro envío. Si se interrumpió una escritura, algunas notas pueden haber quedado guardadas.</small></section>';
+  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cerrar</button>'+
+   '<button class="ec1-btn ec1-primary" id="ec1Retry" type="button">Volver a leer</button>';
+  by('ec1Cancel').onclick=()=>close();
+  by('ec1Retry').onclick=()=>startPreview();
+ }
+ function pill(label,kind){return '<span class="ec1-pill '+(kind||'')+'">'+esc(label)+'</span>'}
+ function formatComponent(part){
+  if(part.action==='create')return pill('Crear','is-pending');
+  if(part.action==='update_weight')return pill('Actualizar peso','is-pending');
+  return pill('Reutilizar','is-ok');
+ }
+ function compactGrades(changes){
+  const students=new Map();
+  for(const x of changes){
+   const id=String(x.student_id||x.student_name||'');
+   if(!students.has(id))students.set(id,{name:x.student_name,grades:{}});
+   students.get(id).grades[x.component]=x;
+  }
+  if(!students.size)return '<div class="ec1-empty"><strong>Todo está actualizado.</strong><span>Las notas de EncisoLMS coinciden con las de educa.city.</span></div>';
+  const headings=ORDER.map(k=>'<th scope="col">'+esc(COMPONENTS[k])+'</th>').join('');
+  const rows=[...students.values()].map(student=>'<tr><th scope="row">'+esc(student.name)+'</th>'+
+   ORDER.map(k=>{const g=student.grades[k];return '<td>'+(g?'<span class="ec1-old">'+esc(g.before??'—')+'</span><span class="ec1-arrow">→</span><strong class="ec1-new">'+esc(g.after)+'</strong>':'<span class="ec1-same">Sin cambios</span>')+'</td>'}).join('')+'</tr>').join('');
+  return '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Estudiante</th>'+headings+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+ }
+ function displayPreview(){
+  const p=preview,changes=p.changes||[],acts=p.components||[],missing=p.unmatched||[];
+  const count=changes.length;
+  by('ec1Body').innerHTML=
+   '<div class="ec1-summary-strip"><div><strong>Período '+esc(snapshot.period)+'</strong><span>'+esc(snapshot.assignment_id.replace('mat-est-',''))+'</span></div>'+
+   '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
+   '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>Por crear</span></div>'+
+   '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
+   '<div class="ec1-tabs" role="tablist" aria-label="Detalle de sincronización">'+
+   '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="summary" id="ec1TabSummary" aria-controls="ec1PanelSummary">Resumen</button>'+
+   '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
+   '<button type="button" role="tab" aria-selected="false" class="ec1-tab" data-tab="grades" id="ec1TabGrades" aria-controls="ec1PanelGrades">Calificaciones</button></div>'+
+   '<section class="ec1-tab-panel" id="ec1PanelSummary" role="tabpanel" aria-labelledby="ec1TabSummary">'+
+    '<h3>'+(!count&&!p.needs_creation?'La planilla está al día':'Cambios preparados para cargar')+'</h3>'+
+    '<p>'+(!count&&!p.needs_creation?'Los datos ya coinciden. Puedes comprobar nuevamente las tres actividades sin modificar notas.':'Se sincronizarán únicamente las diferencias con educa.city, conservando las demás notas.')+'</p>'+
+    (missing.length?'<p class="ec1-warning">'+missing.length+' estudiante(s) sin correspondencia. No se enviarán sus calificaciones.</p>':'')+
+    '<div class="ec1-legend">'+pill('Académico · '+snapshot.weights.academic+' %')+pill('Actitudinal · '+snapshot.weights.attendance+' %')+pill('Aptitudinal · '+snapshot.weights.rockstars+' %')+'</div></section>'+
+   '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities" hidden>'+
+    '<h3>Actividades en educa.city</h3>'+
+    '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
+    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+formatComponent(a)+'</td></tr>').join('')+
+    '</tbody></table></div></section>'+
+   '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades">'+
+    '<h3>Notas que cambiarán</h3><p>Una fila por estudiante. Las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
+  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
+   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button">'+(count||p.needs_creation?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
+  by('ec1Cancel').onclick=()=>close();
+  by('ec1Apply').onclick=apply;
+  by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
+  selectTab('summary');
+ }
+ function selectTab(name){
+  tab=name;
+  by('ec1Body')?.querySelectorAll('.ec1-tab').forEach(b=>{
+   const active=b.dataset.tab===name;
+   b.classList.toggle('is-active',active);b.setAttribute('aria-selected',String(active));
+  });
+  for(const key of ['summary','activities','grades']){
+   const pane=by('ec1Panel'+key[0].toUpperCase()+key.slice(1));
+   if(pane)pane.hidden=key!==name;
+  }
+ }
+ async function persistVerified(reply){
+  const c=client(),component=reply.component;
   const row={assignment_id:snapshot.assignment_id,academic_year:2026,period:snapshot.period,component,
-   educacity_activity_id:Number(result.remote_id),educacity_title:TYPES[component],
+   educacity_activity_id:Number(reply.remote_id),educacity_title:COMPONENTS[component],
    weight:Number(snapshot.weights[component]),rockstar_target:component==='rockstars'?Number(snapshot.rockstar_target||15):null,
    status:'verified',source:'supabase_edge_live_read',updated_at:new Date().toISOString()};
   const saved=await c.from('educacity_component_links').upsert(row,{onConflict:'assignment_id,academic_year,period,component'});
-  if(saved.error)throw Error('No se pudo guardar el vínculo de actividad en Supabase: '+saved.error.message);
-  const matched=result.confirmed_students||[];
+  if(saved.error)throw Error(saved.error.message);
+  const matched=reply.confirmed_students||[];
   if(!matched.length)return;
   const ids=matched.map(x=>String(x.code));
   const q=await c.from('students').select('id,student_code').in('student_code',ids);
-  if(q.error)throw Error('No se pudo verificar el estudiante de EncisoLMS: '+q.error.message);
+  if(q.error)throw Error(q.error.message);
   const map=new Map((q.data||[]).map(x=>[String(x.student_code),String(x.id)]));
   const rows=matched.filter(x=>map.has(String(x.code))).map(x=>({
-   assignment_id:snapshot.assignment_id,academic_year:2026,
-   student_id:map.get(String(x.code)),educacity_student_id:Number(x.remote_id),
-   educacity_name:String(x.name),match_method:'verified_code',status:'confirmed',updated_at:new Date().toISOString()
+   assignment_id:snapshot.assignment_id,academic_year:2026,student_id:map.get(String(x.code)),
+   educacity_student_id:Number(x.remote_id),educacity_name:String(x.name),
+   match_method:'verified_code',status:'confirmed',updated_at:new Date().toISOString()
   }));
-  if(rows.length){const save=await c.from('educacity_student_links').upsert(rows,{onConflict:'assignment_id,academic_year,student_id'});
-   if(save.error)throw Error('No se pudieron guardar los vínculos de alumnos: '+save.error.message)}
+  if(rows.length){
+   const v=await c.from('educacity_student_links').upsert(rows,{onConflict:'assignment_id,academic_year,student_id'});
+   if(v.error)throw Error(v.error.message);
+  }
+ }
+ async function startPreview(){
+  if(busy)return;
+  replies=[];preview=null;snapshot=null;
+  progressView('Preparando conexión institucional',6,['Recuperando configuración segura…']);
+  setBusy(true);
+  try{
+   const {uid}=await currentIdentity();
+   credential=ephemeral?.uid===uid?ephemeral.entry:await storage.load(uid);
+   if(!credential)throw Error('Primero guarda tu acceso en Inicio → Herramientas → EducaCity.');
+   credential=validate(credential);
+   advance('Leyendo la planilla del LMS',24,['Acceso institucional configurado','Preparando calificaciones…']);
+   if(typeof window.EncisoEducaCitySnapshot!=='function')throw Error('Recarga EncisoLMS para actualizar la PLANILLA.');
+   snapshot=window.EncisoEducaCitySnapshot();
+   if(!snapshot?.students?.length)throw Error('La planilla seleccionada no tiene estudiantes.');
+   advance('Conectando con educa.city',55,['Acceso institucional configurado','Validando matrícula y actividades…']);
+   const response=await send('preview',credential);
+   preview=response.data;
+   advance('Comparación terminada',100,['Conexión comprobada','Actividades y calificaciones comparadas']);
+   displayPreview();
+  }catch(err){
+   if(String(err.message||'').includes('Primero guarda'))showSettingsRequired(err.message);
+   else showFailure(err,'No se pudo leer educa.city');
+  }finally{setBusy(false)}
+ }
+ function showSettingsRequired(message){
+  setBusy(false);
+  by('ec1Body').innerHTML='<section class="ec1-result"><h3>Configura EducaCity una sola vez</h3><p>'+esc(message)+'</p></section>';
+  by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
+   '<button class="ec1-btn ec1-primary" id="ec1Settings" type="button">Abrir Herramientas</button>';
+  by('ec1Cancel').onclick=()=>close();
+  by('ec1Settings').onclick=()=>openSettings();
  }
  async function apply(){
-  if(busy||!preview)return;
+  if(busy||!preview||!credential)return;
+  replies=[];const issues=[];let verified=0;
+  progressView('Iniciando sincronización',4,['Conservando notas no modificadas…']);
+  setBusy(true);
   try{
-   connections=[];linked=[];
-   const c=credentials();busyControl(true);let done=0;
-   for(const p of preview.components){
-    announce('Verificando y sincronizando '+TYPES[p.key]+' ('+(done+1)+'/3)…');
-    const out=await send('sync',c,p.key,p.baseline_hash);
-    connections.push(out);done++;
-    try{await persistVerified(out)}catch(e){console.warn('Vínculo EducaCity pendiente:',e.message);linked.push(e.message)}
+   for(let i=0;i<ORDER.length;i++){
+    const k=ORDER[i],part=preview.components.find(x=>x.key===k);
+    if(!part)throw Error('Falta el componente '+COMPONENTS[k]+' en la lectura inicial.');
+    advance('Sincronizando '+COMPONENTS[k],12+i*27,
+     ORDER.slice(0,i).map(key=>'✓ '+COMPONENTS[key]+' completado').concat(['Comprobando '+COMPONENTS[k]+' en educa.city…']));
+    const outcome=await send('sync',credential,k,part.baseline_hash);
+    replies.push(outcome);
+    verified+=Number(outcome.notes_verified||0);
+    issues.push(...(outcome.failed_notes||[]),...(outcome.not_sent_notes||[]));
+    try{await persistVerified(outcome)}catch(e){issues.push({student_name:'Vínculos de '+COMPONENTS[k],reason:'Sin guardar vínculo en LMS: '+e.message})}
+    advance(COMPONENTS[k]+' comprobado',Math.min(95,36+i*30),
+     ORDER.slice(0,i+1).map(key=>'✓ '+COMPONENTS[key]+' comprobado'));
    }
-   const verified=connections.reduce((n,x)=>n+Number(x.notes_verified||0),0);
-   const missing=connections.flatMap(x=>x.failed_notes||[]);
-   const untouched=connections.flatMap(x=>x.not_sent_notes||[]);
-   const partial=missing.length>0||untouched.length>0;
-   const outstanding=missing.concat(untouched);
-   byId('ec1Preview').innerHTML='<section class="ec1-panel"><h3>'+
-    (partial?'Sincronización parcial · revisar pendientes':'Sincronización completada')+'</h3>'+
-    '<p>Actividades verificadas: '+connections.length+' de 3</p>'+
-    '<p>Notas guardadas y verificadas: <strong>'+verified+'</strong></p>'+
-    '<p>Notas que educa.city no confirmó: <strong>'+missing.length+'</strong></p>'+
-    '<p>Notas que no se intentaron enviar: <strong>'+untouched.length+'</strong></p>'+
-    '<p>Estudiantes sin coincidencia: '+Number(preview.unmatched?.length||0)+'</p>'+
-    (partial?'<p class="ec1-muted">Las notas pendientes no se reenviaron. Relee la planilla actual antes de intentar corregirlas.</p>'+
-      '<div class="ec1-students"><table class="ec1-table"><thead><tr><th>Estudiante</th><th>Componente</th><th>Esperada</th><th>Encontrada</th><th>Estado</th></tr></thead><tbody>'+
-      outstanding.map(x=>'<tr><td>'+esc(x.student_name)+'</td><td>'+esc(TYPES[x.component]||x.component)+'</td>'+
-        '<td>'+esc(x.expected)+'</td><td>'+esc(x.observed??'—')+'</td>'+
-        '<td>'+esc(x.reason||'Pendiente')+'</td></tr>').join('')+
-      '</tbody></table></div>':'')+
-    (linked.length?'<p>Advertencia al registrar vínculos en Supabase: '+esc(linked.join('; '))+'</p>':'')+
-    (partial?'<button type="button" class="ec1-btn" id="ec1Review">Volver a leer</button> ':'')+
-    '<button type="button" class="ec1-btn ec1-secondary" id="ec1Done">Cerrar</button></section>';
-   byId('ec1Done').onclick=close;
-   if(partial)byId('ec1Review').onclick=()=>{connections=[];linked=[];previewLive()};
-   announce(partial?'Sincronización parcial: '+verified+' notas confirmadas; '+outstanding.length+
-      ' pendientes, detalladas abajo. Ninguna nota pendiente se reenvió.':'educa.city verificó todas las notas enviadas.',partial);
-  }catch(ex){
-   announce('SINCRONIZACIÓN DETENIDA: '+ex.message,true);
-   byId('ec1Preview').innerHTML='<section class="ec1-panel"><h3>Operación incompleta</h3>'+
-    '<p>Componentes completados: '+connections.length+' de 3. No repitas a ciegas: vuelve a leer educa.city para comprobar qué se guardó.</p>'+
-    '<button type="button" class="ec1-btn" id="ec1Retry">Volver a leer</button></section>';
-   byId('ec1Retry').onclick=()=>{connections=[];previewLive()};
-  }finally{busyControl(false)}
+   const partial=issues.length>0;
+   by('ec1Body').innerHTML='<section class="ec1-result '+(partial?'ec1-partial':'ec1-ok')+'">'+
+    '<div class="ec1-result-icon">'+(partial?'!':'✓')+'</div>'+
+    '<h3>'+(partial?'Sincronización con pendientes':'Sincronización completada')+'</h3>'+
+    '<p>Se comprobaron las tres actividades y sus calificaciones en educa.city.</p>'+
+    '<div class="ec1-result-stats"><div><strong>'+verified+'</strong><span>Notas guardadas y verificadas</span></div>'+
+    '<div><strong>'+issues.length+'</strong><span>Pendientes de revisión</span></div></div>'+
+    (partial?'<details class="ec1-issues"><summary>Ver detalles de los pendientes ('+issues.length+')</summary><ul>'+
+     issues.map(x=>'<li>'+esc(x.student_name||'Registro')+': '+esc(x.reason||'No confirmado')+'</li>').join('')+
+    '</ul></details>':'')+'</section>';
+   by('ec1Footer').innerHTML=(partial?'<button class="ec1-btn ec1-secondary" id="ec1Retry" type="button">Volver a leer</button>':'')+
+    '<button class="ec1-btn ec1-primary" id="ec1Done" type="button">Finalizar</button>';
+   by('ec1Done').onclick=()=>close();
+   if(partial)by('ec1Retry').onclick=()=>startPreview();
+  }catch(err){showFailure(err,'Sincronización interrumpida · '+replies.length+' de 3 componentes comprobados')}
+  finally{setBusy(false)}
  }
- function open(){
-  if(modal)return;
-  modal=document.createElement('div');modal.className='ec1-overlay';
-  modal.innerHTML='<div class="ec1-dialog" role="dialog" aria-modal="true">'+
-   '<header class="ec1-head"><div><h2>Sincronizar con educa.city</h2>'+
-   '<p>Conexión directa desde EncisoLMS · sin programas adicionales</p></div>'+
-   '<button class="ec1-close" type="button" id="ec1Close" title="Cerrar">×</button></header>'+
-   '<div class="ec1-body"><section class="ec1-panel"><h3>Acceso institucional</h3>'+
-   '<p class="ec1-muted">El acceso se utiliza solo para esta conexión HTTPS. No se almacena tu contraseña.</p>'+
-   '<div class="ec1-controls">'+
-   '<label>Usuario educa.city<input id="ec1Login" inputmode="numeric" autocomplete="off" placeholder="Número de usuario"></label>'+
-   '<label>Contraseña educa.city<input type="password" id="ec1Password" autocomplete="off" placeholder="Tu contraseña"></label>'+
-   '<label>Institución (opcional)<input id="ec1School" inputmode="numeric" autocomplete="off" placeholder="Identificación automática"></label>'+
-   '<button class="ec1-btn" type="button" id="ec1Read">Leer y comparar</button></div></section>'+
-   '<p id="ec1Status" class="ec1-message" role="status">Primero leeremos educa.city. Ninguna nota se enviará sin tu confirmación.</p>'+
-   '<div id="ec1Preview"></div></div></div>';
-  document.body.appendChild(modal);
-  byId('ec1Close').onclick=close;byId('ec1Read').onclick=previewLive;
-  modal.addEventListener('click',e=>{if(e.target===modal)close()});
+ async function openSync(){
+  modal('sync');
+  await startPreview();
  }
- function mount(){
-  const hero=document.querySelector('.em-notes-hero-host');
-  if(!hero||hero.querySelector('.ec1-open'))return;
-  const b=document.createElement('button');b.type='button';b.className='ec1-open';
-  b.textContent='Sincronizar con educa.city';b.onclick=open;
-  (hero.querySelector('.em-notes-hero-content')||hero).appendChild(b);
- }
- const root=document.querySelector('#app')||document.body;let scheduled=false;
- new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;mount()})})
- .observe(root,{childList:true,subtree:true});mount();
+ window.EncisoEducaCity={openSettings,openSync};
 })();
