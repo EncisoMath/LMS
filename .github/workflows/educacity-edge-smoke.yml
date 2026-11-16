@@ -26,3 +26,10 @@ jobs:
             'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge')
           test "$status" = "400"
           jq -e '.ok == false' /tmp/educacity-denied.json
+      - name: Comprobar acceso de Supabase a educa.city sin iniciar sesión
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent --max-time 40 \
+            'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge?probe=1' \
+            | tee /tmp/educacity-probe.json \
+            | jq -e '.ok == true and (.probe | map(.reachable) | all)'
