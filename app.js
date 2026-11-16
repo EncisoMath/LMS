@@ -6199,6 +6199,48 @@
     }
   }
 
+  // Una sola fuente de verdad para sincronizar: los mismos valores que ve PLANILLA.
+  // Solo lectura; la escritura a EducaCity se realiza en el conector local autorizado.
+  window.EncisoEducaCitySnapshot = function() {
+    const assignment = state.assignment;
+    if (!assignment || !/^mat-est-(?:8|9|10|11)-[1-6]$/.test(String(assignment.id || ''))) {
+      throw new Error('Abre primero PLANILLA de un curso de Estadística.');
+    }
+    const columns = notesColumnDefinitions();
+    const components = notesFinalComponentColumns(columns);
+    if (components.length !== 3) throw new Error('PLANILLA no tiene los tres componentes.');
+    const originalStudents = getStudentsForAssignment(assignment);
+    const sessions = notesAttendanceSessions(assignment.id, state.activePeriod);
+    const attendanceByStudent = new Map(originalStudents.map(student => [student.id, notesAttendanceSummary(student.id, sessions)]));
+    const context = {
+      activityGrades: notesActivityGradeMap(assignment.id),
+      quizGrades: notesQuizGradeMap(assignment.id),
+      attendanceByStudent,
+      academicColumns: notesAcademicDetailColumns(columns)
+    };
+    const scored = originalStudents.map(student => {
+      const person = notesStudentNameParts(student);
+      const values = {};
+      for (const col of components) {
+        const cell = notesCellScore(col, student, context);
+        values[col.type] = cell.score === null || cell.score === undefined || !Number.isFinite(Number(cell.score))
+          ? null : Math.round(Math.max(0, Math.min(100, Number(cell.score))) * 10) / 10;
+      }
+      return {
+        code: String(person.code || ''),
+        name: (person.firstName + ' ' + person.lastName).trim(),
+        scores: values
+      };
+    });
+    return {
+      assignment_id: String(assignment.id),
+      period: Number(state.activePeriod),
+      weights: Object.fromEntries(components.map(col => [col.type, Number(col.weight)])),
+      students: scored,
+      generated_at: new Date().toISOString()
+    };
+  };
+
   function notesHeroHTML(assignment) {
     return `
       <section class="activity-hero em-act-hero-host em-notes-hero-host" data-em-notes-hero aria-label="Planilla del periodo">
