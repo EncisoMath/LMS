@@ -6311,6 +6311,200 @@
     `;
   }
 
+
+  /* Un movimiento Rockstar es un evento real del periodo, no una nota sobreescrita. */
+  function notesRockstarDailyHistory(assignmentId, studentId, period) {
+    const grouped = new Map();
+    getRockstarEvents(assignmentId).filter(event =>
+      String(event.studentId) === String(studentId) && Number(event.period) === Number(period)
+    ).forEach(event => {
+      const date = String(event.date || event.occurredAt || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+      const row = grouped.get(date) || { date, received: 0, removed: 0, net: 0, pending: false };
+      const delta = Number(event.delta || 0);
+      if (delta > 0) row.received += delta;
+      if (delta < 0) row.removed += Math.abs(delta);
+      row.net += delta;
+      row.pending ||= Boolean(event.pendingSync);
+      grouped.set(date, row);
+    });
+    return [...grouped.values()].sort((a,b) => b.date.localeCompare(a.date));
+  }
+  function openNotesRockstarDetail(studentCode) {
+    if (!state.assignment || !isTeacherPortal()) return;
+    const assignmentId = String(state.assignment.id);
+    const student = getStudentsForAssignment(state.assignment).find(item => String(item.id) === String(studentCode));
+    const column = notesColumnDefinitions().find(item => item.type === 'rockstars');
+    if (!student || !column) return;
+    const period = Number(state.activePeriod || 1);
+    const target = Math.max(1, Number(column.target || 15));
+    const current = getRockstarPoints(assignmentId, student.id, period);
+    const currentGrade = rockstarGradeFromPoints(current, target);
+    const today = todayISO();
+    const history = notesRockstarDailyHistory(assignmentId, student.id, period);
+    const rows = history.map(row => {
+      const date = new Date(row.date + 'T12:00:00')
+        .toLocaleDateString('es-CO', {day:'numeric',month:'long',year:'numeric'});
+      return '<tr><th scope="row">'+escapeHTML(date)+'</th>'+
+        '<td class="em-notes-rk-positive">+'+row.received+'</td>'+
+        '<td class="em-notes-rk-negative">-'+row.removed+'</td>'+
+        '<td><strong>'+(row.net > 0 ? '+' : '')+row.net+'</strong>'+
+        (row.pending ? '<small>Pendiente de sincronizar</small>' : '')+'</td></tr>';
+    }).join('');
+    const markup = '<section class="modal-card em-notes-grade-detail-modal em-notes-rk-modal" role="dialog" aria-modal="true" aria-labelledby="notesRockstarTitle">'+
+      '<button class="modal-close" type="button" data-close-modal aria-label="Cerrar">×</button>'+
+      '<p class="section-kicker">Detalle de la calificación · Rockstar</p>'+
+      '<h2 id="notesRockstarTitle">'+escapeHTML(student.fullName || student.id)+'</h2>'+
+      '<p class="em-notes-grade-detail-student">Período '+period+' · Meta: '+target+' puntos</p>'+
+      '<div class="em-notes-grade-main-tabs em-notes-rk-tabs" role="tablist" aria-label="Puntos e historial">'+
+      '<button type="button" class="is-active" data-rk-tab="points" role="tab" aria-selected="true">Puntos</button>'+
+      '<button type="button" data-rk-tab="history" role="tab" aria-selected="false">Historial</button></div>'+
+      '<div class="em-notes-rk-scroll">'+
+      '<section class="em-notes-rk-panel" data-rk-panel="points" role="tabpanel">'+
+        '<div class="em-notes-rk-metrics">'+
+          '<article><span>Puntos actuales</span><strong>'+current+'</strong></article>'+
+          '<article><span>Nota actual</span><strong>'+currentGrade+'<small>/100</small></strong></article>'+
+          '<article class="is-preview"><span>Nota resultante</span><strong id="notesRockstarAfter">'+currentGrade+'<small>/100</small></strong></article>'+
+        '</div>'+
+        '<div class="em-notes-rk-editor"><h3>Agregar o quitar puntos</h3>'+
+          '<p>Elige la cantidad. La nota resultante se calcula antes de guardar.</p>'+
+          '<div class="em-notes-rk-counter">'+
+            '<button type="button" id="notesRockstarMinus" aria-label="Quitar un punto">−</button>'+
+            '<label for="notesRockstarDelta"><span>Movimiento</span>'+
+              '<input id="notesRockstarDelta" type="number" inputmode="numeric" min="-100" max="100" step="1" value="0"></label>'+
+            '<button type="button" id="notesRockstarPlus" aria-label="Agregar un punto">+</button>'+
+          '</div>'+
+          '<p id="notesRockstarProjection" class="em-notes-rk-projection" aria-live="polite"></p>'+
+          '<p id="notesRockstarValidation" class="em-notes-rk-validation" role="status" hidden></p>'+
+        '</div>'+
+      '</section>'+
+      '<section class="em-notes-rk-panel" data-rk-panel="history" role="tabpanel" hidden>'+
+        '<div class="em-notes-rk-history-heading"><h3>Movimientos del período '+period+'</h3>'+
+        '<span>'+history.length+' fecha'+(history.length === 1 ? '' : 's')+'</span></div>'+
+        '<div class="em-notes-rk-history-scroll"><table class="em-notes-rk-history">'+
+          '<thead><tr><th>Fecha</th><th>Recibidos</th><th>Quitados</th><th>Balance</th></tr></thead>'+
+          '<tbody>'+(rows || '<tr><td class="em-notes-rk-empty" colspan="4">Sin movimientos en este período.</td></tr>')+'</tbody>'+
+        '</table></div></section></div>'+
+      '<footer class="em-notes-rk-actions">'+
+        '<button type="button" class="ghost-btn" data-close-modal id="notesRockstarCancel">Cancelar</button>'+
+        '<button type="button" class="primary-btn" id="notesRockstarSave" disabled>Agregar puntos</button>'+
+      '</footer></section>';
+    openModal(markup, () => {
+      const root = document.querySelector('#modalLayer .em-notes-rk-modal');
+      if (!root) return;
+      const input = root.querySelector('#notesRockstarDelta');
+      const save = root.querySelector('#notesRockstarSave');
+      const validation = root.querySelector('#notesRockstarValidation');
+      let saving = false;
+      const signedDelta = () => {
+        const number = Number(input.value);
+        return input.value.trim() && Number.isInteger(number) && Math.abs(number) <= 100 ? number : null;
+      };
+      const check = delta => {
+        if (delta === null) return 'Introduce un número entero entre -100 y 100.';
+        if (!delta) return '';
+        const attendance = getAttendance(assignmentId, today)?.[student.id];
+        if (isRockstarLocked(attendance)) return 'El estudiante tiene bloqueados sus puntos de hoy por asistencia.';
+        if (emRsStatusToVisual(attendance) === 'late' && delta > 0 &&
+          getRockstarPointsForDate(assignmentId, student.id, period, today) + delta > 3)
+          return 'Llegó tarde: hoy no puede superar 3 puntos Rockstar.';
+        return '';
+      };
+      const update = () => {
+        const delta = signedDelta();
+        const result = current + (delta ?? 0);
+        const after = rockstarGradeFromPoints(result, target);
+        root.querySelector('#notesRockstarAfter').innerHTML = after + '<small>/100</small>';
+        root.querySelector('#notesRockstarProjection').textContent =
+          (delta === null ? 'Movimiento inválido' : (delta > 0 ? '+' : '') + delta + ' puntos') +
+          ' · quedaría con ' + result + ' puntos.';
+        const error = check(delta);
+        validation.textContent = error;
+        validation.hidden = !error;
+        save.disabled = saving || delta === null || delta === 0 || Boolean(error);
+        save.textContent = delta !== null && delta < 0 ? 'Quitar puntos' : 'Agregar puntos';
+      };
+      input.addEventListener('input', update);
+      root.querySelector('#notesRockstarMinus').addEventListener('click', () => {
+        input.value = String(Math.max(-100, (signedDelta() ?? 0) - 1)); update();
+      });
+      root.querySelector('#notesRockstarPlus').addEventListener('click', () => {
+        input.value = String(Math.min(100, (signedDelta() ?? 0) + 1)); update();
+      });
+      root.querySelectorAll('[data-rk-tab]').forEach(button => {
+        button.addEventListener('click', () => {
+          const selected = button.dataset.rkTab;
+          root.querySelectorAll('[data-rk-tab]').forEach(tab => {
+            const active = tab.dataset.rkTab === selected;
+            tab.classList.toggle('is-active',active);
+            tab.setAttribute('aria-selected',String(active));
+          });
+          root.querySelectorAll('[data-rk-panel]').forEach(panel => {
+            panel.hidden = panel.dataset.rkPanel !== selected;
+          });
+        });
+      });
+      save.addEventListener('click', async () => {
+        if (saving) return;
+        const delta = signedDelta();
+        const error = check(delta);
+        if (!delta || delta === null || error) {
+          validation.textContent = error || 'Selecciona los puntos.';validation.hidden = false;return;
+        }
+        if (getRockstarPoints(assignmentId, student.id, period) !== current) {
+          validation.textContent = 'Los puntos cambiaron. Cierra el modal y ábrelo otra vez antes de guardar.';
+          validation.hidden = false;save.disabled = true;return;
+        }
+        const mutationId = globalThis.crypto?.randomUUID?.() ||
+          'rs-' + Date.now() + '-' + Math.random().toString(36).slice(2,12);
+        const entry = {
+          id:'rs-pending-'+mutationId, clientMutationId:mutationId, pendingSync:true,
+          assignmentId,studentId:student.id,period,date:today,occurredAt:new Date().toISOString(),
+          delta,category:'planilla',reason:'Ajuste Rockstar desde PLANILLA'
+        };
+        saving = true;update();
+        const controls = [input,root.querySelector('#notesRockstarMinus'),
+          root.querySelector('#notesRockstarPlus'),root.querySelector('#notesRockstarCancel'),
+          root.querySelector('.modal-close')];
+        controls.forEach(item => { if(item)item.disabled = true; });
+        save.textContent = 'Guardando puntos…';
+        validation.textContent = 'Registrando movimiento Rockstar…';validation.hidden = false;
+        let inserted = false;
+        try {
+          if (isCloudReady()) {
+            if (!Array.isArray(state.data.rockstars)) state.data.rockstars = [];
+            state.data.rockstars.push(entry);
+            inserted = true;
+            const saved = await cloudAPI().addRockstarEvent(entry);
+            entry.id = saved?.id || entry.id;
+            entry.occurredAt = saved?.occurred_at || entry.occurredAt;
+            entry.pendingSync = String(saved?.id || '').startsWith('offline-');
+          } else {
+            const events = getLocalRockstarEvents(assignmentId);
+            events.push(entry);
+            saveLocalRockstarEvents(assignmentId,events);
+            entry.pendingSync = false;
+          }
+          closeModal(false);
+          renderNotesTab({preserveScroll:true,silentSync:true});
+          toast(delta > 0 ? '+'+delta+' puntos Rockstar registrados.' : Math.abs(delta)+' puntos Rockstar retirados.');
+          if (entry.pendingSync) toast('Movimiento local pendiente de sincronización.');
+        } catch (failure) {
+          if (inserted) {
+            const list = state.data.rockstars;
+            const at = list.indexOf(entry);if (at >= 0) list.splice(at,1);
+          }
+          saving = false;
+          controls.forEach(item => {if(item)item.disabled = false;});
+          validation.textContent = failure?.message || 'No se pudo guardar el movimiento Rockstar.';
+          validation.hidden = false;update();
+          reportCloudError('No se guardaron los puntos Rockstar', failure, {silent:true});
+        }
+      });
+      update();
+    });
+  }
+
   function notesStudentRowHTML(student, columns, attendanceSessions, context) {
     const name = notesStudentNameParts(student);
     const photo = String(student?.photo || './assets/default-avatar.svg');
