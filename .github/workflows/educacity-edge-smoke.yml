@@ -1,0 +1,28 @@
+name: Comprobar puente EducaCity
+on:
+  push:
+    paths:
+      - 'supabase/functions/educacity-bridge/**'
+      - 'educacity-stage1.js'
+      - '.github/workflows/educacity-edge-smoke.yml'
+  workflow_dispatch:
+jobs:
+  comprobacion-publica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probar respuesta pública del servicio Supabase
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent --max-time 25 \
+            'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge' \
+            | jq -e '.ok == true and .service == "encisolms-educacity-edge" and .local_dependency == false'
+      - name: Comprobar rechazo de solicitud anónima
+        run: |
+          set -euo pipefail
+          status=$(curl -sS --max-time 25 -o /tmp/educacity-denied.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' \
+            --data '{"op":"preview"}' \
+            'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge')
+          test "$status" = "400"
+          jq -e '.ok == false' /tmp/educacity-denied.json
