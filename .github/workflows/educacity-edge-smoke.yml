@@ -32,4 +32,5 @@ jobs:
           curl --fail --show-error --silent --max-time 40 \
             'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge?probe=1' \
             | tee /tmp/educacity-probe.json \
-            | jq -e '.ok == true and (.probe | map(.reachable) | all)'
+            | jq '.'
+          jq -e '.ok == true and (.probe | map(.reachable) | all)' /tmp/educacity-probe.json
