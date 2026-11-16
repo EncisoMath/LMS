@@ -282,7 +282,13 @@ Deno.serve(async req=>{
     const host=new URL(url).hostname;
     try{
       const http=new EducaHTTP(); if(url.includes("/school_search.php"))await http.request(FRONT+"/es/"); const r=await http.request(url,url.includes("/school_search.php")?{headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest",Referer:FRONT+"/es/",Origin:FRONT}}:{});
-      return {host,reachable:true,bytes:r.text.length,is_json:r.text.trim().startsWith("{"),has_html:/<html|<!doctype/i.test(r.text.slice(0,1200))};
+      const isSchool=url.includes("/school_search.php");let schoolMatches;
+      if(isSchool){try{
+        const x=JSON.parse(r.text),rows=Array.isArray(x.schools)?x.schools:[];
+        schoolMatches=[...new Set(rows.filter(s=>idok(s.school_id)&&/roque|insroque/i.test([s.school_name,s.subdomain,s.domain,s.url].join(" "))).map(s=>String(s.school_id)))].length;
+      }catch{schoolMatches=-1}}
+      return {host,reachable:true,bytes:r.text.length,is_json:r.text.trim().startsWith("{"),has_html:/<html|<!doctype/i.test(r.text.slice(0,1200)),
+        ...(isSchool?{matching_schools:schoolMatches}:{})};
     }catch(e){return {host,reachable:false,error:e instanceof Error?e.message.slice(0,130):"Error"}}
   }));
   return result({...basic,probe:responses});
