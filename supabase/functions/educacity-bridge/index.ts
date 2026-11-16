@@ -264,13 +264,16 @@ function hasActivityCells(matrix,id){
 function materializeEmptyColumn(remote,id){
  const activityId=String(id);
  if(!remote.assignmentIds.includes(activityId))throw Error("No se puede preparar la actividad: falta del catálogo oficial en vivo.");
- if(hasActivityCells(remote.matrix,activityId))return remote;
  const students=[...remote.byCode.keys()];
  if(!students.length||students.some(x=>!idok(x)))throw Error("Los estudiantes de la actividad no se pudieron verificar.");
- const blanks=students.map(student=>student+"_"+activityId+"_");
+ // The live matrix can be sparse: some students have already received a grade
+ // while others have no serialized cell at all. Never recreate existing cells.
+ const blanks=students.filter(student=>!remote.matrix.has(student+"_"+activityId))
+   .map(student=>student+"_"+activityId+"_");
+ if(!blanks.length)return remote;
  const raw=(remote.raw?remote.raw+",":"")+blanks.join(",");
  const matrix=readMatrix(raw);
- if(matrix.size!==remote.matrix.size+students.length)throw Error("La preparación de celdas nuevas alteraría celdas existentes.");
+ if(matrix.size!==remote.matrix.size+blanks.length)throw Error("La preparación de celdas nuevas alteraría celdas existentes.");
  for(const [key,v] of remote.matrix)if(!matrix.has(key)||matrix.get(key)!==v)throw Error("La matriz cambió durante la preparación de celdas vacías.");
  return {...remote,raw,matrix,f:{...remote.f,str_cell_values:raw,str_new_cell_values:raw}};
 }
@@ -435,8 +438,8 @@ async function makePlan(remote,snapshot){
    if(original===null||original===undefined)continue;
    const v=scoreInt(original);
    const old=a?remote.matrix.get(st.code+"_"+a.id):null;
-   if(a&&!remote.matrix.has(st.code+"_"+a.id)&&hasActivityCells(remote.matrix,a.id))
-    throw Error("La matriz contiene algunas celdas de "+a.title+" pero falta la de "+st.name);
+   if(a&&!remote.matrix.has(st.code+"_"+a.id)&&!remote.assignmentIds.includes(a.id))
+    throw Error("La actividad "+a.title+" no está confirmada en el catálogo oficial.");
    if(old===null||old===undefined||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:v});
   }
  }
@@ -629,11 +632,25 @@ Deno.serve(async req=>{
   const edits=changes.filter(x=>current.matrix.has(x.student_id+"_"+target.id) &&
     current.matrix.get(x.student_id+"_"+target.id)!==x.after);
   if(edits.length!==changes.length)throw Error("Cambió la matriz de alumnos entre la vista previa y el guardado; deteniendo el envío.");
-  for(let i=0;i<edits.length;i+=25){
-   const group=edits.slice(i,i+25);
-   if(i){current=materializeEmptyColumn(await readRemote(http,course,body.snapshot.period),target.id);}
+  // Partial saves are real: EducaCity can accept most grades while omitting
+  // some students without returning an HTTP error. Verify each cell, never
+  // resend the same POST, and report unconfirmed rows separately.
+  let verifiedCount=0;
+  const failedNotes=[];
+  const BATCH_SIZE=10;
+  for(let i=0;i<edits.length;i+=BATCH_SIZE){
+   const group=edits.slice(i,i+BATCH_SIZE);
+   if(i){
+    current=materializeEmptyColumn(await readRemote(http,course,body.snapshot.period),target.id);
+    // Do not overwrite a grade that changed after the initial preview.
+    for(const e of group){
+     const cell=current.matrix.get(e.student_id+"_"+target.id);
+     if(cell!==null&&cell!==undefined&&cell!==e.before)
+      throw Error("La nota de "+e.student_name+" cambió durante la sincronización. Relee antes de continuar.");
+    }
+   }
    await postGrades(http,current,course,body.snapshot.period,target.id,group);
-   // Allow a short propagation delay; NEVER repeat the POST automatically.
+   // Wait briefly for propagation, but NEVER repeat the POST automatically.
    let observed=null,unconfirmed=[];
    for(let attempt=0;attempt<3;attempt++){
     if(attempt)await new Promise(resolve=>setTimeout(resolve,800));
@@ -641,16 +658,19 @@ Deno.serve(async req=>{
     unconfirmed=group.filter(e=>observed.matrix.get(e.student_id+"_"+target.id)!==e.after);
     if(!unconfirmed.length)break;
    }
-   if(unconfirmed.length){
-    const first=unconfirmed[0];
-    const value=observed.matrix.get(first.student_id+"_"+target.id);
-    throw Error("educa.city no confirmó "+first.student_name+
-      " ("+key+"): se solicitó "+first.after+
-      ", pero sigue figurando "+(value===null||value===undefined?"sin nota":String(value))+
-      ". No se volvió a enviar la orden. Relee antes de intentar otra vez.");
+   verifiedCount+=group.length-unconfirmed.length;
+   for(const e of unconfirmed){
+    const value=observed.matrix.get(e.student_id+"_"+target.id);
+    failedNotes.push({student_name:e.student_name,component:key,
+      expected:e.after,observed:value??null,reason:"educa.city no confirmó la celda"});
    }
+   if(unconfirmed.length===group.length)
+    throw Error("educa.city no guardó ninguna de las "+group.length+
+      " notas del último bloque. Se detuvo para evitar nuevos envíos inciertos. "+
+      "Los bloques anteriores pueden haberse guardado; vuelve a leer antes de continuar.");
   }
-  return result({ok:true,component:key,remote_id:target.id,notes_verified:edits.length,
+  return result({ok:true,component:key,remote_id:target.id,notes_verified:verifiedCount,
+    notes_unverified:failedNotes.length,failed_notes:failedNotes,partial:failedNotes.length>0,
     confirmed_students:plan.matched_students,unmatched:plan.unmatched,weight:Number(target.weight)});
  }catch(err){
   return result({ok:false,error:err instanceof Error?err.message:"Error de conexión no identificable",remote_verified:false},400);
