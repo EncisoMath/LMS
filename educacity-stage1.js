@@ -77,7 +77,8 @@
    '</tbody></table></section>'+
    (missing.length?'<section class="ec1-panel"><h3>Estudiantes que NO se enviarán</h3><div class="ec1-students">'+
     missing.map(p=>'<p>'+esc(p.code)+' · '+esc(p.name)+' — '+esc(p.cause)+'</p>').join('')+'</div></section>':'')+
-   '<section class="ec1-panel"><h3>Notas diferentes en educa.city ('+changes.length+')</h3><div class="ec1-students">'+
+   '<section class="ec1-panel"><h3>Notas diferentes en educa.city ('+changes.length+')</h3>'+ 
+   '<p class="ec1-muted">Las notas se redondean al entero más cercano antes de comparar y enviar (53,5 → 54). Si ya coincide el entero, no se modifica.</p><div class="ec1-students">'+
    '<table class="ec1-table"><thead><tr><th>Alumno</th><th>Componente</th><th>Anterior</th><th>Nueva</th></tr></thead><tbody>'+
    changes.slice(0,45).map(p=>'<tr><td>'+esc(p.student_name)+'</td><td>'+esc(TYPES[p.component])+'</td>'+
     '<td>'+esc(p.before??'—')+'</td><td>'+esc(p.after)+'</td></tr>').join('')+
