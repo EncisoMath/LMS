@@ -2,7 +2,7 @@
 body.ec1-is-open{overflow:hidden}
 #ec1-layer{--ec1-accent:var(--em-current-subject-color,#1368ce);--ec1-ink:var(--em-current-subject-ink,#080d14);position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:14px;opacity:0;transition:opacity .18s ease}
 #ec1-layer.is-visible{opacity:1}
-#ec1-layer .ec1-dialog{width:min(910px,100%);max-width:none;max-height:min(92dvh,940px);display:flex;flex-direction:column;overflow:hidden;background:#070c14;color:#edf2f8;border:1px solid var(--ec1-accent);box-shadow:0 18px 52px #0009;border-radius:3px;padding:0;transform:translateY(8px);transition:transform .18s ease;font:inherit}
+#ec1-layer .ec1-dialog{position:relative;z-index:1;opacity:1!important;visibility:visible!important;flex-shrink:1;min-width:0;width:min(910px,100%);max-width:none;max-height:min(92dvh,940px);display:flex;flex-direction:column;overflow:hidden;background:#070c14;color:#edf2f8;border:1px solid var(--ec1-accent);box-shadow:0 18px 52px #0009;border-radius:3px;padding:0;transform:translateY(8px);transition:transform .18s ease;font:inherit}
 #ec1-layer.is-visible .ec1-dialog{transform:translateY(0)}
 #ec1-layer .ec1-dialog-settings{width:min(610px,100%)}
 #ec1-layer .ec1-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:22px 24px 16px;border-bottom:1px solid #252d39;background:#080d15}
