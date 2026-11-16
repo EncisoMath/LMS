@@ -15,6 +15,12 @@ const result=(body,status=200)=>new Response(JSON.stringify(body),{status,header
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g," ").trim();
 const nametag=s=>norm(s).split(/\s+/).filter(Boolean).sort().join(" ");
 const asNum=s=>{const v=Number(s);return Number.isFinite(v)?v:NaN};
+// EducaCity only accepts integer grades. 53.5 -> 54, 53.4 -> 53.
+const scoreInt=v=>{
+ const score=Number(v);
+ if(!Number.isFinite(score)||score<0||score>100)throw Error("Calificación de EncisoLMS fuera del rango 0–100.");
+ return Math.round(score);
+};
 const idok=s=>/^[1-9]\d{0,14}$/.test(String(s||""));
 const timeout=(ms)=>AbortSignal.timeout(ms);
 async function digest(v){const bytes=new TextEncoder().encode(JSON.stringify(v));const buffer=await crypto.subtle.digest("SHA-256",bytes);return [...new Uint8Array(buffer)].map(n=>n.toString(16).padStart(2,"0")).join("")}
@@ -385,11 +391,12 @@ async function makePlan(remote,snapshot){
    baseline_hash:await digest({id:a?.id||null,title:a?.title||null,weight:a?.weight??null,
     cells:matched.map(st=>remote.matrix.get(st.code+"_"+a?.id)||null)})});
   for(const st of matched){
-   const v=snapshot.students.find(s=>String(s.code)===st.code)?.scores?.[key];
-   if(v===null||v===undefined)continue;
+   const original=snapshot.students.find(s=>String(s.code)===st.code)?.scores?.[key];
+   if(original===null||original===undefined)continue;
+   const v=scoreInt(original);
    const old=a?remote.matrix.get(st.code+"_"+a.id):null;
    if(a&&!remote.matrix.has(st.code+"_"+a.id))throw Error("La matriz no contiene la celda de "+st.name+" / "+a.title);
-   if(old===null||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:Number(v)});
+   if(old===null||Math.abs(Number(old)-Number(v))>0.001)changes.push({student_name:st.name,student_id:st.code,component:key,before:old??null,after:v});
   }
  }
  return {matched:matched.length,matched_students:matched,unmatched,changes,components,needs_creation:components.filter(x=>x.action==="create").length};
@@ -410,7 +417,10 @@ async function postActivity(http,course,period,root,part){
  if(/name=["'](?:password|login)["']|iniciar sesi[oó]n|sqlstate|access denied/i.test(response.text.slice(0,8000)))throw Error("educa.city indicó que la actividad no fue guardada correctamente.");
 }
 async function postGrades(http,remote,course,period,id,edits){
- const changeMap=new Map(edits.map(x=>[x.student_id+"_"+id,x.after]));
+ const changeMap=new Map(edits.map(x=>{
+  if(!Number.isInteger(x.after))throw Error("Se detuvo el envío: educa.city exige notas enteras.");
+  return [x.student_id+"_"+id,x.after];
+ }));
  const original=remote.raw;
  const newRaw=original.split(",").map(tok=>{
   const m=tok.match(/^(\d+)_(\d+)_(-?[\d.]*)$/);
@@ -421,7 +431,7 @@ async function postGrades(http,remote,course,period,id,edits){
  for(const [key,prev] of remote.matrix)if(!changeMap.has(key)&&check.get(key)!==prev)throw Error("Se alteró una celda no seleccionada.");
  const f=remote.f;
  if(f.str_cell_values!==original)throw Error("La matriz original cambió.");
- const changes={action:"save_scores",str_new_cell_values:newRaw,groups:"only_this_gxc"};
+ const changes={action:"save_scores",str_new_cell_values:newRaw,groups:"only_this_gxc",force:"0",selected_columns:"",selected_rows:"",adds:""};
  const response=await http.request(REMOTE+BASE+"sheets/grading_book/actions.php",{method:"POST",body:toFormData(f,changes),headers:{Origin:REMOTE,Referer:sheetUrl(course,period)}});
  if(/name=["'](?:password|login)["']|iniciar sesi[oó]n|sqlstate|permission denied/i.test(response.text.slice(0,8000)))throw Error("educa.city no confirmó el guardado de notas.");
 }
@@ -461,11 +471,13 @@ Deno.serve(async req=>{
      '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
      '</form>';
    const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
-   const ok=nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
+   const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
+   const ok=roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
@@ -517,8 +529,22 @@ Deno.serve(async req=>{
    const group=edits.slice(i,i+25);
    if(i){current=await readRemote(http,course,body.snapshot.period);}
    await postGrades(http,current,course,body.snapshot.period,target.id,group);
-   const checked=await readRemote(http,course,body.snapshot.period);
-   for(const e of group)if(checked.matrix.get(e.student_id+"_"+target.id)!==e.after)throw Error("No se pudo verificar la calificación de "+e.student_name+" en educa.city.");
+   // Allow a short propagation delay; NEVER repeat the POST automatically.
+   let observed=null,unconfirmed=[];
+   for(let attempt=0;attempt<3;attempt++){
+    if(attempt)await new Promise(resolve=>setTimeout(resolve,800));
+    observed=await readRemote(http,course,body.snapshot.period);
+    unconfirmed=group.filter(e=>observed.matrix.get(e.student_id+"_"+target.id)!==e.after);
+    if(!unconfirmed.length)break;
+   }
+   if(unconfirmed.length){
+    const first=unconfirmed[0];
+    const value=observed.matrix.get(first.student_id+"_"+target.id);
+    throw Error("educa.city no confirmó "+first.student_name+
+      " ("+key+"): se solicitó "+first.after+
+      ", pero sigue figurando "+(value===null||value===undefined?"sin nota":String(value))+
+      ". No se volvió a enviar la orden. Relee antes de intentar otra vez.");
+   }
   }
   return result({ok:true,component:key,remote_id:target.id,notes_verified:edits.length,
     confirmed_students:plan.matched_students,unmatched:plan.unmatched,weight:Number(target.weight)});
