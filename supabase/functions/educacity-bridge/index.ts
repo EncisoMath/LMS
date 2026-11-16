@@ -559,13 +559,33 @@ Deno.serve(async req=>{
      expanded.raw.includes("987654321_987654322_70")&&
      expanded.raw.includes("987654321_987654323_")&&
      expanded.matrix.size===emptySheet.matrix.size+1;
+   // Regression: partial activity already has a grade for the first student
+   // and missing serialized cells for the second one. Do not overwrite either.
+   const partialRemote={...emptySheet,
+    byCode:new Map([["987654321",{code:"987654321",name:"Estudiante Ficticio"}],
+      ["987654324",{code:"987654324",name:"Segundo Alumno"}]]),
+    matrix:new Map([...emptySheet.matrix,["987654321_987654323",54]]),
+    raw:emptySheet.raw+",987654321_987654323_54"};
+   const partiallyExpanded=materializeEmptyColumn(partialRemote,"987654323");
+   const partialColumnOK=partiallyExpanded.matrix.get("987654321_987654323")===54&&
+     partiallyExpanded.matrix.get("987654324_987654323")===null&&
+     partiallyExpanded.matrix.get("987654321_987654322")===70&&
+     partiallyExpanded.matrix.size===partialRemote.matrix.size+1;
+   const pendingRemote={...partialRemote,assignmentIds:["987654322","987654323"]};
+   const pendingPreview=await makePlan(pendingRemote,{
+    students:[{code:"987654321",name:"Estudiante Ficticio",scores:{academic:54,attendance:null,rockstars:null}},
+      {code:"987654324",name:"Segundo Alumno",scores:{academic:67,attendance:null,rockstars:null}}],
+    weights:{academic:60,attendance:20,rockstars:20}});
+   const pendingFound=pendingPreview.changes.filter(x=>x.component==="academic");
+   const sparsePreviewOK=pendingFound.length===1&&
+     pendingFound[0].student_name==="Segundo Alumno"&&pendingFound[0].after===67;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
@@ -636,7 +656,8 @@ Deno.serve(async req=>{
   // some students without returning an HTTP error. Verify each cell, never
   // resend the same POST, and report unconfirmed rows separately.
   let verifiedCount=0;
-  const failedNotes=[];
+  const failedNotes=[],notSentNotes=[];
+  let stoppedEarly=false;
   const BATCH_SIZE=10;
   for(let i=0;i<edits.length;i+=BATCH_SIZE){
    const group=edits.slice(i,i+BATCH_SIZE);
@@ -664,13 +685,21 @@ Deno.serve(async req=>{
     failedNotes.push({student_name:e.student_name,component:key,
       expected:e.after,observed:value??null,reason:"educa.city no confirmó la celda"});
    }
-   if(unconfirmed.length===group.length)
-    throw Error("educa.city no guardó ninguna de las "+group.length+
-      " notas del último bloque. Se detuvo para evitar nuevos envíos inciertos. "+
-      "Los bloques anteriores pueden haberse guardado; vuelve a leer antes de continuar.");
+   if(unconfirmed.length===group.length){
+    stoppedEarly=true;
+    // No further POST for this component if the server rejects an entire batch.
+    // Later components may still be attempted independently by the frontend.
+    for(const e of edits.slice(i+BATCH_SIZE))
+     notSentNotes.push({student_name:e.student_name,component:key,expected:e.after,
+       reason:"Envío detenido para este componente, no se intentó guardar"});
+    break;
+   }
   }
   return result({ok:true,component:key,remote_id:target.id,notes_verified:verifiedCount,
-    notes_unverified:failedNotes.length,failed_notes:failedNotes,partial:failedNotes.length>0,
+    notes_unverified:failedNotes.length,failed_notes:failedNotes,
+    notes_not_sent:notSentNotes.length,not_sent_notes:notSentNotes,
+    stopped_early:stoppedEarly,
+    partial:failedNotes.length>0||notSentNotes.length>0,
     confirmed_students:plan.matched_students,unmatched:plan.unmatched,weight:Number(target.weight)});
  }catch(err){
   return result({ok:false,error:err instanceof Error?err.message:"Error de conexión no identificable",remote_verified:false},400);
