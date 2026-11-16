@@ -1,0 +1,72 @@
+/* PLANILLA · Modal Rockstar. Hereda la ventana modal y pestañas de Detalle de la calificación. */
+.em-notes-score-cell .em-notes-rockstar-trigger{font-weight:850}
+.em-notes-score-cell .em-notes-rockstar-trigger:hover{background:color-mix(in srgb,var(--em-current-subject-color,#1368ce) 18%,transparent)}
+#modalLayer .em-notes-rk-modal{
+  display:flex!important;
+  flex-direction:column;
+  width:min(720px,calc(100vw - 28px))!important;
+  max-width:720px!important;
+  max-height:min(88dvh,820px)!important;
+  margin:auto!important;
+  padding:18px 18px 0!important;
+  overflow:hidden!important;
+  background:#080e18!important;
+  border:1px solid color-mix(in srgb,var(--em-current-subject-color,#1368ce) 55%,#2d3545)!important;
+  border-radius:4px!important;
+  color:#eef4ff;
+}
+#modalLayer .em-notes-rk-modal>.section-kicker{color:var(--em-current-subject-color,#1368ce);font-size:11px;margin:0 0 6px;letter-spacing:.075em;text-transform:uppercase;font-weight:850}
+#modalLayer .em-notes-rk-modal>h2{font-size:clamp(18px,3vw,24px);line-height:1.2;margin:0 38px 6px 0!important;color:#f5f8ff}
+#modalLayer .em-notes-rk-modal>.em-notes-grade-detail-student{margin:0 0 13px;color:#a4b3c7;font-size:12px}
+#modalLayer .em-notes-rk-tabs{flex-shrink:0;margin:0 0 12px}
+#modalLayer .em-notes-rk-tabs button.is-active{color:var(--em-current-subject-ink,#080d14);background:var(--em-current-subject-color,#1368ce)}
+#modalLayer .em-notes-rk-scroll{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-bottom:8px}
+#modalLayer .em-notes-rk-panel[hidden]{display:none!important}
+#modalLayer .em-notes-rk-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#modalLayer .em-notes-rk-metrics article{background:#101824;border:1px solid #283544;border-radius:3px;padding:14px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:88px}
+#modalLayer .em-notes-rk-metrics article.is-preview{border-color:var(--em-current-subject-color,#1368ce)}
+#modalLayer .em-notes-rk-metrics span{color:#9dabbd;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
+#modalLayer .em-notes-rk-metrics strong{color:#f1f6ff;font-size:clamp(23px,4vw,32px);font-variant-numeric:tabular-nums}
+#modalLayer .em-notes-rk-metrics article.is-preview strong{color:var(--em-current-subject-color,#69b5ff)}
+#modalLayer .em-notes-rk-metrics small{color:#9eaabc;font-size:11px;font-weight:600;margin-left:2px}
+#modalLayer .em-notes-rk-editor{border:1px solid #283442;background:#0d1521;border-radius:3px;margin-top:12px;padding:16px 13px 12px;text-align:center}
+#modalLayer .em-notes-rk-editor h3{font-size:15px;color:#f3f7fd;margin:0 0 6px}
+#modalLayer .em-notes-rk-editor>p{margin:0;color:#a1aec0;font-size:12px;line-height:1.45}
+#modalLayer .em-notes-rk-counter{display:flex;justify-content:center;align-items:center;gap:11px;margin:14px auto}
+#modalLayer .em-notes-rk-counter>button{display:grid;place-items:center;background:#152033;color:#f7faff;border:1px solid #435169;width:51px;height:48px;cursor:pointer;border-radius:3px;font-size:24px;font-weight:800;transition:background .16s ease}
+#modalLayer .em-notes-rk-counter>button:hover:not(:disabled){background:#27384e;border-color:var(--em-current-subject-color,#1368ce)}
+#modalLayer .em-notes-rk-counter label{display:grid;gap:5px;justify-items:center;color:#aebdd0;font-size:10px;text-transform:uppercase;font-weight:800}
+#modalLayer .em-notes-rk-counter input{display:block;width:100px;height:48px;background:#080e19;color:#f8fafc;border:1px solid var(--em-current-subject-color,#1368ce);border-radius:3px;text-align:center;font:800 22px/1 "Montserrat",Arial,sans-serif;font-variant-numeric:tabular-nums;appearance:textfield}
+#modalLayer .em-notes-rk-counter input::-webkit-inner-spin-button,#modalLayer .em-notes-rk-counter input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+#modalLayer .em-notes-rk-counter button:focus-visible,#modalLayer .em-notes-rk-counter input:focus-visible{outline:2px solid var(--em-current-subject-color,#1368ce);outline-offset:2px}
+#modalLayer .em-notes-rk-counter button:disabled{opacity:.5;cursor:not-allowed}
+#modalLayer .em-notes-rk-projection{color:#d9e6f2!important;font-weight:700;font-size:12px!important}
+#modalLayer .em-notes-rk-validation{color:#ffbf77!important;margin-top:9px!important;white-space:normal}
+#modalLayer .em-notes-rk-validation[hidden]{display:none!important}
+#modalLayer .em-notes-rk-history-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px}
+#modalLayer .em-notes-rk-history-heading h3{margin:0;color:#f2f5fa;font-size:14px}
+#modalLayer .em-notes-rk-history-heading span{font-size:11px;color:#9babbf}
+#modalLayer .em-notes-rk-history-scroll{max-height:43dvh;overflow:auto;border:1px solid #293545;border-radius:3px;scrollbar-width:thin}
+#modalLayer .em-notes-rk-history{border-collapse:collapse;width:100%;font-size:12px;min-width:375px;font-variant-numeric:tabular-nums}
+#modalLayer .em-notes-rk-history th,#modalLayer .em-notes-rk-history td{padding:12px 10px;text-align:left;border-bottom:1px solid #283243;color:#d3deed;vertical-align:middle}
+#modalLayer .em-notes-rk-history thead th{position:sticky;top:0;background:#151d2a;color:#9faec1;font-size:10px;text-transform:uppercase;z-index:1}
+#modalLayer .em-notes-rk-history tbody th{font-weight:750;color:#f3f6fd;white-space:nowrap}
+#modalLayer .em-notes-rk-history td small{display:block;color:#f3bd6a;font-size:10px}
+#modalLayer .em-notes-rk-history td.em-notes-rk-positive{color:#76dfaa;font-weight:850}
+#modalLayer .em-notes-rk-history td.em-notes-rk-negative{color:#ff8a90;font-weight:850}
+#modalLayer .em-notes-rk-history .em-notes-rk-empty{text-align:center;color:#aab7ca;padding:24px 12px;white-space:normal}
+#modalLayer .em-notes-rk-actions{position:relative;flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;align-items:center;border-top:1px solid #273140;background:#080e18;margin:12px -18px 0;padding:12px 18px max(12px,env(safe-area-inset-bottom))}
+#modalLayer .em-notes-rk-actions button{min-height:42px;padding:9px 16px;border-radius:3px;font-size:12px;font-weight:800}
+#modalLayer .em-notes-rk-actions .primary-btn{background:var(--em-current-subject-color,#1368ce)!important;border-color:var(--em-current-subject-color,#1368ce)!important;color:var(--em-current-subject-ink,#070d13)!important}
+#modalLayer .em-notes-rk-actions button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:650px){
+  #modalLayer .em-notes-rk-modal{width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;max-height:calc(100dvh - 30px)!important;margin:auto!important;padding:15px 12px 0!important;border-radius:3px!important}
+  #modalLayer .em-notes-rk-metrics{gap:5px}
+  #modalLayer .em-notes-rk-metrics article{min-height:77px;padding:10px 4px}
+  #modalLayer .em-notes-rk-metrics span{font-size:9px}
+  #modalLayer .em-notes-rk-metrics strong{font-size:22px}
+  #modalLayer .em-notes-rk-editor{padding:12px 8px}
+  #modalLayer .em-notes-rk-actions{margin:10px -12px 0;padding:11px 12px max(11px,env(safe-area-inset-bottom))}
+  #modalLayer .em-notes-rk-actions button{flex:1 1 auto;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){#modalLayer .em-notes-rk-counter button{transition:none}}
