@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_VERSION = '0.25.148';;;
+  const APP_VERSION = '0.25.149';;;
   const PDFJS_VERSION = '6.1.200-encisomath-compat-1';
   const MAX_CLASS_PDF_BYTES = 20 * 1024 * 1024;
   const MAX_CLASS_THUMB_BYTES = 5 * 1024 * 1024;
@@ -6400,14 +6400,10 @@
         const number = Number(input.value);
         return input.value.trim() && Number.isInteger(number) && Math.abs(number) <= 100 ? number : null;
       };
+      // PLANILLA permite ajustes manuales aun si no hubo asistencia.
+      // Las reglas de bloqueo y límite diario permanecen en la pestaña Rockstars.
       const check = delta => {
         if (delta === null) return 'Introduce un número entero entre -100 y 100.';
-        if (!delta) return '';
-        const attendance = getAttendance(assignmentId, today)?.[student.id];
-        if (isRockstarLocked(attendance)) return 'El estudiante tiene bloqueados sus puntos de hoy por asistencia.';
-        if (emRsStatusToVisual(attendance) === 'late' && delta > 0 &&
-          getRockstarPointsForDate(assignmentId, student.id, period, today) + delta > 3)
-          return 'Llegó tarde: hoy no puede superar 3 puntos Rockstar.';
         return '';
       };
       const update = () => {
