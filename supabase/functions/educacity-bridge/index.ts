@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { parseHTML } from "npm:linkedom@0.18.12";
+import JSON5 from "npm:json5@2.2.3";
 
 // EducaCity -> EncisoLMS: server-only, never save or log external credentials.
 const ORIGIN="https://encisomath.github.io";
@@ -123,48 +124,109 @@ function readMatrix(raw){
 }
 // La interfaz oficial calcula str_cell_values DESPUÉS de inicializar JavaScript.
 // Intentamos recuperar solamente el modelo JSON original, sin ejecutar código externo.
-function parseJsonLiteral(script,start){
- let i=start;
+
+/* JavaScript text is untrusted. Parse data expressions as JSON5, NEVER eval scripts.
+   EducaCity may emit JS object literals with unquoted properties and single quotes. */
+function literalEnd(s,start){
+ const i=start;
+ if(!"{[".includes(s[i]||" ") || (s[i]!=="{"&&s[i]!=="["))return -1;
+ const stack=[],pairs={"{":"}","[":"]"};
+ let str="",esc=false,comment=0;
+ for(let j=i;j<s.length&&j-i<2000000;j++){
+  const c=s[j],n=s[j+1]||"";
+  if(comment===1){if(c==="\n")comment=0;continue}
+  if(comment===2){if(c==="*"&&n==="/"){comment=0;j++}continue}
+  if(str){if(esc){esc=false;continue}if(c==="\\"){esc=true;continue}if(c===str)str="";continue}
+  if(c==="/"&&n==="/"){comment=1;j++;continue}
+  if(c==="/"&&n==="*"){comment=2;j++;continue}
+  if(c==='"'||c==="'"){str=c;continue}
+  if(c==="{"||c==="["){stack.push(pairs[c]);continue}
+  if(c==="}"||c==="]"){if(stack.pop()!==c)return -1;if(!stack.length)return j+1}
+ }
+ return -1;
+}
+function parseDataExpression(script,at){
+ let i=at;
  while(/\s/.test(script[i]||""))i++;
- if(script[i]!=="{"&&script[i]!=="[")return null;
- const stack=[],open={"{":"}","[":"]"};
- let quoted=false,escaped=false;
- for(let j=i;j<script.length && j-i<900000;j++){
-  const c=script[j];
-  if(quoted){if(escaped)escaped=false;else if(c==="\\")escaped=true;else if(c==='"')quoted=false;continue}
-  if(c==='"'){quoted=true;continue}
-  if(c==="{"||c==="["){stack.push(open[c]);continue}
-  if(c==="}"||c==="]"){if(stack.pop()!==c)return null;if(!stack.length){
-    try{return JSON.parse(script.slice(i,j+1))}catch{return null}
-  }}
+ if(script[i]==="{"||script[i]==="["){
+  const end=literalEnd(script,i);
+  if(end<0)return null;
+  const body=script.slice(i,end);
+  try{return JSON.parse(body)}catch{}
+  try{return JSON5.parse(body)}catch{}
+ }
+ if(script.slice(i).match(/^(?:JSON\.parse|\$\.parseJSON|jQuery\.parseJSON)\s*\(/)){
+  const match=script.slice(i).match(/^(?:JSON\.parse|\$\.parseJSON|jQuery\.parseJSON)\s*\(\s*/);
+  if(!match)return null;
+  const after=i+match[0].length;
+  if(!["'",'"'].includes(script[after]))return null;
+  const quote=script[after];let end=after+1,escaped=false;
+  for(;end<script.length&&end-after<1800000;end++){
+   const c=script[end];
+   if(escaped){escaped=false;continue}
+   if(c==="\\"){escaped=true;continue}
+   if(c===quote)break;
+  }
+  if(end>=script.length)return null;
+  const expression=script.slice(after,end+1);
+  try{
+   const decoded=JSON5.parse(expression);
+   if(typeof decoded==="string"){
+    try{return JSON.parse(decoded)}catch{}
+    try{return JSON5.parse(decoded)}catch{}
+   }
+  }catch{}
  }
  return null;
 }
 function bootstrapModel(doc){
- const scripts=[...doc.querySelectorAll("script")].map(s=>String(s.textContent||""));
- const payload={},patterns=[
+ const elements=[...doc.querySelectorAll("script")];
+ const scripts=elements.map(s=>String(s.textContent||""));
+ const payload={};
+ // Supports server-emitted JS object literals and independently assigned datasets.
+ const patterns=[
   ["whole",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?(?:window\.|top\.)?_data\s*=\s*/g],
-  ["ar_axe",/(?:window\.|top\.)?_data\.ar_axe\s*=\s*/g],
-  ["ar_enrollments",/(?:window\.|top\.)?_data\.ar_enrollments\s*=\s*/g],
-  ["ar_assignments",/(?:window\.|top\.)?_data\.ar_assignments\s*=\s*/g]
+  ["whole",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?(?:window\.|top\.)?gbook_data\s*=\s*/g],
+  ["ar_axe",/(?:window\.|top\.)?_data(?:\.ar_axe|\s*\[\s*['"]ar_axe['"]\s*\])\s*=\s*/g],
+  ["ar_enrollments",/(?:window\.|top\.)?_data(?:\.ar_enrollments|\s*\[\s*['"]ar_enrollments['"]\s*\])\s*=\s*/g],
+  ["ar_assignments",/(?:window\.|top\.)?_data(?:\.ar_assignments|\s*\[\s*['"]ar_assignments['"]\s*\])\s*=\s*/g],
+  ["ar_axe",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_axe\s*=\s*/g],
+  ["ar_enrollments",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_enrollments\s*=\s*/g],
+  ["ar_assignments",/(?:^|[;\n])\s*(?:(?:var|let|const)\s+)?ar_assignments\s*=\s*/g]
  ];
  for(const script of scripts){
+  if(!script.trim())continue;
   for(const [key,pattern] of patterns){
-   pattern.lastIndex=0;let m,counter=0;
-   while((m=pattern.exec(script))&&counter++<10){
-    const val=parseJsonLiteral(script,m.index+m[0].length);
-    if(val&&typeof val==="object"&&!Array.isArray(val)){
-     if(key==="whole"&&val.ar_axe&&val.ar_enrollments){Object.assign(payload,val);break}
-     if(key!=="whole")payload[key]=val;
+   pattern.lastIndex=0;let m,count=0;
+   while((m=pattern.exec(script))&&count++<12){
+    const value=parseDataExpression(script,m.index+m[0].length);
+    if(value&&typeof value==="object"&&!Array.isArray(value)){
+     if(key==="whole"){
+      for(const part of ["ar_axe","ar_enrollments","ar_assignments"])if(value[part]&&typeof value[part]==="object")payload[part]=value[part];
+     } else payload[key]=value;
     }
    }
   }
  }
- return {payload,diagnostic:{scripts:scripts.length,
-  embeds_ar_axe:scripts.some(s=>s.includes("ar_axe")),
-  embeds_ar_enrollments:scripts.some(s=>s.includes("ar_enrollments")),
-  embeds_ar_assignments:scripts.some(s=>s.includes("ar_assignments")),
-  parsed_keys:Object.keys(payload).sort()}};
+ const inline=scripts.filter(s=>s.length>0);
+ const signatures={
+  ar_axe:scripts.some(x=>/\bar_axe\b/.test(x)),
+  ar_enrollments:scripts.some(x=>/\bar_enrollments\b/.test(x)),
+  ar_assignments:scripts.some(x=>/\bar_assignments\b/.test(x)),
+  var_data:scripts.some(x=>/\b_data\s*=/.test(x)),
+  data_member:scripts.some(x=>/\b_data\s*\./.test(x)),
+  json_parse:scripts.some(x=>/JSON\.parse|\$\.parseJSON/.test(x)),
+  ajax:scripts.some(x=>/\.ajax\b|\.post\b|\.getJSON\b|fetch\s*\(/.test(x)),
+  dom_students:doc.querySelectorAll(".one_student").length,
+  dom_grid:doc.querySelectorAll(".gbook__cells_grid__row").length,
+  embedded_json:doc.querySelectorAll('script[type="application/json"]').length
+ };
+ return {payload,diagnostic:{scripts:scripts.length,inline:inline.length,
+  inline_lengths:inline.map(x=>x.length).sort((a,b)=>b-a).slice(0,8),
+  external:elements.filter(x=>x.getAttribute("src")).length,
+  markers:signatures,
+  parsed_keys:Object.keys(payload).sort()
+ }};
 }
 function scoreSource(payload){
  const out=new Map();
@@ -235,6 +297,10 @@ function parseSheet(txt,course,period){
    const fingerprint=[
     "HTML="+txt.length,
     "scripts="+diagnostic.scripts,
+    "js_inline="+diagnostic.inline,
+    "js_externos="+diagnostic.external,
+    "mayores_js="+diagnostic.inline_lengths.join("/"),
+    "marcas="+Object.entries(diagnostic.markers).filter(x=>x[1]).map(x=>x[0]).join(","),
     "modelo="+diagnostic.parsed_keys.join(","),
     "ejes="+Number(matrix?.size||0),
     "alumnos="+byCode.size
@@ -382,13 +448,15 @@ Deno.serve(async req=>{
    const testHtml='<html><script>const _data = {"ar_axe":{"987654321":{"k":{"e_id":"987654321","a_id":"987654322","score":70}}},"ar_enrollments":{"987654321":{"e_id":"987654321","first_name":"Estudiante","last_name":"Ficticio"}}};</script></html>';
    const {payload,diagnostic}=bootstrapModel(docOf(testHtml));
    const resultMatrix=scoreSource(payload);
+   const json5Html='<html><script>var _data={ar_axe:{\"987654321\":{a:{e_id:\"987654321\",a_id:\"987654322\",score:70}}}, ar_enrollments:{\"987654321\":{e_id:\"987654321\",first_name:\"Estudiante\",last_name:\"Ficticio\"}}}</script></html>';
+   const json5Map=scoreSource(bootstrapModel(docOf(json5Html)).payload);
    const formText='<form id="form_sheet_students_vs_assignments">'+
      '<input name="gxc_id" value="14899"><input name="c_id" value="1955">'+
      '<input name="ar_id" value="208"><input name="et_id" value="54">'+
      '<input name="str_cell_values" value=""><input name="str_new_cell_values" value="">'+
      '</form>';
    const sheet=parseSheet(formText+testHtml,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
-   const ok=resultMatrix.get("987654321_987654322")===70&&
+   const ok=json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
