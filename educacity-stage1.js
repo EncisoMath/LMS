@@ -59,7 +59,7 @@
    '<div style="overflow-x:auto"><table class="ec1-table"><thead><tr><th>EncisoLMS</th><th>educa.city</th><th>Peso LMS</th><th>ID actividad</th><th>Estado</th></tr></thead><tbody>'+
    TYPES.map(t=>{const a=link(t.key);return '<tr><td>'+t.local+'</td><td>'+t.remote+'</td><td>'+h(a?.weight)+' %</td>'+
     '<td><input data-ec1-id="'+t.key+'" inputmode="numeric" value="'+h(a?.educacity_activity_id||'')+'" placeholder="Pendiente"></td>'+
-    '<td><span class="ec1-tag '+(a?.status==='verified'?'ok':'pending')+'">'+h(a?.status==='verified'?'Verificado':a?.status==='found_unverified'?'ID histórico':'Pendiente')+'</span></td></tr>'}).join('')+
+    '<td><span class="ec1-tag '+(a?.status==='verified'?'ok':'pending')+'">'+h(a?.status==='verified'?'Verificado':a?.status==='found_unverified'?'ID histórico':a?.status==='needs_review'?'Revisar':'Pendiente')+'</span></td></tr>'}).join('')+
    '</tbody></table></div><div class="ec1-controls" style="margin-top:11px"><button class="ec1-btn" id="ec1SaveActivities">Guardar IDs</button><button class="ec1-btn ec1-secondary" id="ec1SyncWeights">Actualizar pesos desde PLANILLA</button></div></section>'+
    '<section class="ec1-panel"><h3>3. Estudiantes</h3><p class="ec1-muted">Los códigos confirmados provienen de planillas de educa.city. Los pendientes requieren comprobar el ID real antes de enviar notas.</p>'+
    '<div class="ec1-controls"><label>Buscar<input id="ec1Query" value="'+h(query)+'" placeholder="Nombre o matrícula"></label><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ec1Pending" '+(pendingOnly?'checked':'')+'>Solo pendientes</label></div>'+
