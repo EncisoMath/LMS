@@ -520,6 +520,30 @@ Deno.serve(async req=>{
         '"987654323":{a_id:"987654323",title:"COMP. ACADÉMICO",parent_a_id:"987654322"}}};</script>';
    const emptySheet=parseSheet(formText+newlyCreated,{educacity_group_id:14899,educacity_subject_id:1955,educacity_area_id:208},4);
    const catalogOK=emptySheet.assignmentIds.includes("987654323")&&!hasActivityCells(emptySheet.matrix,"987654323");
+   
+   const mockForms={
+    "987654322":'<form><input name="form_id" value="form_object_987654322"><input name="action" value="update"><input name="a_id" value="987654322"><input name="c_id" value="1955"><input name="group" value="2PPAL"><input name="original_et_id" value="54"><input name="title" value="DEFINITIVA"><input name="influence" value="100"><input name="hie_id" value="1"><input name="parent_a_id" value="987654322"></form>',
+    "987654323":'<form><input name="form_id" value="form_object_987654323"><input name="action" value="update"><input name="a_id" value="987654323"><input name="c_id" value="1955"><input name="group" value="2PPAL"><input name="original_et_id" value="54"><input name="title" value="COMP. ACADÉMICO"><input name="influence" value="60"><input name="hie_id" value="2"><input name="parent_a_id" value="987654322"></form>'
+   };
+   const mockClient={request:async url=>{
+    const parsed=new URL(url);
+    if(parsed.pathname.endsWith("/grading_book/list.php"))return {text:formText+newlyCreated};
+    if(parsed.pathname.endsWith("/assignments/actions.php")){
+     const id=parsed.searchParams.get("a_id");
+     if(id&&mockForms[id])return {text:mockForms[id]};
+    }
+    throw Error("Unexpected fixture request");
+   }};
+   const mockCourse={educacity_group_id:14899,educacity_subject_id:1955,
+    educacity_area_id:208,educacity_group_label:"2PPAL"};
+   const mockRemote=await readRemote(mockClient,mockCourse,4);
+   const mockPlan=await makePlan(mockRemote,{students:[{code:"987654321",name:"Estudiante Ficticio",
+    scores:{academic:54,attendance:null,rockstars:null}}],weights:{academic:60,attendance:20,rockstars:20}});
+   const discoveryOK=mockRemote.found.academic?.id==="987654323"&&
+    !hasActivityCells(mockRemote.matrix,"987654323")&&
+    mockPlan.components.find(c=>c.key==="academic")?.action==="reuse"&&
+    mockPlan.changes.some(c=>c.component==="academic"&&c.after===54);
+
    const expanded=materializeEmptyColumn(emptySheet,"987654323");
    const blankColumnOK=catalogOK&&expanded.matrix.get("987654321_987654323")===null&&
      expanded.matrix.get("987654321_987654322")===70&&
@@ -528,11 +552,11 @@ Deno.serve(async req=>{
      expanded.matrix.size===emptySheet.matrix.size+1;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
