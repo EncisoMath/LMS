@@ -40,3 +40,11 @@ En una respuesta HTTP auténtica de `grading_book/list.php` capturada el 15 de n
 ## Corrección del lector — 16/11/2026
 
 El error «La planilla actual tiene cambios sin guardar o no incluye una matriz íntegra» era un mensaje ambiguo del lector remoto: en educa.city los campos `str_cell_values` llegan vacíos antes de que el JavaScript del navegador los calcule. La versión actual intenta reconstruir exactamente esas celdas desde el JSON `ar_axe` incrustado en la respuesta y los nombres desde `ar_enrollments`, sin ejecutar scripts de terceros. El servicio solo admite la reconstrucción si IDs, matrícula, nombre, contexto y valores se pueden validar; de lo contrario detiene el envío con un diagnóstico técnico seguro. La prueba de integración con datos simulados pasó dentro de Supabase, **pero aún falta validar una planilla auténtica tras un inicio de sesión de usuario desde la Edge Function**. Ninguna nota real se envió durante el desarrollo de esta corrección.
+
+## Corrección de creación de actividades sin notas
+
+Se corrigió la verificación de actividades nuevas: las actividades oficiales aparecen en `_data.ar_assignments` aunque no figuren en `_data.ar_axe` o `str_cell_values` hasta que reciben su primera calificación. El servicio ahora descubre sus IDs en el catálogo institucional y comprueba sus campos con el formulario **real y actual** de edición. Después de crear una actividad no repite automáticamente la orden; la relee hasta tres veces antes de seguir.
+
+Si la actividad confirmada tiene cero celdas, se preparan solamente los registros vacíos de esa columna, conservando intactas todas las calificaciones previas. Las diferencias `undefined` (sin nota) también se consideran pendientes: antes se descartaban por una comparación numérica inválida (`NaN`). Se añadieron pruebas con respuestas simuladas que comprueban la detección del ID nuevo, la ausencia de duplicaciones y la integridad de la matriz.
+
+**La prueba de creación real desde la nube sigue pendiente**; las pruebas automáticas no usan credenciales docentes ni realizan POST sobre notas o actividades de producción. Antes de reintentar una creación que había fallado durante la verificación, primero pulsar «Leer y comparar»: si el servidor sí creó la actividad, la próxima lectura deberá mostrar «Reutilizar».
