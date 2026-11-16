@@ -91,7 +91,7 @@
   close(true);busy=false;preview=null;snapshot=null;replies=[];tab='summary';
   const isSettings=mode==='settings';
   layer=document.createElement('div');layer.id='ec1-layer';layer.className='ec1-overlay';
-  layer.innerHTML='<section class="ec1-dialog modal-card '+(isSettings?'ec1-dialog-settings':'ec1-dialog-sync')+'" role="dialog" aria-modal="true" aria-labelledby="ec1Title" tabindex="-1">'+
+  layer.innerHTML='<section class="ec1-dialog '+(isSettings?'ec1-dialog-settings':'ec1-dialog-sync')+'" role="dialog" aria-modal="true" aria-labelledby="ec1Title" tabindex="-1">'+
    '<header class="ec1-head"><div><p class="section-kicker">'+(isSettings?'PERFIL DOCENTE · HERRAMIENTAS':'PLANILLA · EDUCA.CITY')+'</p>'+
    '<h2 id="ec1Title">'+(isSettings?'EducaCity':'Cargar a EducaCity')+'</h2>'+
    '<p class="ec1-subtitle">'+(isSettings?'Conexión institucional de tu cuenta docente.':'Sincronización de las calificaciones del periodo.')+'</p></div>'+
