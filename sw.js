@@ -1,6 +1,6 @@
 importScripts('./background-content-sync.js');
 
-const SW_VERSION = 'encisomath-offline-v0.25.146';
+const SW_VERSION = 'encisomath-offline-v0.25.147';
 const APP_CACHE = `${SW_VERSION}-app`;
 const RUNTIME_CACHE = `${SW_VERSION}-runtime`;
 const EXTERNAL_CACHE = `${SW_VERSION}-external`;
@@ -18,6 +18,7 @@ const PRECACHE_URLS = [
   './app.js',
   './educacity-stage1.js',
   './educacity-stage1.css',
+  './rockstar-notes.css',
   './styles.css',
   './supabase-config.js',
   './supabase-adapter.js',
@@ -179,7 +180,7 @@ async function networkFirstNavigation(request) {
 // El código y CSS de la aplicación deben solicitar siempre su versión más nueva.
 // Nunca entregar scripts obsoletos solo porque ignoreSearch encuentra otra versión.
 const LIVE_SHELL_FILES = new Set([
- 'app.js','educacity-stage1.js','educacity-stage1.css','styles.css',
+ 'app.js','educacity-stage1.js','educacity-stage1.css','rockstar-notes.css','styles.css',
  'supabase-adapter.js','supabase-config.js','offline-engine.js','background-content-sync.js'
 ]);
 async function networkFirstShellAsset(request) {
