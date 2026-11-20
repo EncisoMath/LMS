@@ -644,10 +644,14 @@ Deno.serve(async req=>{
   const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
   if(body.op==="preview")return result({ok:true,data:{...plan,
     scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions}});
-  if(unsafeActions.length)throw Error("PROTECCIÓN ACTIVADA: EducaCity necesita crear o cambiar el peso de actividades, pero esa operación puede afectar otros cursos. No se modificó ninguna actividad ni nota. Las escrituras de actividades están suspendidas hasta verificar el alcance por grupo.");
+  // Protect only the requested component. One unsafe component must not block
+  // grade-only writes in other already-existing components of the same course.
+  // No activity creation or weight update is permitted by this endpoint.
   const key=String(body.component||"");if(!Object.hasOwn(TYPES,key))throw Error("Componente inválido.");
   const previous=plan.components.find(x=>x.key===key);
   if(!previous||body.baseline_hash!==previous.baseline_hash)throw Error("educa.city cambió desde la vista previa: consulta de nuevo.");
+  if(previous.action!=="reuse"||!idok(previous.remote_id))
+   throw Error("PROTECCIÓN ACTIVADA: "+PRETTY[key]+" debe crearse o cambiar su peso; esa operación está suspendida para evitar actividades en otros grupos. Las notas de componentes ya existentes sí pueden sincronizarse.");
   const changes=plan.changes.filter(x=>x.component===key),part=previous;
   // Each invocation writes at most one component. Other components remain intact.
   if(part.action!=="reuse"){
