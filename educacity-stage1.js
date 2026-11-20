@@ -279,12 +279,14 @@
  function displayPreview(){
   const p=preview,changes=p.changes||[],acts=p.components||[],missing=p.unmatched||[];
   const count=changes.length,activityChanges=acts.filter(x=>x.action!=='reuse').length;
+  const unsafe=Boolean(p.scoped_activity_writes_blocked)&&activityChanges>0;
   by('ec1Body').innerHTML=
    '<div class="ec1-summary-strip"><div><strong>Período '+esc(snapshot.period)+'</strong><span>'+esc(snapshot.assignment_id.replace('mat-est-',''))+'</span></div>'+
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
    '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>Por crear</span></div>'+
    '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
    (!count&&!activityChanges?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
+   (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ Creación y edición suspendidas</strong><span>EducaCity podría publicar actividades en otros cursos. No se pueden enviar notas de este curso hasta que las actividades faltantes o sus pesos se verifiquen de forma segura.</span></div>':'')+
    (missing.length?'<p class="ec1-warning">⚠️ '+missing.length+' estudiante(s) sin correspondencia, no se enviarán sus notas.</p>':'')+
    '<div class="ec1-tabs" role="tablist" aria-label="Detalles de la sincronización">'+
    '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
@@ -292,12 +294,12 @@
    '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities">'+
     '<h3>Actividades en EducaCity</h3>'+
     '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
-    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+formatComponent(a)+'</td></tr>').join('')+
+    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(unsafe&&a.action!=='reuse'?pill('Suspendida','is-pending'):formatComponent(a))+'</td></tr>').join('')+
     '</tbody></table></div></section>'+
    '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades" hidden>'+
     '<h3>Notas que cambiarán</h3><p>Un estudiante por fila; las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
-   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button">'+(count||activityChanges?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
+   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button" '+(unsafe?'disabled title="Por seguridad, se ha detenido la creación o modificación de actividades"':'')+'>'+(unsafe?'Carga protegida':count||activityChanges?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
   by('ec1Cancel').onclick=()=>close();
   by('ec1Apply').onclick=apply;
   by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
