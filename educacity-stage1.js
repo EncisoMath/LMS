@@ -278,15 +278,20 @@
  }
  function displayPreview(){
   const p=preview,changes=p.changes||[],acts=p.components||[],missing=p.unmatched||[];
-  const count=changes.length,activityChanges=acts.filter(x=>x.action!=='reuse').length;
-  const unsafe=Boolean(p.scoped_activity_writes_blocked)&&activityChanges>0;
+  const safeKeys=acts.filter(a=>a?.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||''))).map(a=>a.key);
+  const blockedKeys=ORDER.filter(k=>!safeKeys.includes(k));
+  const availableChanges=changes.filter(x=>safeKeys.includes(x.component));
+  const blockedChanges=changes.filter(x=>blockedKeys.includes(x.component));
+  const count=availableChanges.length,unsafe=blockedKeys.length>0;
+  const noSafeComponents=safeKeys.length===0;
   by('ec1Body').innerHTML=
    '<div class="ec1-summary-strip"><div><strong>Período '+esc(snapshot.period)+'</strong><span>'+esc(snapshot.assignment_id.replace('mat-est-',''))+'</span></div>'+
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
    '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>Por crear</span></div>'+
    '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
-   (!count&&!activityChanges?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
-   (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ Creación y edición suspendidas</strong><span>EducaCity podría publicar actividades en otros cursos. No se pueden enviar notas de este curso hasta que las actividades faltantes o sus pesos se verifiquen de forma segura.</span></div>':'')+
+   (!count&&!unsafe?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
+   (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ '+(noSafeComponents?'Carga protegida':'Carga parcial disponible')+'</strong><span>Por seguridad se omiten: '+esc(blockedKeys.map(k=>COMPONENTS[k]).join(', '))+'. Sus actividades faltan o tienen un peso distinto; no se crearán ni modificarán.</span>'+
+    (safeKeys.length?'<span>Se pueden cargar las notas de '+esc(safeKeys.map(k=>COMPONENTS[k]).join(', '))+' sin cambiar actividades de otros cursos.</span>':'<span>No hay componentes seguros para enviar en esta planilla.</span>')+'</div>':'')+
    (missing.length?'<p class="ec1-warning">⚠️ '+missing.length+' estudiante(s) sin correspondencia, no se enviarán sus notas.</p>':'')+
    '<div class="ec1-tabs" role="tablist" aria-label="Detalles de la sincronización">'+
    '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
@@ -294,12 +299,12 @@
    '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities">'+
     '<h3>Actividades en EducaCity</h3>'+
     '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
-    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(unsafe&&a.action!=='reuse'?pill('Suspendida','is-pending'):formatComponent(a))+'</td></tr>').join('')+
+    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(safeKeys.includes(a.key)?pill('Lista para notas','is-ok'):pill('Suspendida','is-pending'))+'</td></tr>').join('')+
     '</tbody></table></div></section>'+
    '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades" hidden>'+
-    '<h3>Notas que cambiarán</h3><p>Un estudiante por fila; las notas se envían como números enteros.</p>'+compactGrades(changes)+'</section>';
+    '<h3>Notas disponibles para cargar</h3><p>Un estudiante por fila. Se omiten '+blockedChanges.length+' nota(s) de componentes protegidos.</p>'+compactGrades(availableChanges)+'</section>';
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
-   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button" '+(unsafe?'disabled title="Por seguridad, se ha detenido la creación o modificación de actividades"':'')+'>'+(unsafe?'Carga protegida':count||activityChanges?'Cargar a EducaCity':'Verificar sincronización')+'</button>';
+   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button" '+(noSafeComponents?'disabled title="No hay actividades reutilizables verificadas"':'')+'>'+(noSafeComponents?'Carga protegida':count?(unsafe?'Cargar notas disponibles':'Cargar a EducaCity'):'Verificar actividades disponibles')+'</button>';
   by('ec1Cancel').onclick=()=>close();
   by('ec1Apply').onclick=apply;
   by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
@@ -379,14 +384,19 @@
  }
  async function apply(){
   if(busy||!preview||!credential)return;
+  if(!preview.components?.some(a=>a?.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||''))))return;
   replies=[];const issues=[];let verified=0;
   progressView('sync');
   setBusy(true);
   try{
    for(const k of ORDER){
     const part=preview.components.find(x=>x.key===k);
+    if(!part||part.action!=='reuse'||!/^[1-9]\d+$/.test(String(part.remote_id||''))){
+     issues.push({student_name:COMPONENTS[k],reason:'No se envió: actividad inexistente o porcentaje distinto. Creación y edición suspendidas.'});
+     updateProgress(k,'warning',COMPONENTS[k]+' protegido, sin cambios');
+     continue;
+    }
     updateProgress(k,'active','Sincronizando '+COMPONENTS[k]);
-    if(!part)throw Error('Falta el componente '+COMPONENTS[k]+' en la lectura inicial.');
     const outcome=await send('sync',credential,k,part.baseline_hash);
     replies.push(outcome);
     verified+=Number(outcome.notes_verified||0);
