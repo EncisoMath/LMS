@@ -278,7 +278,14 @@
  }
  function displayPreview(){
   const p=preview,changes=p.changes||[],acts=p.components||[],missing=p.unmatched||[];
-  const safeKeys=acts.filter(a=>a?.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||''))).map(a=>a.key);
+  const audit=p.scope_audit;
+  const groupFields=Array.isArray(audit?.groups)?audit.groups:[];
+  const scopeReady=Boolean(!p.scoped_activity_writes_blocked&&audit?.target_control_present&&
+    groupFields.length>0&&groupFields.every(x=>/^gxc_[1-9]\d*$/.test(String(x.name||''))&&
+      /^\d+_[^_]+/.test(String(x.value||'')))&&
+    audit.controls?.some(c=>c.name==='all_groups'&&c.present));
+  const safeKeys=acts.filter(a=>(a?.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||'')))||
+    (a?.action==='create'&&scopeReady)).map(a=>a.key);
   const blockedKeys=ORDER.filter(k=>!safeKeys.includes(k));
   const availableChanges=changes.filter(x=>safeKeys.includes(x.component));
   const blockedChanges=changes.filter(x=>blockedKeys.includes(x.component));
@@ -291,10 +298,11 @@
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
    '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>No encontradas</span></div>'+
    '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
-   (!count&&!unsafe?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
-   (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ '+(noSafeComponents?'Carga protegida':'Carga parcial disponible')+'</strong><span>Por seguridad se omiten: '+esc(blockedKeys.map(k=>COMPONENTS[k]).join(', '))+'. Sus actividades faltan o tienen un peso distinto; no se crearán ni modificarán.</span>'+
-    (safeKeys.length?'<span>Se pueden cargar las notas de '+esc(safeKeys.map(k=>COMPONENTS[k]).join(', '))+' sin cambiar actividades de otros cursos.</span>':'<span>No hay componentes seguros para enviar en esta planilla.</span>')+'</div>':'')+
-   (priorMismatch.length?'<div class="ec1-safety-notice" role="note"><strong>⚠️ Actividades registradas anteriormente</strong><span>En EncisoLMS constan IDs verificados que hoy no coinciden con los detectados en EducaCity: '+esc(priorMismatch.map(x=>COMPONENTS[x.component]+': '+x.remote_id).join(' · '))+'. Se comprobará su ubicación antes de permitir nuevas creaciones.</span></div>':'')+
+   (!count&&!unsafe&&acts.every(a=>a.action==='reuse')?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
+   (acts.some(a=>a.action==='create'&&scopeReady)?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La creación se limitará al grupo seleccionado ('+esc(snapshot.assignment_id.replace('mat-est-',''))+'). Cada nueva actividad se comprobará antes de enviar notas.</p>':'')+
+   (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ '+(noSafeComponents?'No es seguro crear todavía':'Algunas operaciones están protegidas')+'</strong><span>Se omiten: '+esc(blockedKeys.map(k=>COMPONENTS[k]).join(', '))+'. '+(p.scope_audit_error?esc(p.scope_audit_error):'No se pueden cambiar pesos de actividades compartidas ni crear sin verificar el grupo.')+'</span>'+
+    (safeKeys.length?'<span>Los demás componentes pueden cargarse sin modificar otros cursos.</span>':'<span>No hay componentes verificables para enviar en esta planilla.</span>')+'</div>':'')+
+   (priorMismatch.length?'<div class="ec1-safety-notice" role="note"><strong>⚠️ Registro anterior diferente</strong><span>EducaCity ya no muestra '+priorMismatch.length+' actividad(es) que estaban vinculadas antes. Se verificará el catálogo actual para evitar repetir columnas existentes.</span></div>':'')+
    (offRoot.length?'<div class="ec1-safety-notice" role="note"><strong>⚠️ Componentes fuera de la definitiva actual</strong><span>El catálogo de EducaCity incluye '+offRoot.length+' componente(s) con otro vínculo jerárquico. No se crearán duplicados mientras exista esa discrepancia.</span></div>':'')+
    (missing.length?'<p class="ec1-warning">⚠️ '+missing.length+' estudiante(s) sin correspondencia, no se enviarán sus notas.</p>':'')+
    '<div class="ec1-tabs" role="tablist" aria-label="Detalles de la sincronización">'+
@@ -303,12 +311,15 @@
    '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities">'+
     '<h3>Actividades en EducaCity</h3>'+
     '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
-    acts.map(a=>{const old=priorMismatch.find(link=>link.component===a.key);return '<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id|| (old?'No visible · antes '+old.remote_id:'No encontrada'))+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(safeKeys.includes(a.key)?pill('Lista para notas','is-ok'):pill('Suspendida','is-pending'))+'</td></tr>';}).join('')+
+    acts.map(a=>{const old=priorMismatch.find(link=>link.component===a.key);return '<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id|| (old?'No visible · antes '+old.remote_id:'Nueva'))+'</td><td>'+esc(a.weight_new)+' %</td><td>'+
+      (a.action==='create'&&safeKeys.includes(a.key)?pill('Crear solo aquí','is-ok'):
+       a.action==='reuse'&&safeKeys.includes(a.key)?pill('Reutilizar','is-ok'):
+       pill('Protegida','is-pending'))+'</td></tr>';}).join('')+
     '</tbody></table></div></section>'+
    '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades" hidden>'+
     '<h3>Notas disponibles para cargar</h3><p>Un estudiante por fila. Se omiten '+blockedChanges.length+' nota(s) de componentes protegidos.</p>'+compactGrades(availableChanges)+'</section>';
   by('ec1Footer').innerHTML='<button class="ec1-btn ec1-muted-btn" id="ec1Cancel" type="button">Cancelar</button>'+
-   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button" '+(noSafeComponents?'disabled title="No hay actividades reutilizables verificadas"':'')+'>'+(noSafeComponents?'Carga protegida':count?(unsafe?'Cargar notas disponibles':'Cargar a EducaCity'):'Verificar actividades disponibles')+'</button>';
+   '<button class="ec1-btn ec1-primary" id="ec1Apply" type="button" '+(noSafeComponents?'disabled title="No hay actividades verificadas para este curso"':'')+'>'+(noSafeComponents?'Carga protegida':unsafe?'Cargar componentes disponibles':'Crear/reutilizar y enviar notas')+'</button>';
   by('ec1Cancel').onclick=()=>close();
   by('ec1Apply').onclick=apply;
   by('ec1Body').querySelectorAll('.ec1-tab').forEach(b=>b.onclick=()=>selectTab(b.dataset.tab));
@@ -388,15 +399,21 @@
  }
  async function apply(){
   if(busy||!preview||!credential)return;
-  if(!preview.components?.some(a=>a?.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||''))))return;
+  const groupAudit=preview.scope_audit;
+  const creationSafe=Boolean(!preview.scoped_activity_writes_blocked&&groupAudit?.target_control_present&&
+    Array.isArray(groupAudit.groups)&&groupAudit.groups.length>0&&
+    groupAudit.groups.every(x=>/^gxc_[1-9]\d*$/.test(String(x.name||''))&&/^\d+_[^_]+/.test(String(x.value||''))));
+  const runnable=preview.components.filter(a=>(a.action==='reuse'&&/^[1-9]\d+$/.test(String(a.remote_id||'')))||
+    (a.action==='create'&&creationSafe));
+  if(!runnable.length)return;
   replies=[];const issues=[];let verified=0;
   progressView('sync');
   setBusy(true);
   try{
    for(const k of ORDER){
     const part=preview.components.find(x=>x.key===k);
-    if(!part||part.action!=='reuse'||!/^[1-9]\d+$/.test(String(part.remote_id||''))){
-     issues.push({student_name:COMPONENTS[k],reason:'No se envió: actividad inexistente o porcentaje distinto. Creación y edición suspendidas.'});
+    if(!part||!runnable.some(a=>a.key===k)){
+     issues.push({student_name:COMPONENTS[k],reason:'No se envió: el alcance de creación no está verificado o requiere modificar el peso de una actividad compartida.'});
      updateProgress(k,'warning',COMPONENTS[k]+' protegido, sin cambios');
      continue;
     }
