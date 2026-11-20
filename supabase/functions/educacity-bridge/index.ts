@@ -503,9 +503,8 @@ function toFormData(fields0,changes){
  for(const [k,v] of Object.entries({...fields0,...changes}))f.append(k,String(v??""));
  return f;
 }
-// Candidate protocol for group-scoped activity creation. Currently unreachable
-// while the activity-write hold is active. The provider's hidden gxc_* values
-// list ALL possible classes; serializing all of them is unsafe.
+// Group-scoped activity creation: the provider's hidden gxc_* fields
+// enumerate ALL possible groups. Only the explicitly chosen group is sent.
 function toScopedActivityFormData(base,changes,course){
  const currentKey="gxc_"+String(course.educacity_group_id);
  const declared=Object.keys(base).filter(k=>/^gxc_\d+$/.test(k));
@@ -552,8 +551,21 @@ async function readPeerActivityIds(http,peers,period){
  for(const peer of peers){
   // Read-only, no remote writes. Abort if another group cannot be verified.
   const page=await http.request(sheetUrl(peer,period));
-  const sheet=parseSheet(page.text,peer,period);
-  const ids=new Set([...sheet.assignmentIds,...[...sheet.matrix.keys()].map(k=>k.split("_")[1])]);
+  const doc=docOf(page.text),form=doc.querySelector("#form_sheet_students_vs_assignments");
+  if(!form)throw Error("EducaCity no devolvió la planilla del grupo "+peer.educacity_group_label+".");
+  const f=fields(form);
+  for(const [key,value] of Object.entries({
+   gxc_id:peer.educacity_group_id,c_id:peer.educacity_subject_id,
+   ar_id:peer.educacity_area_id,et_id:PERIOD[period]})){
+   if(String(f[key])!==String(value))
+    throw Error("EducaCity devolvió datos de otro curso al verificar "+peer.educacity_group_label+".");
+  }
+  // A neighboring group may have no grades yet. Only its activity IDs matter,
+  // so do not demand initialized student/grade matrices.
+  const {payload}=bootstrapModel(doc);
+  const ids=new Set(verifiedAssignmentIds(payload.ar_assignments));
+  const raw=String(f.str_cell_values||"");
+  if(raw)for(const key of readMatrix(raw).keys())ids.add(key.split("_")[1]);
   if(!ids.size)throw Error("No se pudo verificar el catálogo del grupo "+peer.educacity_group_label+".");
   out.set(String(peer.educacity_group_id),ids);
  }
@@ -690,6 +702,10 @@ Deno.serve(async req=>{
       gxc_14897:"10_1PPAL",gxc_14899:"10_2PPAL",gxc_14900:"10_3PPAL"};
    const isolated=toScopedActivityFormData(scopedFields,{title:"Prueba",influence:"60"},mockCourse);
    const isolatedKeys=[...isolated.keys()].filter(k=>/^gxc_\d+$/.test(k));
+   const fixturePeers=providerPeerGroups(scopedFields,mockCourse);
+   const peersOK=fixturePeers.length===2&&
+    fixturePeers.some(x=>x.educacity_group_id===14897&&x.educacity_group_label==="1PPAL")&&
+    fixturePeers.some(x=>x.educacity_group_id===14900&&x.educacity_group_label==="3PPAL");
    const isolationOK=isolatedKeys.length===1&&isolatedKeys[0]==="gxc_14899"&&
       isolated.get("gxc_14899")==="10_2PPAL"&&isolated.get("all_groups")==="0"&&
       !isolated.has("gxc_14897")&&!isolated.has("gxc_14900");
@@ -741,11 +757,11 @@ Deno.serve(async req=>{
      pendingFound[0].student_name==="Segundo Alumno"&&pendingFound[0].after===67;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=isolationOK&&scopeOK&&sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=peersOK&&isolationOK&&scopeOK&&sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,group_payload_isolation:isolationOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,peer_scope_detection:peersOK,group_payload_isolation:isolationOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
