@@ -394,6 +394,53 @@ function componentFor(title){
  for(const [k,n] of Object.entries(TYPES))if(t===n)return k;
  return null;
 }
+// Only reads the official activity creation form; never sends changes.
+// A group label in the URL is NOT proof that a created column is private.
+async function inspectGroupScope(http,course,period){
+ const params=new URLSearchParams({
+  action:"see_add",module_in_use:"grading_book",
+  et_id:PERIOD[period],c_id:String(course.educacity_subject_id),
+  group:String(course.educacity_group_label)
+ });
+ const page=await http.request(REMOTE+BASE+"assignments/actions.php?"+params);
+ const doc=docOf(page.text);
+ const form=[...doc.querySelectorAll("form")].find(x=>
+  x.querySelector('[name="form_id"]')&&x.querySelector('[name="title"]'));
+ if(!form)throw Error("No se encontró el formulario de actividades para inspeccionar los grupos.");
+ const values=fields(form);
+ if(String(values.c_id)!==String(course.educacity_subject_id)||
+    String(values.group)!==String(course.educacity_group_label)||
+    String(values.original_et_id)!==PERIOD[period])
+  throw Error("El formulario de alcance no pertenece al curso y período consultados.");
+ const groupControls=[...form.querySelectorAll("input[name],select[name]")]
+  .filter(el=>/^gxc_\d+$/.test(el.getAttribute("name")||""))
+  .map(el=>({
+   name:el.getAttribute("name"),
+   kind:(el.getAttribute("type")||el.localName).toLowerCase(),
+   value:String(el.getAttribute("value")||"").slice(0,40),
+   checked:el.hasAttribute("checked")
+  }));
+ const controls=["assignment_group","all_groups","some_groups"].map(name=>{
+  const el=form.querySelector('[name="'+name+'"]');
+  if(!el)return {name,present:false};
+  const options=el.localName==="select"?[...el.querySelectorAll("option")]
+   .map(o=>({value:String(o.getAttribute("value")||"").slice(0,40),
+             text:String(o.textContent||"").trim().slice(0,65)})).slice(0,24):[];
+  return {name,present:true,kind:(el.getAttribute("type")||el.localName).toLowerCase(),
+    value:String(values[name]??"").slice(0,80),options};
+ });
+ const target="gxc_"+String(course.educacity_group_id);
+ const audit={
+  course_group_id:String(course.educacity_group_id),
+  target_control_present:groupControls.some(x=>x.name===target),
+  group_control_count:groupControls.length,
+  groups:groupControls.slice(0,40),
+  controls
+ };
+ // No credentials, student IDs, grades, cookies, hidden tokens or raw HTML.
+ console.info("educacity_scope_readonly",JSON.stringify(audit));
+ return audit;
+}
 async function readRemote(http,course,period){
  const page=await http.request(sheetUrl(course,period));
  const sheet=parseSheet(page.text,course,period);
@@ -642,8 +689,16 @@ Deno.serve(async req=>{
   // form does not prove a single-group scope. Keep grade-only updates available.
   // Do not remove this hold until group-scoped assignment writes are proven.
   const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
-  if(body.op==="preview")return result({ok:true,data:{...plan,
-    scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions}});
+  if(body.op==="preview"){
+   let scope_audit=null,scope_audit_error=null;
+   if(unsafeActions.length){
+    try{scope_audit=await inspectGroupScope(http,course,body.snapshot.period);}
+    catch(error){scope_audit_error=error instanceof Error?error.message:"No se pudo inspeccionar el selector de grupos.";}
+   }
+   return result({ok:true,data:{...plan,
+    scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions,
+    scope_audit,scope_audit_error}});
+  }
   // Protect only the requested component. One unsafe component must not block
   // grade-only writes in other already-existing components of the same course.
   // No activity creation or weight update is permitted by this endpoint.
