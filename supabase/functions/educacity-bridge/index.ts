@@ -637,13 +637,22 @@ Deno.serve(async req=>{
   await http.login(credentials);
   const remote=await readRemote(http,course,body.snapshot.period);
   const plan=await makePlan(remote,body.snapshot);
-  if(body.op==="preview")return result({ok:true,data:plan});
+  // SAFETY HOLD (2026-11-20): EducaCity has propagated newly created activities
+  // from one group to other groups sharing the same subject. The HTML add/update
+  // form does not prove a single-group scope. Keep grade-only updates available.
+  // Do not remove this hold until group-scoped assignment writes are proven.
+  const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
+  if(body.op==="preview")return result({ok:true,data:{...plan,
+    scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions}});
+  if(unsafeActions.length)throw Error("PROTECCIÓN ACTIVADA: EducaCity necesita crear o cambiar el peso de actividades, pero esa operación puede afectar otros cursos. No se modificó ninguna actividad ni nota. Las escrituras de actividades están suspendidas hasta verificar el alcance por grupo.");
   const key=String(body.component||"");if(!Object.hasOwn(TYPES,key))throw Error("Componente inválido.");
   const previous=plan.components.find(x=>x.key===key);
   if(!previous||body.baseline_hash!==previous.baseline_hash)throw Error("educa.city cambió desde la vista previa: consulta de nuevo.");
   const changes=plan.changes.filter(x=>x.component===key),part=previous;
   // Each invocation writes at most one component. Other components remain intact.
   if(part.action!=="reuse"){
+   // Explicit fail-closed safeguard against cross-course assignment propagation.
+   throw Error("Creación y edición de actividades suspendidas: pueden propagarse a otros cursos.");
    // For creation require the live activity catalog. Otherwise a successful
    // POST with zero scores could look absent, and retries could duplicate it.
    if(part.action==="create"&&!remote.assignmentIds.length)
