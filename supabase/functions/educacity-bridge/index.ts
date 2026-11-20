@@ -796,10 +796,9 @@ Deno.serve(async req=>{
   await http.login(credentials);
   const remote=await readRemote(http,course,body.snapshot.period);
   const plan=await makePlan(remote,body.snapshot);
-  // SAFETY HOLD (2026-11-20): EducaCity has propagated newly created activities
-  // from one group to other groups sharing the same subject. The HTML add/update
-  // form does not prove a single-group scope. Keep grade-only updates available.
-  // Do not remove this hold until group-scoped assignment writes are proven.
+  // Creation is constrained to a single gxc group, with a pre-POST
+  // peer snapshot and a post-POST isolation check. Never auto-retry creation.
+  // Updating weight on existing possibly-shared assignments stays blocked.
   const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
   const priorVerified=course.__previous_verified_links||[];
   const historicalMismatch=priorVerified.filter(link=>{
@@ -825,7 +824,7 @@ Deno.serve(async req=>{
    catch(error){scope_audit_error=error instanceof Error?error.message:"No se pudo inspeccionar el selector de grupos.";}
 
    return result({ok:true,data:{...plan,
-    scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions,
+    scoped_activity_writes_blocked:false,unsafe_actions:unsafeActions,
     prior_verified_links:priorVerified,historical_mismatch:historicalMismatch,
     catalog_components:catalogComponents,
     scope_audit,scope_audit_error}});
@@ -836,13 +835,19 @@ Deno.serve(async req=>{
   const key=String(body.component||"");if(!Object.hasOwn(TYPES,key))throw Error("Componente inválido.");
   const previous=plan.components.find(x=>x.key===key);
   if(!previous||body.baseline_hash!==previous.baseline_hash)throw Error("educa.city cambió desde la vista previa: consulta de nuevo.");
-  if(previous.action!=="reuse"||!idok(previous.remote_id))
-   throw Error("PROTECCIÓN ACTIVADA: "+PRETTY[key]+" debe crearse o cambiar su peso; esa operación está suspendida para evitar actividades en otros grupos. Las notas de componentes ya existentes sí pueden sincronizarse.");
+  // A missing component can now be created with an explicit, single-group
+  // FormData and a read-only before/after audit of every peer group.
+  // Weight edits remain blocked because a legacy shared activity may span groups.
+  if(previous.action==="update_weight")
+   throw Error("La actividad "+PRETTY[key]+" ya existe, pero cambiar su peso podría afectar otros cursos. No se modificaron actividades ni notas.");
+  if(previous.action==="reuse"&&!idok(previous.remote_id))
+   throw Error("La actividad existente no tiene un identificador válido.");
   const changes=plan.changes.filter(x=>x.component===key),part=previous;
+  // The component's identity and payload are bound to the live course in
+  // trustedClient() and refreshed in makePlan() for every write.
+  if(part.action!=="reuse"&&part.action!=="create")throw Error("Operación no autorizada en esta actividad.");
   // Each invocation writes at most one component. Other components remain intact.
-  if(part.action!=="reuse"){
-   // Explicit fail-closed safeguard against cross-course assignment propagation.
-   throw Error("Creación y edición de actividades suspendidas: pueden propagarse a otros cursos.");
+  if(part.action==="create"){
    // For creation require the live activity catalog. Otherwise a successful
    // POST with zero scores could look absent, and retries could duplicate it.
    if(part.action==="create"&&!remote.assignmentIds.length)
