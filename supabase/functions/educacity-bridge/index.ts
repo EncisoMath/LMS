@@ -503,27 +503,39 @@ function toFormData(fields0,changes){
  for(const [k,v] of Object.entries({...fields0,...changes}))f.append(k,String(v??""));
  return f;
 }
-// Group-scoped activity creation: the provider's hidden gxc_* fields
-// enumerate ALL possible groups. Only the explicitly chosen group is sent.
+// Reproduce the captured, successful single-group EducaCity POST (15 Nov).
+// All gxc_* identifiers remain; group_* flags explicitly select only the target.
 function toScopedActivityFormData(base,changes,course){
- const currentKey="gxc_"+String(course.educacity_group_id);
- const declared=Object.keys(base).filter(k=>/^gxc_\d+$/.test(k));
- if(!declared.length||!declared.includes(currentKey))
-  throw Error("El formulario no identifica exclusivamente el grupo seleccionado.");
- const expected=String(base[currentKey]||"");
- if(!expected.endsWith("_"+String(course.educacity_group_label)))
-  throw Error("El identificador del grupo no corresponde al curso seleccionado.");
- const onlyCurrent={};
- for(const [key,value] of Object.entries(base)){
-  if(/^gxc_\d+$/.test(key)&&key!==currentKey)continue;
-  onlyCurrent[key]=value;
+ const targetKey="gxc_"+String(course.educacity_group_id);
+ const groups=Object.entries(base).filter(([name])=>/^gxc_\d+$/.test(name));
+ if(!groups.length||!groups.some(([name])=>name===targetKey))
+  throw Error("El formulario no identifica el grupo seleccionado.");
+ const targetValue=String(base[targetKey]||"");
+ const match=targetValue.match(/^(\d{1,2})_([A-Za-z0-9]+)$/);
+ if(!match||match[2]!==String(course.educacity_group_label))
+  throw Error("El grupo seleccionado no coincide con EducaCity.");
+ const grade=match[1],selectors={},names=new Set();
+ for(const [key,raw] of groups){
+  if(!idok(key.slice(4)))throw Error("Identificador de grupo inválido.");
+  const value=String(raw||"");
+  const parts=value.match(/^(\d{1,2})_([A-Za-z0-9]+)$/);
+  if(!parts||parts[1]!==grade||names.has(value))
+   throw Error("La lista de grupos de EducaCity es ambigua o incompatible.");
+  names.add(value);
+  selectors["group_"+value]=key===targetKey?"1":"0";
  }
- const overrides={...changes,all_groups:"0",some_groups:""};
- const data=toFormData(onlyCurrent,overrides);
- const submitted=[...data.keys()].filter(k=>/^gxc_\d+$/.test(k));
- if(submitted.length!==1||submitted[0]!==currentKey||
-    data.get("all_groups")!=="0")
-  throw Error("Protección: el formulario intenta abarcar otros cursos.");
+ // Reject unexpected grade/group selector fields rather than guessing their scope.
+ for(const key of Object.keys(base)){
+  if(/^group_\d+_/.test(key)&&!Object.hasOwn(selectors,key))
+   throw Error("Hay un selector de otro grupo que no pudo identificarse.");
+ }
+ const data=toFormData(base,{...changes,...selectors,all_groups:"0",some_groups:""});
+ const sent=[...data.keys()].filter(key=>/^gxc_\d+$/.test(key));
+ if(sent.length!==groups.length||groups.some(([key,raw])=>data.get(key)!==String(raw))||
+    data.get("all_groups")!=="0"||data.get("some_groups")!==""||
+    Object.entries(selectors).some(([key,val])=>data.get(key)!==val)||
+    Object.values(selectors).filter(val=>val==="1").length!==1)
+  throw Error("Protección: EducaCity recibiría una selección de grupos incorrecta.");
  return data;
 }
 // Group isolation must be checked against the provider's live form and peer
@@ -699,6 +711,7 @@ Deno.serve(async req=>{
     '<input type="checkbox" name="gxc_14900" value="1">'+
     '</form>';
    const scopedFields={form_id:"form_object_assignments",c_id:"1955",group:"2PPAL",
+      all_groups:"1",some_groups:"",group_10_1PPAL:"1",group_10_2PPAL:"0",group_10_3PPAL:"1",
       gxc_14897:"10_1PPAL",gxc_14899:"10_2PPAL",gxc_14900:"10_3PPAL"};
    const isolated=toScopedActivityFormData(scopedFields,{title:"Prueba",influence:"60"},mockCourse);
    const isolatedKeys=[...isolated.keys()].filter(k=>/^gxc_\d+$/.test(k));
@@ -706,9 +719,13 @@ Deno.serve(async req=>{
    const peersOK=fixturePeers.length===2&&
     fixturePeers.some(x=>x.educacity_group_id===14897&&x.educacity_group_label==="1PPAL")&&
     fixturePeers.some(x=>x.educacity_group_id===14900&&x.educacity_group_label==="3PPAL");
-   const isolationOK=isolatedKeys.length===1&&isolatedKeys[0]==="gxc_14899"&&
-      isolated.get("gxc_14899")==="10_2PPAL"&&isolated.get("all_groups")==="0"&&
-      !isolated.has("gxc_14897")&&!isolated.has("gxc_14900");
+   const isolationOK=isolatedKeys.length===3&&
+      isolated.get("gxc_14897")==="10_1PPAL"&&
+      isolated.get("gxc_14899")==="10_2PPAL"&&
+      isolated.get("gxc_14900")==="10_3PPAL"&&
+      isolated.get("all_groups")==="0"&&isolated.get("some_groups")===""&&
+      isolated.get("group_10_1PPAL")==="0"&&isolated.get("group_10_2PPAL")==="1"&&
+      isolated.get("group_10_3PPAL")==="0";
    const mockScope=await inspectGroupScope({request:async()=>({text:scopeHtml})},mockCourse,4);
    const scopeOK=mockScope.target_control_present===true&&
      mockScope.group_control_count===3&&
@@ -761,7 +778,7 @@ Deno.serve(async req=>{
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,peer_scope_detection:peersOK,group_payload_isolation:isolationOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,peer_scope_detection:peersOK,group_payload_isolation:isolationOK,group_scope_flags_verified:isolationOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
