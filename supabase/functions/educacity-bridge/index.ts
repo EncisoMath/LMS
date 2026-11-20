@@ -463,6 +463,12 @@ async function readRemote(http,course,period){
   if(k){if(found[k])throw Error("Hay actividades duplicadas de "+k+" en educa.city.");found[k]=a}
   else if(a.weight>0)other.push(a.title);
  }
+ // A component with another parent still exists. Do not create a second one.
+ for(const a of activities.filter(x=>!x.isRoot&&x.parent!==root.id&&componentFor(x.title))){
+  if(!found[componentFor(a.title)])
+   throw Error("EducaCity ya contiene "+a.title+" (ID "+a.id+
+     ") fuera de la definitiva actual. Se impide duplicarla: revisa su jerarquía.");
+ }
  if(other.length)throw Error("educa.city contiene componentes adicionales con peso: "+other.join(", ")+". Se detuvo para no alterar la definitiva.");
  return {...sheet,activities,root,found};
 }
@@ -521,9 +527,43 @@ function toScopedActivityFormData(base,changes,course){
   throw Error("Protección: el formulario intenta abarcar otros cursos.");
  return data;
 }
+// Group isolation must be checked against the provider's live form and peer
+// gradebooks. We never infer a target group from the grade alone.
+function providerPeerGroups(base,course){
+ const target="gxc_"+String(course.educacity_group_id);
+ const fields=Object.entries(base).filter(([key])=>/^gxc_\d+$/.test(key));
+ if(!fields.some(([key])=>key===target))throw Error("El formulario no identifica el curso solicitado.");
+ const current=String(base[target]||"");
+ const split=current.indexOf("_");
+ if(split<=0||current.slice(split+1)!==String(course.educacity_group_label))
+  throw Error("El nombre del grupo seleccionado no coincide con EducaCity.");
+ const ownGrade=current.slice(0,split);
+ const peers=[];
+ for(const [key,value] of fields){
+  const id=key.slice(4),v=String(value),p=v.indexOf("_");
+  if(p<1||v.slice(0,p)!==ownGrade||!idok(id)||!v.slice(p+1))
+   throw Error("Se detectaron grupos incompatibles en el formulario institucional.");
+  if(key!==target)peers.push({...course,educacity_group_id:Number(id),educacity_group_label:v.slice(p+1)});
+ }
+ return peers;
+}
+async function readPeerActivityIds(http,peers,period){
+ const out=new Map();
+ for(const peer of peers){
+  // Read-only, no remote writes. Abort if another group cannot be verified.
+  const page=await http.request(sheetUrl(peer,period));
+  const sheet=parseSheet(page.text,peer,period);
+  const ids=new Set([...sheet.assignmentIds,...[...sheet.matrix.keys()].map(k=>k.split("_")[1])]);
+  if(!ids.size)throw Error("No se pudo verificar el catálogo del grupo "+peer.educacity_group_label+".");
+  out.set(String(peer.educacity_group_id),ids);
+ }
+ return out;
+}
 async function postActivity(http,course,period,root,part){
  const mode=part.action==="create"?"add":"update",id=part.remote_id;
  const base=await activityForm(http,mode,course,period,id);
+ const peers=mode==="add"?providerPeerGroups(base,course):[];
+ const beforePeers=mode==="add"?await readPeerActivityIds(http,peers,period):null;
  const changes={influence:String(part.weight_new)};
  if(mode==="add"){changes.title=part.title;changes.weighting_criteria="10";changes.parent_a_id=String(root.id);changes.all_groups="0";changes.some_groups=""}
  changes.action=mode==="add"?"add":"update";
@@ -531,6 +571,17 @@ async function postActivity(http,course,period,root,part){
  const payload=mode==="add"?toScopedActivityFormData(base,changes,course):toFormData(base,changes);
  const response=await http.request(REMOTE+BASE+"assignments/actions.php",{method:"POST",body:payload,headers:{Origin:REMOTE,Referer:REMOTE+"/"}});
  if(/name=["'](?:password|login)["']|iniciar sesi[oó]n|sqlstate|access denied/i.test(response.text.slice(0,8000)))throw Error("educa.city indicó que la actividad no fue guardada correctamente.");
+ if(mode==="add"){
+  // A single unexpected column in another group is a hard stop. No grades and
+  // no more activities are submitted until the discrepancy is resolved.
+  const afterPeers=await readPeerActivityIds(http,peers,period);
+  for(const peer of peers){
+   const groupId=String(peer.educacity_group_id),before=beforePeers.get(groupId),after=afterPeers.get(groupId);
+   const appeared=[...after].filter(id=>!before.has(id));
+   if(appeared.length)throw Error("ALERTA: EducaCity incorporó actividad(es) "+appeared.join(", ")+
+     " al grupo "+peer.educacity_group_label+" ajeno a la selección. Se detuvo el envío antes de guardar notas. No repitas la creación; revisa estas columnas.");
+  }
+ }
 }
 async function postGrades(http,remote,course,period,id,edits){
  const changeMap=new Map(edits.map(x=>{
