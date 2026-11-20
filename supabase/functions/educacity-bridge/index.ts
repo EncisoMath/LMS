@@ -555,7 +555,7 @@ function parseInput(data){if(!data||!["preview","sync"].includes(data.op))throw 
  const cred=data.credentials||{};if(!cred.password||!idok(cred.login))throw Error("Ingresa las credenciales de educa.city en PLANILLA.");
  return cred;
 }
-async function trustedClient(req,assignment){
+async function trustedClient(req,assignment,period){
  const token=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
  if(!token)throw Error("Inicia sesión en EncisoLMS como docente.");
  const url=Deno.env.get("SUPABASE_URL"),key=Deno.env.get("SUPABASE_ANON_KEY");
@@ -567,7 +567,16 @@ async function trustedClient(req,assignment){
  if(access.error||!access.data)throw Error("No tienes permisos para esta planilla.");
  const course=await supa.from("educacity_course_links").select("*").eq("assignment_id",assignment).eq("academic_year",2026).maybeSingle();
  if(course.error||!course.data)throw Error("No hay correspondencia institucional de este curso.");
- return course.data;
+ // Historic links are a warning, never authority to create or overwrite.
+ const linked=await supa.from("educacity_component_links")
+  .select("component,educacity_activity_id,status")
+  .eq("assignment_id",assignment).eq("academic_year",2026).eq("period",period);
+ if(linked.error){
+  console.warn("educacity_prior_links_read_failed",linked.error.code||"query_error");
+ }
+ return {...course.data,__previous_verified_links:(linked.data||[])
+  .filter(row=>row.status==="verified"&&Object.hasOwn(TYPES,row.component)&&idok(row.educacity_activity_id))
+  .map(row=>({component:row.component,remote_id:String(row.educacity_activity_id)}))};
 }
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
@@ -731,7 +740,7 @@ Deno.serve(async req=>{
    return result({ok:true,connection:true,school_url:REMOTE,verified_at:new Date().toISOString()});
   }
   const credentials=parseInput(body);
-  const course=await trustedClient(req,body.snapshot.assignment_id);
+  const course=await trustedClient(req,body.snapshot.assignment_id,body.snapshot.period);
   const http=new EducaHTTP();
   await http.login(credentials);
   const remote=await readRemote(http,course,body.snapshot.period);
@@ -741,6 +750,21 @@ Deno.serve(async req=>{
   // form does not prove a single-group scope. Keep grade-only updates available.
   // Do not remove this hold until group-scoped assignment writes are proven.
   const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
+  const priorVerified=course.__previous_verified_links||[];
+  const historicalMismatch=priorVerified.filter(link=>{
+   const current=plan.components.find(p=>p.key===link.component);
+   return !current?.remote_id||String(current.remote_id)!==String(link.remote_id);
+  });
+  const catalogComponents=remote.activities.filter(a=>!a.isRoot&&componentFor(a.title))
+   .map(a=>({id:String(a.id),component:componentFor(a.title),
+     linked_to_root:String(a.parent)===String(remote.root.id)}));
+  if(historicalMismatch.length){
+   console.warn("educacity_verified_links_not_found_in_current_plan",JSON.stringify({
+    current_group:String(course.educacity_group_id),
+    historical:historicalMismatch,
+    catalog_components:catalogComponents
+   }));
+  }
   if(body.op==="preview"){
    let scope_audit=null,scope_audit_error=null;
    // Read-only inspection runs even when all three components already exist.
@@ -751,6 +775,8 @@ Deno.serve(async req=>{
 
    return result({ok:true,data:{...plan,
     scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions,
+    prior_verified_links:priorVerified,historical_mismatch:historicalMismatch,
+    catalog_components:catalogComponents,
     scope_audit,scope_audit_error}});
   }
   // Protect only the requested component. One unsafe component must not block
