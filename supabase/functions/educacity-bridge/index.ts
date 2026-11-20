@@ -586,6 +586,26 @@ Deno.serve(async req=>{
    }};
    const mockCourse={educacity_group_id:14899,educacity_subject_id:1955,
     educacity_area_id:208,educacity_group_label:"2PPAL"};
+   // Synthetic safety regression: a creation form may expose multiple
+   // gxc_ checkboxes. The correct target must be explicitly identifiable;
+   // course.group alone cannot prove the scope of an activity POST.
+   const scopeHtml='<form>'+
+    '<input name="form_id" value="form_object_assignments">'+
+    '<input name="title" value="Nueva actividad">'+
+    '<input name="c_id" value="1955">'+
+    '<input name="group" value="2PPAL">'+
+    '<input name="original_et_id" value="54">'+
+    '<input name="all_groups" value="0">'+
+    '<input name="some_groups" value="">'+
+    '<input type="checkbox" name="gxc_14897" value="1">'+
+    '<input type="checkbox" name="gxc_14899" value="1" checked>'+
+    '<input type="checkbox" name="gxc_14900" value="1">'+
+    '</form>';
+   const mockScope=await inspectGroupScope({request:async()=>({text:scopeHtml})},mockCourse,4);
+   const scopeOK=mockScope.target_control_present===true&&
+     mockScope.group_control_count===3&&
+     mockScope.groups.filter(c=>c.checked).length===1&&
+     mockScope.groups.find(c=>c.checked)?.name==="gxc_14899";
    const mockRemote=await readRemote(mockClient,mockCourse,4);
    const mockPlan=await makePlan(mockRemote,{students:[{code:"987654321",name:"Estudiante Ficticio",
     scores:{academic:54,attendance:null,rockstars:null}}],weights:{academic:60,attendance:20,rockstars:20}});
@@ -629,11 +649,11 @@ Deno.serve(async req=>{
      pendingFound[0].student_name==="Segundo Alumno"&&pendingFound[0].after===67;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=scopeOK&&sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
