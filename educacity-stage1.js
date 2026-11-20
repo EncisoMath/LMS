@@ -284,14 +284,18 @@
   const blockedChanges=changes.filter(x=>blockedKeys.includes(x.component));
   const count=availableChanges.length,unsafe=blockedKeys.length>0;
   const noSafeComponents=safeKeys.length===0;
+  const priorMismatch=Array.isArray(p.historical_mismatch)?p.historical_mismatch:[];
+  const offRoot=Array.isArray(p.catalog_components)?p.catalog_components.filter(x=>!x.linked_to_root):[];
   by('ec1Body').innerHTML=
    '<div class="ec1-summary-strip"><div><strong>Período '+esc(snapshot.period)+'</strong><span>'+esc(snapshot.assignment_id.replace('mat-est-',''))+'</span></div>'+
    '<div><strong>'+Number(p.matched||0)+'</strong><span>Estudiantes</span></div>'+
-   '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>Por crear</span></div>'+
+   '<div><strong>'+Number(p.needs_creation||0)+'</strong><span>No encontradas</span></div>'+
    '<div><strong>'+count+'</strong><span>Notas diferentes</span></div></div>'+
    (!count&&!unsafe?'<p class="ec1-updated"><span aria-hidden="true">✅</span> La planilla está actualizada en EducaCity.</p>':'')+
    (unsafe?'<div class="ec1-safety-notice" role="alert"><strong>⚠️ '+(noSafeComponents?'Carga protegida':'Carga parcial disponible')+'</strong><span>Por seguridad se omiten: '+esc(blockedKeys.map(k=>COMPONENTS[k]).join(', '))+'. Sus actividades faltan o tienen un peso distinto; no se crearán ni modificarán.</span>'+
     (safeKeys.length?'<span>Se pueden cargar las notas de '+esc(safeKeys.map(k=>COMPONENTS[k]).join(', '))+' sin cambiar actividades de otros cursos.</span>':'<span>No hay componentes seguros para enviar en esta planilla.</span>')+'</div>':'')+
+   (priorMismatch.length?'<div class="ec1-safety-notice" role="note"><strong>⚠️ Actividades registradas anteriormente</strong><span>En EncisoLMS constan IDs verificados que hoy no coinciden con los detectados en EducaCity: '+esc(priorMismatch.map(x=>COMPONENTS[x.component]+': '+x.remote_id).join(' · '))+'. Se comprobará su ubicación antes de permitir nuevas creaciones.</span></div>':'')+
+   (offRoot.length?'<div class="ec1-safety-notice" role="note"><strong>⚠️ Componentes fuera de la definitiva actual</strong><span>El catálogo de EducaCity incluye '+offRoot.length+' componente(s) con otro vínculo jerárquico. No se crearán duplicados mientras exista esa discrepancia.</span></div>':'')+
    (missing.length?'<p class="ec1-warning">⚠️ '+missing.length+' estudiante(s) sin correspondencia, no se enviarán sus notas.</p>':'')+
    '<div class="ec1-tabs" role="tablist" aria-label="Detalles de la sincronización">'+
    '<button type="button" role="tab" aria-selected="true" class="ec1-tab is-active" data-tab="activities" id="ec1TabActivities" aria-controls="ec1PanelActivities">Actividades</button>'+
@@ -299,7 +303,7 @@
    '<section class="ec1-tab-panel" id="ec1PanelActivities" role="tabpanel" aria-labelledby="ec1TabActivities">'+
     '<h3>Actividades en EducaCity</h3>'+
     '<div class="ec1-table-wrap"><table class="ec1-table"><thead><tr><th>Componente</th><th>Actividad</th><th>Peso</th><th>Acción</th></tr></thead><tbody>'+
-    acts.map(a=>'<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id||'Nueva')+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(safeKeys.includes(a.key)?pill('Lista para notas','is-ok'):pill('Suspendida','is-pending'))+'</td></tr>').join('')+
+    acts.map(a=>{const old=priorMismatch.find(link=>link.component===a.key);return '<tr><th scope="row">'+esc(COMPONENTS[a.key])+'</th><td>'+esc(a.remote_id|| (old?'No visible · antes '+old.remote_id:'No encontrada'))+'</td><td>'+esc(a.weight_new)+' %</td><td>'+(safeKeys.includes(a.key)?pill('Lista para notas','is-ok'):pill('Suspendida','is-pending'))+'</td></tr>';}).join('')+
     '</tbody></table></div></section>'+
    '<section class="ec1-tab-panel" id="ec1PanelGrades" role="tabpanel" aria-labelledby="ec1TabGrades" hidden>'+
     '<h3>Notas disponibles para cargar</h3><p>Un estudiante por fila. Se omiten '+blockedChanges.length+' nota(s) de componentes protegidos.</p>'+compactGrades(availableChanges)+'</section>';
