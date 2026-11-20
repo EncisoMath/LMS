@@ -497,6 +497,30 @@ function toFormData(fields0,changes){
  for(const [k,v] of Object.entries({...fields0,...changes}))f.append(k,String(v??""));
  return f;
 }
+// Candidate protocol for group-scoped activity creation. Currently unreachable
+// while the activity-write hold is active. The provider's hidden gxc_* values
+// list ALL possible classes; serializing all of them is unsafe.
+function toScopedActivityFormData(base,changes,course){
+ const currentKey="gxc_"+String(course.educacity_group_id);
+ const declared=Object.keys(base).filter(k=>/^gxc_\d+$/.test(k));
+ if(!declared.length||!declared.includes(currentKey))
+  throw Error("El formulario no identifica exclusivamente el grupo seleccionado.");
+ const expected=String(base[currentKey]||"");
+ if(!expected.endsWith("_"+String(course.educacity_group_label)))
+  throw Error("El identificador del grupo no corresponde al curso seleccionado.");
+ const onlyCurrent={};
+ for(const [key,value] of Object.entries(base)){
+  if(/^gxc_\d+$/.test(key)&&key!==currentKey)continue;
+  onlyCurrent[key]=value;
+ }
+ const overrides={...changes,all_groups:"0",some_groups:""};
+ const data=toFormData(onlyCurrent,overrides);
+ const submitted=[...data.keys()].filter(k=>/^gxc_\d+$/.test(k));
+ if(submitted.length!==1||submitted[0]!==currentKey||
+    data.get("all_groups")!=="0")
+  throw Error("Protección: el formulario intenta abarcar otros cursos.");
+ return data;
+}
 async function postActivity(http,course,period,root,part){
  const mode=part.action==="create"?"add":"update",id=part.remote_id;
  const base=await activityForm(http,mode,course,period,id);
@@ -504,7 +528,8 @@ async function postActivity(http,course,period,root,part){
  if(mode==="add"){changes.title=part.title;changes.weighting_criteria="10";changes.parent_a_id=String(root.id);changes.all_groups="0";changes.some_groups=""}
  changes.action=mode==="add"?"add":"update";
  changes.action_button=mode==="add"?"form_object_assignments.button_add":"form_object_"+id+".button_update";
- const response=await http.request(REMOTE+BASE+"assignments/actions.php",{method:"POST",body:toFormData(base,changes),headers:{Origin:REMOTE,Referer:REMOTE+"/"}});
+ const payload=mode==="add"?toScopedActivityFormData(base,changes,course):toFormData(base,changes);
+ const response=await http.request(REMOTE+BASE+"assignments/actions.php",{method:"POST",body:payload,headers:{Origin:REMOTE,Referer:REMOTE+"/"}});
  if(/name=["'](?:password|login)["']|iniciar sesi[oó]n|sqlstate|access denied/i.test(response.text.slice(0,8000)))throw Error("educa.city indicó que la actividad no fue guardada correctamente.");
 }
 async function postGrades(http,remote,course,period,id,edits){
@@ -601,6 +626,13 @@ Deno.serve(async req=>{
     '<input type="checkbox" name="gxc_14899" value="1" checked>'+
     '<input type="checkbox" name="gxc_14900" value="1">'+
     '</form>';
+   const scopedFields={form_id:"form_object_assignments",c_id:"1955",group:"2PPAL",
+      gxc_14897:"10_1PPAL",gxc_14899:"10_2PPAL",gxc_14900:"10_3PPAL"};
+   const isolated=toScopedActivityFormData(scopedFields,{title:"Prueba",influence:"60"},mockCourse);
+   const isolatedKeys=[...isolated.keys()].filter(k=>/^gxc_\d+$/.test(k));
+   const isolationOK=isolatedKeys.length===1&&isolatedKeys[0]==="gxc_14899"&&
+      isolated.get("gxc_14899")==="10_2PPAL"&&isolated.get("all_groups")==="0"&&
+      !isolated.has("gxc_14897")&&!isolated.has("gxc_14900");
    const mockScope=await inspectGroupScope({request:async()=>({text:scopeHtml})},mockCourse,4);
    const scopeOK=mockScope.target_control_present===true&&
      mockScope.group_control_count===3&&
@@ -649,11 +681,11 @@ Deno.serve(async req=>{
      pendingFound[0].student_name==="Segundo Alumno"&&pendingFound[0].after===67;
    const integerGrades=[53.4,53.5,54,71.5,99.5].map(scoreInt);
    const roundingOK=JSON.stringify(integerGrades)===JSON.stringify([53,54,54,72,100]);
-   const ok=scopeOK&&sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
+   const ok=isolationOK&&scopeOK&&sparsePreviewOK&&partialColumnOK&&discoveryOK&&blankColumnOK&&roundingOK&&nestedMap.get("987654321_987654322")===70&&json5Map.get("987654321_987654322")===70&&resultMatrix.get("987654321_987654322")===70&&
      sheet.matrix.get("987654321_987654322")===70&&
      sheet.byCode.get("987654321")?.name==="Estudiante Ficticio"&&
      sheet.f.str_cell_values==="987654321_987654322_70";
-   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
+   return result({ok,test:"json_bootstrap_and_gradebook_parser",scope_group_detection:scopeOK,group_payload_isolation:isolationOK,integer_rounding:roundingOK,rounding_examples:integerGrades,new_activity_blank_cells:blankColumnOK,new_activity_catalog_discovery:discoveryOK,sparse_cells:partialColumnOK,sparse_preview:sparsePreviewOK,fixture_discovery:discoveryParts,cells:sheet.matrix.size,
     students:sheet.byCode.size,model_keys:diagnostic.parsed_keys});
   }
   if(new URL(req.url).searchParams.get("probe")!=="1")return result(basic);
