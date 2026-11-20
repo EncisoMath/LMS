@@ -146,3 +146,9 @@ body.ec1-is-open{overflow:hidden}
  #ec1-layer .ec1-summary-strip>div:nth-child(3){border-left:0;border-top:1px solid #2d3644}
  #ec1-layer .ec1-summary-strip>div:nth-child(4){border-top:1px solid #2d3644}
 }
+
+
+/* Seguridad de creación por grupo: aviso visible, sin falsas opciones de guardar. */
+#ec1-layer .ec1-safety-notice{display:grid;gap:6px;margin:0 0 14px;padding:12px 14px;border:1px solid #9b7126;border-radius:3px;background:#261c0f;color:#ffdfa7;font-size:12px;line-height:1.45}
+#ec1-layer .ec1-safety-notice strong{font-size:13px;color:#ffda83}
+#ec1-layer .ec1-safety-notice span{color:#e7d6ba}
