@@ -41,4 +41,4 @@ jobs:
             'https://jjllrciujqauqpjffsud.supabase.co/functions/v1/educacity-bridge?selftest=1' \
             | tee /tmp/educacity-selftest.json \
             | jq '.'
-          jq -e '.ok == true and .cells == 1 and .students == 1 and .integer_rounding == true and .rounding_examples == [53,54,54,72,100] and .new_activity_blank_cells == true and .new_activity_catalog_discovery == true and .group_payload_isolation == true and .peer_scope_detection == true and .sparse_cells == true and .sparse_preview == true and .test == "json_bootstrap_and_gradebook_parser"' /tmp/educacity-selftest.json
+          jq -e '.ok == true and .cells == 1 and .students == 1 and .integer_rounding == true and .rounding_examples == [53,54,54,72,100] and .new_activity_blank_cells == true and .new_activity_catalog_discovery == true and .group_payload_isolation == true and .group_scope_flags_verified == true and .peer_scope_detection == true and .sparse_cells == true and .sparse_preview == true and .test == "json_bootstrap_and_gradebook_parser"' /tmp/educacity-selftest.json
