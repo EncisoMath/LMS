@@ -691,10 +691,12 @@ Deno.serve(async req=>{
   const unsafeActions=plan.components.filter(p=>p.action!=="reuse").map(p=>({component:p.key,action:p.action}));
   if(body.op==="preview"){
    let scope_audit=null,scope_audit_error=null;
-   if(unsafeActions.length){
-    try{scope_audit=await inspectGroupScope(http,course,body.snapshot.period);}
-    catch(error){scope_audit_error=error instanceof Error?error.message:"No se pudo inspeccionar el selector de grupos.";}
-   }
+   // Read-only inspection runs even when all three components already exist.
+   // This makes it possible to diagnose the provider form in a healthy course
+   // before attempting any new creation in another course.
+   try{scope_audit=await inspectGroupScope(http,course,body.snapshot.period);}
+   catch(error){scope_audit_error=error instanceof Error?error.message:"No se pudo inspeccionar el selector de grupos.";}
+
    return result({ok:true,data:{...plan,
     scoped_activity_writes_blocked:true,unsafe_actions:unsafeActions,
     scope_audit,scope_audit_error}});
